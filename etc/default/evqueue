@@ -1,0 +1,6 @@
+# defaults file for evqueue daemon mode
+
+# start evqueue in daemon mode from init.d script?
+#  only allowed values are "true" and "false"
+EVQUEUE_ENABLE=true
+

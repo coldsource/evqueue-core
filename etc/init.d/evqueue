@@ -1,0 +1,100 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          evqueue
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: This is evqueue daemon
+# Description:       Enable service provided by daemon.
+### END INIT INFO
+
+export LANG=en_US.UTF-8
+
+
+# Using the lsb functions to perform the operations.
+. /lib/lsb/init-functions
+# Process name ( For display )
+NAME=evqueue
+# Daemon name, where is the actual executable
+DAEMON=/usr/bin/evqueue
+DAEMON_ARGS="/etc/evqueue.conf"
+# pid file for the daemon
+PIDFILE=/var/run/evqueue/evqueue.pid
+DEFAULTS_FILE=/etc/default/evqueue
+
+
+# If the daemon is not there, then exit.
+test -x $DAEMON || exit 5
+
+if [ -s $DEFAULTS_FILE ]; then
+    . $DEFAULTS_FILE
+    case "$EVQUEUE_ENABLE" in
+        true)   ;;
+        false) 			log_daemon_msg "$NAME process is not running, value of EVQUEUE_ENABLE in $DEFAULTS_FILE is 'false';" 
+       					exit
+       					;;
+        *)              log_failure_msg "Value of EVQUEUE_ENABLE in $DEFAULTS_FILE must be either 'true' or 'false';"
+                        log_failure_msg "not starting evqueue daemon."
+                        exit 1
+                        ;;
+    esac
+fi    
+
+case $1 in
+ start)
+  # Checked the PID file exists and check the actual status of process
+  if [ -e $PIDFILE ]; then
+   status_of_proc -p $PIDFILE $DAEMON "$NAME process" && status="0" || status="$?"
+   # If the status is SUCCESS then don't need to start again.
+   if [ $status = "0" ]; then
+    exit # Exit
+   fi
+  fi
+  # Start the daemon.
+  log_daemon_msg "Starting the process" "$NAME"
+  # Start the daemon with the help of start-stop-daemon
+  # Log the message appropriately
+  if /sbin/start-stop-daemon --start --background --quiet --oknodo --make-pidfile --pidfile $PIDFILE --exec $DAEMON $DAEMON_ARGS ; then
+   log_end_msg 0
+  else
+   log_end_msg 1
+  fi
+  ;;
+ stop)
+  # Stop the daemon.
+  if [ -e $PIDFILE ]; then
+   status_of_proc -p $PIDFILE $DAEMON "Stoppping the $NAME process" && status="0" || status="$?"
+   if [ "$status" = 0 ]; then
+    /sbin/start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+    /bin/rm -rf $PIDFILE
+   fi
+  else
+   log_daemon_msg "$NAME process is not running"
+   log_end_msg 0
+  fi
+  ;;
+ restart)
+  # Restart the daemon.
+  $0 stop && sleep 2 && $0 start
+  ;;
+ status)
+  # Check the status of the process.
+  if [ -e $PIDFILE ]; then
+   status_of_proc -p $PIDFILE $DAEMON "$NAME process" && exit 0 || exit $?
+  else
+   log_daemon_msg "$NAME Process is not running"
+   #log_end_msg 3
+   exit 3
+  fi
+  ;;
+ *)
+  # For invalid arguments, print the usage message.
+  echo "Usage: $0 {start|stop|restart|status}"
+  exit 2
+  ;;
+esac
+
+
+### END INIT INFO
