@@ -8,6 +8,8 @@ The network API provides an easy way, XML based, for synchronous or asynchronous
 
 evQueue is agentless (remote connection is made through SSH) and works on Linux environments. We provide debian packages. For other distributions you can easily compile from source.
 
+For documentation and binary download, [visit the official website!](http://www.evqueue.net/)
+
 ## Building
 
 Once you met the dependancy requirements (see below), you can build it using
