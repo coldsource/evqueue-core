@@ -54,7 +54,7 @@ void Logger::Log(int level,const char *msg,...)
 		return;
 	
 	if(instance->log_syslog)
-		syslog(LOG_NOTICE,buf);
+		syslog(LOG_NOTICE,"%s",buf);
 	
 	if(instance->log_db)
 	{
