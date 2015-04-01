@@ -18,11 +18,12 @@
  */
 
 #include <BinNetworkInputStream.h>
+#include <Logger.h>
+#include <Exception.h>
 
 #include <sys/socket.h>
 #include <string.h>
-
-
+#include <errno.h>
 
 BinNetworkInputStream::BinNetworkInputStream(int s)
 {
@@ -40,9 +41,14 @@ XMLFilePos BinNetworkInputStream::curPos() const
 	return pos;
 }
 
-XMLSize_t BinNetworkInputStream::readBytes (XMLByte *const toFill, const XMLSize_t maxToRead)
+XMLSize_t BinNetworkInputStream::readBytes(XMLByte *const toFill, const XMLSize_t maxToRead)
 {
 	int read_size = recv(socket,toFill,maxToRead,0);
+	if(read_size==-1)
+	{
+		Logger::Log(LOG_WARNING,"Error reading socket, recv() returned error %d",errno);
+		throw Exception("BinNetworkInputStream","Error reading socket");
+	}
 	
 	pos += read_size;
 	return (XMLSize_t) read_size;
