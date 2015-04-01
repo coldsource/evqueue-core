@@ -237,9 +237,10 @@ int main(int argc,const char **argv)
 			throw Exception("core","Unable to bind listen socket");
 		
 		// Listen on socket
-		re=listen(listen_socket,64);
+		re=listen(listen_socket,config->GetInt("network.listen.backlog"));
 		if(re==-1)
 			throw Exception("core","Unable to listen on socket");
+		Logger::Log(LOG_NOTICE,"Listen backlog set to %d",config->GetInt("network.listen.backlog"));
 		
 		char *ptr,*parameters;
 		

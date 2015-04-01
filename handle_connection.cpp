@@ -29,6 +29,7 @@
 #include <NetworkInputSource.h>
 #include <WorkflowInstances.h>
 #include <Logger.h>
+#include <Configuration.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
@@ -46,6 +47,16 @@ void *handle_connection(void *sp)
 {
 	int s  = *((int *)sp);
 	delete (int *)sp;
+	
+	// Configure socket
+	Configuration *config = Configuration::GetInstance();
+	struct timeval tv;
+	
+	tv.tv_sec = config->GetInt("network.rcv.timeout");
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
+	
+	tv.tv_sec = config->GetInt("network.snd.timeout");
+	setsockopt(s, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
 	socklen_t remote_addr_len;
 	struct sockaddr_in remote_addr;
