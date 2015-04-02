@@ -1,6 +1,6 @@
 # evqueue
 
-evQueue is an open source job scheduler and queueing engine. It features an event-driven C++ engine and a PHP / MySQL web control interface which provides tasks monitoring and creation.
+evQueue is an open source job scheduler and queueing engine. It features an event-driven C++ engine and a PHP / MySQL web control interface which provides tasks monitoring and creation. See the PHP frontend [here](https://github.com/coldsource/evqueue-frontend-php).
 
 It provides both simple task execution and complex task chaining (workflow) using XML and XPath description. Workflow description includes output linking, conditions and loops. Queues management provides an easy way for task parallelization and resource control.
 
