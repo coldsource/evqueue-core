@@ -132,7 +132,12 @@ void *handle_connection(void *sp)
 		}
 		
 		// we have a request to launch a new workflow instance
-		if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH)
+		if ( saxh->GetQueryType() == SocketQuerySAX2Handler::PING)
+		{
+			send(s,"<pong />",8,0);
+			throw (void *)0;
+		}
+		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH)
 		{
 			const char *workflow_name = saxh->GetWorkflowName();
 			WorkflowInstance *wi;

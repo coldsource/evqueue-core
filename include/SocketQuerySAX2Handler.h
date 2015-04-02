@@ -51,6 +51,7 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		static const int QUERY_WORKFLOW_KILLTASK = 9;
 		
 		static const int RESET_GLOBAL_STATS = 10;
+		static const int PING = 11;
 		
 		static const int QUERY_OPTION_MODE_SYNCHRONOUS = 1;
 		static const int QUERY_OPTION_MODE_ASYNCHRONOUS = 2;

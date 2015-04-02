@@ -60,7 +60,11 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 	{
 		if(level==1)
 		{
-			if(strcmp(node_name_c,"statistics")==0)
+			if(strcmp(node_name_c,"ping")==0)
+			{
+				query_type = SocketQuerySAX2Handler::PING;
+			}
+			else if(strcmp(node_name_c,"statistics")==0)
 			{
 				const XMLCh *type_attr = attrs.getValue(X("type"));
 				
