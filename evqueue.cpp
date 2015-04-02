@@ -153,6 +153,11 @@ int main(int argc,const char **argv)
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
 		
+		// Open pid file before fork to eventually print errors
+		FILE *pidfile = fopen(config->Get("core.pidfile"),"w");
+		if(pidfile==0)
+			throw Exception("core","Unable to open pid file");
+		
 		int gid = atoi(config->Get("core.gid"));
 		if(gid!=0 && setgid(gid)!=0)
 			throw Exception("core","Unable to set requested GID");
@@ -161,11 +166,6 @@ int main(int argc,const char **argv)
 		int uid = atoi(config->Get("core.uid"));
 		if(uid!=0 && setuid(uid)!=0)
 			throw Exception("core","Unable to set requested UID");
-		
-		// Open pid file before fork to eventually print errors
-		FILE *pidfile = fopen(config->Get("core.pidfile"),"w");
-		if(pidfile==0)
-			throw Exception("core","Unable to open pid file");
 		
 		// Check database connection
 		DB db;
