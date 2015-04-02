@@ -211,7 +211,7 @@ time_t Schedule::get_next_time(time_t now)
 		first_t.tm_min = 0;
 		first_t.tm_hour = 0;
 		first_t.tm_mday++;
-		first_t.tm_isdst = 0;
+		first_t.tm_isdst = -1;
 		first = mktime(&first_t);
 		return get_next_time(first);
 	}
