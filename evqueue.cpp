@@ -162,6 +162,11 @@ int main(int argc,const char **argv)
 		if(uid!=0 && setuid(uid)!=0)
 			throw Exception("core","Unable to set requested UID");
 		
+		// Open pid file before fork to eventually print errors
+		FILE *pidfile = fopen(config->Get("core.pidfile"),"w");
+		if(pidfile==0)
+			throw Exception("core","Unable to open pid file");
+		
 		// Check database connection
 		DB db;
 		db.Ping();
@@ -171,6 +176,10 @@ int main(int argc,const char **argv)
 			daemon(1,0);
 			daemonized = true;
 		}
+		
+		// Write pid after daemonization
+		fprintf(pidfile,"%d\n",getpid());
+		fclose(pidfile);
 		
 		// Create statistics counter
 		Statistics *stats = new Statistics();
@@ -314,6 +323,7 @@ int main(int argc,const char **argv)
 				gc->WaitForShutdown();
 				
 				// All threads have exited, we can cleanly exit
+				unlink(config->Get("core.pidfile"));
 				Logger::Log(LOG_NOTICE,"Clean exit");
 				return 0;
 			}

@@ -22,10 +22,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CONFIGURATION_ENTRIES 32
+#define CONFIGURATION_ENTRIES 33
 
 static const char *default_configuration[]={
 	"core.gid","0",
+	"core.pidfile","/var/run/evqueue/evqueue.pid",
 	"core.uid","0",
 	"gc.delay","2",
 	"gc.enable","yes",
