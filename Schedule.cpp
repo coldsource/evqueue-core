@@ -195,7 +195,7 @@ time_t Schedule::get_next_time(time_t now)
 	first_t.tm_mday = time_level_first[SCHEDULE_LEVEL_DAY]+1;
 	first_t.tm_mon = time_level_first[SCHEDULE_LEVEL_MONTH];
 	first_t.tm_year = now_t.tm_year+next_level_offset;
-	first_t.tm_isdst = 0;
+	first_t.tm_isdst = -1;
 	
 	first = mktime(&first_t);
 	
