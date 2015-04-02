@@ -30,6 +30,7 @@
 #include <arpa/inet.h>
 #include <syslog.h>
 #include <errno.h>
+#include <stdio.h>
 
 #include <mysql/mysql.h>
 
@@ -91,6 +92,34 @@ void signal_callback_handler(int signum)
 
 int main(int argc,const char **argv)
 {
+	// Check parameters
+	const char *config_filename = 0;
+	bool daemonize = false;
+	bool daemonized = false;
+	
+	for(int i=1;i<argc;i++)
+	{
+		if(strcmp(argv[i],"--daemon")==0)
+			daemonize = true;
+		else if(strcmp(argv[i],"--config")==0 && i+1<argc)
+		{
+			config_filename = argv[i+1];
+			i++;
+		}
+		else
+		{
+			fprintf(stderr,"Unknown option : %s\n",argv[i]);
+			fprintf(stderr,"Usage : evqueue (--daemon) --config <path to config file>\n");
+			return -1;
+		}
+	}
+	
+	if(config_filename==0)
+	{
+		fprintf(stderr,"Usage : evqueue (--daemon) --config <path to config file>\n");
+		return -1;
+	}
+	
 	// Initialize external libraries
 	mysql_library_init(0,0,0);
 	XQillaPlatformUtils::initialize();
@@ -117,13 +146,9 @@ int main(int argc,const char **argv)
 	
 	try
 	{
-		// Check if we have a configuration filename
-		if(argc!=2)
-			throw Exception("core","First parameter must be a configuration filename");
-		
 		// Read configuration
 		Configuration *config;
-		config = ConfigurationReader::Read(argv[1]);
+		config = ConfigurationReader::Read(config_filename);
 		
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
@@ -136,6 +161,16 @@ int main(int argc,const char **argv)
 		int uid = atoi(config->Get("core.uid"));
 		if(uid!=0 && setuid(uid)!=0)
 			throw Exception("core","Unable to set requested UID");
+		
+		// Check database connection
+		DB db;
+		db.Ping();
+		
+		if(daemonize)
+		{
+			daemon(1,0);
+			daemonized = true;
+		}
 		
 		// Create statistics counter
 		Statistics *stats = new Statistics();
@@ -162,7 +197,6 @@ int main(int argc,const char **argv)
 		RetrySchedules *retry_schedules = new RetrySchedules();
 		
 		// Check if workflows are to resume (we have to resume them before starting ProcessManager)
-		DB db;
 		db.Query("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
 		while(db.FetchRow())
 		{
@@ -244,7 +278,6 @@ int main(int argc,const char **argv)
 		
 		char *ptr,*parameters;
 		
-		
 		Logger::Log(LOG_NOTICE,"Accepting connection on port %s",config->Get("network.bind.port"));
 		
 		// Loop for incoming connections
@@ -298,6 +331,10 @@ int main(int argc,const char **argv)
 	{
 		// We have to use only syslog here because the logger might not be instanciated yet
 		syslog(LOG_CRIT,"Unexpected exception : [ %s ] %s\n",e.context,e.error);
+		
+		if(!daemonized)
+			fprintf(stderr,"Unexpected exception : [ %s ] %s\n",e.context,e.error);
+		
 		return -1;
 	}
 	
