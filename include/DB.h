@@ -38,6 +38,7 @@ public:
 	
 	DB *Clone(void);
 	
+	void Ping(void);
 	void Query(const char *query);
 	void QueryPrintf(const char *query,...);
 	void EscapeString(const char *string, char *escaped_string);

@@ -79,6 +79,12 @@ DB *DB::Clone(void)
 	return new DB(this);
 }
 
+void DB::Ping(void)
+{
+	if(mysql_ping(mysql)!=0)
+		throw Exception("DB",mysql_error(mysql));
+}
+
 void DB::Query(const char *query)
 {
 	if(res)
