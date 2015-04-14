@@ -28,6 +28,7 @@
 #include <Logger.h>
 
 #include <pthread.h>
+#include <mysql/mysql.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -91,6 +92,8 @@ void *ProcessManager::Fork(void *process_manager)
 	bool workflow_terminated;
 	pid_t pid,tid;
 	
+	mysql_thread_init();
+	
 	Logger::Log(LOG_NOTICE,"Forker started");
 	
 	while(1)
@@ -98,6 +101,9 @@ void *ProcessManager::Fork(void *process_manager)
 		if(!qp->DequeueTask(queue_name,&workflow_instance,&task))
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Forker");
+			
+			mysql_thread_end();
+			
 			return 0; // Lock has been released because we are shutting down, nothing to execute
 		}
 		
@@ -134,17 +140,22 @@ void *ProcessManager::Gather(void *process_manager)
 	WorkflowInstance *workflow_instance;
 	DOMNode *task;
 	
+	mysql_thread_init();
+	
 	Logger::Log(LOG_NOTICE,"Gatherer started");
 	
-	while(msgrcv(pm->msgqid,&msgbuf,sizeof(st_msgbuf),0,0))
+	while(msgrcv(pm->msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0,0))
 	{
-		pid = msgbuf.pid;
-		tid = msgbuf.tid;
-		retcode = msgbuf.retcode;
+		pid = msgbuf.mtext.pid;
+		tid = msgbuf.mtext.tid;
+		retcode = msgbuf.mtext.retcode;
 		
 		if(pid==0)
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Gatherer");
+			
+			mysql_thread_end();
+			
 			return 0; // Shutdown requested
 		}
 		
@@ -203,8 +214,10 @@ void ProcessManager::Shutdown(void)
 	QueuePool *qp = QueuePool::GetInstance();
 	qp->Shutdown(); // Shutdown forker
 	
-	st_msgbuf msgbuf = {1,0,0,0};
-	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf),0); // Shutdown gatherer
+	st_msgbuf msgbuf;
+	msgbuf.type = 1;
+	memset(&msgbuf.mtext,0,sizeof(st_msgbuf::mtext));
+	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0); // Shutdown gatherer
 }
 
 void ProcessManager::WaitForShutdown(void)

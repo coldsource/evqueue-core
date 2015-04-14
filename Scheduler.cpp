@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <pthread.h>
+#include <mysql/mysql.h>
 
 Scheduler::Scheduler()
 {
@@ -36,6 +37,20 @@ Scheduler::Scheduler()
 	
 	pthread_mutex_init(&mutex,NULL);
 	pthread_cond_init(&sleep_cond,NULL);
+}
+
+Scheduler::~Scheduler()
+{
+	// Delete all events
+	Event *tmp;
+	Event **event = &first_event;
+	while(*event)
+	{
+		tmp = *event;
+		*event = (*event)->next_event;
+		
+		delete tmp;
+	}
 }
 
 void Scheduler::InsertEvent(Event *new_event)
@@ -147,6 +162,8 @@ void *Scheduler::retry_thread( void *context )
 	Scheduler *scheduler = (Scheduler *)context;
 	Event *event;
 	
+	mysql_thread_init();
+	
 	Logger::Log(LOG_INFO,"%s started",scheduler->self_name);
 	
 	while(1)
@@ -164,6 +181,9 @@ void *Scheduler::retry_thread( void *context )
 		{
 			pthread_mutex_unlock(&scheduler->mutex);
 			pthread_detach(scheduler->retry_thread_handle); // We are not in shutdown status, we won't be joined
+			
+			mysql_thread_end();
+			
 			Logger::Log(LOG_INFO,"%s exited",scheduler->self_name);
 			return 0;
 		}
@@ -178,6 +198,9 @@ void *Scheduler::retry_thread( void *context )
 				if(scheduler->is_shutting_down)
 				{
 					Logger::Log(LOG_NOTICE,"Shutdown in progress exiting %s",scheduler->self_name);
+					
+					mysql_thread_end();
+					
 					return 0; // Shutdown in progress
 				}
 				
@@ -186,6 +209,9 @@ void *Scheduler::retry_thread( void *context )
 				if(scheduler->is_shutting_down)
 				{
 					Logger::Log(LOG_NOTICE,"Shutdown in progress exiting %s",scheduler->self_name);
+					
+					mysql_thread_end();
+					
 					return 0; // Shutdown in progress
 				}
 				

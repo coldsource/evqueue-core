@@ -36,6 +36,16 @@ RetrySchedules::RetrySchedules()
 	Reload();
 }
 
+RetrySchedules::~RetrySchedules()
+{
+	// Clean current tasks
+	std::map<std::string,RetrySchedule *>::iterator it;
+	for(it=schedules.begin();it!=schedules.end();++it)
+		delete it->second;
+	
+	schedules.clear();
+}
+
 void RetrySchedules::Reload(void)
 {
 	Logger::Log(LOG_NOTICE,"[ RetrySchedules ] Reloading schedules definitions");

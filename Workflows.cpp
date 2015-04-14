@@ -36,6 +36,16 @@ Workflows::Workflows()
 	Reload();
 }
 
+Workflows::~Workflows()
+{
+	// Clean current tasks
+	std::map<std::string,Workflow *>::iterator it;
+	for(it=workflows.begin();it!=workflows.end();++it)
+		delete it->second;
+	
+	workflows.clear();
+}
+
 void Workflows::Reload(void)
 {
 	Logger::Log(LOG_NOTICE,"[ Workflows ] Reloading workflows definitions");

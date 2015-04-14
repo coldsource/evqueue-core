@@ -38,6 +38,7 @@ class Tasks
 	public:
 		
 		Tasks();
+		~Tasks();
 		
 		static Tasks *GetInstance() { return instance; }
 		

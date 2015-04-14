@@ -116,7 +116,7 @@ QueuePool::~QueuePool(void)
 	{
 		for(i=0;i<pool_size;i++)
 			if(queue[i]!=0)
-				delete[] queue[i];
+				delete queue[i];
 		delete[] queue;
 	}
 	

@@ -47,6 +47,7 @@ class Scheduler
 	
 	public:
 		Scheduler();
+		virtual ~Scheduler();
 		
 		void InsertEvent(Event *new_event);
 		void Flush(bool use_filter = false);

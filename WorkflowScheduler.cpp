@@ -63,6 +63,18 @@ WorkflowScheduler::~WorkflowScheduler()
 	
 	if(wfs_executing_instances)
 		delete[] wfs_executing_instances;
+	
+	// Delete workflows schedules
+	Event *tmp;
+	Event *event = first_event;
+	while(event)
+	{
+		tmp = event;
+		event = event->next_event;
+		
+		ScheduledWorkflow *scheduled_wf = (ScheduledWorkflow *)tmp;
+		delete scheduled_wf->workflow_schedule;
+	}
 }
 
 void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, unsigned int workflow_instance_id)
@@ -86,7 +98,7 @@ void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, un
 	}
 	else
 	{
-		// This schedule has a running workflow instance, put it executing instances
+		// This schedule has a running workflow instance, put it in executing instances
 		int i = lookup_wfs(workflow_schedule->GetID());
 		if(i!=-1)
 		{
@@ -178,6 +190,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
 	}
 	
+	delete scheduled_wf->workflow_schedule;
 	delete scheduled_wf;
 }
 

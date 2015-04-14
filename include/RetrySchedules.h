@@ -38,6 +38,7 @@ class RetrySchedules
 	public:
 		
 		RetrySchedules();
+		~RetrySchedules();
 		
 		static RetrySchedules *GetInstance() { return instance; }
 		

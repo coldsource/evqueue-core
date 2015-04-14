@@ -29,9 +29,12 @@ class ProcessManager
 		struct st_msgbuf
 		{
 			long type;
-			pid_t pid;
-			pid_t tid;
-			char retcode;
+			
+			struct {
+				pid_t pid;
+				pid_t tid;
+				char retcode;
+			} mtext;
 		};
 		
 		int msgqid;

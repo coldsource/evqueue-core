@@ -323,8 +323,25 @@ int main(int argc,const char **argv)
 				gc->WaitForShutdown();
 				
 				// All threads have exited, we can cleanly exit
+				delete stats;
+				delete retrier;
+				delete scheduler;
+				delete pool;
+				delete workflow_instances;
+				delete workflows;
+				delete tasks;
+				delete retry_schedules;
+				delete pm;
+				delete gc;
+				
+				XQillaPlatformUtils::terminate();
+				mysql_library_end();
+				
+				
 				unlink(config->Get("core.pidfile"));
 				Logger::Log(LOG_NOTICE,"Clean exit");
+				delete logger;
+				
 				return 0;
 			}
 			

@@ -38,6 +38,7 @@ class Workflows
 	public:
 		
 		Workflows();
+		~Workflows();
 		
 		static Workflows *GetInstance() { return instance; }
 		

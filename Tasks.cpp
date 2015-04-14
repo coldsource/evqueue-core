@@ -36,6 +36,16 @@ Tasks::Tasks()
 	Reload();
 }
 
+Tasks::~Tasks()
+{
+	// Clean current tasks
+	std::map<std::string,Task *>::iterator it;
+	for(it=tasks.begin();it!=tasks.end();++it)
+		delete it->second;
+	
+	tasks.clear();
+}
+
 void Tasks::Reload(void)
 {
 	Logger::Log(LOG_NOTICE,"[ Tasks ] Reloading tasks definitions");

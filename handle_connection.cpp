@@ -53,9 +53,11 @@ void *handle_connection(void *sp)
 	struct timeval tv;
 	
 	tv.tv_sec = config->GetInt("network.rcv.timeout");
+	tv.tv_usec = 0;
 	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
 	tv.tv_sec = config->GetInt("network.snd.timeout");
+	tv.tv_usec = 0;
 	setsockopt(s, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
 	socklen_t remote_addr_len;
@@ -76,6 +78,9 @@ void *handle_connection(void *sp)
 	SAX2XMLReader *parser = 0;
 	SocketQuerySAX2Handler* saxh = 0;
 	NetworkInputSource *source = 0;
+	
+	// Init mysql library
+	mysql_thread_init();
 	
 	try
 	{
@@ -304,6 +309,8 @@ void *handle_connection(void *sp)
 			delete source;
 		
 		close(s);
+		
+		mysql_thread_end();
 		
 		return retval;
 		

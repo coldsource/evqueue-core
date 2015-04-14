@@ -31,9 +31,12 @@
 struct st_msgbuf
 {
 	long type;
-	pid_t pid;
-	pid_t tid;
-	char retcode;
+	
+	struct {
+		pid_t pid;
+		pid_t tid;
+		char retcode;
+	} mtext;
 };
 
 pid_t pid = 0;
@@ -197,8 +200,12 @@ int main(int argc,char ** argv)
 	else
 		retcode = -1;
 	
-	st_msgbuf msgbuf = {1,getpid(),tid,retcode};
-	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf),0); // Notify evqueue
+	st_msgbuf msgbuf;
+	msgbuf.type = 1;
+	msgbuf.mtext.pid = getpid();
+	msgbuf.mtext.tid = tid;
+	msgbuf.mtext.retcode = retcode;
+	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0); // Notify evqueue
 	
 	return retcode;
 }
