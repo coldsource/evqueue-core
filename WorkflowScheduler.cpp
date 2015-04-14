@@ -189,8 +189,9 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		if(workflow_terminated)
 			delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
 	}
+	else if(reason==FLUSH)
+		delete scheduled_wf->workflow_schedule;
 	
-	delete scheduled_wf->workflow_schedule;
 	delete scheduled_wf;
 }
 
