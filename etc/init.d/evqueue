@@ -19,7 +19,7 @@ export LANG=en_US.UTF-8
 NAME=evqueue
 # Daemon name, where is the actual executable
 DAEMON=/usr/bin/evqueue
-DAEMON_ARGS="/etc/evqueue.conf"
+CONFIG_FILE="/etc/evqueue.conf"
 # pid file for the daemon
 PIDFILE=/var/run/evqueue/evqueue.pid
 DEFAULTS_FILE=/etc/default/evqueue
