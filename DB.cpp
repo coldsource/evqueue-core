@@ -54,6 +54,7 @@ DB::DB(void)
 
 	// Initialisation de mysql
 	mysql = mysql_init(0);
+	mysql_options(mysql, MYSQL_SET_CHARSET_NAME, "UTF8");
 
 	// Connection à la base
 	if(!mysql_real_connect(mysql,config->Get("mysql.host"),config->Get("mysql.user"),config->Get("mysql.password"),config->Get("mysql.database"),0,0,0))
@@ -61,8 +62,6 @@ DB::DB(void)
 
 	res=0;
 	is_copy = false;
-
-	Query("SET NAMES 'UTF8'");
 }
 
 DB::~DB(void)
