@@ -52,6 +52,7 @@
 #include <Tasks.h>
 #include <RetrySchedules.h>
 #include <GarbageCollector.h>
+#include <SequenceGenerator.h>
 #include <handle_connection.h>
 
 #include <xqilla/xqilla-dom3.hpp>
@@ -181,6 +182,9 @@ int main(int argc,const char **argv)
 		fprintf(pidfile,"%d\n",getpid());
 		fclose(pidfile);
 		
+		// Instanciate sequence generator, used for savepoint level 0 or 1
+		SequenceGenerator *seq = new SequenceGenerator();
+		
 		// Create statistics counter
 		Statistics *stats = new Statistics();
 		
@@ -228,6 +232,10 @@ int main(int argc,const char **argv)
 					delete workflow_instance;
 			}
 		}
+		
+		// On level 0 or 1, executing workflows are only stored during engine restart. Purge them since they are resumed
+		if(Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level")<=1)
+			db.Query("DELETE FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
 		
 		// Load workflow schedules
 		db.Query("SELECT ws.workflow_schedule_id, w.workflow_name, wi.workflow_instance_id FROM t_workflow_schedule ws LEFT JOIN t_workflow_instance wi ON(wi.workflow_schedule_id=ws.workflow_schedule_id AND wi.workflow_instance_status='EXECUTING') INNER JOIN t_workflow w ON(ws.workflow_id=w.workflow_id) WHERE ws.workflow_schedule_active=1");
@@ -333,6 +341,7 @@ int main(int argc,const char **argv)
 				delete retry_schedules;
 				delete pm;
 				delete gc;
+				delete seq;
 				
 				XQillaPlatformUtils::terminate();
 				mysql_library_end();

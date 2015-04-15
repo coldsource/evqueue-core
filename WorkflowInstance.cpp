@@ -35,6 +35,7 @@
 #include <Task.h>
 #include <RetrySchedules.h>
 #include <RetrySchedule.h>
+#include <SequenceGenerator.h>
 #include <global.h>
 
 #include <xqilla/xqilla-dom3.hpp>
@@ -58,7 +59,6 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 {
 	DB db;
 	char buf[256+WORKFLOW_NAME_MAXLEN];
-	unsigned int workflow_id;
 	
 	init();
 	
@@ -233,6 +233,10 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 					db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",&this->workflow_instance_id,parameter_name,parameter_value);
 			}
 		}
+		else
+		{
+			this->workflow_instance_id = SequenceGenerator::GetInstance()->GetInc();
+		}
 		
 		// Save workflow
 		record_savepoint();
@@ -260,10 +264,9 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id)
 {
 	DB db;
-	unsigned int workflow_id;
 	
 	// Check workflow exists
-	db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_id='%i'",&workflow_instance_id);
+	db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_schedule_id, workflow_id FROM t_workflow_instance WHERE workflow_instance_id='%i'",&workflow_instance_id);
 
 	if(!db.FetchRow())
 		throw Exception("WorkflowInstance","Unknown workflow instance");
@@ -302,6 +305,8 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id)
 	
 	// Load workflow schedule if necessary
 	workflow_schedule_id = db.GetFieldInt(1);
+	
+	workflow_id = db.GetFieldInt(2);
 
 	pthread_mutex_init(&lock,0);
 	
@@ -962,7 +967,7 @@ void WorkflowInstance::init(void)
 	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
 	
 	savepoint_level = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level");
-	if(savepoint_level<0 || savepoint_level>=3)
+	if(savepoint_level<0 || savepoint_level>3)
 		savepoint_level = 0;
 	
 	savepoint_retry = Configuration::GetInstance()->GetBool("workflowinstance.savepoint.retry.enable");
@@ -1475,12 +1480,12 @@ bool WorkflowInstance::workflow_ended(void)
 
 void WorkflowInstance::record_savepoint(bool force)
 {
-	if(!force && savepoint_level==0)
-		return; // Never record savepoints
-	
 	// Also workflow XML attributes if necessary
 	if(XMLString::compareString(X("TERMINATED"),xmldoc->getDocumentElement()->getAttribute(X("status")))==0)
 	{
+		if(savepoint_level==0)
+			return; // Even in forced mode we won't store terminated workflows on level 0
+		
 		char buf[32];
 		format_datetime(buf);
 		xmldoc->getDocumentElement()->setAttribute(X("end_time"),X(buf));
@@ -1493,6 +1498,22 @@ void WorkflowInstance::record_savepoint(bool force)
 	
 	XMLCh *savepoint = serializer->writeToString(xmldoc->getDocumentElement());
 	char *savepoint_c = XMLString::transcode(savepoint);
+	
+	// Gather workflow values
+	char *workflow_instance_host_c, *workflow_instance_start_c, *workflow_instance_end_c, *workflow_instance_status_c;
+	if(xmldoc->getDocumentElement()->hasAttribute(X("host")))
+		workflow_instance_host_c = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("host")));
+	else
+		workflow_instance_host_c = 0;
+	
+	workflow_instance_start_c = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("start_time")));
+	
+	if(xmldoc->getDocumentElement()->hasAttribute(X("end_time")))
+		workflow_instance_end_c = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("end_time")));
+	else
+		workflow_instance_end_c = 0;
+	
+	workflow_instance_status_c = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("status")));
 	
 	int tries = 0;
 	do
@@ -1507,11 +1528,28 @@ void WorkflowInstance::record_savepoint(bool force)
 		{
 			DB db;
 			
-			db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",savepoint_c,&workflow_instance_id);
-			
-			// Also update workflow status if necessary
-			if(XMLString::compareString(X("TERMINATED"),xmldoc->getDocumentElement()->getAttribute(X("status")))==0)
-				db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",&error_tasks,&workflow_instance_id);
+			if(savepoint_level>=2)
+			{
+				// Workflow has already been insterted into database, just update
+				if(XMLString::compareString(X("TERMINATED"),xmldoc->getDocumentElement()->getAttribute(X("status")))!=0)
+				{
+					// Only update savepoint if workflow is still running
+					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",savepoint_c,&workflow_instance_id);
+				}
+				else
+				{
+					// Update savepoint and status if workflow is terminated
+					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",savepoint_c,&error_tasks,&workflow_instance_id);
+				}
+			}
+			else
+			{
+				// Always insert full informations as we are called at workflow end or when engine restarts
+				db.QueryPrintf("\
+					INSERT INTO t_workflow_instance(workflow_instance_id,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_start,workflow_instance_end,workflow_instance_status,workflow_instance_errors,workflow_instance_savepoint)\
+					VALUES(%i,%i,%i,%s,%s,%s,%s,%i,%s)",
+					&workflow_instance_id,&workflow_id,&workflow_schedule_id,workflow_instance_host_c,workflow_instance_start_c,workflow_instance_end_c?workflow_instance_end_c:"0000-00-00 00:00:00",workflow_instance_status_c,&error_tasks,savepoint_c);
+			}
 			
 			break;
 		}
@@ -1526,6 +1564,14 @@ void WorkflowInstance::record_savepoint(bool force)
 	
 	XMLString::release(&savepoint);
 	XMLString::release(&savepoint_c);
+	if(workflow_instance_host_c)
+		XMLString::release(&workflow_instance_host_c);
+	if(workflow_instance_start_c)
+		XMLString::release(&workflow_instance_start_c);
+	if(workflow_instance_end_c)
+		XMLString::release(&workflow_instance_end_c);
+	if(workflow_instance_status_c)
+		XMLString::release(&workflow_instance_status_c);
 }
 
 void WorkflowInstance::format_datetime(char *str)

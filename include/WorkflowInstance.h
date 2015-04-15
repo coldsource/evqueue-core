@@ -35,6 +35,7 @@ class WorkflowInstance
 		DOMLSSerializer *serializer;
 		DOMXPathNSResolver *resolver;
 		
+		unsigned int workflow_id;
 		unsigned int workflow_instance_id;
 		unsigned int running_tasks,retrying_tasks,error_tasks;
 		
