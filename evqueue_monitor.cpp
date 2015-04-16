@@ -55,7 +55,10 @@ void signal_callback_handler(int signum)
 int main(int argc,char ** argv)
 {
 	if(argc<=2)
+	{
+		fprintf(stderr,"evqueue_monitor should only be called by evqueue engine\n");
 		return -1;
+	}
 	
 	// Catch signals
 	signal(SIGTERM,signal_callback_handler);
