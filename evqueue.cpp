@@ -54,6 +54,7 @@
 #include <GarbageCollector.h>
 #include <SequenceGenerator.h>
 #include <handle_connection.h>
+#include <tools.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -107,6 +108,8 @@ int main(int argc,const char **argv)
 			config_filename = argv[i+1];
 			i++;
 		}
+		else if(strcmp(argv[i],"--remove-ipcq")==0)
+			return tools_destroy_queue();
 		else
 		{
 			fprintf(stderr,"Unknown option : %s\n",argv[i]);
