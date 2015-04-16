@@ -108,8 +108,10 @@ int main(int argc,const char **argv)
 			config_filename = argv[i+1];
 			i++;
 		}
-		else if(strcmp(argv[i],"--remove-ipcq")==0)
-			return tools_destroy_queue();
+		else if(strcmp(argv[i],"--ipcq-remove")==0)
+			return tools_queue_destroy();
+		else if(strcmp(argv[i],"--ipcq-stats")==0)
+			return tools_queue_stats();
 		else
 		{
 			fprintf(stderr,"Unknown option : %s\n",argv[i]);

@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <stdio.h>
 
-int tools_destroy_queue()
+static int openipcq()
 {
 	int msgqid = msgget(PROCESS_MANAGER_MSGQID,0);
 	if(msgqid==-1)
@@ -21,6 +21,15 @@ int tools_destroy_queue()
 		
 		return -1;
 	}
+	
+	return msgqid;
+}
+
+int tools_queue_destroy()
+{
+	int msgqid = openipcq();
+	if(msgqid==-1)
+		return -1;
 	
 	int re = msgctl(msgqid,IPC_RMID,0);
 	if(re!=0)
@@ -38,9 +47,28 @@ int tools_destroy_queue()
 	return 0;
 }
 
+int tools_queue_stats()
+{
+int msgqid = openipcq();
+	if(msgqid==-1)
+		return -1;
+	
+	struct msqid_ds ipcq_stats;
+	int re = msgctl(msgqid,IPC_STAT,&ipcq_stats);
+	if(re!=0)
+	{
+		fprintf(stderr,"Unknown error trying to get message queue statistics: %d\n",errno);
+		return -1;
+	}
+	
+	printf("Queue size : %d\n",ipcq_stats.msg_qbytes);
+	printf("Pending messages : %d\n",ipcq_stats.msg_qnum);
+}
+
 void tools_print_usage()
 {
 	fprintf(stderr,"Usage :\n");
-	fprintf(stderr,"  Launch evqueue  : evqueue (--daemon) --config <path to config file>\n");
-	fprintf(stderr,"  Clean IPC queue : evqueue --remove-ipcq\n");
+	fprintf(stderr,"  Launch evqueue      : evqueue (--daemon) --config <path to config file>\n");
+	fprintf(stderr,"  Clean IPC queue     : evqueue --ipcq-remove\n");
+	fprintf(stderr,"  Get IPC queue stats : evqueue --ipcq-stats\n");
 }
