@@ -97,6 +97,8 @@ QueuePool::QueuePool(void)
 	fork_possible = !IsLocked();
 	pthread_mutex_unlock(&mutex);
 	
+	fork_locked = false;
+	
 	instance = this;
 }
 
