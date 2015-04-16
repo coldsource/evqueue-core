@@ -113,14 +113,14 @@ int main(int argc,const char **argv)
 		else
 		{
 			fprintf(stderr,"Unknown option : %s\n",argv[i]);
-			fprintf(stderr,"Usage : evqueue (--daemon) --config <path to config file>\n");
+			tools_print_usage();
 			return -1;
 		}
 	}
 	
 	if(config_filename==0)
 	{
-		fprintf(stderr,"Usage : evqueue (--daemon) --config <path to config file>\n");
+		tools_print_usage();
 		return -1;
 	}
 	

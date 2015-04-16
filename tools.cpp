@@ -37,3 +37,10 @@ int tools_destroy_queue()
 	
 	return 0;
 }
+
+void tools_print_usage()
+{
+	fprintf(stderr,"Usage :\n");
+	fprintf(stderr,"  Launch evqueue  : evqueue (--daemon) --config <path to config file>\n");
+	fprintf(stderr,"  Clean IPC queue : evqueue --remove-ipcq\n");
+}
