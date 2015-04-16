@@ -47,6 +47,8 @@
 #include <sys/msg.h>
 #include <arpa/inet.h>
 
+volatile bool ProcessManager::is_shutting_down=false;
+
 ProcessManager::ProcessManager()
 {
 	Configuration *config = Configuration::GetInstance();
@@ -144,7 +146,7 @@ void *ProcessManager::Gather(void *process_manager)
 	
 	Logger::Log(LOG_NOTICE,"Gatherer started");
 	
-	while(msgrcv(pm->msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0,0))
+	while(msgrcv(pm->msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0,0)>0)
 	{
 		pid = msgbuf.mtext.pid;
 		tid = msgbuf.mtext.tid;
@@ -152,6 +154,12 @@ void *ProcessManager::Gather(void *process_manager)
 		
 		if(pid==0)
 		{
+			if(!is_shutting_down)
+			{
+				Logger::Log(LOG_WARNING,"Received shutdown signal but no shutdown in progress, ignoring...");
+				continue;
+			}
+			
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Gatherer");
 			
 			mysql_thread_end();
@@ -207,10 +215,16 @@ void *ProcessManager::Gather(void *process_manager)
 		if(output)
 			delete[] output;
 	}
+	
+	Logger::Log(LOG_CRIT,"[ ProcessManager ] msgrcv() returned error %d, exiting Gatherer",errno);
+	mysql_thread_end();
+	return 0;
 }
 
 void ProcessManager::Shutdown(void)
 {
+	is_shutting_down = true;
+	
 	QueuePool *qp = QueuePool::GetInstance();
 	qp->Shutdown(); // Shutdown forker
 	

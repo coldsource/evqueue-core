@@ -44,6 +44,8 @@ class ProcessManager
 		char *log_filename;
 		bool logs_delete;
 		
+		static volatile bool is_shutting_down;
+		
 		pthread_t forker_thread_handle;
 		pthread_t gatherer_thread_handle;
 		
