@@ -681,17 +681,24 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 	parameters->release();
 	
 	// Prepare pipe for SDTIN
-	XMLCh *stdin_parameter = 0;
 	char *stdin_parameter_c = 0;
 	
 	parameters = xmldoc->evaluate(X("stdin"),task_node,resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
 	
 	if(parameters->isNode())
 	{
-		stdin_parameter = serializer->writeToString(parameters->getNodeValue());
-		stdin_parameter_c = XMLString::transcode(stdin_parameter);
-		
-		XMLString::release(&stdin_parameter);
+		DOMElement *stdin_node = (DOMElement *)parameters->getNodeValue();
+		if(stdin_node->hasAttribute(X("mode")) && XMLString::compareString(X("text"),stdin_node->getAttribute(X("mode")))==0)
+		{
+			const XMLCh *stdin_parameter = stdin_node->getTextContent();
+			stdin_parameter_c = XMLString::transcode(stdin_parameter);
+		}
+		else
+		{
+			XMLCh *stdin_parameter = serializer->writeToString(stdin_node);
+			stdin_parameter_c = XMLString::transcode(stdin_parameter);
+			XMLString::release(&stdin_parameter);
+		}
 	}
 	
 	parameters->release();
