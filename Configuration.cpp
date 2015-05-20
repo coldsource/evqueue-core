@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CONFIGURATION_ENTRIES 33
+#define CONFIGURATION_ENTRIES 37
 
 static const char *default_configuration[]={
 	"core.gid","0",
@@ -34,8 +34,10 @@ static const char *default_configuration[]={
 	"gc.limit","1000",
 	"gc.logs.retention","7",
 	"gc.workflowinstance.retention","30",
-	"logger.db.enable","no",
+	"logger.db.enable","yes",
+	"logger.db.filter","LOG_WARNING",
 	"logger.syslog.enable","yes",
+	"logger.syslog.filter","LOG_NOTICE",
 	"mysql.database","queueing",
 	"mysql.host","localhost",
 	"mysql.password","",
@@ -45,6 +47,8 @@ static const char *default_configuration[]={
 	"network.listen.backlog","64",
 	"network.rcv.timeout","30",
 	"network.snd.timeout","30",
+	"notifications.tasks.directory",".",
+	"notifications.tasks.timeout","5",
 	"processmanager.errlogs.directory","errlogs",
 	"processmanager.errlogs.enable","no",
 	"processmanager.logs.delete","yes",
