@@ -48,12 +48,12 @@ Configuration *ConfigurationReader::Read(const char *filename)
 			len=strlen(line);
 			
 			// Trim line
-			if(line[len-1]=='\n')
+			if(len && line[len-1]=='\n')
 			{
 				line[len-1]='\0';
 				len--;
 			}
-			if(line[len-1]=='\r')
+			if(len && line[len-1]=='\r')
 			{
 				line[len-1]='\0';
 				len--;
