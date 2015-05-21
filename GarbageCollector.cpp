@@ -51,6 +51,8 @@ GarbageCollector::GarbageCollector()
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 		pthread_create(&gc_thread_handle, &attr, &GarbageCollector::gc_thread,this);
+		
+		pthread_setname_np(gc_thread_handle,"garbage_collect");
 	}
 }
 
