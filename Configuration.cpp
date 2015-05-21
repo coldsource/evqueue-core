@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CONFIGURATION_ENTRIES 37
+#define CONFIGURATION_ENTRIES 38
 
 static const char *default_configuration[]={
 	"core.gid","0",
@@ -47,6 +47,7 @@ static const char *default_configuration[]={
 	"network.listen.backlog","64",
 	"network.rcv.timeout","30",
 	"network.snd.timeout","30",
+	"notifications.monitor.path","/usr/local/bin/evqueue_notification_monitor",
 	"notifications.tasks.directory",".",
 	"notifications.tasks.timeout","5",
 	"processmanager.errlogs.directory","errlogs",
