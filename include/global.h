@@ -32,4 +32,17 @@
 
 extern int listen_socket; // Global because we must close it in children
 
+#include <unistd.h>
+
+struct st_msgbuf
+{
+	long type;
+	
+	struct {
+		pid_t pid;
+		pid_t tid;
+		char retcode;
+	} mtext;
+};
+
 #endif
