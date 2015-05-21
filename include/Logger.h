@@ -28,13 +28,18 @@ class Logger
 		static Logger *instance;
 		
 		bool log_syslog;
+		int syslog_filter;
 		bool log_db;
+		int db_filter;
 	
 	public:
 		Logger();
 		static Logger *GetInstance() { return instance; }
 		
-	static void Log(int level,const char *msg,...);
+		static void Log(int level,const char *msg,...);
+		
+	private:
+		int parse_log_level(const char* log_level);
 };
 
 #endif

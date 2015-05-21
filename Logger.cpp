@@ -20,6 +20,7 @@
 #include <Logger.h>
 #include <Configuration.h>
 #include <DB.h>
+#include <Exception.h>
 
 #include <string.h>
 #include <syslog.h>
@@ -34,8 +35,10 @@ Logger::Logger()
 	Configuration *config = Configuration::GetInstance();
 	
 	log_syslog = Configuration::GetInstance()->GetBool("logger.syslog.enable");
+	syslog_filter = parse_log_level(Configuration::GetInstance()->Get("logger.syslog.filter"));
 	
 	log_db = Configuration::GetInstance()->GetBool("logger.db.enable");
+	db_filter = parse_log_level(Configuration::GetInstance()->Get("logger.db.filter"));
 	
 	instance = this;
 }
@@ -53,12 +56,34 @@ void Logger::Log(int level,const char *msg,...)
 	if(n<0)
 		return;
 	
-	if(instance->log_syslog)
+	if(instance->log_syslog && level<=instance->syslog_filter)
 		syslog(LOG_NOTICE,"%s",buf);
 	
-	if(instance->log_db)
+	if(instance->log_db && level<=instance->db_filter)
 	{
 		DB db;
 		db.QueryPrintf("INSERT INTO t_log(log_level,log_message,log_timestamp) VALUES(%i,%s,NOW())",&level,buf);
 	}
+}
+
+int Logger::parse_log_level(const char* log_level)
+{
+	if(strcmp(log_level,"LOG_EMERG")==0)
+		return LOG_EMERG;
+	else if(strcmp(log_level,"LOG_ALERT")==0)
+		return LOG_ALERT;
+	else if(strcmp(log_level,"LOG_CRIT")==0)
+		return LOG_CRIT;
+	else if(strcmp(log_level,"LOG_ERR")==0)
+		return LOG_ERR;
+	else if(strcmp(log_level,"LOG_WARNING")==0)
+		return LOG_WARNING;
+	else if(strcmp(log_level,"LOG_NOTICE")==0)
+		return LOG_NOTICE;
+	else if(strcmp(log_level,"LOG_INFO")==0)
+		return LOG_INFO;
+	else if(strcmp(log_level,"LOG_DEBUG")==0)
+		return LOG_DEBUG;
+	
+	throw Exception("Logger","Unknown filter level");
 }
