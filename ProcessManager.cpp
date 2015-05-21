@@ -71,11 +71,13 @@ ProcessManager::ProcessManager()
 	pthread_attr_init(&thread_attr);
 	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
 	pthread_create(&forker_thread_handle,&thread_attr,ProcessManager::Fork,this);
+	pthread_setname_np(forker_thread_handle,"forker");
 	
 	// Start gatherer
 	pthread_attr_init(&thread_attr);
 	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
 	pthread_create(&gatherer_thread_handle,&thread_attr,ProcessManager::Gather,this);
+	pthread_setname_np(gatherer_thread_handle,"gatherer");
 }
 
 ProcessManager::~ProcessManager()
@@ -169,51 +171,72 @@ void *ProcessManager::Gather(void *process_manager)
 		
 		waitpid(pid,&status,0); // We only do this to avoid zombie processes (retcode has already been returned by the task monitor)
 		
-		// Fetch task output in log file before releasing tid
-		sprintf(pm->log_filename,"%s/%d.log",pm->logs_directory,tid);
-		f = fopen(pm->log_filename,"r");
-		
-		if(f)
+		if(msgbuf.type==1)
 		{
-			// Get file size
-			fseek(f,0,SEEK_END);
-			log_size = ftell(f);
+			// Fetch task output in log file before releasing tid
+			sprintf(pm->log_filename,"%s/%d.log",pm->logs_directory,tid);
+			f = fopen(pm->log_filename,"r");
 			
-			// Read output log
-			fseek(f,0,SEEK_SET);
-			output = new char[log_size+1];
-			fread(output,1,log_size,f);
-			output[log_size] = '\0';
+			if(f)
+			{
+				// Get file size
+				fseek(f,0,SEEK_END);
+				log_size = ftell(f);
+				
+				// Read output log
+				fseek(f,0,SEEK_SET);
+				output = new char[log_size+1];
+				fread(output,1,log_size,f);
+				output[log_size] = '\0';
+				
+				fclose(f);
+			}
+			else
+			{
+				output = 0;
+				
+				Logger::Log(LOG_WARNING,"[ ProcessManager ] Could not read task output for pid %d",pid);
+			}
 			
-			fclose(f);
+			if(pm->logs_delete)
+				unlink(pm->log_filename); // Delete log file since it is not usefull anymore
+			
+			// Get task informations
+			if(!QueuePool::GetInstance()->TerminateTask(tid,&workflow_instance,&task))
+			{
+				Logger::Log(LOG_WARNING,"[ ProcessManager ] Got exit message from pid %d (tid %d) but could not get corresponding workflow instance",pid,tid);
+				continue; // Oops task was not found, this can happen on resume when tables have been cleaned
+			}
+			
+			if(output)
+				workflow_instance->TaskStop(task,retcode,output,&workflow_terminated);
+			else
+				workflow_instance->TaskStop(task,-1,"[ ProcessManager ] Could not read task log, setting retcode to -1 to block subjobs",&workflow_terminated);
+			
+			if(workflow_terminated)
+				delete workflow_instance;
+			
+			if(output)
+				delete[] output;
 		}
-		else
+		
+		if(msgbuf.type==2)
 		{
-			output = 0;
-			
-			Logger::Log(LOG_WARNING,"[ ProcessManager ] Could not read task output for pid %d",pid);
+			// Notification task
+			if(tid==0)
+			{
+				if(retcode!=0)
+					Logger::Log(LOG_WARNING,"Notification task %d returned code %d",pid,retcode);
+				else
+					Logger::Log(LOG_NOTICE,"Notification task %d executed successuflly",pid);
+			}
+			else if(tid==1)
+				Logger::Log(LOG_WARNING,"Notification task %d was killed",pid);
+			else if(tid==2)
+				Logger::Log(LOG_WARNING,"Notification task %d timed out",pid);
+			else if(tid==3)
+				Logger::Log(LOG_ALERT,"Notification task %d could not be forked",pid);
 		}
-		
-		if(pm->logs_delete)
-			unlink(pm->log_filename); // Delete log file since it is not usefull anymore
-		
-		// Get task informations
-		if(!QueuePool::GetInstance()->TerminateTask(tid,&workflow_instance,&task))
-		{
-			Logger::Log(LOG_WARNING,"[ ProcessManager ] Got exit message from pid %d (tid %d) but could not get corresponding workflow instance",pid,tid);
-			continue; // Oops task was not found, this can happen on resume when tables have been cleaned
-		}
-		
-		if(output)
-			workflow_instance->TaskStop(task,retcode,output,&workflow_terminated);
-		else
-			workflow_instance->TaskStop(task,-1,"[ ProcessManager ] Could not read task log, setting retcode to -1 to block subjobs",&workflow_terminated);
-		
-		if(workflow_terminated)
-			delete workflow_instance;
-		
-		if(output)
-			delete[] output;
 	}
 	
 	Logger::Log(LOG_CRIT,"[ ProcessManager ] msgrcv() returned error %d, exiting Gatherer",errno);

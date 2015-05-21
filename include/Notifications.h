@@ -17,37 +17,36 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _PROCESS_MANAGER_H_
-#define _PROCESS_MANAGER_H_
+#ifndef _NOTIFICATIONS_H_
+#define _NOTIFICATIONS_H_
 
-#include <sys/types.h>
+#include <map>
+#include <string>
 #include <pthread.h>
 
-class ProcessManager
+class Notification;
+class WorkflowInstance;
+
+class Notifications
 {
 	private:
-		int msgqid;
+		static Notifications *instance;
 		
-		const char *logs_directory;
-		unsigned int logs_directory_len;
-		char *log_filename;
-		bool logs_delete;
+		pthread_mutex_t lock;
 		
-		static volatile bool is_shutting_down;
-		
-		pthread_t forker_thread_handle;
-		pthread_t gatherer_thread_handle;
-		
+		std::map<unsigned int,Notification *> notifications;
+	
 	public:
-		ProcessManager();
-		~ProcessManager();
 		
-		pid_t ExecuteTask(const char *binary);
-		static void *Fork(void *context);
-		static void *Gather(void *context);
+		Notifications();
+		~Notifications();
 		
-		void Shutdown(void);
-		void WaitForShutdown(void);
+		static Notifications *GetInstance() { return instance; }
+		
+		void Reload(void);
+		Notification GetNotification(unsigned int id);
+		
+		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
 };
 
 #endif

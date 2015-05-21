@@ -20,6 +20,10 @@
 #ifndef _WORKFLOW_H_
 #define _WORKFLOW_H_
 
+#include <vector>
+
+using namespace std;
+
 class DB;
 
 class Workflow
@@ -27,6 +31,8 @@ class Workflow
 	unsigned int workflow_id;
 	char *workflow_name;
 	char *workflow_xml;
+	
+	vector<unsigned int> notifications;
 		
 	public:
 		Workflow();
@@ -39,6 +45,7 @@ class Workflow
 		unsigned int GetID() { return workflow_id; }
 		const char *GetName() { return workflow_name; }
 		const char *GetXML() { return workflow_xml; }
+		vector<unsigned int> GetNotifications() { return notifications; }
 	
 	private:
 		void free(void);

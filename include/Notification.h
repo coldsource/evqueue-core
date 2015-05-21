@@ -17,37 +17,34 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _PROCESS_MANAGER_H_
-#define _PROCESS_MANAGER_H_
+#ifndef _NOTIFICATION_H_
+#define _NOTIFICATION_H_
 
-#include <sys/types.h>
-#include <pthread.h>
+#include <unistd.h>
 
-class ProcessManager
+#include <string>
+
+class DB;
+class WorkflowInstance;
+
+class Notification
 {
-	private:
-		int msgqid;
-		
-		const char *logs_directory;
-		unsigned int logs_directory_len;
-		char *log_filename;
-		bool logs_delete;
-		
-		static volatile bool is_shutting_down;
-		
-		pthread_t forker_thread_handle;
-		pthread_t gatherer_thread_handle;
-		
+	std::string notification_monitor_path;
+	std::string notification_binary;
+	std::string notification_name;
+	std::string notification_configuration;
+	
 	public:
-		ProcessManager();
-		~ProcessManager();
+
+		Notification(DB *db,unsigned int notification_id);
 		
-		pid_t ExecuteTask(const char *binary);
-		static void *Fork(void *context);
-		static void *Gather(void *context);
+		const char *GetBinary() { return notification_binary.c_str(); }
+		const char *GetConfiguration() { return notification_configuration.c_str(); }
 		
-		void Shutdown(void);
-		void WaitForShutdown(void);
+		void Call(WorkflowInstance *workflow_instance);
+	
+	private:
+		void free(void);
 };
 
 #endif

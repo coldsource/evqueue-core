@@ -29,7 +29,7 @@ Workflow::Workflow()
 	workflow_name = 0;
 	workflow_xml = 0;
 }
-
+#include <stdio.h>
 Workflow::Workflow(DB *db,const char *workflow_name)
 {
 	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml FROM t_workflow WHERE workflow_name=%s",workflow_name);
@@ -44,6 +44,10 @@ Workflow::Workflow(DB *db,const char *workflow_name)
 	
 	workflow_xml = new char[strlen(db->GetField(2))+1];
 	strcpy(workflow_xml,db->GetField(2));
+	
+	db->QueryPrintf("SELECT notification_id FROM t_workflow_notification WHERE workflow_id=%i",&workflow_id);
+	while(db->FetchRow())
+		notifications.push_back(db->GetFieldInt(0));
 }
 
 Workflow::Workflow(const Workflow &workflow)
@@ -55,6 +59,8 @@ Workflow::Workflow(const Workflow &workflow)
 	
 	workflow_xml = new char[strlen(workflow.workflow_xml)+1];
 	strcpy(workflow_xml,workflow.workflow_xml);
+	
+	notifications = workflow.notifications;
 }
 
 Workflow::~Workflow()
@@ -73,6 +79,8 @@ Workflow &Workflow::operator=(const Workflow &workflow)
 	
 	workflow_xml = new char[strlen(workflow.workflow_xml)+1];
 	strcpy(workflow_xml,workflow.workflow_xml);
+	
+	notifications = workflow.notifications;
 }
 
 void Workflow::free(void)
