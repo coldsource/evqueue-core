@@ -59,6 +59,11 @@ void Sockets::CloseSockets()
 	pthread_mutex_unlock(&lock);
 }
 
+unsigned int Sockets::GetNumber()
+{
+	return sockets.size();
+}
+
 void Sockets::Lock()
 {
 	pthread_mutex_lock(&lock);

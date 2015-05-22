@@ -43,6 +43,8 @@ class Sockets
 		void UnregisterSocket(int s);
 		void CloseSockets();
 		
+		unsigned int GetNumber(); 
+		
 		void Lock();
 		void Unlock();
 };

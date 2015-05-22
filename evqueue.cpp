@@ -331,7 +331,7 @@ int main(int argc,const char **argv)
 			throw Exception("core","Unable to listen on socket");
 		Logger::Log(LOG_NOTICE,"Listen backlog set to %d",config->GetInt("network.listen.backlog"));
 		
-		char *ptr,*parameters;
+		unsigned int max_conn = config->GetInt("network.connections.max");
 		
 		Logger::Log(LOG_NOTICE,"Accepting connection on port %s",config->Get("network.bind.port"));
 		
@@ -392,6 +392,16 @@ int main(int argc,const char **argv)
 				delete logger;
 				
 				return 0;
+			}
+			
+			// Check for max connections
+			if(sockets->GetNumber()==max_conn)
+			{
+				close(s);
+				
+				Logger::Log(LOG_WARNING,"Max connections reached, dropping connection");
+				
+				continue;
 			}
 			
 			// Register socket so it can be closed on fork

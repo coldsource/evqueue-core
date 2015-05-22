@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CONFIGURATION_ENTRIES 38
+#define CONFIGURATION_ENTRIES 39
 
 static const char *default_configuration[]={
 	"core.gid","0",
@@ -44,6 +44,7 @@ static const char *default_configuration[]={
 	"mysql.user","",
 	"network.bind.ip","127.0.0.1",
 	"network.bind.port","5000",
+	"network.connections.max","128",
 	"network.listen.backlog","64",
 	"network.rcv.timeout","30",
 	"network.snd.timeout","30",
