@@ -25,6 +25,7 @@
 #include <sys/msg.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 static int openipcq()
 {
@@ -100,6 +101,7 @@ int ipc_send_exit_msg(int type,int tid,char retcode)
 	
 	st_msgbuf msgbuf;
 	msgbuf.type = type;
+	memset(&msgbuf.mtext,0,sizeof(st_msgbuf::mtext));
 	msgbuf.mtext.pid = getpid();
 	msgbuf.mtext.tid = tid;
 	msgbuf.mtext.retcode = retcode;
