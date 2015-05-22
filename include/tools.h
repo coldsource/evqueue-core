@@ -23,5 +23,6 @@
 int tools_queue_destroy();
 int tools_queue_stats();
 void tools_print_usage();
+int ipc_send_exit_msg(int type,char retcode);
 
 #endif

@@ -24,6 +24,7 @@
 #include <Logger.h>
 #include <WorkflowInstance.h>
 #include <Sockets.h>
+#include <tools.h>
 #include <global.h>
 
 #include <string.h>
@@ -82,6 +83,7 @@ void Notification::Call(WorkflowInstance *workflow_instance)
 		
 		execl(notification_monitor_path.c_str(),notification_monitor_path.c_str(),notification_binary.c_str(),str_timeout,str_instance_id,str_errors,(char *)0);
 		
+		ipc_send_exit_msg(2,-1);
 		exit(-1);
 	}
 	
