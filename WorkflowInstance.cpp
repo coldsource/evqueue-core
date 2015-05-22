@@ -38,6 +38,7 @@
 #include <SequenceGenerator.h>
 #include <Notifications.h>
 #include <Sockets.h>
+#include <tools.h>
 #include <global.h>
 
 #include <xqilla/xqilla-dom3.hpp>
