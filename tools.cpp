@@ -80,8 +80,8 @@ int msgqid = openipcq();
 		return -1;
 	}
 	
-	printf("Queue size : %d\n",ipcq_stats.msg_qbytes);
-	printf("Pending messages : %d\n",ipcq_stats.msg_qnum);
+	printf("Queue size : %ld\n",ipcq_stats.msg_qbytes);
+	printf("Pending messages : %ld\n",ipcq_stats.msg_qnum);
 }
 
 void tools_print_usage()

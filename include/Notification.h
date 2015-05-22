@@ -17,29 +17,34 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _LOGGER_H_
-#define _LOGGER_H_
+#ifndef _NOTIFICATION_H_
+#define _NOTIFICATION_H_
 
-#include <syslog.h>
+#include <unistd.h>
 
-class Logger
+#include <string>
+
+class DB;
+class WorkflowInstance;
+
+class Notification
 {
-	private:
-		static Logger *instance;
-		
-		bool log_syslog;
-		int syslog_filter;
-		bool log_db;
-		int db_filter;
+	std::string notification_monitor_path;
+	std::string notification_binary;
+	std::string notification_name;
+	std::string notification_configuration;
 	
 	public:
-		Logger();
-		static Logger *GetInstance() { return instance; }
+
+		Notification(DB *db,unsigned int notification_id);
 		
-		static void Log(int level,const char *msg,...);
+		const char *GetBinary() { return notification_binary.c_str(); }
+		const char *GetConfiguration() { return notification_configuration.c_str(); }
 		
+		void Call(WorkflowInstance *workflow_instance);
+	
 	private:
-		int parse_log_level(const char* log_level);
+		void free(void);
 };
 
 #endif

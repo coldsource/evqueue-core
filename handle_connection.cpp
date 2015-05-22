@@ -30,6 +30,7 @@
 #include <WorkflowInstances.h>
 #include <Logger.h>
 #include <Configuration.h>
+#include <Sockets.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
@@ -300,7 +301,6 @@ void *handle_connection(void *sp)
 	}
 	catch (void *retval)
 	{
-		
 		if (parser!=0)
 			delete parser;
 		if (saxh!=0)
@@ -308,7 +308,7 @@ void *handle_connection(void *sp)
 		if (source)
 			delete source;
 		
-		close(s);
+		Sockets::GetInstance()->UnregisterSocket(s);
 		
 		mysql_thread_end();
 		

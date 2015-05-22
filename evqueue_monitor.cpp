@@ -28,17 +28,6 @@
 #include <sys/msg.h>
 #include <sys/wait.h>
 
-struct st_msgbuf
-{
-	long type;
-	
-	struct {
-		pid_t pid;
-		pid_t tid;
-		char retcode;
-	} mtext;
-};
-
 pid_t pid = 0;
 
 void signal_callback_handler(int signum)
@@ -70,11 +59,8 @@ int main(int argc,char ** argv)
 	
 	pid_t tid = atoi(argv[2]);
 	int status;
-	char retcode;
 	
 	pid = fork();
-	if(pid<0)
-		return -1;
 	
 	if(pid==0)
 	{
@@ -197,18 +183,27 @@ int main(int argc,char ** argv)
 		return -1;
 	}
 	
-	waitpid(pid,&status,0);
-	if(WIFEXITED(status))
-		retcode = WEXITSTATUS(status);
-	else
-		retcode = -1;
-	
 	st_msgbuf msgbuf;
 	msgbuf.type = 1;
 	msgbuf.mtext.pid = getpid();
 	msgbuf.mtext.tid = tid;
-	msgbuf.mtext.retcode = retcode;
+	
+	if(pid<0)
+	{
+		fprintf(stderr,"Unable to execute fork\n");
+		
+		msgbuf.mtext.retcode = -1;
+	}
+	else
+	{
+		waitpid(pid,&status,0);
+		if(WIFEXITED(status))
+			msgbuf.mtext.retcode = WEXITSTATUS(status);
+		else
+			msgbuf.mtext.retcode = -1;
+	}
+	
 	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0); // Notify evqueue
 	
-	return retcode;
+	return msgbuf.mtext.retcode;
 }

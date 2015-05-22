@@ -17,29 +17,34 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _LOGGER_H_
-#define _LOGGER_H_
+#ifndef _SOCKETS_H_
+#define _SOCKETS_H_
 
-#include <syslog.h>
+#include <pthread.h>
 
-class Logger
+#include <set>
+
+using namespace std;
+
+class Sockets
 {
-	private:
-		static Logger *instance;
-		
-		bool log_syslog;
-		int syslog_filter;
-		bool log_db;
-		int db_filter;
+	set<int> sockets;
+	
+	static Sockets *instance;
+	
+	pthread_mutex_t lock;
 	
 	public:
-		Logger();
-		static Logger *GetInstance() { return instance; }
+		Sockets();
 		
-		static void Log(int level,const char *msg,...);
+		static Sockets *GetInstance() { return instance; }
 		
-	private:
-		int parse_log_level(const char* log_level);
+		void RegisterSocket(int s);
+		void UnregisterSocket(int s);
+		void CloseSockets();
+		
+		void Lock();
+		void Unlock();
 };
 
 #endif

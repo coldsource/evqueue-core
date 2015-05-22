@@ -23,7 +23,10 @@
 #include <xercesc/dom/DOM.hpp>
 #include <pthread.h>
 
+#include <vector>
+
 using namespace xercesc;
+using namespace std;
 
 class WorkflowParameters;
 class WorkflowSchedule;
@@ -40,6 +43,8 @@ class WorkflowInstance
 		unsigned int running_tasks,retrying_tasks,error_tasks;
 		
 		unsigned int workflow_schedule_id;
+		
+		vector<unsigned int> notifications;
 		
 		bool is_cancelling;
 		
@@ -73,6 +78,7 @@ class WorkflowInstance
 		~WorkflowInstance();
 		
 		unsigned int GetInstanceID() { return workflow_instance_id; }
+		unsigned int GetErrors() { return error_tasks; }
 		
 		void Start(bool *workflow_terminated);
 		void Resume(bool *workflow_terminated);

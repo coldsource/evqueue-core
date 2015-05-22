@@ -36,6 +36,8 @@
 #include <RetrySchedules.h>
 #include <RetrySchedule.h>
 #include <SequenceGenerator.h>
+#include <Notifications.h>
+#include <Sockets.h>
 #include <global.h>
 
 #include <xqilla/xqilla-dom3.hpp>
@@ -69,6 +71,7 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 	Workflow workflow = Workflows::GetInstance()->GetWorkflow(workflow_name);
 
 	workflow_id = workflow.GetID();
+	notifications = workflow.GetNotifications();
 	
 	parser = 0;
 	serializer = 0;
@@ -318,6 +321,10 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id)
 
 WorkflowInstance::~WorkflowInstance()
 {
+	// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
+	for(int i = 0; i < notifications.size(); i++)
+		Notifications::GetInstance()->Call(notifications.at(i),this);
+	
 	// Unregister new instance to ensure noone is still using it
 	WorkflowInstances::GetInstance()->Remove(workflow_instance_id);
 	
@@ -712,8 +719,6 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 	if(pid==0)
 	{
 		setsid(); // This is used to avoid CTRL+C killing all child processes
-		
-		close(listen_socket); // Close listen socket in child to allow process to restart when children are still running
 		
 		pid = getpid();
 		sprintf(tid_str,"%d",tid);

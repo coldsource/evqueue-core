@@ -53,12 +53,14 @@
 #include <RetrySchedules.h>
 #include <GarbageCollector.h>
 #include <SequenceGenerator.h>
+#include <Notifications.h>
+#include <Sockets.h>
 #include <handle_connection.h>
 #include <tools.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
-int listen_socket;
+int listen_socket = -1;
 
 void signal_callback_handler(int signum)
 {
@@ -83,6 +85,9 @@ void signal_callback_handler(int signum)
 		
 		Workflows *workflows = Workflows::GetInstance();
 		workflows->Reload();
+		
+		Notifications *notifications = Notifications::GetInstance();
+		notifications->Reload();
 	}
 	else if(signum==SIGUSR1)
 	{
@@ -90,6 +95,27 @@ void signal_callback_handler(int signum)
 		Retrier *retrier = Retrier::GetInstance();
 		retrier->Flush();
 	}
+}
+
+void fork_parent_pre_handler(void)
+{
+	// We must fork with sockets locked to prevent operations on it during fork
+	Sockets::GetInstance()->Lock();
+}
+
+void fork_parent_post_handler(void)
+{
+	// We entered the child in locked state, it is now safe to unlock
+	Sockets::GetInstance()->Unlock();
+}
+
+void fork_child_handler(void)
+{
+	// We entered in locked state, unlock before following calls
+	Sockets::GetInstance()->Unlock();
+	
+	close(listen_socket); // Close listen socket in child to allow process to restart when children are still running
+	Sockets::GetInstance()->CloseSockets(); // Close all open sockets to prevent hanged connections
 }
 
 int main(int argc,const char **argv)
@@ -208,6 +234,9 @@ int main(int argc,const char **argv)
 		// Instanciate workflows list
 		Workflows *workflows = new Workflows();
 		
+		// Instanciate notifications map
+		Notifications *notifications = new Notifications();
+		
 		// Instanciate tasks list
 		Tasks *tasks = new Tasks();
 		
@@ -266,6 +295,10 @@ int main(int argc,const char **argv)
 		
 		// Start garbage GarbageCollector
 		GarbageCollector *gc = new GarbageCollector();
+		
+		// Create sockets set
+		Sockets *sockets = new Sockets();
+		pthread_atfork(fork_parent_pre_handler,fork_parent_post_handler,fork_child_handler);
 		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
@@ -342,11 +375,13 @@ int main(int argc,const char **argv)
 				delete pool;
 				delete workflow_instances;
 				delete workflows;
+				delete notifications;
 				delete tasks;
 				delete retry_schedules;
 				delete pm;
 				delete gc;
 				delete seq;
+				delete sockets;
 				
 				XQillaPlatformUtils::terminate();
 				mysql_library_end();
@@ -358,6 +393,9 @@ int main(int argc,const char **argv)
 				
 				return 0;
 			}
+			
+			// Register socket so it can be closed on fork
+			sockets->RegisterSocket(s);
 			
 			sp = new int;
 			*sp = s;

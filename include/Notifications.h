@@ -17,29 +17,36 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _LOGGER_H_
-#define _LOGGER_H_
+#ifndef _NOTIFICATIONS_H_
+#define _NOTIFICATIONS_H_
 
-#include <syslog.h>
+#include <map>
+#include <string>
+#include <pthread.h>
 
-class Logger
+class Notification;
+class WorkflowInstance;
+
+class Notifications
 {
 	private:
-		static Logger *instance;
+		static Notifications *instance;
 		
-		bool log_syslog;
-		int syslog_filter;
-		bool log_db;
-		int db_filter;
+		pthread_mutex_t lock;
+		
+		std::map<unsigned int,Notification *> notifications;
 	
 	public:
-		Logger();
-		static Logger *GetInstance() { return instance; }
 		
-		static void Log(int level,const char *msg,...);
+		Notifications();
+		~Notifications();
 		
-	private:
-		int parse_log_level(const char* log_level);
+		static Notifications *GetInstance() { return instance; }
+		
+		void Reload(void);
+		Notification GetNotification(unsigned int id);
+		
+		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
 };
 
 #endif

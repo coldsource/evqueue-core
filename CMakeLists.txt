@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(evqueue)
 
-add_executable(evqueue evqueue.cpp Configuration.cpp ConfigurationReader.cpp DB.cpp Exception.cpp Queue.cpp QueuePool.cpp WorkflowInstance.cpp WorkflowInstances.cpp Scheduler.cpp Retrier.cpp SocketQuerySAX2Handler.cpp ProcessManager.cpp WorkflowParameters.cpp handle_connection.cpp Statistics.cpp NetworkInputSource.cpp BinNetworkInputStream.cpp Schedule.cpp WorkflowSchedule.cpp WorkflowScheduler.cpp Tasks.cpp Task.cpp Workflow.cpp Workflows.cpp Logger.cpp GarbageCollector.cpp RetrySchedule.cpp RetrySchedules.cpp SequenceGenerator.cpp tools.cpp)
+add_executable(evqueue evqueue.cpp Configuration.cpp ConfigurationReader.cpp DB.cpp Exception.cpp Queue.cpp QueuePool.cpp WorkflowInstance.cpp WorkflowInstances.cpp Scheduler.cpp Retrier.cpp SocketQuerySAX2Handler.cpp ProcessManager.cpp WorkflowParameters.cpp handle_connection.cpp Statistics.cpp NetworkInputSource.cpp BinNetworkInputStream.cpp Schedule.cpp WorkflowSchedule.cpp WorkflowScheduler.cpp Tasks.cpp Task.cpp Workflow.cpp Workflows.cpp Logger.cpp GarbageCollector.cpp RetrySchedule.cpp RetrySchedules.cpp SequenceGenerator.cpp tools.cpp Notification.cpp Notifications.cpp Sockets.cpp)
 
 include_directories(include /usr/include)
 
@@ -12,13 +12,23 @@ target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue xqilla)
 target_link_libraries(evqueue rt)
 
+
+
 project(evqueue_monitor)
 
 add_executable(evqueue_monitor evqueue_monitor.cpp)
 
 include_directories(include /usr/include)
 
-install(TARGETS evqueue evqueue_monitor DESTINATION bin)
+
+
+project(evqueue_notification_monitor)
+
+add_executable(evqueue_notification_monitor evqueue_notification_monitor.cpp)
+
+include_directories(include /usr/include)
+
+install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor DESTINATION bin)
 install(FILES etc/evqueue.conf DESTINATION /etc)
 install(FILES etc/init.d/evqueue DESTINATION /etc/init.d PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 install(FILES etc/default/evqueue DESTINATION /etc/default PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)

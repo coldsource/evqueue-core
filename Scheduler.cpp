@@ -70,6 +70,7 @@ void Scheduler::InsertEvent(Event *new_event)
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 		pthread_create(&retry_thread_handle, &attr, &Scheduler::retry_thread,this);
+		pthread_setname_np(retry_thread_handle,self_name);
 	}
 	else if (new_event->scheduled_at < first_event->scheduled_at)
 	{

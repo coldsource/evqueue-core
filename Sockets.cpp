@@ -17,29 +17,54 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _LOGGER_H_
-#define _LOGGER_H_
+#include <Sockets.h>
 
-#include <syslog.h>
+#include <unistd.h>
 
-class Logger
+Sockets *Sockets::instance = 0;
+
+Sockets::Sockets()
 {
-	private:
-		static Logger *instance;
-		
-		bool log_syslog;
-		int syslog_filter;
-		bool log_db;
-		int db_filter;
+	pthread_mutex_init(&lock, NULL);
 	
-	public:
-		Logger();
-		static Logger *GetInstance() { return instance; }
-		
-		static void Log(int level,const char *msg,...);
-		
-	private:
-		int parse_log_level(const char* log_level);
-};
+	instance = this;
+}
 
-#endif
+void Sockets::RegisterSocket(int s)
+{
+	pthread_mutex_lock(&lock);
+	
+	sockets.insert(s);
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Sockets::UnregisterSocket(int s)
+{
+	pthread_mutex_lock(&lock);
+	
+	sockets.erase(s);
+	close(s);
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Sockets::CloseSockets()
+{
+	pthread_mutex_lock(&lock);
+	
+	for(set<int>::iterator it=sockets.begin();it!=sockets.end();it++)
+		close(*it);
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Sockets::Lock()
+{
+	pthread_mutex_lock(&lock);
+}
+
+void Sockets::Unlock()
+{
+	pthread_mutex_unlock(&lock);
+}

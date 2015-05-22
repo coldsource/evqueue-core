@@ -26,17 +26,6 @@
 class ProcessManager
 {
 	private:
-		struct st_msgbuf
-		{
-			long type;
-			
-			struct {
-				pid_t pid;
-				pid_t tid;
-				char retcode;
-			} mtext;
-		};
-		
 		int msgqid;
 		
 		const char *logs_directory;
