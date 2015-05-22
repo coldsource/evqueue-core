@@ -87,6 +87,14 @@ ProcessManager::~ProcessManager()
 
 void *ProcessManager::Fork(void *process_manager)
 {
+	// Block signals
+	sigset_t signal_mask;
+	sigemptyset(&signal_mask);
+	sigaddset(&signal_mask, SIGINT);
+	sigaddset(&signal_mask, SIGTERM);
+	sigaddset(&signal_mask, SIGHUP);
+	pthread_sigmask(SIG_BLOCK, &signal_mask, NULL);
+	
 	ProcessManager *pm = (ProcessManager *)process_manager;
 	QueuePool *qp = QueuePool::GetInstance();
 	WorkflowInstance *workflow_instance;
@@ -130,6 +138,14 @@ void *ProcessManager::Fork(void *process_manager)
 
 void *ProcessManager::Gather(void *process_manager)
 {
+	// Block signals
+	sigset_t signal_mask;
+	sigemptyset(&signal_mask);
+	sigaddset(&signal_mask, SIGINT);
+	sigaddset(&signal_mask, SIGTERM);
+	sigaddset(&signal_mask, SIGHUP);
+	pthread_sigmask(SIG_BLOCK, &signal_mask, NULL);
+	
 	ProcessManager *pm = (ProcessManager *)process_manager;
 	
 	char *output;
