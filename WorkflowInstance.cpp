@@ -57,6 +57,8 @@ extern pthread_mutex_t main_mutex;
 extern pthread_cond_t fork_lock;
 extern bool fork_locked,fork_possible;
 
+using namespace std;
+
 WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const char *workflow_host, const char *workflow_user)
 {
 	DB db;
@@ -512,14 +514,16 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 				// Task returned successfully but XML is invalid. Unable to continue as following tasks might need XML output
 				if(errlogs)
 				{
-					char *errlog_filename = new char[errlogs_directory_len+32];
-					sprintf(errlog_filename,"%s/%d-XXXXXX.log",errlogs_directory,workflow_instance_id);
+					char *errlog_filename = new char[errlogs_directory.length()+32];
+					sprintf(errlog_filename,"%s/%d-XXXXXX.log",errlogs_directory.c_str(),workflow_instance_id);
 					
 					int fno = mkstemps(errlog_filename,4);
 					write(fno,output,strlen(output));
 					close(fno);
 					
 					Logger::Log(LOG_WARNING,"[WID %d] Invalid XML returned, output has been saved as %s",workflow_instance_id,errlog_filename);
+					
+					delete[] errlog_filename;
 				}
 				
 				((DOMElement *)task_node)->setAttribute(X("status"),X("ABORTED"));
@@ -597,7 +601,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 
 pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_terminated)
 {
-	char *log_filename,*task_filename,buf[32],tid_str[16];
+	char buf[32],tid_str[16];
 	char *task_name_c;
 	int parameters_pipe[2];
 	Task task;
@@ -724,27 +728,22 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		sprintf(tid_str,"%d",tid);
 		
 		// Compute task filename
+		string task_filename;
 		if(task.IsAbsolutePath())
-		{
-			task_filename = new char[strlen(task.GetBinary())+16];
-			strcpy(task_filename,task.GetBinary());
-		}
+			task_filename = task.GetBinary();
 		else
-		{
-			task_filename = new char[tasks_directory_len+strlen(task.GetBinary())+16];
-			sprintf(task_filename,"%s/%s",tasks_directory,task.GetBinary());
-		}
+			task_filename = tasks_directory+"/"+task.GetBinary();
 		
-		if(task.GetWorkingDirectory())
-			setenv("EVQUEUE_WORKING_DIRECTORY",task.GetWorkingDirectory(),true);
+		if(!task.GetWorkingDirectory().empty())
+			setenv("EVQUEUE_WORKING_DIRECTORY",task.GetWorkingDirectory().c_str(),true);
 		
 		// Set SSH variables for remote execution if needed by task
-		if(task.GetHost())
+		if(!task.GetHost().empty())
 		{
-			setenv("EVQUEUE_SSH_HOST",task.GetHost(),true);
+			setenv("EVQUEUE_SSH_HOST",task.GetHost().c_str(),true);
 		
-			if(task.GetUser())
-				setenv("EVQUEUE_SSH_USER",task.GetUser(),true);
+			if(!task.GetUser().empty())
+				setenv("EVQUEUE_SSH_USER",task.GetUser().c_str(),true);
 		}
 		else if(xmldoc->getDocumentElement()->getAttributes()->getNamedItem(X("host")))
 		{
@@ -775,8 +774,8 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		}
 		
 		// Redirect output to log file
-		log_filename = new char[logs_directory_len+16];
-		sprintf(log_filename,"%s/%d.log",logs_directory,tid);
+		char *log_filename = new char[logs_directory.length()+32];
+		sprintf(log_filename,"%s/%d.log",logs_directory.c_str(),tid);
 		
 		int fno;
 		fno=open(log_filename,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
@@ -801,11 +800,10 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		
 		if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
 		{
-			char **args = new char*[parameters_count+4];
+			const char *args[parameters_count+4];
 			
-			args[0] = new char[monitor_path_len+1];
-			strcpy(args[0],monitor_path);
-			args[1] = task_filename;
+			args[0] = monitor_path.c_str();
+			args[1] = task_filename.c_str();
 			args[2] = tid_str;
 			
 			for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
@@ -813,7 +811,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 			
 			args[parameters_index+3] = (char *)0;
 			
-			execv(monitor_path,args);
+			execv(monitor_path.c_str(),(char * const *)args);
 			
 			Logger::Log(LOG_ERR,"Could not execute task monitor");
 			exit(-1);
@@ -828,7 +826,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 					setenv("DEFAULT_PARAMETER_NAME",parameters_value[parameters_index],1);
 			}
 			
-			execl(monitor_path,monitor_path,task_filename,tid_str,(char *)0);
+			execl(monitor_path.c_str(),monitor_path.c_str(),task_filename.c_str(),tid_str,(char *)0);
 			
 			Logger::Log(LOG_ERR,"Could not execute task monitor");
 			exit(-1);
@@ -963,18 +961,12 @@ bool WorkflowInstance::KillTask(pid_t pid)
 void WorkflowInstance::init(void)
 {
 	logs_directory = Configuration::GetInstance()->Get("processmanager.logs.directory");
-	logs_directory_len = strlen(logs_directory);
 	
 	errlogs =  Configuration::GetInstance()->GetBool("processmanager.errlogs.enable");
-	
 	errlogs_directory =  Configuration::GetInstance()->Get("processmanager.errlogs.directory");
-	errlogs_directory_len = strlen(errlogs_directory);
 	
 	tasks_directory = Configuration::GetInstance()->Get("processmanager.tasks.directory");
-	tasks_directory_len = strlen(tasks_directory);
-	
 	monitor_path = Configuration::GetInstance()->Get("processmanager.monitor.path");
-	monitor_path_len = strlen(monitor_path);
 	
 	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
 	

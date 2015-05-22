@@ -20,6 +20,8 @@
 #ifndef _TASK_H_
 #define _TASK_H_
 
+#include <string>
+
 namespace task_parameters_mode { enum task_parameters_mode {ENV,CMDLINE,UNKNOWN}; }
 namespace task_output_method { enum task_output_method {XML,TEXT,UNKNOWN}; }
 
@@ -27,31 +29,24 @@ class DB;
 
 class Task
 {
-	char *task_binary;
-	char *task_wd;
-	char *task_user;
-	char *task_host;
+	std::string task_binary;
+	std::string task_wd;
+	std::string task_user;
+	std::string task_host;
 	task_parameters_mode::task_parameters_mode parameters_mode;
 	task_output_method::task_output_method output_method;
 		
 	public:
 		Task();
-		Task(DB *db,const char *task_name);
-		Task(const Task &task);
-		~Task();
+		Task(DB *db,const std::string &task_name);
 		
-		Task &operator=(const Task &task);
-		
-		const char *GetBinary() { return task_binary; }
-		const char *GetWorkingDirectory() { return task_wd; }
-		const char *GetUser() { return task_user; }
-		const char *GetHost() { return task_host; }
-		bool IsAbsolutePath() { return task_binary[0]=='/'?true:false; }
-		task_parameters_mode::task_parameters_mode GetParametersMode() { return parameters_mode; }
-		task_output_method::task_output_method GetOutputMethod() { return output_method; }
-	
-	private:
-		void free(void);
+		const std::string GetBinary() const { return task_binary.c_str(); }
+		const std::string GetWorkingDirectory() const { return task_wd; }
+		const std::string GetUser() const { return task_user; }
+		const std::string GetHost() const { return task_host; }
+		bool IsAbsolutePath() const { return task_binary[0]=='/'?true:false; }
+		task_parameters_mode::task_parameters_mode GetParametersMode() const  { return parameters_mode; }
+		task_output_method::task_output_method GetOutputMethod() const  { return output_method; }
 };
 
 #endif

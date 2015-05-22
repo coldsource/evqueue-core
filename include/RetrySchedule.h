@@ -20,24 +20,19 @@
 #ifndef _RETRYSCHEDULE_H_
 #define _RETRYSCHEDULE_H_
 
+#include <string>
+
 class DB;
 
 class RetrySchedule
 {
-	char *schedule_xml;
+	std::string schedule_xml;
 		
 	public:
-		RetrySchedule();
+		RetrySchedule() {}
 		RetrySchedule(DB *db,const char *schedule_name);
-		RetrySchedule(const RetrySchedule &schedule);
-		~RetrySchedule();
 		
-		RetrySchedule &operator=(const RetrySchedule &schedule);
-		
-		const char *GetXML() { return schedule_xml; }
-	
-	private:
-		void free(void);
+		const char *GetXML() { return schedule_xml.c_str(); }
 };
 
 #endif

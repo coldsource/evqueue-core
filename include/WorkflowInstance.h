@@ -23,10 +23,10 @@
 #include <xercesc/dom/DOM.hpp>
 #include <pthread.h>
 
+#include <string>
 #include <vector>
 
 using namespace xercesc;
-using namespace std;
 
 class WorkflowParameters;
 class WorkflowSchedule;
@@ -44,24 +44,19 @@ class WorkflowInstance
 		
 		unsigned int workflow_schedule_id;
 		
-		vector<unsigned int> notifications;
+		std::vector<unsigned int> notifications;
 		
 		bool is_cancelling;
 		
 		DOMDocument *xmldoc;
 		
-		const char *logs_directory;
-		unsigned int logs_directory_len;
+		std::string logs_directory;
 		
 		bool errlogs;
-		const char *errlogs_directory;
-		unsigned int errlogs_directory_len;
+		std::string errlogs_directory;
 		
-		const char *tasks_directory;
-		unsigned int tasks_directory_len;
-		
-		const char *monitor_path;
-		unsigned int monitor_path_len;
+		std::string tasks_directory;
+		std::string monitor_path;
 		
 		bool saveparameters;
 		

@@ -21,34 +21,26 @@
 #define _WORKFLOW_H_
 
 #include <vector>
-
-using namespace std;
+#include <string>
 
 class DB;
 
 class Workflow
 {
 	unsigned int workflow_id;
-	char *workflow_name;
-	char *workflow_xml;
+	std::string workflow_name;
+	std::string workflow_xml;
 	
-	vector<unsigned int> notifications;
+	std::vector<unsigned int> notifications;
 		
 	public:
 		Workflow();
 		Workflow(DB *db,const char *workflow_name);
-		Workflow(const Workflow &Workflow);
-		~Workflow();
 		
-		Workflow &operator=(const Workflow &Workflow);
-		
-		unsigned int GetID() { return workflow_id; }
-		const char *GetName() { return workflow_name; }
-		const char *GetXML() { return workflow_xml; }
-		vector<unsigned int> GetNotifications() { return notifications; }
-	
-	private:
-		void free(void);
+		unsigned int GetID() const { return workflow_id; }
+		const char *GetName() const { return workflow_name.c_str(); }
+		const char *GetXML() const { return workflow_xml.c_str(); }
+		std::vector<unsigned int> GetNotifications() const { return notifications; }
 };
 
 #endif

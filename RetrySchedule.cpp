@@ -23,10 +23,7 @@
 
 #include <string.h>
 
-RetrySchedule::RetrySchedule()
-{
-	schedule_xml = 0;
-}
+using namespace std;
 
 RetrySchedule::RetrySchedule(DB *db,const char *schedule_name)
 {
@@ -35,34 +32,5 @@ RetrySchedule::RetrySchedule(DB *db,const char *schedule_name)
 	if(!db->FetchRow())
 		throw Exception("RetrySchedule","Unknown retry schedule");
 	
-	schedule_xml = new char[strlen(db->GetField(0))+1];
-	strcpy(schedule_xml,db->GetField(0));
-}
-
-RetrySchedule::RetrySchedule(const RetrySchedule &schedule)
-{
-	schedule_xml = new char[strlen(schedule.schedule_xml)+1];
-	strcpy(schedule_xml,schedule.schedule_xml);
-}
-
-RetrySchedule::~RetrySchedule()
-{
-	free();
-}
-
-RetrySchedule &RetrySchedule::operator=(const RetrySchedule &schedule)
-{
-	free();
-	
-	schedule_xml = new char[strlen(schedule.schedule_xml)+1];
-	strcpy(schedule_xml,schedule.schedule_xml);
-}
-
-void RetrySchedule::free(void)
-{
-	if(schedule_xml)
-	{
-		delete[] schedule_xml;
-		schedule_xml = 0;
-	}
+	schedule_xml = db->GetField(0);
 }

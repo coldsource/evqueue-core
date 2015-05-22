@@ -20,9 +20,10 @@
 #ifndef _WORKFLOWS_H_
 #define _WORKFLOWS_H_
 
+#include <pthread.h>
+
 #include <map>
 #include <string>
-#include <pthread.h>
 
 class Workflow;
 
