@@ -83,7 +83,7 @@ void Notification::Call(WorkflowInstance *workflow_instance)
 		
 		execl(notification_monitor_path.c_str(),notification_monitor_path.c_str(),notification_binary.c_str(),str_timeout,str_instance_id,str_errors,(char *)0);
 		
-		ipc_send_exit_msg(2,-1);
+		ipc_send_exit_msg(2,0,-1);
 		exit(-1);
 	}
 	

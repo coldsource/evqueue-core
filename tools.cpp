@@ -92,7 +92,7 @@ void tools_print_usage()
 	fprintf(stderr,"  Get IPC queue stats : evqueue --ipcq-stats\n");
 }
 
-int ipc_send_exit_msg(int type,char retcode)
+int ipc_send_exit_msg(int type,int tid,char retcode)
 {
 	int msgqid = msgget(PROCESS_MANAGER_MSGQID,0700 | IPC_CREAT);
 	if(msgqid==-1)
@@ -101,7 +101,7 @@ int ipc_send_exit_msg(int type,char retcode)
 	st_msgbuf msgbuf;
 	msgbuf.type = type;
 	msgbuf.mtext.pid = getpid();
-	msgbuf.mtext.tid = 0;
+	msgbuf.mtext.tid = tid;
 	msgbuf.mtext.retcode = retcode;
 	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }
