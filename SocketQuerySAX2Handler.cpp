@@ -64,6 +64,18 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			{
 				query_type = SocketQuerySAX2Handler::PING;
 			}
+			if(strcmp(node_name_c,"control")==0)
+			{
+				const XMLCh *action_attr = attrs.getValue(X("action"));
+				
+				if(action_attr==0)
+					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node control");
+				
+				if(XMLString::compareString(action_attr,X("reload"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_CONTROL_RELOAD;
+				else
+					throw Exception("SocketQuerySAX2Handler","Unknown control action");
+			}
 			else if(strcmp(node_name_c,"statistics")==0)
 			{
 				const XMLCh *type_attr = attrs.getValue(X("type"));

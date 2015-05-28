@@ -31,6 +31,7 @@
 #include <Logger.h>
 #include <Configuration.h>
 #include <Sockets.h>
+#include <tools.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
@@ -296,6 +297,12 @@ void *handle_connection(void *sp)
 			
 			WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
 			scheduler->SendStatus(s);
+			throw (void *)0;
+		}
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_RELOAD)
+		{
+			tools_config_reload();
+			send(s,"<return status='OK' />",22,0);
 			throw (void *)0;
 		}
 	}

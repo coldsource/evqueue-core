@@ -19,6 +19,12 @@
 
 #include <tools.h>
 #include <global.h>
+#include <Logger.h>
+#include <WorkflowScheduler.h>
+#include <Tasks.h>
+#include <RetrySchedules.h>
+#include <Workflows.h>
+#include <Notifications.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -91,6 +97,26 @@ void tools_print_usage()
 	fprintf(stderr,"  Launch evqueue      : evqueue (--daemon) --config <path to config file>\n");
 	fprintf(stderr,"  Clean IPC queue     : evqueue --ipcq-remove\n");
 	fprintf(stderr,"  Get IPC queue stats : evqueue --ipcq-stats\n");
+}
+
+void tools_config_reload(void)
+{
+	Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading scheduler configuration");
+	
+	WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
+	scheduler->Reload();
+	
+	Tasks *tasks = Tasks::GetInstance();
+	tasks->Reload();
+	
+	RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
+	retry_schedules->Reload();
+	
+	Workflows *workflows = Workflows::GetInstance();
+	workflows->Reload();
+	
+	Notifications *notifications = Notifications::GetInstance();
+	notifications->Reload();
 }
 
 int ipc_send_exit_msg(int type,int tid,char retcode)

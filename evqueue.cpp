@@ -75,22 +75,7 @@ void signal_callback_handler(int signum)
 	}
 	else if(signum==SIGHUP)
 	{
-		Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading scheduler configuration");
-		
-		WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
-		scheduler->Reload();
-		
-		Tasks *tasks = Tasks::GetInstance();
-		tasks->Reload();
-		
-		RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
-		retry_schedules->Reload();
-		
-		Workflows *workflows = Workflows::GetInstance();
-		workflows->Reload();
-		
-		Notifications *notifications = Notifications::GetInstance();
-		notifications->Reload();
+		tools_config_reload();
 	}
 	else if(signum==SIGUSR1)
 	{
