@@ -62,7 +62,7 @@ void Workflows::Reload(void)
 	// Update
 	DB db;
 	DB db2(&db);
-	db.Query("SELECT Workflow_name FROM t_workflow");
+	db.Query("SELECT workflow_name FROM t_workflow");
 	
 	while(db.FetchRow())
 	{
