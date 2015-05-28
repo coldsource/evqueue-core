@@ -412,6 +412,7 @@ int main(int argc,const char **argv)
 				unlink(config->Get("core.pidfile").c_str());
 				Logger::Log(LOG_NOTICE,"Clean exit");
 				delete logger;
+				delete config;
 				
 				return 0;
 			}
