@@ -31,6 +31,8 @@ SocketQuerySAX2Handler::SocketQuerySAX2Handler()
 	workflow_name = 0;
 	workflow_host = 0;
 	workflow_user = 0;
+	file_name = 0;
+	file_data = 0;
 	level = 0;
 	ready = false;
 }
@@ -45,6 +47,12 @@ SocketQuerySAX2Handler::~SocketQuerySAX2Handler()
 	
 	if(workflow_user)
 		XMLString::release(&workflow_user);
+	
+	if(file_name)
+		XMLString::release(&file_name);
+	
+	if(file_data)
+		XMLString::release(&file_data);
 }
 
 
@@ -64,7 +72,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			{
 				query_type = SocketQuerySAX2Handler::PING;
 			}
-			if(strcmp(node_name_c,"control")==0)
+			else if(strcmp(node_name_c,"control")==0)
 			{
 				const XMLCh *action_attr = attrs.getValue(X("action"));
 				
@@ -75,6 +83,40 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					query_type = SocketQuerySAX2Handler::QUERY_CONTROL_RELOAD;
 				else
 					throw Exception("SocketQuerySAX2Handler","Unknown control action");
+			}
+			else if(strcmp(node_name_c,"notification")==0)
+			{
+				const XMLCh *action_attr = attrs.getValue(X("action"));
+				
+				if(action_attr==0)
+					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node notification");
+				
+				if(XMLString::compareString(action_attr,X("put"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUT;
+				else if(XMLString::compareString(action_attr,X("remove"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_REM;
+				else
+					throw Exception("SocketQuerySAX2Handler","Unknown notification action");
+				
+				if(query_type==QUERY_NOTIFICATION_PUT || query_type==QUERY_NOTIFICATION_REM)
+				{
+					const XMLCh *filename_attr = attrs.getValue(X("filename"));
+					
+					if(filename_attr==0)
+						throw Exception("SocketQuerySAX2Handler","Missing filename attribute on node notification");
+					
+					file_name = XMLString::transcode(filename_attr);
+					
+					if(query_type==QUERY_NOTIFICATION_PUT)
+					{
+						const XMLCh *data_attr = attrs.getValue(X("data"));
+						
+						if(data_attr==0)
+							throw Exception("SocketQuerySAX2Handler","Missing data attribute on node notification");
+						
+						file_data = XMLString::transcode(data_attr);
+					}
+				}
 			}
 			else if(strcmp(node_name_c,"statistics")==0)
 			{

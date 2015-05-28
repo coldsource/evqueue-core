@@ -24,6 +24,7 @@
 #include <Logger.h>
 #include <WorkflowInstance.h>
 #include <Sockets.h>
+#include <FileManager.h>
 #include <tools.h>
 #include <global.h>
 
@@ -101,4 +102,14 @@ void Notification::Call(WorkflowInstance *workflow_instance)
 	write(pipe_fd[1],notification_configuration.c_str(),notification_configuration.length());
 	close(pipe_fd[1]);
 	close(pipe_fd[0]);
+}
+
+void Notification::PutFile(const std::string &filename,const std::string &data)
+{
+	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data);
+}
+
+void Notification::RemoveFile(const std::string &filename)
+{
+	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename);
 }

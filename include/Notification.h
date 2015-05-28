@@ -42,6 +42,9 @@ class Notification
 		const char *GetConfiguration() { return notification_configuration.c_str(); }
 		
 		void Call(WorkflowInstance *workflow_instance);
+		
+		static void PutFile(const std::string &filename,const std::string &data);
+		static void RemoveFile(const std::string &filename);
 	
 	private:
 		void free(void);

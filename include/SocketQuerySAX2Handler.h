@@ -33,6 +33,8 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		char *workflow_name;
 		char *workflow_host;
 		char *workflow_user;
+		char *file_name;
+		char *file_data;
 		bool ready;
 		
 		int level;
@@ -50,9 +52,11 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		static const int QUERY_WORKFLOW_WAIT = 8;
 		static const int QUERY_WORKFLOW_KILLTASK = 9;
 		static const int QUERY_CONTROL_RELOAD = 10;
+		static const int QUERY_NOTIFICATION_PUT = 11;
+		static const int QUERY_NOTIFICATION_REM = 12;
 		
-		static const int RESET_GLOBAL_STATS = 11;
-		static const int PING = 12;
+		static const int RESET_GLOBAL_STATS = 13;
+		static const int PING = 14;
 		
 		static const int QUERY_OPTION_MODE_SYNCHRONOUS = 1;
 		static const int QUERY_OPTION_MODE_ASYNCHRONOUS = 2;
@@ -64,13 +68,15 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		void endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname);
 		void endDocument();
 		
-		bool IsReady() {return ready;};
-		int GetQueryType() {return query_type;};
-		int GetQueryOptions() {return query_options;};
-		const char *GetWorkflowName() {return workflow_name;};
+		bool IsReady() { return ready; }
+		int GetQueryType() { return query_type; }
+		int GetQueryOptions() { return query_options; }
+		const char *GetWorkflowName() { return workflow_name; }
 		const char *GetWorkflowHost() { return workflow_host; }
 		const char *GetWorkflowUser() { return workflow_user; }
-		int GetWorkflowId() {return workflow_id;};
+		const char *GetFileName() { return file_name; }
+		const char *GetFileData() { return file_data; }
+		int GetWorkflowId() { return workflow_id; }
 		int GetTaskPID() { return task_pid; }
 		WorkflowParameters *GetWorkflowParameters() {return &params;};
 };
