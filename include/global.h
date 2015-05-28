@@ -45,4 +45,7 @@ struct st_msgbuf
 	} mtext;
 };
 
+// Global MACROS
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
 #endif

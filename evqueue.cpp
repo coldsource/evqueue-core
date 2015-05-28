@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/wait.h>
+#include <sys/un.h>
 #include <arpa/inet.h>
 #include <syslog.h>
 #include <errno.h>
@@ -61,6 +62,7 @@
 #include <xqilla/xqilla-dom3.hpp>
 
 int listen_socket = -1;
+int listen_socket_unix = -1;
 
 void signal_callback_handler(int signum)
 {
@@ -69,6 +71,7 @@ void signal_callback_handler(int signum)
 		// Shutdown requested
 		// Close main listen socket, this will release accept() loop
 		close(listen_socket);
+		close(listen_socket_unix);
 	}
 	else if(signum==SIGHUP)
 	{
@@ -115,6 +118,7 @@ void fork_child_handler(void)
 	Sockets::GetInstance()->Unlock();
 	
 	close(listen_socket); // Close listen socket in child to allow process to restart when children are still running
+	close(listen_socket_unix); // Close listen socket in child to allow process to restart when children are still running
 	Sockets::GetInstance()->CloseSockets(); // Close all open sockets to prevent hanged connections
 }
 
@@ -302,6 +306,7 @@ int main(int argc,const char **argv)
 		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
+		// Create TCP socket
 		int re,s,optval;
 		struct sockaddr_in local_addr,remote_addr;
 		socklen_t remote_addr_len;
@@ -329,19 +334,51 @@ int main(int argc,const char **argv)
 		re=listen(listen_socket,config->GetInt("network.listen.backlog"));
 		if(re==-1)
 			throw Exception("core","Unable to listen on socket");
-		Logger::Log(LOG_NOTICE,"Listen backlog set to %d",config->GetInt("network.listen.backlog"));
-		
-		unsigned int max_conn = config->GetInt("network.connections.max");
+		Logger::Log(LOG_NOTICE,"Listen backlog set to %d (tcp socket)",config->GetInt("network.listen.backlog"));
 		
 		Logger::Log(LOG_NOTICE,"Accepting connection on port %s",config->Get("network.bind.port"));
 		
+		// Create UNIX socket
+		struct sockaddr_un local_addr_unix,remote_addr_unix;
+		socklen_t remote_addr_len_unix;
+		
+		// Create listen socket
+		if(strlen(config->Get("network.bind.path"))>0)
+		{
+			listen_socket_unix=socket(AF_UNIX,SOCK_STREAM,0);
+			
+			// Bind socket
+			local_addr_unix.sun_family=AF_UNIX;
+			strcpy(local_addr_unix.sun_path,config->Get("network.bind.path"));
+			unlink(local_addr_unix.sun_path);
+			re=bind(listen_socket_unix,(struct sockaddr *)&local_addr_unix,sizeof(struct sockaddr_un));
+			if(re==-1)
+				throw Exception("core","Unable to bind unix listen socket");
+			
+			// Listen on socket
+			re=listen(listen_socket_unix,config->GetInt("network.listen.backlog"));
+			if(re==-1)
+				throw Exception("core","Unable to listen on unix socket");
+			Logger::Log(LOG_NOTICE,"Listen backlog set to %d (unix socket)",config->GetInt("network.listen.backlog"));
+			
+			Logger::Log(LOG_NOTICE,"Accepting connection on unix socket %s",config->Get("network.bind.path"));
+		}
+		
+		unsigned int max_conn = config->GetInt("network.connections.max");
+		
 		// Loop for incoming connections
 		int len,*sp;
+		fd_set rfds;
 		while(1)
 		{
-			remote_addr_len=sizeof(struct sockaddr);
-			s = accept(listen_socket,(struct sockaddr *)&remote_addr,&remote_addr_len);
-			if(s<0)
+			FD_ZERO(&rfds);
+			FD_SET(listen_socket,&rfds);
+			if(listen_socket_unix>=0)
+				FD_SET(listen_socket_unix,&rfds);
+			
+			re = select(MAX(listen_socket,listen_socket_unix)+1,&rfds,0,0,0);
+			
+			if(re<0)
 			{
 				if(errno==EINTR)
 					continue; // Interrupted by signal, continue
@@ -393,6 +430,22 @@ int main(int argc,const char **argv)
 				
 				return 0;
 			}
+			
+			if(listen_socket_unix>=0 && FD_ISSET(listen_socket_unix,&rfds))
+			{
+				// Got data on UNIX socket
+				remote_addr_len_unix=sizeof(struct sockaddr);
+				s = accept(listen_socket_unix,(struct sockaddr *)&remote_addr_unix,&remote_addr_len_unix);
+			}
+			else if(FD_ISSET(listen_socket,&rfds))
+			{
+				// Got data on TCP socket
+				remote_addr_len=sizeof(struct sockaddr);
+				s = accept(listen_socket,(struct sockaddr *)&remote_addr,&remote_addr_len);
+			}
+			
+			if(s<0)
+				continue; // We were interrupted or sockets were closed due to shutdown request, loop as select will also return an error
 			
 			// Check for max connections
 			if(sockets->GetNumber()==max_conn)
