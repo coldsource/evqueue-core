@@ -30,7 +30,7 @@ bool base64_decode_file(FILE *f,const char *base64_str)
 		'+','/'
 	};
 	
-	char b64_rev_table[0x80];
+	unsigned char b64_rev_table[0x80];
 	memset(b64_rev_table,'\xFF',64);
 	for(int i=0;i<64;i++)
 		b64_rev_table[b64_table[i]] = i;
