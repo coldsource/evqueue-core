@@ -18,147 +18,88 @@
  */
 
 #include <Configuration.h>
+#include <Exception.h>
 
 #include <string.h>
 #include <stdlib.h>
 
-#define CONFIGURATION_ENTRIES 40
-
-static const char *default_configuration[]={
-	"core.gid","0",
-	"core.pidfile","/var/run/evqueue/evqueue.pid",
-	"core.uid","0",
-	"gc.delay","2",
-	"gc.enable","yes",
-	"gc.interval","43200",
-	"gc.limit","1000",
-	"gc.logs.retention","7",
-	"gc.workflowinstance.retention","30",
-	"logger.db.enable","yes",
-	"logger.db.filter","LOG_WARNING",
-	"logger.syslog.enable","yes",
-	"logger.syslog.filter","LOG_NOTICE",
-	"mysql.database","queueing",
-	"mysql.host","localhost",
-	"mysql.password","",
-	"mysql.user","",
-	"network.bind.ip","127.0.0.1",
-	"network.bind.path","/var/run/evqueue/evqueue.socket",
-	"network.bind.port","5000",
-	"network.connections.max","128",
-	"network.listen.backlog","64",
-	"network.rcv.timeout","30",
-	"network.snd.timeout","30",
-	"notifications.monitor.path","/usr/local/bin/evqueue_notification_monitor",
-	"notifications.tasks.directory",".",
-	"notifications.tasks.timeout","5",
-	"processmanager.errlogs.directory","errlogs",
-	"processmanager.errlogs.enable","no",
-	"processmanager.logs.delete","yes",
-	"processmanager.logs.directory","/tmp",
-	"processmanager.monitor.path","/usr/local/bin/evqueue_monitor",
-	"processmanager.monitor.ssh_key","",
-	"processmanager.monitor.ssh_path","/usr/bin/ssh",
-	"processmanager.tasks.directory",".",
-	"workflowinstance.saveparameters","yes",
-	"workflowinstance.savepoint.level","2",
-	"workflowinstance.savepoint.retry.enable","yes",
-	"workflowinstance.savepoint.retry.times","0",
-	"workflowinstance.savepoint.retry.wait","2",
-	};
+using namespace std;
 
 Configuration *Configuration::instance=0;
 
 Configuration::Configuration(void)
 {
-	entries=new char*[CONFIGURATION_ENTRIES];
-	values=new char*[CONFIGURATION_ENTRIES];
-	
-	for(int i=0;i<CONFIGURATION_ENTRIES;i++)
-	{
-		entries[i]=new char[strlen(default_configuration[i*2])+1];
-		strcpy(entries[i],default_configuration[i*2]);
-		
-		values[i]=new char[strlen(default_configuration[i*2+1])+1];
-		strcpy(values[i],default_configuration[i*2+1]);
-	}
+	// Load default configuration
+	entries["core.gid"] = "0";
+	entries["core.pidfile"] = "/var/run/evqueue/evqueue.pid";
+	entries["core.uid"] = "0";
+	entries["gc.delay"] = "2";
+	entries["gc.enable"] = "yes";
+	entries["gc.interval"] = "43200";
+	entries["gc.limit"] = "1000";
+	entries["gc.logs.retention"] = "7";
+	entries["gc.workflowinstance.retention"] = "30";
+	entries["logger.db.enable"] = "yes";
+	entries["logger.db.filter"] = "LOG_WARNING";
+	entries["logger.syslog.enable"] = "yes";
+	entries["logger.syslog.filter"] = "LOG_NOTICE";
+	entries["mysql.database"] = "queueing";
+	entries["mysql.host"] = "localhost";
+	entries["mysql.password"] = "";
+	entries["mysql.user"] = "";
+	entries["network.bind.ip"] = "127.0.0.1";
+	entries["network.bind.path"] = "/var/run/evqueue/evqueue.socket";
+	entries["network.bind.port"] = "5000";
+	entries["network.connections.max"] = "128";
+	entries["network.listen.backlog"] = "64";
+	entries["network.rcv.timeout"] = "30";
+	entries["network.snd.timeout"] = "30";
+	entries["notifications.monitor.path"] = "/usr/local/bin/evqueue_notification_monitor";
+	entries["notifications.tasks.directory"] = ".";
+	entries["notifications.tasks.timeout"] = "5";
+	entries["processmanager.errlogs.directory"] = "errlogs";
+	entries["processmanager.errlogs.enable"] = "no";
+	entries["processmanager.logs.delete"] = "yes";
+	entries["processmanager.logs.directory"] = "/tmp";
+	entries["processmanager.monitor.path"] = "/usr/local/bin/evqueue_monitor";
+	entries["processmanager.monitor.ssh_key"] = "";
+	entries["processmanager.monitor.ssh_path"] = "/usr/bin/ssh";
+	entries["processmanager.tasks.directory"] = ".";
+	entries["workflowinstance.saveparameters"] = "yes";
+	entries["workflowinstance.savepoint.level"] = "2";
+	entries["workflowinstance.savepoint.retry.enable"] = "yes";
+	entries["workflowinstance.savepoint.retry.times"] = "0";
+	entries["workflowinstance.savepoint.retry.wait"] = "2";
 	
 	instance=this;
 }
 
-Configuration::~Configuration(void)
+bool Configuration::Set(const string &entry,const string &value)
 {
-	for(int i=0;i<CONFIGURATION_ENTRIES;i++)
-	{
-		delete[] entries[i];
-		delete[] values[i];
-	}
-	
-	delete[] entries;
-	delete[] values;
-}
-
-int Configuration::lookup(const char *entry)
-{
-	int cmp,begin,middle,end;
-	
-	begin=0;
-	end=CONFIGURATION_ENTRIES-1;
-	do
-	{
-		middle=(end+begin)/2;
-		cmp=strcmp(entries[middle],entry);
-		if(cmp==0)
-			return middle;
-		if(cmp<0)
-			begin=middle+1;
-		else
-			end=middle-1;
-	}while(begin<=end);
-	
-	return -1;
-}
-
-bool Configuration::Set(const char *entry,const char *value)
-{
-	int i;
-	
-	i=lookup(entry);
-	if(i==-1)
+	if(entries.count(entry)==0)
 		return false;
 	
-	delete[] values[i];
-	values[i]=new char[strlen(value)+1];
-	strcpy(values[i],value);
-	
+	entries[entry] = value;
 	return true;
 }
 
-const char *Configuration::Get(const char *entry)
+const string &Configuration::Get(const string &entry) const
 {
-	int i;
-	
-	i=lookup(entry);
-	if(i==-1)
-		return 0;
-	
-	return values[i];
+	map<string,string>::const_iterator it = entries.find(entry);
+	if(it==entries.end())
+		throw Exception("Configuration","Unknown configuration entry");
+	return it->second;
 }
 
-int Configuration::GetInt(const char *entry)
+int Configuration::GetInt(const string &entry) const
 {
-	const char *value;
-	value=Get(entry);
-	if(value==0)
-		return -1;
-	return atoi(value);
+	return atoi(Get(entry).c_str());
 }
 
-bool Configuration::GetBool(const char *entry)
+bool Configuration::GetBool(const string &entry) const
 {
-	const char *value;
-	value=Get(entry);
-	if(strcasecmp(value,"yes")==0 || strcasecmp(value,"true")==0 || strcasecmp(value,"1")==0)
+	const string value = Get(entry);
+	if(value=="yes" || value=="true" || value=="1")
 		return true;
 	return false;
 }

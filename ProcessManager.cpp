@@ -54,11 +54,10 @@ ProcessManager::ProcessManager()
 	Configuration *config = Configuration::GetInstance();
 	const char *logs_delete_str;
 	logs_directory = config->Get("processmanager.logs.directory");
-	logs_directory_len = strlen(logs_directory);
 	
 	logs_delete = config->GetBool("processmanager.logs.delete");
 	
-	log_filename = new char[logs_directory_len+16];
+	log_filename = new char[logs_directory.length()+16];
 	
 	// Create message queue
 	msgqid = msgget(PROCESS_MANAGER_MSGQID,0700 | IPC_CREAT);
@@ -190,7 +189,7 @@ void *ProcessManager::Gather(void *process_manager)
 		if(msgbuf.type==1)
 		{
 			// Fetch task output in log file before releasing tid
-			sprintf(pm->log_filename,"%s/%d.log",pm->logs_directory,tid);
+			sprintf(pm->log_filename,"%s/%d.log",pm->logs_directory.c_str(),tid);
 			f = fopen(pm->log_filename,"r");
 			
 			if(f)

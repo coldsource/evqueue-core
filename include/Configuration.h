@@ -20,23 +20,22 @@
 #ifndef _CONFIGURATION_H_
 #define _CONFIGURATION_H_
 
+#include <string>
+#include <map>
+
 class Configuration
 {
-	char **entries;
-	char **values;
+	std::map<std::string,std::string> entries;
 	
 	static Configuration *instance;
 	
-	int lookup(const char *entry);
-	
 	public:
 		Configuration(void);
-		~Configuration(void);
 		
-		bool Set(const char *entry,const char *value);
-		const char *Get(const char *entry);
-		int GetInt(const char *entry);
-		bool GetBool(const char *entry);
+		bool Set(const std::string &entry,const std::string &value);
+		const std::string &Get(const std::string &entry) const;
+		int GetInt(const std::string &entry) const;
+		bool GetBool(const std::string &entry) const;
 		
 		static inline Configuration *GetInstance(void) { return instance; }
 };

@@ -175,16 +175,16 @@ int main(int argc,const char **argv)
 		Logger *logger = new Logger();
 		
 		// Open pid file before fork to eventually print errors
-		FILE *pidfile = fopen(config->Get("core.pidfile"),"w");
+		FILE *pidfile = fopen(config->Get("core.pidfile").c_str(),"w");
 		if(pidfile==0)
 			throw Exception("core","Unable to open pid file");
 		
-		int gid = atoi(config->Get("core.gid"));
+		int gid = config->GetInt("core.gid");
 		if(gid!=0 && setgid(gid)!=0)
 			throw Exception("core","Unable to set requested GID");
 		
 		// Set uid/gid if requested
-		int uid = atoi(config->Get("core.uid"));
+		int uid = config->GetInt("core.uid");
 		if(uid!=0 && setuid(uid)!=0)
 			throw Exception("core","Unable to set requested UID");
 		
@@ -306,11 +306,11 @@ int main(int argc,const char **argv)
 		// Bind socket
 		memset(&local_addr,0,sizeof(struct sockaddr_in));
 		local_addr.sin_family=AF_INET;
-		if(strcmp(config->Get("network.bind.ip"),"*")==0)
+		if(config->Get("network.bind.ip")=="*")
 			local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
 		else
-			local_addr.sin_addr.s_addr=inet_addr(config->Get("network.bind.ip"));
-		local_addr.sin_port = htons(atoi(config->Get("network.bind.port")));
+			local_addr.sin_addr.s_addr=inet_addr(config->Get("network.bind.ip").c_str());
+		local_addr.sin_port = htons(config->GetInt("network.bind.port"));
 		re=bind(listen_socket,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
 		if(re==-1)
 			throw Exception("core","Unable to bind listen socket");
@@ -321,20 +321,20 @@ int main(int argc,const char **argv)
 			throw Exception("core","Unable to listen on socket");
 		Logger::Log(LOG_NOTICE,"Listen backlog set to %d (tcp socket)",config->GetInt("network.listen.backlog"));
 		
-		Logger::Log(LOG_NOTICE,"Accepting connection on port %s",config->Get("network.bind.port"));
+		Logger::Log(LOG_NOTICE,"Accepting connection on port %d",config->GetInt("network.bind.port"));
 		
 		// Create UNIX socket
 		struct sockaddr_un local_addr_unix,remote_addr_unix;
 		socklen_t remote_addr_len_unix;
 		
 		// Create listen socket
-		if(strlen(config->Get("network.bind.path"))>0)
+		if(config->Get("network.bind.path").length()>0)
 		{
 			listen_socket_unix=socket(AF_UNIX,SOCK_STREAM,0);
 			
 			// Bind socket
 			local_addr_unix.sun_family=AF_UNIX;
-			strcpy(local_addr_unix.sun_path,config->Get("network.bind.path"));
+			strcpy(local_addr_unix.sun_path,config->Get("network.bind.path").c_str());
 			unlink(local_addr_unix.sun_path);
 			re=bind(listen_socket_unix,(struct sockaddr *)&local_addr_unix,sizeof(struct sockaddr_un));
 			if(re==-1)
@@ -346,7 +346,7 @@ int main(int argc,const char **argv)
 				throw Exception("core","Unable to listen on unix socket");
 			Logger::Log(LOG_NOTICE,"Listen backlog set to %d (unix socket)",config->GetInt("network.listen.backlog"));
 			
-			Logger::Log(LOG_NOTICE,"Accepting connection on unix socket %s",config->Get("network.bind.path"));
+			Logger::Log(LOG_NOTICE,"Accepting connection on unix socket %s",config->Get("network.bind.path").c_str());
 		}
 		
 		unsigned int max_conn = config->GetInt("network.connections.max");
@@ -409,7 +409,7 @@ int main(int argc,const char **argv)
 				mysql_library_end();
 				
 				
-				unlink(config->Get("core.pidfile"));
+				unlink(config->Get("core.pidfile").c_str());
 				Logger::Log(LOG_NOTICE,"Clean exit");
 				delete logger;
 				

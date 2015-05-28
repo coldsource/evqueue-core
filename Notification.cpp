@@ -52,12 +52,7 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	if(ptr[0]=='/')
 		notification_binary = ptr;
 	else
-	{
-		const char *tasks_directory = Configuration::GetInstance()->Get("notifications.tasks.directory");
-		notification_binary = tasks_directory;
-		notification_binary += "/";
-		notification_binary += ptr;
-	}
+		notification_binary = Configuration::GetInstance()->Get("notifications.tasks.directory")+"/"+ptr;
 	
 	notification_name = db->GetField(1);
 	notification_configuration = db->GetField(2);

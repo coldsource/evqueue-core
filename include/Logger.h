@@ -22,6 +22,8 @@
 
 #include <syslog.h>
 
+#include <string>
+
 class Logger
 {
 	private:
@@ -39,7 +41,7 @@ class Logger
 		static void Log(int level,const char *msg,...);
 		
 	private:
-		int parse_log_level(const char* log_level);
+		int parse_log_level(const std::string &log_level) const;
 };
 
 #endif

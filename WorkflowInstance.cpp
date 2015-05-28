@@ -60,12 +60,40 @@ extern bool fork_locked,fork_possible;
 
 using namespace std;
 
-WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const char *workflow_host, const char *workflow_user)
+WorkflowInstance::WorkflowInstance(void):
+	logs_directory(Configuration::GetInstance()->Get("processmanager.logs.directory")),
+	errlogs_directory(Configuration::GetInstance()->Get("processmanager.errlogs.directory")),
+	tasks_directory(Configuration::GetInstance()->Get("processmanager.tasks.directory")),
+	monitor_path(Configuration::GetInstance()->Get("processmanager.monitor.path"))
+{
+	errlogs = Configuration::GetInstance()->GetBool("processmanager.errlogs.enable");
+	
+	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
+	
+	savepoint_level = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level");
+	if(savepoint_level<0 || savepoint_level>3)
+		savepoint_level = 0;
+	
+	savepoint_retry = Configuration::GetInstance()->GetBool("workflowinstance.savepoint.retry.enable");
+	
+	if(savepoint_retry)
+	{
+		savepoint_retry_times = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.retry.times");
+		savepoint_retry_wait = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.retry.wait");
+	}
+	
+	is_cancelling = false;
+	
+	running_tasks = 0;
+	retrying_tasks = 0;
+	error_tasks = 0;
+}
+
+WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const char *workflow_host, const char *workflow_user):
+	WorkflowInstance()
 {
 	DB db;
 	char buf[256+WORKFLOW_NAME_MAXLEN];
-	
-	init();
 	
 	if(strlen(workflow_name)>WORKFLOW_NAME_MAXLEN)
 		throw Exception("WorkflowInstance","Workflow name is too long");
@@ -267,7 +295,8 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 	Statistics::GetInstance()->IncWorkflowInstanceExecuting();
 }
 
-WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id)
+WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
+	WorkflowInstance()
 {
 	DB db;
 	
@@ -286,8 +315,6 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id)
 		throw Exception("WorkflowInstance","Could not resume workflow : empty savepoint");
 	}
 	
-	init();
-
 	// Load workflow XML
 	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 	parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
@@ -768,10 +795,10 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		{
 			// Set SSH config variables if SSH execution is asked
 			Configuration *config = Configuration::GetInstance();
-			setenv("EVQUEUE_SSH_PATH",config->Get("processmanager.monitor.ssh_path"),true);
+			setenv("EVQUEUE_SSH_PATH",config->Get("processmanager.monitor.ssh_path").c_str(),true);
 			
-			if(strlen(config->Get("processmanager.monitor.ssh_key"))>0)
-				setenv("EVQUEUE_SSH_KEY",config->Get("processmanager.monitor.ssh_key"),true);
+			if(config->Get("processmanager.monitor.ssh_key").length()>0)
+				setenv("EVQUEUE_SSH_KEY",config->Get("processmanager.monitor.ssh_key").c_str(),true);
 		}
 		
 		// Redirect output to log file
@@ -960,37 +987,6 @@ bool WorkflowInstance::KillTask(pid_t pid)
 	pthread_mutex_unlock(&lock);
 	
 	return found;
-}
-
-void WorkflowInstance::init(void)
-{
-	logs_directory = Configuration::GetInstance()->Get("processmanager.logs.directory");
-	
-	errlogs =  Configuration::GetInstance()->GetBool("processmanager.errlogs.enable");
-	errlogs_directory =  Configuration::GetInstance()->Get("processmanager.errlogs.directory");
-	
-	tasks_directory = Configuration::GetInstance()->Get("processmanager.tasks.directory");
-	monitor_path = Configuration::GetInstance()->Get("processmanager.monitor.path");
-	
-	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
-	
-	savepoint_level = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level");
-	if(savepoint_level<0 || savepoint_level>3)
-		savepoint_level = 0;
-	
-	savepoint_retry = Configuration::GetInstance()->GetBool("workflowinstance.savepoint.retry.enable");
-	
-	if(savepoint_retry)
-	{
-		savepoint_retry_times = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.retry.times");
-		savepoint_retry_wait = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.retry.wait");
-	}
-	
-	is_cancelling = false;
-	
-	running_tasks = 0;
-	retrying_tasks = 0;
-	error_tasks = 0;
 }
 
 void WorkflowInstance::retry_task(DOMNode *task)

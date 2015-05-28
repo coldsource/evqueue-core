@@ -57,7 +57,7 @@ DB::DB(void)
 	mysql_options(mysql, MYSQL_SET_CHARSET_NAME, "UTF8");
 
 	// Connection à la base
-	if(!mysql_real_connect(mysql,config->Get("mysql.host"),config->Get("mysql.user"),config->Get("mysql.password"),config->Get("mysql.database"),0,0,0))
+	if(!mysql_real_connect(mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
 		throw Exception("DB",mysql_error(mysql));
 
 	res=0;

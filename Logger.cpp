@@ -30,6 +30,8 @@
 
 Logger *Logger::instance = 0;
 
+using namespace std;
+
 Logger::Logger()
 {
 	Configuration *config = Configuration::GetInstance();
@@ -66,23 +68,23 @@ void Logger::Log(int level,const char *msg,...)
 	}
 }
 
-int Logger::parse_log_level(const char* log_level)
+int Logger::parse_log_level(const string &log_level) const
 {
-	if(strcmp(log_level,"LOG_EMERG")==0)
+	if(log_level=="LOG_EMERG")
 		return LOG_EMERG;
-	else if(strcmp(log_level,"LOG_ALERT")==0)
+	else if(log_level=="LOG_ALERT")
 		return LOG_ALERT;
-	else if(strcmp(log_level,"LOG_CRIT")==0)
+	else if(log_level=="LOG_CRIT")
 		return LOG_CRIT;
-	else if(strcmp(log_level,"LOG_ERR")==0)
+	else if(log_level=="LOG_ERR")
 		return LOG_ERR;
-	else if(strcmp(log_level,"LOG_WARNING")==0)
+	else if(log_level=="LOG_WARNING")
 		return LOG_WARNING;
-	else if(strcmp(log_level,"LOG_NOTICE")==0)
+	else if(log_level=="LOG_NOTICE")
 		return LOG_NOTICE;
-	else if(strcmp(log_level,"LOG_INFO")==0)
+	else if(log_level=="LOG_INFO")
 		return LOG_INFO;
-	else if(strcmp(log_level,"LOG_DEBUG")==0)
+	else if(log_level=="LOG_DEBUG")
 		return LOG_DEBUG;
 	
 	throw Exception("Logger","Unknown filter level");

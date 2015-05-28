@@ -50,13 +50,13 @@ class WorkflowInstance
 		
 		DOMDocument *xmldoc;
 		
-		std::string logs_directory;
+		const std::string &logs_directory;
 		
 		bool errlogs;
-		std::string errlogs_directory;
+		const std::string &errlogs_directory;
 		
-		std::string tasks_directory;
-		std::string monitor_path;
+		const std::string &tasks_directory;
+		const std::string &monitor_path;
 		
 		bool saveparameters;
 		
@@ -90,7 +90,7 @@ class WorkflowInstance
 		bool KillTask(pid_t pid);
 		
 	private:
-		void init(void);
+		WorkflowInstance();
 		
 		void run(DOMNode *job,DOMNode *context_node);
 		void run_subjobs(DOMNode *context_node);

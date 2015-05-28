@@ -23,13 +23,14 @@
 #include <sys/types.h>
 #include <pthread.h>
 
+#include <string>
+
 class ProcessManager
 {
 	private:
 		int msgqid;
 		
-		const char *logs_directory;
-		unsigned int logs_directory_len;
+		std::string logs_directory;
 		char *log_filename;
 		bool logs_delete;
 		
