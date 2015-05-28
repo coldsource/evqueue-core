@@ -27,6 +27,8 @@
 
 Workflows *Workflows::instance = 0;
 
+using namespace std;
+
 Workflows::Workflows()
 {
 	instance = this;
@@ -73,7 +75,7 @@ void Workflows::Reload(void)
 	pthread_mutex_unlock(&lock);
 }
 
-Workflow Workflows::GetWorkflow(const char *name)
+Workflow Workflows::GetWorkflow(const string &name)
 {
 	pthread_mutex_lock(&lock);
 	

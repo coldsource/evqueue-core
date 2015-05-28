@@ -43,7 +43,7 @@ class RetrySchedules
 		static RetrySchedules *GetInstance() { return instance; }
 		
 		void Reload(void);
-		RetrySchedule GetRetrySchedule(const char *name);
+		RetrySchedule GetRetrySchedule(const std::string &name);
 };
 
 #endif

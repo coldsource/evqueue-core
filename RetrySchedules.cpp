@@ -27,6 +27,8 @@
 
 RetrySchedules *RetrySchedules::instance = 0;
 
+using namespace std;
+
 RetrySchedules::RetrySchedules()
 {
 	instance = this;
@@ -39,7 +41,7 @@ RetrySchedules::RetrySchedules()
 RetrySchedules::~RetrySchedules()
 {
 	// Clean current tasks
-	std::map<std::string,RetrySchedule *>::iterator it;
+	map<string,RetrySchedule *>::iterator it;
 	for(it=schedules.begin();it!=schedules.end();++it)
 		delete it->second;
 	
@@ -53,7 +55,7 @@ void RetrySchedules::Reload(void)
 	pthread_mutex_lock(&lock);
 	
 	// Clean current tasks
-	std::map<std::string,RetrySchedule *>::iterator it;
+	map<string,RetrySchedule *>::iterator it;
 	for(it=schedules.begin();it!=schedules.end();++it)
 		delete it->second;
 	
@@ -66,18 +68,18 @@ void RetrySchedules::Reload(void)
 	
 	while(db.FetchRow())
 	{
-		std::string schedule_name(db.GetField(0));
+		string schedule_name(db.GetField(0));
 		schedules[schedule_name] = new RetrySchedule(&db2,db.GetField(0));
 	}
 	
 	pthread_mutex_unlock(&lock);
 }
 
-RetrySchedule RetrySchedules::GetRetrySchedule(const char *name)
+RetrySchedule RetrySchedules::GetRetrySchedule(const string &name)
 {
 	pthread_mutex_lock(&lock);
 	
-	std::map<std::string,RetrySchedule *>::iterator it;
+	map<string,RetrySchedule *>::iterator it;
 	it = schedules.find(name);
 	if(it==schedules.end())
 	{

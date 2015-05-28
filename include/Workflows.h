@@ -44,7 +44,7 @@ class Workflows
 		static Workflows *GetInstance() { return instance; }
 		
 		void Reload(void);
-		Workflow GetWorkflow(const char *name);
+		Workflow GetWorkflow(const std::string &name);
 };
 
 #endif

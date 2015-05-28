@@ -38,8 +38,8 @@ class Notification
 
 		Notification(DB *db,unsigned int notification_id);
 		
-		const char *GetBinary() { return notification_binary.c_str(); }
-		const char *GetConfiguration() { return notification_configuration.c_str(); }
+		const std::string &GetBinary() { return notification_binary; }
+		const std::string &GetConfiguration() { return notification_configuration; }
 		
 		void Call(WorkflowInstance *workflow_instance);
 		

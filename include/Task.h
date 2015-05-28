@@ -40,10 +40,10 @@ class Task
 		Task();
 		Task(DB *db,const std::string &task_name);
 		
-		const std::string GetBinary() const { return task_binary.c_str(); }
-		const std::string GetWorkingDirectory() const { return task_wd; }
-		const std::string GetUser() const { return task_user; }
-		const std::string GetHost() const { return task_host; }
+		const std::string &GetBinary() const { return task_binary; }
+		const std::string &GetWorkingDirectory() const { return task_wd; }
+		const std::string &GetUser() const { return task_user; }
+		const std::string &GetHost() const { return task_host; }
 		bool IsAbsolutePath() const { return task_binary[0]=='/'?true:false; }
 		task_parameters_mode::task_parameters_mode GetParametersMode() const  { return parameters_mode; }
 		task_output_method::task_output_method GetOutputMethod() const  { return output_method; }
