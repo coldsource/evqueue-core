@@ -60,14 +60,14 @@ Configuration::Configuration(void)
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";
 	entries["network.snd.timeout"] = "30";
-	entries["notifications.monitor.path"] = "/usr/local/bin/evqueue_notification_monitor";
-	entries["notifications.tasks.directory"] = ".";
+	entries["notifications.monitor.path"] = "/usr/bin/evqueue_notification_monitor";
+	entries["notifications.tasks.directory"] = "/usr/share/evqueue/plugins/notifications";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["processmanager.errlogs.directory"] = "errlogs";
 	entries["processmanager.errlogs.enable"] = "no";
 	entries["processmanager.logs.delete"] = "yes";
 	entries["processmanager.logs.directory"] = "/tmp";
-	entries["processmanager.monitor.path"] = "/usr/local/bin/evqueue_monitor";
+	entries["processmanager.monitor.path"] = "/usr/bin/evqueue_monitor";
 	entries["processmanager.monitor.ssh_key"] = "";
 	entries["processmanager.monitor.ssh_path"] = "/usr/bin/ssh";
 	entries["processmanager.tasks.directory"] = ".";
