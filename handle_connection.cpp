@@ -316,7 +316,7 @@ void *handle_connection(void *sp)
 			
 			throw (void *)0;
 		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_WORKFLOWS_STATUS)
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_WORKFLOWS)
 		{
 			stats->IncStatisticsQueries();
 			
@@ -324,12 +324,20 @@ void *handle_connection(void *sp)
 			workflow_instances->SendStatus(s);
 			throw (void *)0;
 		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_SCHEDULER_STATUS)
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_SCHEDULER)
 		{
 			stats->IncStatisticsQueries();
 			
 			WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
 			scheduler->SendStatus(s);
+			throw (void *)0;
+		}
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_CONFIGURATION)
+		{
+			stats->IncStatisticsQueries();
+			
+			Configuration *config = Configuration::GetInstance();
+			config->SendConfiguration(s);
 			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_RELOAD)

@@ -20,10 +20,16 @@
 #include <Configuration.h>
 #include <Exception.h>
 
+#include <xqilla/xqilla-dom3.hpp>
+#include <xercesc/dom/DOM.hpp>
+
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 using namespace std;
+using namespace xercesc;
 
 Configuration *Configuration::instance=0;
 
@@ -102,4 +108,36 @@ bool Configuration::GetBool(const string &entry) const
 	if(value=="yes" || value=="true" || value=="1")
 		return true;
 	return false;
+}
+
+void Configuration::SendConfiguration(int s)
+{
+	char buf[16];
+	
+	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	
+	DOMElement *configuration_node = xmldoc->createElement(X("configuration"));
+	xmldoc->appendChild(configuration_node);
+	
+	
+	map<string,string>::iterator it;
+	for(it=entries.begin();it!=entries.end();it++)
+	{
+		DOMElement *entry_node = xmldoc->createElement(X("entry"));
+		entry_node->setAttribute(X("name"),X(it->first.c_str()));
+		entry_node->setAttribute(X("value"),X(it->second.c_str()));
+		configuration_node->appendChild(entry_node);
+	}
+	
+	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
+	XMLCh *configuration_xml = serializer->writeToString(configuration_node);
+	char *configuration_xml_c = XMLString::transcode(configuration_xml);
+	
+	send(s,configuration_xml_c,strlen(configuration_xml_c),0);
+	
+	XMLString::release(&configuration_xml);
+	XMLString::release(&configuration_xml_c);
+	serializer->release();
+	xmldoc->release();
 }

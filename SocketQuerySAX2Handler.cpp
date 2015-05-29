@@ -149,9 +149,11 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					throw Exception("SocketQuerySAX2Handler","Missing type attribute on node statistics");
 				
 				if(XMLString::compareString(type_attr,X("scheduler"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_SCHEDULER_STATUS;
+					query_type = SocketQuerySAX2Handler::QUERY_STATUS_SCHEDULER;
 				else if(XMLString::compareString(type_attr,X("workflows"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_WORKFLOWS_STATUS;
+					query_type = SocketQuerySAX2Handler::QUERY_STATUS_WORKFLOWS;
+				else if(XMLString::compareString(type_attr,X("configuration"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_STATUS_CONFIGURATION;
 				else
 					throw Exception("SocketQuerySAX2Handler","Unknown statistics type");
 			}
@@ -215,9 +217,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				throw Exception("SocketQuerySAX2Handler","Invalid root node name, expecting 'workflow' or 'statistics'");
 		}
 		
-		if((query_type==QUERY_WORKFLOW_INFO || query_type==QUERY_QUEUE_STATS  || query_type==QUERY_GLOBAL_STATS || query_type==QUERY_SCHEDULER_STATUS) && level>=2)
-			throw Exception("SocketQuerySAX2Handler","Unexpected subnode");
-		
 		if(query_type==QUERY_WORKFLOW_LAUNCH && level==2)
 		{
 			if(strcmp(node_name_c,"parameter")!=0)
@@ -248,6 +247,9 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 		
 		if(query_type==QUERY_WORKFLOW_LAUNCH && level>2)
 			throw Exception("SocketQuerySAX2Handler","parameter node does not accept subnodes");
+		
+		if(query_type!=QUERY_WORKFLOW_LAUNCH && level>1)
+			throw Exception("SocketQuerySAX2Handler","Unexpected subnode");
 	}
 	catch(Exception e)
 	{
