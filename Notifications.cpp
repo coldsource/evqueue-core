@@ -95,6 +95,13 @@ Notification Notifications::GetNotification(unsigned int id)
 
 void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflow_instance)
 {	
-	Notification notification = GetNotification(notification_id);
-	notification.Call(workflow_instance);
+	try
+	{
+		Notification notification = GetNotification(notification_id);
+		notification.Call(workflow_instance);
+	}
+	catch(Exception &e)
+	{
+		Logger::Log(LOG_ERR,"Exception during notifications processing : %s",e.error);
+	}
 }
