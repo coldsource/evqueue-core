@@ -127,6 +127,11 @@ int main(int argc,const char **argv)
 			return tools_queue_destroy();
 		else if(strcmp(argv[i],"--ipcq-stats")==0)
 			return tools_queue_stats();
+		else if(strcmp(argv[i],"--version")==0)
+		{
+			printf("evQueue version 1.4\n");
+			return 0;
+		}
 		else
 		{
 			fprintf(stderr,"Unknown option : %s\n",argv[i]);
