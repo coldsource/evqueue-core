@@ -27,6 +27,8 @@
 
 Tasks *Tasks::instance = 0;
 
+using namespace std;
+
 Tasks::Tasks()
 {
 	instance = this;
@@ -73,7 +75,7 @@ void Tasks::Reload(void)
 	pthread_mutex_unlock(&lock);
 }
 
-Task Tasks::GetTask(const char *name)
+Task Tasks::GetTask(const string &name)
 {
 	pthread_mutex_lock(&lock);
 	

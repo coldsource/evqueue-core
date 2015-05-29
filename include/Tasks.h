@@ -43,7 +43,7 @@ class Tasks
 		static Tasks *GetInstance() { return instance; }
 		
 		void Reload(void);
-		Task GetTask(const char *name);
+		Task GetTask(const std::string &name);
 };
 
 #endif
