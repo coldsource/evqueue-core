@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 // Sanity check
 if($argc!=3)
