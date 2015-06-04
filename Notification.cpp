@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -71,6 +72,8 @@ void Notification::Call(WorkflowInstance *workflow_instance)
 		
 		dup2(pipe_fd[0],STDIN_FILENO);
 		close(pipe_fd[1]);
+		
+		setenv("EVQUEUE_WORKING_DIRECTORY",Configuration::GetInstance()->Get("notifications.monitor.path").c_str(),true);
 		
 		char str_timeout[16],str_instance_id[16],str_errors[16];
 		sprintf(str_timeout,"%d",Configuration::GetInstance()->GetInt("notifications.tasks.timeout"));
