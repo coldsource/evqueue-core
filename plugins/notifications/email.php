@@ -7,6 +7,9 @@ if($argc!=3)
 	die(5);
 }
 
+// Read plugin configuration
+require_once 'conf/email.conf.php';
+
 // Read configuration
 $stdin = fopen('php://stdin','r');
 
@@ -55,6 +58,7 @@ $cmdline = '/usr/bin/mail';
 $cmdline .= " -s '".addslashes($subject)."'";
 if($cc)
 	$cmdline .= " -c '".addslashes($cc)."'";
+$cmdline .= " -a '".addslashes('From: '.$EMAIL_CONFIG['from'])."'";
 $cmdline .= ' '.addslashes($to);
 
 $fd = array(0 => array('pipe', 'r'));
