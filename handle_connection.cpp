@@ -277,6 +277,22 @@ void *handle_connection(void *sp)
 			
 			throw (void *)0;
 		}
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUTCONF)
+		{	
+			try
+			{
+				Notification::PutFileConf(saxh->GetFileName(),saxh->GetFileData());
+				send(s,"<return status='OK' />",22,0);
+			}
+			catch(Exception &e)
+			{
+				send(s,"<return status='KO' error=\"",27,0);
+				send(s,e.error,strlen(e.error),0);
+				send(s,"\" />",4,0);
+			}
+			
+			throw (void *)0;
+		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_REM)
 		{	
 			try

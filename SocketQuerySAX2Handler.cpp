@@ -95,10 +95,12 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUT;
 				else if(XMLString::compareString(action_attr,X("remove"))==0)
 					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_REM;
+				else if(XMLString::compareString(action_attr,X("putconf"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUTCONF;
 				else
 					throw Exception("SocketQuerySAX2Handler","Unknown notification action");
 				
-				if(query_type==QUERY_NOTIFICATION_PUT || query_type==QUERY_NOTIFICATION_REM)
+				if(query_type==QUERY_NOTIFICATION_PUT || query_type==QUERY_NOTIFICATION_REM || query_type==QUERY_NOTIFICATION_PUTCONF)
 				{
 					const XMLCh *filename_attr = attrs.getValue(X("filename"));
 					
@@ -107,7 +109,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					
 					file_name = XMLString::transcode(filename_attr);
 					
-					if(query_type==QUERY_NOTIFICATION_PUT)
+					if(query_type==QUERY_NOTIFICATION_PUT || query_type==QUERY_NOTIFICATION_PUTCONF)
 					{
 						const XMLCh *data_attr = attrs.getValue(X("data"));
 						

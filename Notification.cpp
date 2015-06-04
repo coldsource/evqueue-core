@@ -101,7 +101,12 @@ void Notification::Call(WorkflowInstance *workflow_instance)
 
 void Notification::PutFile(const std::string &filename,const std::string &data)
 {
-	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data);
+	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY);
+}
+
+void Notification::PutFileConf(const std::string &filename,const std::string &data)
+{
+	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data,FileManager::FILETYPE_CONF);
 }
 
 void Notification::RemoveFile(const std::string &filename)

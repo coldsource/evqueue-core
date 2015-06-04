@@ -44,6 +44,7 @@ class Notification
 		void Call(WorkflowInstance *workflow_instance);
 		
 		static void PutFile(const std::string &filename,const std::string &data);
+		static void PutFileConf(const std::string &filename,const std::string &data);
 		static void RemoveFile(const std::string &filename);
 	
 	private:

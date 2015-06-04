@@ -41,7 +41,7 @@ bool FileManager::CheckFileName(const string &file_name)
 	return true;
 }
 
-void FileManager::PutFile(const string &directory,const string &filename,const string &data)
+void FileManager::PutFile(const string &directory,const string &filename,const string &data,int filetype)
 {
 	if(!CheckFileName(filename))
 		throw Exception("Notification","Invalid file name");
@@ -49,7 +49,11 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 	string path = directory+"/"+filename;
 	
 	int fd;
-	fd = open(path.c_str(),O_CREAT|O_EXCL|O_RDWR,S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+	if(filetype==FILETYPE_CONF)
+		fd = open(path.c_str(),O_CREAT|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	else if(filetype==FILETYPE_BINARY)
+		fd = open(path.c_str(),O_CREAT|O_EXCL|O_RDWR,S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+	
 	if(fd==-1)
 	{
 		if(errno==EEXIST)

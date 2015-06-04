@@ -25,9 +25,12 @@
 class FileManager
 {
 	public:
+		static const int FILETYPE_BINARY = 1;
+		static const int FILETYPE_CONF = 2;
+		
 		static bool CheckFileName(const std::string &file_name);
 		
-		static void PutFile(const std::string &directory,const std::string &filename,const std::string &data);
+		static void PutFile(const std::string &directory,const std::string &filename,const std::string &data,int filetype);
 		static void RemoveFile(const std::string &directory,const std::string &filename);
 };
 
