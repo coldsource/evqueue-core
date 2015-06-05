@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 // Sanity check
-if($argc!=3)
+if($argc!=4)
 {
 	error_log("This process should only be called as an evQueue plugin\n");
 	die(5);
@@ -34,6 +34,24 @@ if(!isset($config['subject']) || !isset($config['when']) || !isset($config['to']
 	die(3);
 }
 
+// Read workflow instance informations from evQueue engine
+$vars = array('#ID#'=>$argv[1]);
+if($argv[3])
+{
+    $s = fsockopen("unix://{$argv[3]}");
+    
+    fwrite($s,"<workflow id='{$argv[1]}' />");
+    $xml = stream_get_contents($s);
+    fclose($s);
+    
+    $xml = simplexml_load_string($xml);
+    $workflow_attributes = $xml->attributes();
+    $vars['#NAME#'] = (string)$workflow_attributes['name'];
+    $vars['#START_TIME#'] = (string)$workflow_attributes['start_time'];
+    $vars['#END_TIME#'] = (string)$workflow_attributes['end_time'];
+}
+
+// Extract mail informations from config
 $to = $config['to'];
 $subject = $config['subject'];
 $body = $config['body'];
@@ -52,6 +70,13 @@ if($when=='ON_SUCCESS' && $argv[2]!=0)
 
 if($when=='ON_ERROR' && $argv[2]==0)
 	die();
+
+// Do variables substitution
+$values = array_values($vars);
+$vars = array_keys($vars);
+
+$subject = str_replace($vars,$values,$subject);
+$body = str_replace($vars,$values,$body);
 
 // Send email
 $cmdline = '/usr/bin/mail';
