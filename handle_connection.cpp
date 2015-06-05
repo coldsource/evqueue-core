@@ -65,12 +65,15 @@ void *handle_connection(void *sp)
 	
 	socklen_t remote_addr_len;
 	struct sockaddr_in remote_addr;
-	char remote_addr_str[16];
-	int remote_port;
+	char remote_addr_str[16] = "local";
+	int remote_port = -1;
 	remote_addr_len = sizeof(remote_addr);
 	getpeername(s,(struct sockaddr*)&remote_addr,&remote_addr_len);
-	inet_ntop(AF_INET,&(remote_addr.sin_addr),remote_addr_str,16);
-	remote_port = ntohs(remote_addr.sin_port);
+	if(remote_addr.sin_family==AF_INET)
+	{
+		inet_ntop(AF_INET,&(remote_addr.sin_addr),remote_addr_str,16);
+		remote_port = ntohs(remote_addr.sin_port);
+	}
 	
 	char buf[4096];
 	int read_size;
