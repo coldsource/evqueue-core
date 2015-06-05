@@ -54,7 +54,7 @@ void signal_callback_handler(int signum)
 
 int main(int argc,char ** argv)
 {
-	if(argc<=4)
+	if(argc<=5)
 		return -1;
 	
 	// Catch signals
@@ -70,6 +70,7 @@ int main(int argc,char ** argv)
 	char *cmd_filename = argv[1];
 	char *wfi_id = argv[3];
 	char *wfi_errors = argv[4];
+	char *unix_socket_path = argv[5];
 	
 	int status;
 	
@@ -86,7 +87,7 @@ int main(int argc,char ** argv)
 		if(working_directory)
 			chdir(working_directory);
 		
-		status = execl(cmd_filename,cmd_filename,wfi_id,wfi_errors,(char *)0);
+		status = execl(cmd_filename,cmd_filename,wfi_id,wfi_errors,unix_socket_path,(char *)0);
 		
 		fprintf(stderr,"Unable to execute command '%s'. execv() returned %d\n",cmd_filename,status);
 		return -1;

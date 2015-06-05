@@ -33,15 +33,17 @@ class Notification
 	std::string notification_binary;
 	std::string notification_name;
 	std::string notification_configuration;
+	std::string unix_socket_path;
 	
 	public:
 
 		Notification(DB *db,unsigned int notification_id);
 		
+		const std::string &GetName() { return notification_name; }
 		const std::string &GetBinary() { return notification_binary; }
 		const std::string &GetConfiguration() { return notification_configuration; }
 		
-		void Call(WorkflowInstance *workflow_instance);
+		pid_t Call(WorkflowInstance *workflow_instance);
 		
 		static void PutFile(const std::string &filename,const std::string &data);
 		static void PutFileConf(const std::string &filename,const std::string &data);

@@ -47,6 +47,8 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	if(!db->FetchRow())
 		throw Exception("Notification","Unknown notification");
 	
+	unix_socket_path = Configuration::GetInstance()->Get("network.bind.path");
+	
 	notification_monitor_path = Configuration::GetInstance()->Get("notifications.monitor.path");
 	
 	const char *ptr = db->GetField(0);
@@ -59,7 +61,7 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	notification_configuration = db->GetField(2);
 }
 
-void Notification::Call(WorkflowInstance *workflow_instance)
+pid_t Notification::Call(WorkflowInstance *workflow_instance)
 {
 	int pipe_fd[2];
 	
@@ -80,7 +82,7 @@ void Notification::Call(WorkflowInstance *workflow_instance)
 		sprintf(str_instance_id,"%d",workflow_instance->GetInstanceID());
 		sprintf(str_errors,"%d",workflow_instance->GetErrors());
 		
-		execl(notification_monitor_path.c_str(),notification_monitor_path.c_str(),notification_binary.c_str(),str_timeout,str_instance_id,str_errors,(char *)0);
+		execl(notification_monitor_path.c_str(),notification_monitor_path.c_str(),notification_binary.c_str(),str_timeout,str_instance_id,str_errors,unix_socket_path.c_str(),(char *)0);
 		
 		ipc_send_exit_msg(2,0,-1);
 		exit(-1);
@@ -93,13 +95,15 @@ void Notification::Call(WorkflowInstance *workflow_instance)
 		close(pipe_fd[0]);
 		close(pipe_fd[1]);
 		
-		return;
+		return pid;
 	}
 	
 	// Pipe configuration data
 	write(pipe_fd[1],notification_configuration.c_str(),notification_configuration.length());
 	close(pipe_fd[1]);
 	close(pipe_fd[0]);
+	
+	return pid;
 }
 
 void Notification::PutFile(const std::string &filename,const std::string &data)

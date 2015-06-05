@@ -22,6 +22,7 @@
 #include <global.h>
 #include <QueuePool.h>
 #include <WorkflowInstance.h>
+#include <Notifications.h>
 #include <Configuration.h>
 #include <Retrier.h>
 #include <Statistics.h>
@@ -238,19 +239,7 @@ void *ProcessManager::Gather(void *process_manager)
 		if(msgbuf.type==2)
 		{
 			// Notification task
-			if(tid==0)
-			{
-				if(retcode!=0)
-					Logger::Log(LOG_WARNING,"Notification task %d returned code %d",pid,retcode);
-				else
-					Logger::Log(LOG_NOTICE,"Notification task %d executed successuflly",pid);
-			}
-			else if(tid==1)
-				Logger::Log(LOG_WARNING,"Notification task %d was killed",pid);
-			else if(tid==2)
-				Logger::Log(LOG_WARNING,"Notification task %d timed out",pid);
-			else if(tid==3)
-				Logger::Log(LOG_ALERT,"Notification task %d could not be forked",pid);
+			Notifications::GetInstance()->Exit(pid,tid,retcode);
 		}
 	}
 	

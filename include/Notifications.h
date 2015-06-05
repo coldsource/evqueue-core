@@ -30,11 +30,20 @@ class WorkflowInstance;
 class Notifications
 {
 	private:
+		struct st_notification_instance
+		{
+			unsigned int workflow_instance_id;
+			std::string notification_type;
+		};
+		
 		static Notifications *instance;
 		
 		pthread_mutex_t lock;
 		
+		int max_concurrency;
+		
 		std::map<unsigned int,Notification *> notifications;
+		std::map<pid_t,st_notification_instance> notification_instances;
 	
 	public:
 		
@@ -47,6 +56,7 @@ class Notifications
 		Notification GetNotification(unsigned int id);
 		
 		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
+		void Exit(pid_t pid, int status, char retcode);
 };
 
 #endif

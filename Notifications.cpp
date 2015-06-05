@@ -22,11 +22,14 @@
 #include <DB.h>
 #include <Exception.h>
 #include <Logger.h>
+#include <Configuration.h>
 #include <WorkflowInstance.h>
 
 #include <string.h>
 
 Notifications *Notifications::instance = 0;
+
+using namespace std;
 
 Notifications::Notifications()
 {
@@ -34,13 +37,15 @@ Notifications::Notifications()
 	
 	pthread_mutex_init(&lock, NULL);
 	
+	max_concurrency = Configuration::GetInstance()->GetInt("notifications.tasks.concurrency");
+	
 	Reload();
 }
 
 Notifications::~Notifications()
 {
 	// Clean current notifications
-	std::map<unsigned int,Notification *>::iterator it;
+	map<unsigned int,Notification *>::iterator it;
 	for(it=notifications.begin();it!=notifications.end();++it)
 		delete it->second;
 	
@@ -54,7 +59,7 @@ void Notifications::Reload(void)
 	pthread_mutex_lock(&lock);
 	
 	// Clean current notifications
-	std::map<unsigned int,Notification *>::iterator it;
+	map<unsigned int,Notification *>::iterator it;
 	for(it=notifications.begin();it!=notifications.end();++it)
 		delete it->second;
 	
@@ -77,7 +82,7 @@ Notification Notifications::GetNotification(unsigned int id)
 {
 	pthread_mutex_lock(&lock);
 	
-	std::map<unsigned int,Notification *>::iterator it;
+	map<unsigned int,Notification *>::iterator it;
 	it = notifications.find(id);
 	if(it==notifications.end())
 	{
@@ -98,10 +103,58 @@ void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflo
 	try
 	{
 		Notification notification = GetNotification(notification_id);
-		notification.Call(workflow_instance);
+		
+		pthread_mutex_lock(&lock);
+		
+		if(notification_instances.size()<max_concurrency)
+		{
+			pid_t pid = notification.Call(workflow_instance);
+			if(pid>0)
+				notification_instances.insert(pair<pid_t,st_notification_instance>(pid,{workflow_instance->GetInstanceID(),notification.GetName()}));
+		}
+		else
+		{
+			Logger::Log(LOG_WARNING,"Maximum concurrency reached for notifications calls, dropping call for notification '%s' of workflow instance %d",notification.GetName().c_str(),workflow_instance->GetInstanceID());
+		}
+		
+		pthread_mutex_unlock(&lock);
 	}
 	catch(Exception &e)
 	{
 		Logger::Log(LOG_ERR,"Exception during notifications processing : %s",e.error);
 	}
+}
+
+void Notifications::Exit(pid_t pid, int status, char retcode)
+{
+	pthread_mutex_lock(&lock);
+	
+	map<pid_t,st_notification_instance>::iterator it;
+	it = notification_instances.find(pid);
+	if(it==notification_instances.end())
+	{
+		pthread_mutex_unlock(&lock);
+		Logger::Log(LOG_WARNING,"[ Notifications ] Got exit from pid %d but could not find corresponding notification",pid);
+		return;
+	}
+	
+	st_notification_instance ni = it->second;
+	
+	if(status==0)
+	{
+		if(retcode!=0)
+			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d returned code %d",ni.notification_type.c_str(),ni.workflow_instance_id,pid,retcode);
+		else
+			Logger::Log(LOG_NOTICE,"Notification task '%s' (pid %d) for workflow instance %d executed successuflly",ni.notification_type.c_str(),ni.workflow_instance_id,pid);
+	}
+	else if(status==1)
+		Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d was killed",ni.notification_type.c_str(),ni.workflow_instance_id,pid);
+	else if(status==2)
+		Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d timed out",ni.notification_type.c_str(),ni.workflow_instance_id,pid);
+	else if(status==3)
+		Logger::Log(LOG_ALERT,"Notification task '%s' (pid %d) for workflow instance %d could not be forked",ni.notification_type.c_str(),ni.workflow_instance_id,pid);
+	
+	notification_instances.erase(pid);
+	
+	pthread_mutex_unlock(&lock);
 }
