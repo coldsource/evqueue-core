@@ -66,6 +66,8 @@ WorkflowInstance::WorkflowInstance(void):
 	tasks_directory(Configuration::GetInstance()->Get("processmanager.tasks.directory")),
 	monitor_path(Configuration::GetInstance()->Get("processmanager.monitor.path"))
 {
+	workflow_instance_id = 0;
+	
 	errlogs = Configuration::GetInstance()->GetBool("processmanager.errlogs.enable");
 	
 	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
@@ -351,6 +353,9 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 
 WorkflowInstance::~WorkflowInstance()
 {
+	if(!workflow_instance_id)
+		return; // Object was not fully instanciated, skip destructor
+	
 	// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
 	for(int i = 0; i < notifications.size(); i++)
 		Notifications::GetInstance()->Call(notifications.at(i),this);
