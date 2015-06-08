@@ -63,7 +63,7 @@ Configuration::Configuration(void)
 	entries["notifications.monitor.path"] = "/usr/bin/evqueue_notification_monitor";
 	entries["notifications.tasks.directory"] = "/usr/share/evqueue/plugins/notifications";
 	entries["notifications.tasks.timeout"] = "5";
-	entries["notifications.tasks.concurrency"] = "32";
+	entries["notifications.tasks.concurrency"] = "16";
 	entries["processmanager.errlogs.directory"] = "errlogs";
 	entries["processmanager.errlogs.enable"] = "no";
 	entries["processmanager.logs.delete"] = "yes";

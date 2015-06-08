@@ -81,6 +81,8 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				
 				if(XMLString::compareString(action_attr,X("reload"))==0)
 					query_type = SocketQuerySAX2Handler::QUERY_CONTROL_RELOAD;
+				else if(XMLString::compareString(action_attr,X("retry"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_CONTROL_RETRY;
 				else
 					throw Exception("SocketQuerySAX2Handler","Unknown control action");
 			}

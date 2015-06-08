@@ -79,9 +79,7 @@ void signal_callback_handler(int signum)
 	}
 	else if(signum==SIGUSR1)
 	{
-		Logger::Log(LOG_NOTICE,"Got SIGUSR1, flushing retrier");
-		Retrier *retrier = Retrier::GetInstance();
-		retrier->Flush();
+		tools_flush_retrier();
 	}
 }
 

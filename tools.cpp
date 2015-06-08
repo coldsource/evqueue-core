@@ -25,6 +25,7 @@
 #include <RetrySchedules.h>
 #include <Workflows.h>
 #include <Notifications.h>
+#include <Retrier.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -118,6 +119,13 @@ void tools_config_reload(void)
 	
 	Notifications *notifications = Notifications::GetInstance();
 	notifications->Reload();
+}
+
+void tools_flush_retrier(void)
+{
+	Logger::Log(LOG_NOTICE,"Flushing retrier");
+	Retrier *retrier = Retrier::GetInstance();
+	retrier->Flush();
 }
 
 int ipc_send_exit_msg(int type,int tid,char retcode)

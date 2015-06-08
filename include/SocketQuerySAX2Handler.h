@@ -53,9 +53,10 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		static const int QUERY_WORKFLOW_WAIT = 9;
 		static const int QUERY_WORKFLOW_KILLTASK = 10;
 		static const int QUERY_CONTROL_RELOAD = 11;
-		static const int QUERY_NOTIFICATION_PUT = 12;
-		static const int QUERY_NOTIFICATION_REM = 13;
-		static const int QUERY_NOTIFICATION_PUTCONF = 14;
+		static const int QUERY_CONTROL_RETRY = 12;
+		static const int QUERY_NOTIFICATION_PUT = 13;
+		static const int QUERY_NOTIFICATION_REM = 14;
+		static const int QUERY_NOTIFICATION_PUTCONF = 15;
 		
 		static const int RESET_GLOBAL_STATS = 14;
 		static const int PING = 15;
