@@ -67,6 +67,7 @@ WorkflowInstance::WorkflowInstance(void):
 	monitor_path(Configuration::GetInstance()->Get("processmanager.monitor.path"))
 {
 	workflow_instance_id = 0;
+	workflow_schedule_id = 0;
 	
 	errlogs = Configuration::GetInstance()->GetBool("processmanager.errlogs.enable");
 	
@@ -89,6 +90,9 @@ WorkflowInstance::WorkflowInstance(void):
 	running_tasks = 0;
 	retrying_tasks = 0;
 	error_tasks = 0;
+	
+	parser = 0;
+	serializer = 0;
 }
 
 WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const char *workflow_host, const char *workflow_user):
@@ -105,9 +109,6 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 
 	workflow_id = workflow.GetID();
 	notifications = workflow.GetNotifications();
-	
-	parser = 0;
-	serializer = 0;
 	
 	this->workflow_schedule_id = workflow_schedule_id;
 	
@@ -353,9 +354,6 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 
 WorkflowInstance::~WorkflowInstance()
 {
-	if(!workflow_instance_id)
-		return; // Object was not fully instanciated, skip destructor
-	
 	// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
 	for(int i = 0; i < notifications.size(); i++)
 		Notifications::GetInstance()->Call(notifications.at(i),this);
@@ -363,8 +361,11 @@ WorkflowInstance::~WorkflowInstance()
 	// Unregister new instance to ensure noone is still using it
 	WorkflowInstances::GetInstance()->Remove(workflow_instance_id);
 	
-	parser->release();
-	serializer->release();
+	if(parser)
+		parser->release();
+	
+	if(serializer)
+		serializer->release();
 	
 	Logger::Log(LOG_NOTICE,"[WID %d] Terminated",workflow_instance_id);
 	
@@ -375,7 +376,8 @@ WorkflowInstance::~WorkflowInstance()
 		scheduler->ScheduledWorkflowInstanceStop(workflow_schedule_id,error_tasks==0);
 	}
 	
-	Statistics::GetInstance()->DecWorkflowInstanceExecuting();
+	if(workflow_instance_id)
+		Statistics::GetInstance()->DecWorkflowInstanceExecuting();
 }
 
 void WorkflowInstance::Start(bool *workflow_terminated)
