@@ -58,8 +58,8 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		static const int QUERY_NOTIFICATION_REM = 14;
 		static const int QUERY_NOTIFICATION_PUTCONF = 15;
 		
-		static const int RESET_GLOBAL_STATS = 14;
-		static const int PING = 15;
+		static const int RESET_GLOBAL_STATS = 16;
+		static const int PING = 17;
 		
 		static const int QUERY_OPTION_MODE_SYNCHRONOUS = 1;
 		static const int QUERY_OPTION_MODE_ASYNCHRONOUS = 2;
