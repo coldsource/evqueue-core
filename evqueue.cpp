@@ -127,7 +127,7 @@ int main(int argc,const char **argv)
 			return tools_queue_stats();
 		else if(strcmp(argv[i],"--version")==0)
 		{
-			printf("evQueue version 1.4\n");
+			printf("evQueue version 1.4 (built " __DATE__ ")\n");
 			return 0;
 		}
 		else
