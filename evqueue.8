@@ -1,0 +1,31 @@
+.TH "EVQUEUE2" 8 "2015-06-11" "evQueue core engine" "evqueue"
+
+.SH NAME
+evQueue \- evQueue core engine
+.SH "SYNOPSIS"
+.PP
+\fBevqueue\fR [ OPTIONS ]
+.SH "DESCRIPTION"
+.PP
+evQueue is the core engine daemon. It must be running if you want to launch tasks and workflows.
+.PP
+An IPC queue is used for communication between tasks monitors and evQueue daemon. This is used to allow daemon restarting while tasks are running (as IPC queue is persistent). Missed messages will be processed after restart. So it is safe to restart the engine while workflows are running.
+.SH "OPTIONS"
+.TP
+\fB--config\fR \fIconfigfile\fR
+Load configuration from file \fIconfigfile\fR.
+.TP
+\fB--daemon\fR
+Run in background.
+.TP
+\fB--ipcq-remove\fR
+Remove the IPC queue. This will erase all persistent state of processes termination. In general you should never use this option unless the IPC queue has become corrupted. This can happen after an upgrade to an incompatible version when messages are pending in queue.
+.TP
+\fB--ipcq-stats\fR
+Display informations about IPC queue.
+.TP
+\fB--version\fR
+Display version information and build date.
+.SH SEE ALSO
+.BR http://www.evqueue.net/
+

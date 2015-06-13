@@ -39,6 +39,17 @@ add_executable(evqueue_notification_monitor evqueue_notification_monitor.cpp)
 
 include_directories(include /usr/include)
 
+
+
+ADD_CUSTOM_TARGET(man ALL)
+
+ADD_CUSTOM_COMMAND(
+  TARGET man
+  COMMAND gzip ${CMAKE_CURRENT_SOURCE_DIR}/evqueue.8 --stdout >${CMAKE_CURRENT_BINARY_DIR}/evqueue.8.gz
+)
+
+
+
 install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor DESTINATION bin)
 install(FILES etc/evqueue.conf DESTINATION /etc)
 install(FILES etc/init.d/evqueue DESTINATION /etc/init.d PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
@@ -47,6 +58,7 @@ install(DIRECTORY var/run/evqueue DESTINATION /var/run DIRECTORY_PERMISSIONS OWN
 install(FILES var/run/evqueue/evqueue.pid DESTINATION /var/run/evqueue)
 install(DIRECTORY plugins DESTINATION /usr/share/evqueue DIRECTORY_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_WRITE GROUP_READ WORLD_EXECUTE WORLD_READ)
 install(FILES plugins/notifications/email.php DESTINATION /usr/share/evqueue/plugins/notifications PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man8)
 
 set(CPACK_PACKAGE_FILE_NAME "evqueue-core_1.4_amd64")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "evQueue core module")
