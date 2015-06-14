@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if [ -x "/etc/init.d/evqueue" ]; then
+	/etc/init.d/evqueue stop
+fi

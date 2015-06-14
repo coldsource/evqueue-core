@@ -1,0 +1,5 @@
+#!/bin/bash
+
+deluser --quiet evqueue
+
+/etc/init.d/rsyslog restart || exit $?

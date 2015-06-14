@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ "$1" = "configure" ]; then
+	if ! getent group evqueue > /dev/null 2>&1 ; then
+		addgroup --system --quiet evqueue
+	fi
+	
+	if ! getent passwd evqueue > /dev/null 2>&1 ; then
+		adduser --quiet --system --disabled-login --ingroup evqueue --home /var/run/evqueue/ --no-create-home evqueue
+	fi
+	
+	chown -R evqueue:evqueue /var/run/evqueue
+	
+	/etc/init.d/rsyslog restart || exit $?
+	
+	/etc/init.d/evqueue start
+fi
