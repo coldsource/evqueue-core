@@ -32,6 +32,8 @@
 #include <syslog.h>
 #include <errno.h>
 #include <stdio.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include <mysql/mysql.h>
 
@@ -177,19 +179,55 @@ int main(int argc,const char **argv)
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
 		
+		// Get/Compute GID
+		int gid;
+		try
+		{
+			gid = std::stoi(config->Get("core.gid"));
+		}
+		catch(const std::invalid_argument& excpt)
+		{
+			struct group *group_entry = getgrnam(config->Get("core.gid").c_str());
+			if(!group_entry)
+				throw Exception("core","Unable to find group");
+			
+			gid = group_entry->gr_gid;
+		}
+		catch(const std::out_of_range & excpt)
+		{
+			throw Exception("core","Invalid GID");
+		}
+		
+		// Get/Compute UID
+		int uid;
+		try
+		{
+			uid = std::stoi(config->Get("core.uid"));
+		}
+		catch(const std::invalid_argument& excpt)
+		{
+			struct passwd *user_entry = getpwnam(config->Get("core.uid").c_str());
+			if(!user_entry)
+				throw Exception("core","Unable to find user");
+			
+			uid = user_entry->pw_uid;
+		}
+		catch(const std::out_of_range & excpt)
+		{
+			throw Exception("core","Invalid UID");
+		}
+		
+		// Set uid/gid if requested
+		if(gid!=0 && setegid(gid)!=0)
+			throw Exception("core","Unable to set requested GID");
+		
+		if(uid!=0 && seteuid(uid)!=0)
+			throw Exception("core","Unable to set requested UID");
+		
 		// Open pid file before fork to eventually print errors
 		FILE *pidfile = fopen(config->Get("core.pidfile").c_str(),"w");
 		if(pidfile==0)
 			throw Exception("core","Unable to open pid file");
-		
-		int gid = config->GetInt("core.gid");
-		if(gid!=0 && setgid(gid)!=0)
-			throw Exception("core","Unable to set requested GID");
-		
-		// Set uid/gid if requested
-		int uid = config->GetInt("core.uid");
-		if(uid!=0 && setuid(uid)!=0)
-			throw Exception("core","Unable to set requested UID");
 		
 		// Check database connection
 		DB db;
@@ -465,6 +503,8 @@ int main(int argc,const char **argv)
 		
 		if(!daemonized)
 			fprintf(stderr,"Unexpected exception : [ %s ] %s\n",e.context,e.error);
+		
+		unlink(Configuration::GetInstance()->Get("core.pidfile").c_str());
 		
 		return -1;
 	}
