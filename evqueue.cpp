@@ -28,6 +28,7 @@
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <sys/un.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <syslog.h>
 #include <errno.h>
@@ -385,6 +386,7 @@ int main(int argc,const char **argv)
 				throw Exception("core","Unable to bind unix listen socket");
 			
 			// Listen on socket
+			chmod(config->Get("network.bind.path").c_str(),0777);
 			re=listen(listen_socket_unix,config->GetInt("network.listen.backlog"));
 			if(re==-1)
 				throw Exception("core","Unable to listen on unix socket");
