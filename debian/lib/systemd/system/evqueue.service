@@ -1,0 +1,13 @@
+[Unit]
+Description=evQueue core daemon
+Documentation=man:evqueue(8)
+After=network.target
+After=syslog.target
+After=mysql.service
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/evqueue --daemon --config /etc/evqueue.conf
+
+[Install]
+WantedBy=multi-user.target
