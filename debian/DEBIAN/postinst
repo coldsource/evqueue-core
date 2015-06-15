@@ -12,6 +12,4 @@ if [ "$1" = "configure" ]; then
 	chown -R evqueue:evqueue /var/run/evqueue
 	
 	/etc/init.d/rsyslog restart || exit $?
-	
-	/etc/init.d/evqueue start
 fi
