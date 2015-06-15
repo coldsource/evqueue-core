@@ -35,6 +35,9 @@
 #include <pwd.h>
 #include <grp.h>
 
+#include <string>
+#include <stdexcept>
+
 #include <mysql/mysql.h>
 
 #include <Logger.h>
