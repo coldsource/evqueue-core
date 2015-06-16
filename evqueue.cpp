@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <pwd.h>
 #include <grp.h>
+#include <libgen.h>
 
 #include <string>
 #include <stdexcept>
@@ -220,6 +221,19 @@ int main(int argc,const char **argv)
 		{
 			throw Exception("core","Invalid UID");
 		}
+		
+		// Create directory for PID (usually in /var/run)
+		char *pid_file2 = strdup(config->Get("core.pidfile").c_str());
+		char *pid_directory = dirname(pid_file2);
+		mkdir(pid_directory,0755);
+		
+		if(uid!=0)
+			chown(pid_directory,uid,-1);
+		
+		if(gid!=0)
+			chown(pid_directory,-1,gid);
+		
+		free(pid_file2);
 		
 		// Set uid/gid if requested
 		if(gid!=0 && setegid(gid)!=0)
