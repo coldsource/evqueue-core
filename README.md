@@ -31,3 +31,7 @@ These packages are required to build from the source:
 - libmysqlclient-dev
 - libxqilla-dev
 - libxerces-c-dev
+
+### Packages
+
+If you are looking for pre-compilet packages, see [our debian repository](https://packagecloud.io/coldsource/evqueue).
