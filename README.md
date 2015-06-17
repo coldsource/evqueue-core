@@ -34,4 +34,4 @@ These packages are required to build from the source:
 
 ### Packages
 
-If you are looking for pre-compilet packages, see [our debian repository](https://packagecloud.io/coldsource/evqueue).
+If you are looking for pre-compiled packages, see [our debian repository](https://packagecloud.io/coldsource/evqueue).
