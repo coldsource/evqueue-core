@@ -306,7 +306,7 @@ void *handle_connection(void *sp)
 			{
 				string file_content;
 				Notification::GetFileConf(saxh->GetFileName(),file_content);
-				send(s,"<return status='OK' data='",25,0);
+				send(s,"<return status='OK' data='",26,0);
 				send(s,file_content.c_str(),file_content.length(),0);
 				send(s,"' />",4,0);
 			}
