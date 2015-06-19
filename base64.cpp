@@ -37,7 +37,7 @@ bool base64_decode_file(FILE *f,const string &base64_str)
 	for(int i=0;i<64;i++)
 		b64_rev_table[b64_table[i]] = i;
 	
-	unsigned int block = 0, block_size = 0;
+	unsigned int block = 0, block_size = 0, block_padding = 0;
 	char block_str[3];
 	for(int i=0;i<base64_str.length();i++)
 	{
@@ -48,6 +48,7 @@ bool base64_decode_file(FILE *f,const string &base64_str)
 			// PAD
 			block <<= 6;
 			block_size++;
+			block_padding++;
 		}
 		else if(base64_str[i]==' ' || base64_str[i]=='\r' || base64_str[i]=='\n' || base64_str[i]=='\t')
 			continue; // Skip blanks
@@ -66,10 +67,11 @@ bool base64_decode_file(FILE *f,const string &base64_str)
 			block_str[0] = (block & 0x00FF0000) >> 16;
 			block_str[1] = (block & 0x0000FF00) >> 8;
 			block_str[2] = (block & 0x000000FF);
-			fwrite(block_str,1,3,f);
+			fwrite(block_str,1,3-block_padding,f);
 			
 			block = 0;
 			block_size = 0;
+			block_padding = 0;
 		}
 	}
 	
