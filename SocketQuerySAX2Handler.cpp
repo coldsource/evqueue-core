@@ -126,6 +126,42 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					}
 				}
 			}
+			else if(strcmp(node_name_c,"task")==0)
+			{
+				const XMLCh *action_attr = attrs.getValue(X("action"));
+				
+				if(action_attr==0)
+					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node task");
+				
+				if(XMLString::compareString(action_attr,X("get"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_TASK_GET;
+				else if(XMLString::compareString(action_attr,X("put"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_TASK_PUT;
+				else if(XMLString::compareString(action_attr,X("remove"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_TASK_REM;
+				else
+					throw Exception("SocketQuerySAX2Handler","Unknown task action");
+				
+				if(query_type==QUERY_TASK_GET || query_type==QUERY_TASK_PUT || query_type==QUERY_TASK_REM)
+				{
+					const XMLCh *filename_attr = attrs.getValue(X("filename"));
+					
+					if(filename_attr==0)
+						throw Exception("SocketQuerySAX2Handler","Missing filename attribute on node task");
+					
+					file_name = XMLString::transcode(filename_attr);
+					
+					if(query_type==QUERY_TASK_PUT)
+					{
+						const XMLCh *data_attr = attrs.getValue(X("data"));
+						
+						if(data_attr==0)
+							throw Exception("SocketQuerySAX2Handler","Missing data attribute on node task");
+						
+						file_data = XMLString::transcode(data_attr);
+					}
+				}
+			}
 			else if(strcmp(node_name_c,"statistics")==0)
 			{
 				const XMLCh *type_attr = attrs.getValue(X("type"));

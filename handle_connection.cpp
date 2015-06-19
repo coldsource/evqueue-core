@@ -32,6 +32,7 @@
 #include <Configuration.h>
 #include <Sockets.h>
 #include <Notification.h>
+#include <Task.h>
 #include <tools.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
@@ -269,7 +270,7 @@ void *handle_connection(void *sp)
 			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUT)
-		{	
+		{
 			try
 			{
 				Notification::PutFile(saxh->GetFileName(),saxh->GetFileData());
@@ -285,7 +286,7 @@ void *handle_connection(void *sp)
 			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUTCONF)
-		{	
+		{
 			try
 			{
 				Notification::PutFileConf(saxh->GetFileName(),saxh->GetFileData());
@@ -301,7 +302,7 @@ void *handle_connection(void *sp)
 			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_GETCONF)
-		{	
+		{
 			try
 			{
 				string file_content;
@@ -320,7 +321,7 @@ void *handle_connection(void *sp)
 			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_REM)
-		{	
+		{
 			try
 			{
 				Notification::RemoveFile(saxh->GetFileName());
@@ -336,10 +337,61 @@ void *handle_connection(void *sp)
 			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_REMCONF)
-		{	
+		{
 			try
 			{
 				Notification::RemoveFileConf(saxh->GetFileName());
+				send(s,"<return status='OK' />",22,0);
+			}
+			catch(Exception &e)
+			{
+				send(s,"<return status='KO' error=\"",27,0);
+				send(s,e.error,strlen(e.error),0);
+				send(s,"\" />",4,0);
+			}
+			
+			throw (void *)0;
+		}
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_PUT)
+		{
+			try
+			{
+				Task::PutFile(saxh->GetFileName(),saxh->GetFileData());
+				send(s,"<return status='OK' />",22,0);
+			}
+			catch(Exception &e)
+			{
+				send(s,"<return status='KO' error=\"",27,0);
+				send(s,e.error,strlen(e.error),0);
+				send(s,"\" />",4,0);
+			}
+			
+			throw (void *)0;
+		}
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_GET)
+		{
+			try
+			{
+				string file_content;
+				Task::GetFile(saxh->GetFileName(),file_content);
+				send(s,"<return status='OK' data='",26,0);
+				send(s,file_content.c_str(),file_content.length(),0);
+				send(s,"' />",4,0);
+			}
+			catch(Exception &e)
+			{
+				send(s,"<return status='KO' error=\"",27,0);
+				send(s,e.error,strlen(e.error),0);
+				send(s,"\" />",4,0);
+			}
+			
+			throw (void *)0;
+		}
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_REM)
+		{
+			try
+			{
+				Task::RemoveFile(saxh->GetFileName());
 				send(s,"<return status='OK' />",22,0);
 			}
 			catch(Exception &e)

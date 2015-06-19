@@ -47,6 +47,10 @@ class Task
 		bool IsAbsolutePath() const { return task_binary[0]=='/'?true:false; }
 		task_parameters_mode::task_parameters_mode GetParametersMode() const  { return parameters_mode; }
 		task_output_method::task_output_method GetOutputMethod() const  { return output_method; }
+		
+		static void PutFile(const std::string &filename,const std::string &data);
+		static void GetFile(const std::string &filename,std::string &data);
+		static void RemoveFile(const std::string &filename);
 };
 
 #endif

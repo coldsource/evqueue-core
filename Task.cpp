@@ -20,6 +20,8 @@
 #include <Task.h>
 #include <DB.h>
 #include <Exception.h>
+#include <FileManager.h>
+#include <Configuration.h>
 
 #include <string.h>
 
@@ -58,4 +60,19 @@ Task::Task(DB *db,const string &task_name)
 		output_method = task_output_method::XML;
 	else
 		output_method = task_output_method::TEXT;
+}
+
+void Task::PutFile(const string &filename,const string &data)
+{
+	FileManager::PutFile(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY);
+}
+
+void Task::GetFile(const string &filename,string &data)
+{
+	FileManager::GetFile(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename,data);
+}
+
+void Task::RemoveFile(const string &filename)
+{
+	FileManager::RemoveFile(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename);
 }
