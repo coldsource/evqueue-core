@@ -31,6 +31,7 @@ class FileManager
 		static bool CheckFileName(const std::string &file_name);
 		
 		static void PutFile(const std::string &directory,const std::string &filename,const std::string &data,int filetype);
+		static void GetFile(const std::string &directory,const std::string &filename,std::string &data);
 		static void RemoveFile(const std::string &directory,const std::string &filename);
 };
 

@@ -106,17 +106,32 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 	return pid;
 }
 
-void Notification::PutFile(const std::string &filename,const std::string &data)
+void Notification::PutFile(const string &filename,const string &data)
 {
 	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY);
 }
 
-void Notification::PutFileConf(const std::string &filename,const std::string &data)
+void Notification::PutFileConf(const string &filename,const string &data)
 {
 	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data,FileManager::FILETYPE_CONF);
 }
 
-void Notification::RemoveFile(const std::string &filename)
+void Notification::GetFile(const string &filename,string &data)
+{
+	FileManager::GetFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data);
+}
+
+void Notification::GetFileConf(const string &filename,string &data)
+{
+	FileManager::GetFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data);
+}
+
+void Notification::RemoveFile(const string &filename)
 {
 	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename);
+}
+
+void Notification::RemoveFileConf(const string &filename)
+{
+	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename);
 }

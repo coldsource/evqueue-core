@@ -21,44 +21,42 @@
 
 #include <string.h>
 
-bool base64_decode_file(FILE *f,const char *base64_str)
+using namespace std;
+
+static const char b64_table[64] = {
+	'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+	'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+	'0','1','2','3','4','5','6','7','8','9',
+	'+','/'
+};
+
+bool base64_decode_file(FILE *f,const string &base64_str)
 {
-	static const char b64_table[64] = {
-		'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-		'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
-		'0','1','2','3','4','5','6','7','8','9',
-		'+','/'
-	};
-	
 	unsigned char b64_rev_table[0x80];
 	memset(b64_rev_table,'\xFF',64);
 	for(int i=0;i<64;i++)
 		b64_rev_table[b64_table[i]] = i;
 	
-	const char *ptr = base64_str;
 	unsigned int block = 0, block_size = 0;
 	char block_str[3];
-	while(ptr[0])
+	for(int i=0;i<base64_str.length();i++)
 	{
-		if(ptr[0]>=0x80)
+		if(base64_str[i]>=0x80)
 			return false; // Illegal character
-		else if(ptr[0]=='=')
+		else if(base64_str[i]=='=')
 		{
 			// PAD
 			block <<= 6;
 			block_size++;
 		}
-		else if(ptr[0]==' ' || ptr[0]=='\r' || ptr[0]=='\n' || ptr[0]=='\t')
-		{
-			ptr++;
+		else if(base64_str[i]==' ' || base64_str[i]=='\r' || base64_str[i]=='\n' || base64_str[i]=='\t')
 			continue; // Skip blanks
-		}
-		else if(b64_rev_table[ptr[0]]==0xFF)
+		else if(b64_rev_table[base64_str[i]]==0xFF)
 			return false; // Illegal character
 		else
 		{
 			block <<= 6;
-			block |= b64_rev_table[ptr[0]];
+			block |= b64_rev_table[base64_str[i]];
 			
 			block_size++;
 		}
@@ -73,9 +71,40 @@ bool base64_decode_file(FILE *f,const char *base64_str)
 			block = 0;
 			block_size = 0;
 		}
-		
-		ptr++;
 	}
 	
 	return true;
+}
+
+void base64_encode_file(FILE *f,string &base64_str)
+{
+	unsigned int block = 0, block_size = 0;
+	char block_str[3];
+	
+	while(block_size = fread(block_str,1,3,f))
+	{
+		block = block_str[0] << 16;
+		if(block_size>=1)
+			block = block | (block_str[1] << 8);
+		if(block_size>=2)
+			block = block | block_str[2];
+		
+		base64_str.append(1,b64_table[(block & 0xFC0000) >> 18]);
+		base64_str.append(1,b64_table[(block & 0x03F000) >> 12]);
+		
+		if(block_size==1)
+			base64_str.append(2,'=');
+		
+		if(block_size==2)
+		{
+			base64_str.append(1,b64_table[(block & 0x000FC0) >> 6]);
+			base64_str.append(1,'=');
+		}
+		
+		if(block_size==3)
+		{
+			base64_str.append(1,b64_table[(block & 0x000FC0) >> 6]);
+			base64_str.append(1,b64_table[(block & 0x00003F)]);
+		}
+	}
 }

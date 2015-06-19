@@ -50,7 +50,7 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 	
 	int fd;
 	if(filetype==FILETYPE_CONF)
-		fd = open(path.c_str(),O_CREAT|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+		fd = open(path.c_str(),O_CREAT|O_RDWR|O_TRUNC,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 	else if(filetype==FILETYPE_BINARY)
 		fd = open(path.c_str(),O_CREAT|O_EXCL|O_RDWR,S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
 	
@@ -67,7 +67,7 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 	}
 	
 	FILE *f = fdopen(fd,"w");
-	bool re = base64_decode_file(f,data.c_str());
+	bool re = base64_decode_file(f,data);
 	fclose(f);
 	
 	if(!re)
@@ -75,6 +75,26 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 		unlink(path.c_str());
 		throw Exception("Notification","Invalid file data");
 	}
+}
+
+void FileManager::GetFile(const string &directory,const string &filename,string &data)
+{
+	if(!CheckFileName(filename))
+		throw Exception("Notification","Invalid file name");
+	
+	string path = directory+"/"+filename;
+	
+	printf("%s\n",path.c_str());
+	int fd = open(path.c_str(),O_RDONLY);
+	if(fd==-1)
+	{
+		Logger::Log(LOG_ERR,"Unable to open file : %s",path.c_str());
+		throw Exception("Notification","Unable to open file");
+	}
+	
+	FILE *f = fdopen(fd,"r");
+	base64_encode_file(f,data);
+	fclose(f);
 }
 
 void FileManager::RemoveFile(const string &directory,const string &filename)

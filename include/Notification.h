@@ -47,7 +47,10 @@ class Notification
 		
 		static void PutFile(const std::string &filename,const std::string &data);
 		static void PutFileConf(const std::string &filename,const std::string &data);
+		static void GetFile(const std::string &filename,std::string &data);
+		static void GetFileConf(const std::string &filename,std::string &data);
 		static void RemoveFile(const std::string &filename);
+		static void RemoveFileConf(const std::string &filename);
 	
 	private:
 		void free(void);

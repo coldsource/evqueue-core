@@ -22,6 +22,11 @@
 
 #include <stdio.h>
 
-bool base64_decode_file(FILE *f,const char *base64_str);
+#include <string>
+
+#define BASE64_SIZE(x) ((int)((x)+(x)/3+16))
+
+bool base64_decode_file(FILE *f,const std::string &base64_str);
+void base64_encode_file(FILE *f,std::string &base64_str);
 
 #endif
