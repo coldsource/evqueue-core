@@ -1231,12 +1231,6 @@ void WorkflowInstance::run_subjobs(DOMNode *job)
 					throw Exception("WorkflowInstance","Error while evaluating loop");
 				}
 				
-				if(!matching_nodes->isNode())
-				{
-					// XPath expression error
-					throw Exception("WorkflowInstance","Loop expression returned empty result");
-				}
-				
 				while(matching_nodes->snapshotItem(matching_nodes_index++))
 				{
 					matching_node = matching_nodes->getNodeValue();
@@ -1336,7 +1330,7 @@ void WorkflowInstance::replace_value(DOMNode *task,DOMNode *context_node)
 			values->release();
 			
 			// XPath expression error
-			throw Exception("WorkflowInstance","Error computing input values");
+			throw Exception("WorkflowInstance","Error computing input values from copy node");
 		}
 		
 		int result_index = 0;
@@ -1344,7 +1338,14 @@ void WorkflowInstance::replace_value(DOMNode *task,DOMNode *context_node)
 		while(result_nodes->snapshotItem(result_index++))
 		{
 			result_node = result_nodes->getNodeValue();
-			value->getParentNode()->insertBefore(result_node->cloneNode(true),value);
+			try
+			{
+				value->getParentNode()->insertBefore(result_node->cloneNode(true),value);
+			}
+			catch(DOMException &xe)
+			{
+				throw Exception("WorkflowInstance","Error computing copy node while replacing values in task input");
+			}
 		}
 		
 		result_nodes->release();
