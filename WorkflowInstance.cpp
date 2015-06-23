@@ -1181,11 +1181,8 @@ void WorkflowInstance::run_subjobs(DOMNode *job)
 				}
 				catch(XQillaException &xqe)
 				{
-					((DOMElement *)subjob)->setAttribute(X("status"),X("ABORTED"));
-					((DOMElement *)subjob)->setAttribute(X("details"),X("Error while evaluating condition"));
-					
 					// XPath expression error
-					throw Exception("WorkflowInstance","Exception in workflow instance");
+					throw Exception("WorkflowInstance","Error while evaluating condition");
 				}
 				
 				int test_value;
@@ -1196,12 +1193,9 @@ void WorkflowInstance::run_subjobs(DOMNode *job)
 				}
 				catch(XQillaException &xqe)
 				{
-					((DOMElement *)subjob)->setAttribute(X("status"),X("ABORTED"));
-					((DOMElement *)subjob)->setAttribute(X("details"),X("Condition evaluation returned no result"));
-					
 					test_expr->release();
 					
-					throw Exception("WorkflowInstance","Exception in workflow instance");
+					throw Exception("WorkflowInstance","Condition evaluation returned no result");
 				}
 				
 				
@@ -1233,13 +1227,15 @@ void WorkflowInstance::run_subjobs(DOMNode *job)
 				}
 				catch(XQillaException &xqe)
 				{
-					((DOMElement *)subjob)->setAttribute(X("status"),X("ABORTED"));
-					((DOMElement *)subjob)->setAttribute(X("details"),X("Error while evaluating loop"));
-					
 					// XPath expression error
-					throw Exception("WorkflowInstance","Exception in workflow instance");
+					throw Exception("WorkflowInstance","Error while evaluating loop");
 				}
 				
+				if(!matching_nodes->isNode())
+				{
+					// XPath expression error
+					throw Exception("WorkflowInstance","Loop expression returned empty result");
+				}
 				
 				while(matching_nodes->snapshotItem(matching_nodes_index++))
 				{
