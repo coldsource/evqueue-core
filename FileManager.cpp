@@ -84,7 +84,6 @@ void FileManager::GetFile(const string &directory,const string &filename,string 
 	
 	string path = directory+"/"+filename;
 	
-	printf("%s\n",path.c_str());
 	int fd = open(path.c_str(),O_RDONLY);
 	if(fd==-1)
 	{
