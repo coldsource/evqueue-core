@@ -61,6 +61,12 @@ int main(int argc,char ** argv)
 	signal(SIGTERM,signal_callback_handler);
 	signal(SIGALRM,signal_callback_handler);
 	
+	// Unblock SIGTERM (blocked by evqueue)
+	sigset_t signal_mask;
+	sigemptyset(&signal_mask);
+	sigaddset(&signal_mask, SIGTERM);
+	sigprocmask(SIG_UNBLOCK,&signal_mask,0);
+	
 	// Create message queue
 	int msgqid = msgget(PROCESS_MANAGER_MSGQID,0700 | IPC_CREAT);
 	if(msgqid==-1)
