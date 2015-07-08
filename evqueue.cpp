@@ -236,10 +236,10 @@ int main(int argc,const char **argv)
 		free(pid_file2);
 		
 		// Set uid/gid if requested
-		if(gid!=0 && setegid(gid)!=0)
+		if(gid!=0 && setregid(gid,gid)!=0)
 			throw Exception("core","Unable to set requested GID");
 		
-		if(uid!=0 && seteuid(uid)!=0)
+		if(uid!=0 && setreuid(uid,uid)!=0)
 			throw Exception("core","Unable to set requested UID");
 		
 		// Open pid file before fork to eventually print errors
