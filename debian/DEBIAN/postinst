@@ -9,5 +9,9 @@ if [ "$1" = "configure" ]; then
 		adduser --quiet --system --disabled-login --ingroup evqueue --home /var/run/evqueue/ --no-create-home evqueue
 	fi
 	
-	/etc/init.d/rsyslog restart || exit $?
+	chown -R evqueue:evqueue /usr/share/evqueue-core
+	
+	/etc/init.d/rsyslog restart
+	
+	exit 0
 fi

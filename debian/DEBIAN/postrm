@@ -1,5 +1,10 @@
 #!/bin/bash
 
-deluser --quiet evqueue
+if id -u evqueue >/dev/null 2>&1; then
+        deluser --quiet evqueue
+fi
 
-/etc/init.d/rsyslog restart || exit $?
+/etc/init.d/rsyslog restart
+
+# Force clean exit to prevent broken pacakge
+exit 0
