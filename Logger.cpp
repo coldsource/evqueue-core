@@ -63,8 +63,12 @@ void Logger::Log(int level,const char *msg,...)
 	
 	if(instance->log_db && level<=instance->db_filter)
 	{
-		DB db;
-		db.QueryPrintf("INSERT INTO t_log(log_level,log_message,log_timestamp) VALUES(%i,%s,NOW())",&level,buf);
+		try
+		{
+			DB db;
+			db.QueryPrintf("INSERT INTO t_log(log_level,log_message,log_timestamp) VALUES(%i,%s,NOW())",&level,buf);
+		}
+		catch(Exception &e) { }
 	}
 }
 
