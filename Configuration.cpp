@@ -56,6 +56,7 @@ Configuration::Configuration(void)
 	entries["network.bind.ip"] = "127.0.0.1";
 	entries["network.bind.path"] = "/var/run/evqueue/evqueue.socket";
 	entries["network.bind.port"] = "5000";
+	entries["network.node.name"] = "";
 	entries["network.connections.max"] = "128";
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";

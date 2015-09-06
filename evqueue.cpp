@@ -292,7 +292,7 @@ int main(int argc,const char **argv)
 		RetrySchedules *retry_schedules = new RetrySchedules();
 		
 		// Check if workflows are to resume (we have to resume them before starting ProcessManager)
-		db.Query("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
+		db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",config->Get("network.node.name").c_str());
 		while(db.FetchRow())
 		{
 			Logger::Log(LOG_NOTICE,"[WID %d] Resuming",db.GetFieldInt(0));
