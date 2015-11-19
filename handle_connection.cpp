@@ -147,13 +147,12 @@ void *handle_connection(void *sp)
 			throw (void *)0;
 		}
 		
-		// we have a request to launch a new workflow instance
 		if ( saxh->GetQueryType() == SocketQuerySAX2Handler::PING)
 		{
 			send(s,"<pong />",8,0);
 			throw (void *)0;
 		}
-		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH)
+		else if (saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH)
 		{
 			const char *workflow_name = saxh->GetWorkflowName();
 			WorkflowInstance *wi;
@@ -193,6 +192,48 @@ void *handle_connection(void *sp)
 			throw (void *)0;
 		
 		// we have a query to find out information about a given workflow instance
+		}
+		else if(saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_MIGRATE)
+		{
+			int workflow_instance_id = saxh->GetWorkflowId();
+			DB db;
+			
+			// Check if workflow instance exists and is eligible to migration
+			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,config->Get("network.node.name").c_str());
+			if(!db.FetchRow())
+			{
+				send(s,"<return status='KO' error=\"Workflow ID not found or already belongs to this node\" />",84,0);
+				throw (void *)0;
+			}
+			
+			Logger::Log(LOG_NOTICE,"[WID %d] Migrating",db.GetFieldInt(0));
+			
+			WorkflowInstance *workflow_instance = 0;
+			bool workflow_terminated;
+			try
+			{
+				workflow_instance = new WorkflowInstance(db.GetFieldInt(0));
+				workflow_instance->Migrate(&workflow_terminated);
+				if(workflow_terminated)
+					delete workflow_instance;
+			}
+			catch(Exception &e)
+			{
+				send(s,"<return status='KO' error=\"",27,0);
+				send(s,e.error,strlen(e.error),0);
+				send(s,"\" />",4,0);
+				
+				Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to migrate : [ %s ] %s\n",db.GetFieldInt(0),e.context,e.error);
+				
+				if(workflow_instance)
+					delete workflow_instance;
+				
+				throw (void *)0;
+			}
+			
+			send(s,"<return status='OK' />",22,0);
+			
+			throw (void*)0;
 		}
 		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_INFO)
 		{

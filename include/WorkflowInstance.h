@@ -77,6 +77,7 @@ class WorkflowInstance
 		
 		void Start(bool *workflow_terminated);
 		void Resume(bool *workflow_terminated);
+		void Migrate(bool *workflow_terminated);
 		void Cancel();
 		
 		void TaskRestart(DOMNode *task, bool *workflow_terminated);

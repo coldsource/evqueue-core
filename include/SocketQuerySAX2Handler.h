@@ -43,28 +43,29 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		
 	public:
 		static const int QUERY_WORKFLOW_LAUNCH = 1;
-		static const int QUERY_WORKFLOW_INFO = 2;
-		static const int QUERY_QUEUE_STATS = 3;
-		static const int QUERY_GLOBAL_STATS = 4;
-		static const int QUERY_STATUS_WORKFLOWS = 5;
-		static const int QUERY_STATUS_SCHEDULER = 6;
-		static const int QUERY_STATUS_CONFIGURATION = 7;
-		static const int QUERY_WORKFLOW_CANCEL = 8;
-		static const int QUERY_WORKFLOW_WAIT = 9;
-		static const int QUERY_WORKFLOW_KILLTASK = 10;
-		static const int QUERY_CONTROL_RELOAD = 11;
-		static const int QUERY_CONTROL_RETRY = 12;
-		static const int QUERY_NOTIFICATION_PUT = 13;
-		static const int QUERY_NOTIFICATION_REM = 14;
-		static const int QUERY_NOTIFICATION_PUTCONF = 15;
-		static const int QUERY_NOTIFICATION_REMCONF = 16;
-		static const int QUERY_NOTIFICATION_GETCONF = 17;
-		static const int QUERY_TASK_GET = 18;
-		static const int QUERY_TASK_PUT = 19;
-		static const int QUERY_TASK_REM = 20;
+		static const int QUERY_WORKFLOW_MIGRATE = 2;
+		static const int QUERY_WORKFLOW_INFO = 3;
+		static const int QUERY_QUEUE_STATS = 4;
+		static const int QUERY_GLOBAL_STATS = 5;
+		static const int QUERY_STATUS_WORKFLOWS = 6;
+		static const int QUERY_STATUS_SCHEDULER = 7;
+		static const int QUERY_STATUS_CONFIGURATION = 8;
+		static const int QUERY_WORKFLOW_CANCEL = 9;
+		static const int QUERY_WORKFLOW_WAIT = 10;
+		static const int QUERY_WORKFLOW_KILLTASK = 11;
+		static const int QUERY_CONTROL_RELOAD = 12;
+		static const int QUERY_CONTROL_RETRY = 13;
+		static const int QUERY_NOTIFICATION_PUT = 14;
+		static const int QUERY_NOTIFICATION_REM = 15;
+		static const int QUERY_NOTIFICATION_PUTCONF = 16;
+		static const int QUERY_NOTIFICATION_REMCONF = 17;
+		static const int QUERY_NOTIFICATION_GETCONF = 18;
+		static const int QUERY_TASK_GET = 19;
+		static const int QUERY_TASK_PUT = 20;
+		static const int QUERY_TASK_REM = 21;
 		
-		static const int RESET_GLOBAL_STATS = 21;
-		static const int PING = 22;
+		static const int RESET_GLOBAL_STATS = 22;
+		static const int PING = 23;
 		
 		static const int QUERY_OPTION_MODE_SYNCHRONOUS = 1;
 		static const int QUERY_OPTION_MODE_ASYNCHRONOUS = 2;

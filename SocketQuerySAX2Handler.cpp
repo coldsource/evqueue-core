@@ -241,6 +241,8 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					
 					if(action_attr==0 || XMLString::compareString(action_attr,X("info"))==0)
 						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_INFO;
+					else if(XMLString::compareString(action_attr,X("migrate"))==0)
+						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_MIGRATE;
 					else if(XMLString::compareString(action_attr,X("cancel"))==0)
 						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_CANCEL;
 					else if(XMLString::compareString(action_attr,X("wait"))==0)

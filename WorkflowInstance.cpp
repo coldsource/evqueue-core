@@ -93,6 +93,12 @@ WorkflowInstance::WorkflowInstance(void):
 	
 	parser = 0;
 	serializer = 0;
+	
+	// Initialize mutex
+	pthread_mutexattr_t lock_attr;
+	pthread_mutexattr_init(&lock_attr);
+	pthread_mutexattr_settype(&lock_attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&lock, &lock_attr);
 }
 
 WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const char *workflow_host, const char *workflow_user):
@@ -290,8 +296,6 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 		throw e;
 	}
 	
-	pthread_mutex_init(&lock,0);
-	
 	// Register new instance
 	WorkflowInstances::GetInstance()->Add(workflow_instance_id, this);
 	
@@ -343,8 +347,6 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 	workflow_schedule_id = db.GetFieldInt(1);
 	
 	workflow_id = db.GetFieldInt(2);
-
-	pthread_mutex_init(&lock,0);
 	
 	// Register new instance
 	WorkflowInstances::GetInstance()->Add(workflow_instance_id, this);
@@ -413,7 +415,6 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 
 void WorkflowInstance::Resume(bool *workflow_terminated)
 {
-	DB db;
 	char buf[256];
 	int tasks_index = 0;
 	
@@ -455,6 +456,51 @@ void WorkflowInstance::Resume(bool *workflow_terminated)
 	
 	if(tasks_index>0)
 		record_savepoint(); // XML has been modified (tasks status update from DB)
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void WorkflowInstance::Migrate(bool *workflow_terminated)
+{
+	int tasks_index = 0;
+	
+	pthread_mutex_lock(&lock);
+	
+	// For EXECUTING tasks : since we are migrating from another node, they will never end, fake termination
+	DOMXPathResult *tasks = xmldoc->evaluate(X("//task[@status='QUEUED' or @status='EXECUTING' or @status='TERMINATED']"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::SNAPSHOT_RESULT_TYPE,0);
+	DOMNode *task;
+	
+	while(tasks->snapshotItem(tasks_index++))
+	{
+		task = tasks->getNodeValue();
+		
+		if(XMLString::compareString(X("QUEUED"),((DOMElement *)task)->getAttribute(X("status")))==0)
+			enqueue_task(task);
+		else if(XMLString::compareString(X("EXECUTING"),((DOMElement *)task)->getAttribute(X("status")))==0)
+		{
+			// Fake task ending with generic error code
+			running_tasks++;
+			TaskStop(task,-1,"Task migrated",workflow_terminated);
+		}
+		else if(XMLString::compareString(X("TERMINATED"),((DOMElement *)task)->getAttribute(X("status")))==0)
+		{
+			if(XMLString::compareString(X("0"),((DOMElement *)task)->getAttribute(X("retval")))!=0)
+				retry_task(task);
+		}
+	}
+	
+	tasks->release();
+	
+	*workflow_terminated = workflow_ended();
+	
+	if(tasks_index>0)
+		record_savepoint(); // XML has been modified (tasks status update from DB)
+	
+	// Workflow is migrated, update node name
+	Configuration *config = Configuration::GetInstance();
+	
+	DB db;
+	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",config->Get("network.node.name").c_str(),&workflow_instance_id);
 	
 	pthread_mutex_unlock(&lock);
 }
