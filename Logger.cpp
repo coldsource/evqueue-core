@@ -32,7 +32,8 @@ Logger *Logger::instance = 0;
 
 using namespace std;
 
-Logger::Logger()
+Logger::Logger():
+	node_name(Configuration::GetInstance()->Get("network.node.name"))
 {
 	Configuration *config = Configuration::GetInstance();
 	
@@ -66,7 +67,7 @@ void Logger::Log(int level,const char *msg,...)
 		try
 		{
 			DB db;
-			db.QueryPrintf("INSERT INTO t_log(log_level,log_message,log_timestamp) VALUES(%i,%s,NOW())",&level,buf);
+			db.QueryPrintf("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,buf);
 		}
 		catch(Exception &e) { }
 	}

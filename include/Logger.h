@@ -29,6 +29,8 @@ class Logger
 	private:
 		static Logger *instance;
 		
+		const std::string &node_name;
+		
 		bool log_syslog;
 		int syslog_filter;
 		bool log_db;
