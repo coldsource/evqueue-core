@@ -1,5 +1,9 @@
 ALTER TABLE t_workflow_instance ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER workflow_instance_id;
 
+ALTER TABLE t_workflow_schedule ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER workflow_schedule_id;
+
+ALTER TABLE t_log ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER log_id;
+
 -- Alter version number --
 ALTER TABLE t_log COMMENT 'v1.5';
 ALTER TABLE t_notification COMMENT 'v1.5';
