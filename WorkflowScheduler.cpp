@@ -25,6 +25,7 @@
 #include <Exception.h>
 #include <DB.h>
 #include <Logger.h>
+#include <Configuration.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -214,7 +215,7 @@ void WorkflowScheduler::Reload()
 	
 	DB db;
 	
-	db.Query("SELECT workflow_schedule_id FROM t_workflow_schedule WHERE workflow_schedule_active = 1");
+	db.QueryPrintf("SELECT workflow_schedule_id FROM t_workflow_schedule WHERE workflow_node=%s AND workflow_schedule_active = 1",Configuration::GetInstance()->Get("network.node.name").c_str());
 	while(db.FetchRow())
 	{
 		WorkflowSchedule *workflow_schedule = 0;
