@@ -153,6 +153,7 @@ int main(int argc,const char **argv)
 	
 	// Initialize external libraries
 	mysql_library_init(0,0,0);
+	mysql_thread_init();
 	XQillaPlatformUtils::initialize();
 	
 	openlog("evqueue",0,LOG_DAEMON);
@@ -469,13 +470,14 @@ int main(int argc,const char **argv)
 				delete sockets;
 				
 				XQillaPlatformUtils::terminate();
-				mysql_library_end();
-				
 				
 				unlink(config->Get("core.pidfile").c_str());
 				Logger::Log(LOG_NOTICE,"Clean exit");
 				delete logger;
 				delete config;
+				
+				mysql_thread_end();
+				mysql_library_end();
 				
 				return 0;
 			}
