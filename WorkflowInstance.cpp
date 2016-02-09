@@ -118,183 +118,170 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 	
 	this->workflow_schedule_id = workflow_schedule_id;
 	
-	try
+	// Load workflow XML
+	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+	parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	serializer = xqillaImplementation->createLSSerializer();
+	
+	DOMLSInput *input = xqillaImplementation->createLSInput();
+	
+	// Set XML content and parse document
+	XMLCh *xml;
+	xml = XMLString::transcode(workflow.GetXML());
+	input->setStringData(xml);
+	xmldoc = parser->parse(input);
+	
+	input->release();
+	
+	XMLString::release(&xml);
+	
+	// Create resolver
+	resolver = xmldoc->createNSResolver(xmldoc->getDocumentElement());
+	resolver->addNamespaceBinding(X("xs"), X("http://www.w3.org/2001/XMLSchema"));
+	
+	// Set workflow name for front-office display
+	xmldoc->getDocumentElement()->setAttribute(X("name"),X(workflow_name));
+	
+	// Set workflow user and host
+	if(workflow_host)
 	{
-		// Load workflow XML
-		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-		parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
-		serializer = xqillaImplementation->createLSSerializer();
+		xmldoc->getDocumentElement()->setAttribute(X("host"),X(workflow_host));
 		
-		DOMLSInput *input = xqillaImplementation->createLSInput();
-		
-		// Set XML content and parse document
-		XMLCh *xml;
-		xml = XMLString::transcode(workflow.GetXML());
-		input->setStringData(xml);
-		xmldoc = parser->parse(input);
-		
-		input->release();
-		
-		XMLString::release(&xml);
-		
-		// Create resolver
-		resolver = xmldoc->createNSResolver(xmldoc->getDocumentElement());
-		resolver->addNamespaceBinding(X("xs"), X("http://www.w3.org/2001/XMLSchema"));
-		
-		// Set workflow name for front-office display
-		xmldoc->getDocumentElement()->setAttribute(X("name"),X(workflow_name));
-		
-		// Set workflow user and host
-		if(workflow_host)
+		if(workflow_user)
+			xmldoc->getDocumentElement()->setAttribute(X("user"),X(workflow_user));
+	}
+	
+	// Set input parameters
+	const char *parameter_name;
+	const char *parameter_value;
+	int passed_parameters = 0;
+	char buf2[256+PARAMETER_NAME_MAX_LEN];
+	
+	parameters->SeekStart();
+	while(parameters->Get(&parameter_name,&parameter_value))
+	{
+		sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name);
+		DOMXPathResult *res = xmldoc->evaluate(X(buf2),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+		if(res->isNode())
 		{
-			xmldoc->getDocumentElement()->setAttribute(X("host"),X(workflow_host));
-			
-			if(workflow_user)
-				xmldoc->getDocumentElement()->setAttribute(X("user"),X(workflow_user));
-		}
-		
-		// Set input parameters
-		const char *parameter_name;
-		const char *parameter_value;
-		int passed_parameters = 0;
-		char buf2[256+PARAMETER_NAME_MAX_LEN];
-		
-		parameters->SeekStart();
-		while(parameters->Get(&parameter_name,&parameter_value))
-		{
-			sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name);
-			DOMXPathResult *res = xmldoc->evaluate(X(buf2),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
-			if(res->isNode())
-			{
-				DOMNode *parameter_node = res->getNodeValue();
-				parameter_node->setTextContent(X(parameter_value));
-			}
-			else
-			{
-				sprintf(buf2,"Unknown parameter : %s",parameter_name);
-				throw Exception("WorkflowInstance",buf2);
-			}
-			
-			res->release();
-			passed_parameters++;
-		}
-		
-		DOMXPathResult *res = xmldoc->evaluate(X("count(parameters/parameter)"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
-		int workflow_template_parameters = res->getIntegerValue();
-		res->release();
-		
-		if(workflow_template_parameters!=passed_parameters)
-		{
-			char e[256];
-			sprintf(e, "Invalid number of parameters passed to workflow (passed %d, expected %d)",passed_parameters,workflow_template_parameters);
-			throw Exception("WorkflowInstance",e);
-		}
-		
-		// Import schedule
-		DOMXPathResult *tasks = xmldoc->evaluate(X("//task[@retry_schedule]"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::SNAPSHOT_RESULT_TYPE,0);
-		
-		DOMNode *task;
-		unsigned int tasks_index = 0;
-		while(tasks->snapshotItem(tasks_index++))
-		{
-			task = tasks->getNodeValue();
-			
-			const XMLCh *schedule_name = ((DOMElement *)task)->getAttribute(X("retry_schedule"));
-			char *schedule_name_c = XMLString::transcode(schedule_name);
-			
-			sprintf(buf,"schedules/schedule[@name = '%s']",schedule_name_c);
-			
-			DOMXPathResult *res = xmldoc->evaluate(X(buf),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
-			if(!res->isNode())
-			{
-				// Schedule is not local, check global
-				RetrySchedule retry_schedule;
-				try
-				{
-					retry_schedule = RetrySchedules::GetInstance()->GetRetrySchedule(schedule_name_c);
-				}
-				catch(Exception &e)
-				{
-					res->release();
-					tasks->release();
-					XMLString::release(&schedule_name_c);
-					
-					throw e;
-				}
-				
-				// Import global schedule
-				DOMLSParser *schedule_parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
-				DOMLSInput *schedule_input = xqillaImplementation->createLSInput();
-				
-				// Load schedule XML data
-				XMLCh *schedule_xml;
-				schedule_xml = XMLString::transcode(retry_schedule.GetXML());
-				schedule_input->setStringData(schedule_xml);
-				
-				DOMDocument *schedule_xmldoc = schedule_parser->parse(schedule_input);
-				
-				// Add schedule to current workflow
-				DOMNode * schedule_node = xmldoc->importNode(schedule_xmldoc->getDocumentElement(),true);
-				
-				DOMXPathResult *res = xmldoc->evaluate(X("schedules"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
-				DOMNode *schedules_nodes;
-				if(res->isNode())
-					schedules_nodes = res->getNodeValue();
-				else
-				{
-					schedules_nodes = xmldoc->createElement(X("schedules"));
-					xmldoc->getDocumentElement()->appendChild(schedules_nodes);
-				}
-				res->release();
-				
-				schedules_nodes->appendChild(schedule_node);
-				
-				
-				schedule_input->release();
-				schedule_parser->release();
-				
-				XMLString::release(&schedule_xml);
-			}
-			
-			XMLString::release(&schedule_name_c);
-			res->release();
-		}
-		
-		tasks->release();
-		
-		if(savepoint_level>=2)
-		{
-			// Insert workflow instance in DB
-			db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start) VALUES(%s,%i,%i,%s,'EXECUTING',NOW())",Configuration::GetInstance()->Get("network.node.name").c_str(),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,workflow_host);
-			this->workflow_instance_id = db.InsertID();
-			
-			// Save workflow parameters
-			if(saveparameters)
-			{
-				parameters->SeekStart();
-				while(parameters->Get(&parameter_name,&parameter_value))
-					db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",&this->workflow_instance_id,parameter_name,parameter_value);
-			}
+			DOMNode *parameter_node = res->getNodeValue();
+			parameter_node->setTextContent(X(parameter_value));
 		}
 		else
 		{
-			this->workflow_instance_id = SequenceGenerator::GetInstance()->GetInc();
+			res->release();
+			sprintf(buf2,"Unknown parameter : %s",parameter_name);
+			throw Exception("WorkflowInstance",buf2);
 		}
 		
-		// Save workflow
-		record_savepoint();
+		res->release();
+		passed_parameters++;
 	}
-	catch(Exception &e)
+	
+	DOMXPathResult *res = xmldoc->evaluate(X("count(parameters/parameter)"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+	int workflow_template_parameters = res->getIntegerValue();
+	res->release();
+	
+	if(workflow_template_parameters!=passed_parameters)
 	{
-		// Release ressources
-		if(parser)
-			parser->release();
-		
-		if(serializer)
-			serializer->release();
-		
-		throw e;
+		char e[256];
+		sprintf(e, "Invalid number of parameters passed to workflow (passed %d, expected %d)",passed_parameters,workflow_template_parameters);
+		throw Exception("WorkflowInstance",e);
 	}
+	
+	// Import schedule
+	DOMXPathResult *tasks = xmldoc->evaluate(X("//task[@retry_schedule]"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::SNAPSHOT_RESULT_TYPE,0);
+	
+	DOMNode *task;
+	unsigned int tasks_index = 0;
+	while(tasks->snapshotItem(tasks_index++))
+	{
+		task = tasks->getNodeValue();
+		
+		const XMLCh *schedule_name = ((DOMElement *)task)->getAttribute(X("retry_schedule"));
+		char *schedule_name_c = XMLString::transcode(schedule_name);
+		
+		sprintf(buf,"schedules/schedule[@name = '%s']",schedule_name_c);
+		
+		DOMXPathResult *res = xmldoc->evaluate(X(buf),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+		if(!res->isNode())
+		{
+			// Schedule is not local, check global
+			RetrySchedule retry_schedule;
+			try
+			{
+				retry_schedule = RetrySchedules::GetInstance()->GetRetrySchedule(schedule_name_c);
+			}
+			catch(Exception &e)
+			{
+				res->release();
+				tasks->release();
+				XMLString::release(&schedule_name_c);
+				
+				throw e;
+			}
+			
+			// Import global schedule
+			DOMLSParser *schedule_parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
+			DOMLSInput *schedule_input = xqillaImplementation->createLSInput();
+			
+			// Load schedule XML data
+			XMLCh *schedule_xml;
+			schedule_xml = XMLString::transcode(retry_schedule.GetXML());
+			schedule_input->setStringData(schedule_xml);
+			
+			DOMDocument *schedule_xmldoc = schedule_parser->parse(schedule_input);
+			
+			// Add schedule to current workflow
+			DOMNode * schedule_node = xmldoc->importNode(schedule_xmldoc->getDocumentElement(),true);
+			
+			DOMXPathResult *res = xmldoc->evaluate(X("schedules"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+			DOMNode *schedules_nodes;
+			if(res->isNode())
+				schedules_nodes = res->getNodeValue();
+			else
+			{
+				schedules_nodes = xmldoc->createElement(X("schedules"));
+				xmldoc->getDocumentElement()->appendChild(schedules_nodes);
+			}
+			res->release();
+			
+			schedules_nodes->appendChild(schedule_node);
+			
+			
+			schedule_input->release();
+			schedule_parser->release();
+			
+			XMLString::release(&schedule_xml);
+		}
+		
+		XMLString::release(&schedule_name_c);
+		res->release();
+	}
+	
+	tasks->release();
+	
+	if(savepoint_level>=2)
+	{
+		// Insert workflow instance in DB
+		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start) VALUES(%s,%i,%i,%s,'EXECUTING',NOW())",Configuration::GetInstance()->Get("network.node.name").c_str(),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,workflow_host);
+		this->workflow_instance_id = db.InsertID();
+		
+		// Save workflow parameters
+		if(saveparameters)
+		{
+			parameters->SeekStart();
+			while(parameters->Get(&parameter_name,&parameter_value))
+				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",&this->workflow_instance_id,parameter_name,parameter_value);
+		}
+	}
+	else
+	{
+		this->workflow_instance_id = SequenceGenerator::GetInstance()->GetInc();
+	}
+	
+	// Save workflow
+	record_savepoint();
 	
 	// Register new instance
 	WorkflowInstances::GetInstance()->Add(workflow_instance_id, this);
