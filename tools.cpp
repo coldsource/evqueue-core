@@ -18,6 +18,7 @@
  */
 
 #include <tools.h>
+#include <tools_ipc.h>
 #include <global.h>
 #include <Logger.h>
 #include <WorkflowScheduler.h>
@@ -35,27 +36,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static int openipcq()
-{
-	int msgqid = msgget(Configuration::GetInstance()->GetInt("core.ipc.qid"),0);
-	if(msgqid==-1)
-	{
-		if(errno==EACCES)
-			fprintf(stderr,"Permission refused while trying to open message queue\n");
-		else if(errno==ENOENT)
-			fprintf(stderr,"No message queue found\n");
-		else
-			fprintf(stderr,"Unknown error trying to open message queue : %d\n",errno);
-		
-		return -1;
-	}
-	
-	return msgqid;
-}
+using namespace std;
 
 int tools_queue_destroy()
 {
-	int msgqid = openipcq();
+	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
 		return -1;
 	
@@ -77,7 +62,7 @@ int tools_queue_destroy()
 
 int tools_queue_stats()
 {
-int msgqid = openipcq();
+int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
 		return -1;
 	
@@ -129,9 +114,9 @@ void tools_flush_retrier(void)
 	retrier->Flush();
 }
 
-int ipc_send_exit_msg(int type,int tid,char retcode)
+int tools_send_exit_msg(int type,int tid,char retcode)
 {
-	int msgqid = msgget(Configuration::GetInstance()->GetInt("core.ipc.qid"),0700 | IPC_CREAT);
+	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
 		return -1;
 	
@@ -143,3 +128,4 @@ int ipc_send_exit_msg(int type,int tid,char retcode)
 	msgbuf.mtext.retcode = retcode;
 	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }
+

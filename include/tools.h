@@ -25,6 +25,6 @@ int tools_queue_stats();
 void tools_print_usage();
 void tools_config_reload(void);
 void tools_flush_retrier(void);
-int ipc_send_exit_msg(int type,int tid,char retcode);
+int tools_send_exit_msg(int type,int tid,char retcode);
 
 #endif
