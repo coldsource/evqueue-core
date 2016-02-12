@@ -26,6 +26,7 @@
 #include <Workflows.h>
 #include <Notifications.h>
 #include <Retrier.h>
+#include <Configuration.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -36,7 +37,7 @@
 
 static int openipcq()
 {
-	int msgqid = msgget(PROCESS_MANAGER_MSGQID,0);
+	int msgqid = msgget(Configuration::GetInstance()->GetInt("core.ipc.qid"),0);
 	if(msgqid==-1)
 	{
 		if(errno==EACCES)
@@ -130,7 +131,7 @@ void tools_flush_retrier(void)
 
 int ipc_send_exit_msg(int type,int tid,char retcode)
 {
-	int msgqid = msgget(PROCESS_MANAGER_MSGQID,0700 | IPC_CREAT);
+	int msgqid = msgget(Configuration::GetInstance()->GetInt("core.ipc.qid"),0700 | IPC_CREAT);
 	if(msgqid==-1)
 		return -1;
 	

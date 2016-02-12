@@ -28,8 +28,6 @@
 #define PARAMETER_NAME_MAX_LEN          64
 #define ERROR_MAX_LEN                  256
 
-#define PROCESS_MANAGER_MSGQID   0xB16B00B5
-
 extern int listen_socket; // Global because we must close it in children
 
 #include <unistd.h>

@@ -795,6 +795,10 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		pid = getpid();
 		sprintf(tid_str,"%d",tid);
 		
+		// Send QID to monitor
+		Configuration *config = Configuration::GetInstance();
+		setenv("EVQUEUE_IPC_QID",config->Get("core.ipc.qid").c_str(),true);
+		
 		// Compute task filename
 		string task_filename;
 		if(task.IsAbsolutePath())
@@ -834,7 +838,6 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		if(getenv("EVQUEUE_SSH_HOST"))
 		{
 			// Set SSH config variables if SSH execution is asked
-			Configuration *config = Configuration::GetInstance();
 			setenv("EVQUEUE_SSH_PATH",config->Get("processmanager.monitor.ssh_path").c_str(),true);
 			
 			if(config->Get("processmanager.monitor.ssh_key").length()>0)

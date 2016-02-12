@@ -61,7 +61,7 @@ ProcessManager::ProcessManager()
 	log_filename = new char[logs_directory.length()+16];
 	
 	// Create message queue
-	msgqid = msgget(PROCESS_MANAGER_MSGQID,0700 | IPC_CREAT);
+	msgqid = msgget(config->GetInt("core.ipc.qid"),0700 | IPC_CREAT);
 	if(msgqid==-1)
 		throw Exception("ProcessManager","Unable to get message queue");
 	

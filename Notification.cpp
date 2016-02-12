@@ -75,6 +75,8 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		dup2(pipe_fd[0],STDIN_FILENO);
 		close(pipe_fd[1]);
 		
+		setenv("EVQUEUE_IPC_QID",Configuration::GetInstance()->Get("core.ipc.qid").c_str(),true);
+		
 		setenv("EVQUEUE_WORKING_DIRECTORY",Configuration::GetInstance()->Get("notifications.monitor.path").c_str(),true);
 		
 		char str_timeout[16],str_instance_id[16],str_errors[16];

@@ -36,6 +36,7 @@ Configuration *Configuration::instance=0;
 Configuration::Configuration(void)
 {
 	// Load default configuration
+	entries["core.ipc.qid"] = "0xEA023E3C";
 	entries["core.gid"] = "0";
 	entries["core.pidfile"] = "/var/run/evqueue/evqueue.pid";
 	entries["core.uid"] = "0";
@@ -101,7 +102,10 @@ const string &Configuration::Get(const string &entry) const
 
 int Configuration::GetInt(const string &entry) const
 {
-	return atoi(Get(entry).c_str());
+	const string value = Get(entry);
+	if(value.substr(0,2)=="0x")
+		return strtol(value.c_str(),0,16);
+	return strtol(value.c_str(),0,10);
 }
 
 bool Configuration::GetBool(const string &entry) const

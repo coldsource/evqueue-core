@@ -68,7 +68,14 @@ int main(int argc,char ** argv)
 	sigprocmask(SIG_UNBLOCK,&signal_mask,0);
 	
 	// Create message queue
-	int msgqid = msgget(PROCESS_MANAGER_MSGQID,0700 | IPC_CREAT);
+	const char *qid_str = getenv("EVQUEUE_IPC_QID");
+	int qid;
+	if(strncmp(qid_str,"0x",2)==0)
+		qid = strtol(qid_str,0,16);
+	else
+		qid = strtol(qid_str,0,10);
+	
+	int msgqid = msgget(qid,0700 | IPC_CREAT);
 	if(msgqid==-1)
 		return -1;
 	
