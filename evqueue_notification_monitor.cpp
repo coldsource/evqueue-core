@@ -18,6 +18,7 @@
  */
 
 #include <global.h>
+#include <tools_ipc.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,14 +69,7 @@ int main(int argc,char ** argv)
 	sigprocmask(SIG_UNBLOCK,&signal_mask,0);
 	
 	// Create message queue
-	const char *qid_str = getenv("EVQUEUE_IPC_QID");
-	int qid;
-	if(strncmp(qid_str,"0x",2)==0)
-		qid = strtol(qid_str,0,16);
-	else
-		qid = strtol(qid_str,0,10);
-	
-	int msgqid = msgget(qid,0700 | IPC_CREAT);
+	int msgqid = ipc_openq(getenv("EVQUEUE_IPC_QID"));
 	if(msgqid==-1)
 		return -1;
 	

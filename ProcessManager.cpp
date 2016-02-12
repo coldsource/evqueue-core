@@ -27,6 +27,7 @@
 #include <Retrier.h>
 #include <Statistics.h>
 #include <Logger.h>
+#include <tools_ipc.h>
 
 #include <pthread.h>
 #include <mysql/mysql.h>
@@ -61,7 +62,7 @@ ProcessManager::ProcessManager()
 	log_filename = new char[logs_directory.length()+16];
 	
 	// Create message queue
-	msgqid = msgget(config->GetInt("core.ipc.qid"),0700 | IPC_CREAT);
+	msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
 		throw Exception("ProcessManager","Unable to get message queue");
 	

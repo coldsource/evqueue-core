@@ -856,7 +856,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		if(fno==-1)
 		{
 			Logger::Log(LOG_ERR,"Unable to open task output log file");
-			ipc_send_exit_msg(1,tid,-1);
+			tools_send_exit_msg(1,tid,-1);
 			exit(-1);
 		}
 		
@@ -885,7 +885,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 			execv(monitor_path.c_str(),(char * const *)args);
 			
 			Logger::Log(LOG_ERR,"Could not execute task monitor");
-			ipc_send_exit_msg(1,tid,-1);
+			tools_send_exit_msg(1,tid,-1);
 			exit(-1);
 		}
 		else if(task.GetParametersMode()==task_parameters_mode::ENV)
@@ -901,11 +901,11 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 			execl(monitor_path.c_str(),monitor_path.c_str(),task_filename.c_str(),tid_str,(char *)0);
 			
 			Logger::Log(LOG_ERR,"Could not execute task monitor");
-			ipc_send_exit_msg(1,tid,-1);
+			tools_send_exit_msg(1,tid,-1);
 			exit(-1);
 		}
 		
-		ipc_send_exit_msg(1,tid,-1);
+		tools_send_exit_msg(1,tid,-1);
 		exit(-1);
 	}
 	
