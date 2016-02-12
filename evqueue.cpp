@@ -528,7 +528,8 @@ int main(int argc,const char **argv)
 		if(!daemonized)
 			fprintf(stderr,"Unexpected exception : [ %s ] %s\n",e.context,e.error);
 		
-		unlink(Configuration::GetInstance()->Get("core.pidfile").c_str());
+		if(Configuration::GetInstance())
+			unlink(Configuration::GetInstance()->Get("core.pidfile").c_str());
 		
 		return -1;
 	}
