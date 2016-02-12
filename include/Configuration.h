@@ -31,6 +31,7 @@ class Configuration
 	
 	public:
 		Configuration(void);
+		~Configuration(void);
 		
 		bool Set(const std::string &entry,const std::string &value);
 		const std::string &Get(const std::string &entry) const;

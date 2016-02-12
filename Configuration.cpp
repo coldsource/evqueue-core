@@ -83,6 +83,11 @@ Configuration::Configuration(void)
 	instance=this;
 }
 
+Configuration::~Configuration(void)
+{
+	instance = 0;
+}
+
 bool Configuration::Set(const string &entry,const string &value)
 {
 	if(entries.count(entry)==0)
