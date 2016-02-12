@@ -354,45 +354,49 @@ int main(int argc,const char **argv)
 		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
-		// Create TCP socket
-		int re,s,optval;
-		struct sockaddr_in local_addr,remote_addr;
-		socklen_t remote_addr_len;
-		
-		// Create listen socket
-		listen_socket=socket(PF_INET,SOCK_STREAM,0);
-		
-		// Configure socket
-		optval=1;
-		setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(int));
-		
-		// Bind socket
-		memset(&local_addr,0,sizeof(struct sockaddr_in));
-		local_addr.sin_family=AF_INET;
-		if(config->Get("network.bind.ip")=="*")
-			local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-		else
-			local_addr.sin_addr.s_addr=inet_addr(config->Get("network.bind.ip").c_str());
-		local_addr.sin_port = htons(config->GetInt("network.bind.port"));
-		re=bind(listen_socket,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
-		if(re==-1)
-			throw Exception("core","Unable to bind listen socket");
-		
-		// Listen on socket
-		re=listen(listen_socket,config->GetInt("network.listen.backlog"));
-		if(re==-1)
-			throw Exception("core","Unable to listen on socket");
-		Logger::Log(LOG_NOTICE,"Listen backlog set to %d (tcp socket)",config->GetInt("network.listen.backlog"));
-		
-		Logger::Log(LOG_NOTICE,"Accepting connection on port %d",config->GetInt("network.bind.port"));
-		
-		// Create UNIX socket
+		int re,s;
 		struct sockaddr_un local_addr_unix,remote_addr_unix;
 		socklen_t remote_addr_len_unix;
 		
-		// Create listen socket
+		struct sockaddr_in local_addr,remote_addr;
+		socklen_t remote_addr_len;
+		
+		// Create TCP socket
+		if(config->Get("network.bind.ip").length()>0)
+		{
+			int optval;
+			
+			// Create listen socket
+			listen_socket=socket(PF_INET,SOCK_STREAM,0);
+			
+			// Configure socket
+			optval=1;
+			setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(int));
+			
+			// Bind socket
+			memset(&local_addr,0,sizeof(struct sockaddr_in));
+			local_addr.sin_family=AF_INET;
+			if(config->Get("network.bind.ip")=="*")
+				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+			else
+				local_addr.sin_addr.s_addr=inet_addr(config->Get("network.bind.ip").c_str());
+			local_addr.sin_port = htons(config->GetInt("network.bind.port"));
+			re=bind(listen_socket,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
+			if(re==-1)
+				throw Exception("core","Unable to bind listen socket");
+			
+			// Listen on socket
+			re=listen(listen_socket,config->GetInt("network.listen.backlog"));
+			if(re==-1)
+				throw Exception("core","Unable to listen on socket");
+			Logger::Log(LOG_NOTICE,"Listen backlog set to %d (tcp socket)",config->GetInt("network.listen.backlog"));
+			
+			Logger::Log(LOG_NOTICE,"Accepting connection on port %d",config->GetInt("network.bind.port"));
+		}
+		
 		if(config->Get("network.bind.path").length()>0)
 		{
+			// Create UNIX socket
 			listen_socket_unix=socket(AF_UNIX,SOCK_STREAM,0);
 			
 			// Bind socket
@@ -413,6 +417,9 @@ int main(int argc,const char **argv)
 			Logger::Log(LOG_NOTICE,"Accepting connection on unix socket %s",config->Get("network.bind.path").c_str());
 		}
 		
+		if(listen_socket==-1 && listen_socket_unix==-1)
+			throw Exception("core","You have to specify at least one listen socket");
+		
 		unsigned int max_conn = config->GetInt("network.connections.max");
 		
 		// Loop for incoming connections
@@ -421,7 +428,10 @@ int main(int argc,const char **argv)
 		while(1)
 		{
 			FD_ZERO(&rfds);
-			FD_SET(listen_socket,&rfds);
+			
+			if(listen_socket>=0)
+				FD_SET(listen_socket,&rfds);
+			
 			if(listen_socket_unix>=0)
 				FD_SET(listen_socket_unix,&rfds);
 			
