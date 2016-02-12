@@ -54,8 +54,8 @@ Configuration::Configuration(void)
 	entries["mysql.host"] = "localhost";
 	entries["mysql.password"] = "";
 	entries["mysql.user"] = "";
-	entries["network.bind.ip"] = "127.0.0.1";
-	entries["network.bind.path"] = "/var/run/evqueue/evqueue.socket";
+	entries["network.bind.ip"] = "";
+	entries["network.bind.path"] = "";
 	entries["network.bind.port"] = "5000";
 	entries["network.node.name"] = "";
 	entries["network.connections.max"] = "128";
