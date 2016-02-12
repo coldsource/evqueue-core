@@ -38,6 +38,8 @@ class Configuration
 		int GetInt(const std::string &entry) const;
 		bool GetBool(const std::string &entry) const;
 		
+		void Substitute(void);
+		
 		void SendConfiguration(int s);
 		
 		static inline Configuration *GetInstance(void) { return instance; }

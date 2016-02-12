@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <stdlib.h>
+
+#include <regex>
 
 using namespace std;
 using namespace xercesc;
@@ -119,6 +122,33 @@ bool Configuration::GetBool(const string &entry) const
 	if(value=="yes" || value=="true" || value=="1")
 		return true;
 	return false;
+}
+
+void Configuration::Substitute(void)
+{
+	map<string,string>::iterator it;
+	for(it=entries.begin();it!=entries.end();it++)
+	{
+		regex variables_regex("\\{([a-zA-Z_]+)\\}");
+		sregex_iterator matches(it->second.begin(),it->second.end(),variables_regex);
+		sregex_iterator matches_end;
+		
+		while(matches!=matches_end)
+		{
+			smatch match = *matches;
+			string var = match.str();
+			string var_name =  var.substr(1,var.length()-2);
+			
+			const char *value = getenv(var_name.c_str());
+			if(value)
+			{
+				size_t start_pos = it->second.find(var);
+				it->second.replace(start_pos,var.length(),string(value));
+			}
+			
+			matches++;
+		}
+	}
 }
 
 void Configuration::SendConfiguration(int s)

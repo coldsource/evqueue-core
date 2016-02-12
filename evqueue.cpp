@@ -182,6 +182,9 @@ int main(int argc,const char **argv)
 		Configuration *config;
 		config = ConfigurationReader::Read(config_filename);
 		
+		// Substitute configuration variables with environment if needed
+		config->Substitute();
+		
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
 		
