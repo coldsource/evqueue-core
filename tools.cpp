@@ -89,7 +89,7 @@ void tools_print_usage()
 
 void tools_config_reload(void)
 {
-	Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading scheduler configuration");
+	Logger::Log(LOG_INFO,"Got SIGHUP, reloading scheduler configuration");
 	
 	WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
 	scheduler->Reload();
@@ -107,9 +107,15 @@ void tools_config_reload(void)
 	notifications->Reload();
 }
 
+void tools_sync_tasks(void)
+{
+	Tasks *tasks = Tasks::GetInstance();
+	tasks->SyncBinaries();
+}
+
 void tools_flush_retrier(void)
 {
-	Logger::Log(LOG_NOTICE,"Flushing retrier");
+	Logger::Log(LOG_INFO,"Flushing retrier");
 	Retrier *retrier = Retrier::GetInstance();
 	retrier->Flush();
 }

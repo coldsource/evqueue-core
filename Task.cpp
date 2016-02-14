@@ -62,14 +62,22 @@ Task::Task(DB *db,const string &task_name)
 		output_method = task_output_method::TEXT;
 }
 
-void Task::PutFile(const string &filename,const string &data)
+void Task::PutFile(const string &filename,const string &data,bool base64_encoded)
 {
-	FileManager::PutFile(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY);
+	if(base64_encoded)
+		FileManager::PutFile(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BASE64);
+	else
+		FileManager::PutFile(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BINARY);
 }
 
 void Task::GetFile(const string &filename,string &data)
 {
 	FileManager::GetFile(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename,data);
+}
+
+void Task::GetFileHash(const string &filename,string &hash)
+{
+	FileManager::GetFileHash(Configuration::GetInstance()->Get("processmanager.tasks.directory"),filename,hash);
 }
 
 void Task::RemoveFile(const string &filename)

@@ -22,6 +22,7 @@
 #include <DB.h>
 #include <Exception.h>
 #include <Logger.h>
+#include <sha1.h>
 
 #include <string.h>
 
@@ -70,6 +71,56 @@ void Tasks::Reload(void)
 	{
 		std::string task_name(db.GetField(0));
 		tasks[task_name] = new Task(&db2,db.GetField(0));
+	}
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Tasks::SyncBinaries(void)
+{
+	Logger::Log(LOG_INFO,"[ Tasks ] Syncing binaries");
+	
+	pthread_mutex_lock(&lock);
+	
+	DB db;
+	
+	// Load tasks from database
+	db.Query("SELECT task_binary, task_binary_content FROM t_task WHERE task_binary_content IS NOT NULL");
+	
+	struct sha1_ctx ctx;
+	char db_hash[20];
+	string file_hash;
+	
+	while(db.FetchRow())
+	{
+		// Compute database SHA1 hash
+		sha1_init_ctx(&ctx);
+		sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
+		sha1_finish_ctx(&ctx,db_hash);
+		
+		// Compute file SHA1 hash
+		try
+		{
+			Task::GetFileHash(db.GetField(0),file_hash);
+		}
+		catch(Exception &e)
+		{
+			Logger::Log(LOG_NOTICE,"[ Tasks ] Task %s was not found creating it",db.GetField(0));
+			
+			Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+			continue;
+		}
+		
+		if(memcmp(file_hash.c_str(),db_hash,20)==0)
+		{
+			Logger::Log(LOG_NOTICE,"[ Tasks ] Task %s hash matches DB, skipping",db.GetField(0));
+			continue;
+		}
+		
+		Logger::Log(LOG_NOTICE,"[ Tasks ] Task %s hash does not match DB, replacing",db.GetField(0));
+		
+		Task::RemoveFile(db.GetField(0));
+		Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 	}
 	
 	pthread_mutex_unlock(&lock);

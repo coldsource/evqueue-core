@@ -43,6 +43,7 @@ class Tasks
 		static Tasks *GetInstance() { return instance; }
 		
 		void Reload(void);
+		void SyncBinaries(void);
 		Task GetTask(const std::string &name);
 };
 

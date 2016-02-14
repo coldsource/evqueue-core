@@ -4,6 +4,8 @@ ALTER TABLE t_workflow_schedule ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_
 
 ALTER TABLE t_log ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER log_id;
 
+ALTER TABLE t_task ADD COLUMN task_binary_content LONGBLOB NULL DEFAULT NULL AFTER task_binary;
+
 -- Alter version number --
 ALTER TABLE t_log COMMENT 'v1.5';
 ALTER TABLE t_notification COMMENT 'v1.5';

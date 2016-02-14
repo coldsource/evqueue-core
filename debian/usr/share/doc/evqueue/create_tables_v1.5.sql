@@ -154,6 +154,7 @@ CREATE TABLE `t_task` (
   `task_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `task_name` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `task_binary` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `task_binary_content` LONGBLOB NULL DEFAULT NULL,
   `task_wd` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `task_user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `task_host` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL,

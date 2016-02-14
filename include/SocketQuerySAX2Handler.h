@@ -55,17 +55,18 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		static const int QUERY_WORKFLOW_KILLTASK = 11;
 		static const int QUERY_CONTROL_RELOAD = 12;
 		static const int QUERY_CONTROL_RETRY = 13;
-		static const int QUERY_NOTIFICATION_PUT = 14;
-		static const int QUERY_NOTIFICATION_REM = 15;
-		static const int QUERY_NOTIFICATION_PUTCONF = 16;
-		static const int QUERY_NOTIFICATION_REMCONF = 17;
-		static const int QUERY_NOTIFICATION_GETCONF = 18;
-		static const int QUERY_TASK_GET = 19;
-		static const int QUERY_TASK_PUT = 20;
-		static const int QUERY_TASK_REM = 21;
+		static const int QUERY_CONTROL_SYNCTASKS = 14;
+		static const int QUERY_NOTIFICATION_PUT = 15;
+		static const int QUERY_NOTIFICATION_REM = 16;
+		static const int QUERY_NOTIFICATION_PUTCONF = 17;
+		static const int QUERY_NOTIFICATION_REMCONF = 18;
+		static const int QUERY_NOTIFICATION_GETCONF = 19;
+		static const int QUERY_TASK_GET = 20;
+		static const int QUERY_TASK_PUT = 21;
+		static const int QUERY_TASK_REM = 22;
 		
-		static const int RESET_GLOBAL_STATS = 22;
-		static const int PING = 23;
+		static const int RESET_GLOBAL_STATS = 23;
+		static const int PING = 24;
 		
 		static const int QUERY_OPTION_MODE_SYNCHRONOUS = 1;
 		static const int QUERY_OPTION_MODE_ASYNCHRONOUS = 2;

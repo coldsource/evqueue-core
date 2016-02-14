@@ -503,6 +503,12 @@ void *handle_connection(void *sp)
 			send(s,"<return status='OK' />",22,0);
 			throw (void *)0;
 		}
+		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_SYNCTASKS)
+		{
+			tools_sync_tasks();
+			send(s,"<return status='OK' />",22,0);
+			throw (void *)0;
+		}
 	}
 	catch (void *retval)
 	{

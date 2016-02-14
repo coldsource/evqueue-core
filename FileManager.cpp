@@ -21,6 +21,7 @@
 #include <Exception.h>
 #include <Logger.h>
 #include <base64.h>
+#include <sha1.h>
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -41,7 +42,7 @@ bool FileManager::CheckFileName(const string &file_name)
 	return true;
 }
 
-void FileManager::PutFile(const string &directory,const string &filename,const string &data,int filetype)
+void FileManager::PutFile(const string &directory,const string &filename,const string &data,int filetype,int datatype)
 {
 	if(!CheckFileName(filename))
 		throw Exception("FileManager","Invalid file name");
@@ -67,7 +68,11 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 	}
 	
 	FILE *f = fdopen(fd,"w");
-	bool re = base64_decode_file(f,data);
+	bool re;
+	if(datatype==DATATYPE_BASE64)
+		re = base64_decode_file(f,data);
+	else if(datatype==DATATYPE_BINARY)
+		re = fwrite(data.c_str(),1,data.length(),f);
 	fclose(f);
 	
 	if(!re)
@@ -93,6 +98,30 @@ void FileManager::GetFile(const string &directory,const string &filename,string 
 	
 	FILE *f = fdopen(fd,"r");
 	base64_encode_file(f,data);
+	fclose(f);
+}
+
+void FileManager::GetFileHash(const string &directory,const string &filename,string &hash)
+{
+	if(!CheckFileName(filename))
+		throw Exception("FileManager","Invalid file name");
+	
+	string path = directory+"/"+filename;
+	
+	int fd = open(path.c_str(),O_RDONLY);
+	if(fd==-1)
+	{
+		Logger::Log(LOG_ERR,"Unable to open file : %s",path.c_str());
+		throw Exception("FileManager","Unable to open file");
+	}
+	
+	FILE *f = fdopen(fd,"r");
+	
+	char c_hash[20];
+	sha1_stream(f,c_hash);
+	hash.clear();
+	hash.append(c_hash,20);
+	
 	fclose(f);
 }
 
