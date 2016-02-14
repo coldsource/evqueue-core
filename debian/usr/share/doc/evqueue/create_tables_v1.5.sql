@@ -29,17 +29,8 @@ CREATE TABLE `t_log` (
   `log_message` text COLLATE utf8_unicode_ci NOT NULL,
   `log_timestamp` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4409 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB AUTO_INCREMENT=4425 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_log`
---
-
-LOCK TABLES `t_log` WRITE;
-/*!40000 ALTER TABLE `t_log` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_log` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `t_notification`
@@ -58,15 +49,6 @@ CREATE TABLE `t_notification` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `t_notification`
---
-
-LOCK TABLES `t_notification` WRITE;
-/*!40000 ALTER TABLE `t_notification` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_notification` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `t_notification_type`
 --
 
@@ -81,16 +63,6 @@ CREATE TABLE `t_notification_type` (
   PRIMARY KEY (`notification_type_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_notification_type`
---
-
-LOCK TABLES `t_notification_type` WRITE;
-/*!40000 ALTER TABLE `t_notification_type` DISABLE KEYS */;
-INSERT INTO `t_notification_type` VALUES (1,'email','Sends an email','email.php');
-/*!40000 ALTER TABLE `t_notification_type` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `t_queue`
@@ -109,16 +81,6 @@ CREATE TABLE `t_queue` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `t_queue`
---
-
-LOCK TABLES `t_queue` WRITE;
-/*!40000 ALTER TABLE `t_queue` DISABLE KEYS */;
-INSERT INTO `t_queue` VALUES (24,'default',1);
-/*!40000 ALTER TABLE `t_queue` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `t_schedule`
 --
 
@@ -135,15 +97,6 @@ CREATE TABLE `t_schedule` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `t_schedule`
---
-
-LOCK TABLES `t_schedule` WRITE;
-/*!40000 ALTER TABLE `t_schedule` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_schedule` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `t_task`
 --
 
@@ -154,7 +107,7 @@ CREATE TABLE `t_task` (
   `task_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `task_name` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `task_binary` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
-  `task_binary_content` LONGBLOB NULL DEFAULT NULL,
+  `task_binary_content` longblob,
   `task_wd` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `task_user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `task_host` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -164,17 +117,8 @@ CREATE TABLE `t_task` (
   `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `workflow_id` int(10) DEFAULT NULL,
   UNIQUE KEY `taskdesc_id` (`task_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=142 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB AUTO_INCREMENT=150 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_task`
---
-
-LOCK TABLES `t_task` WRITE;
-/*!40000 ALTER TABLE `t_task` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_task` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `t_user`
@@ -190,16 +134,6 @@ CREATE TABLE `t_user` (
   PRIMARY KEY (`user_login`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_user`
---
-
-LOCK TABLES `t_user` WRITE;
-/*!40000 ALTER TABLE `t_user` DISABLE KEYS */;
-INSERT INTO `t_user` VALUES ('admin','d033e22ae348aeb5660fc2140aec35850c4da997','ADMIN');
-/*!40000 ALTER TABLE `t_user` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `t_user_right`
@@ -221,15 +155,6 @@ CREATE TABLE `t_user_right` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `t_user_right`
---
-
-LOCK TABLES `t_user_right` WRITE;
-/*!40000 ALTER TABLE `t_user_right` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_user_right` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `t_workflow`
 --
 
@@ -245,17 +170,8 @@ CREATE TABLE `t_workflow` (
   `workflow_bound` tinyint(1) NOT NULL DEFAULT '0',
   UNIQUE KEY `workflow_id` (`workflow_id`),
   UNIQUE KEY `workflow_name` (`workflow_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=174 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB AUTO_INCREMENT=184 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_workflow`
---
-
-LOCK TABLES `t_workflow` WRITE;
-/*!40000 ALTER TABLE `t_workflow` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_workflow` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `t_workflow_instance`
@@ -281,17 +197,8 @@ CREATE TABLE `t_workflow_instance` (
   KEY `t_workflow_instance_errors` (`workflow_instance_errors`),
   KEY `workflow_instance_date_start` (`workflow_instance_start`),
   KEY `workflow_schedule_id` (`workflow_schedule_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_workflow_instance`
---
-
-LOCK TABLES `t_workflow_instance` WRITE;
-/*!40000 ALTER TABLE `t_workflow_instance` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_workflow_instance` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `t_workflow_instance_parameters`
@@ -309,15 +216,6 @@ CREATE TABLE `t_workflow_instance_parameters` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `t_workflow_instance_parameters`
---
-
-LOCK TABLES `t_workflow_instance_parameters` WRITE;
-/*!40000 ALTER TABLE `t_workflow_instance_parameters` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_workflow_instance_parameters` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `t_workflow_notification`
 --
 
@@ -330,15 +228,6 @@ CREATE TABLE `t_workflow_notification` (
   PRIMARY KEY (`workflow_id`,`notification_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_workflow_notification`
---
-
-LOCK TABLES `t_workflow_notification` WRITE;
-/*!40000 ALTER TABLE `t_workflow_notification` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_workflow_notification` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `t_workflow_schedule`
@@ -362,15 +251,6 @@ CREATE TABLE `t_workflow_schedule` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `t_workflow_schedule`
---
-
-LOCK TABLES `t_workflow_schedule` WRITE;
-/*!40000 ALTER TABLE `t_workflow_schedule` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_workflow_schedule` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `t_workflow_schedule_parameters`
 --
 
@@ -384,15 +264,6 @@ CREATE TABLE `t_workflow_schedule_parameters` (
   KEY `workflow_schedule_id` (`workflow_schedule_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `t_workflow_schedule_parameters`
---
-
-LOCK TABLES `t_workflow_schedule_parameters` WRITE;
-/*!40000 ALTER TABLE `t_workflow_schedule_parameters` DISABLE KEYS */;
-/*!40000 ALTER TABLE `t_workflow_schedule_parameters` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -403,4 +274,7 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-02-13 19:03:10
+-- Dump completed on 2016-02-14 18:47:20
+INSERT INTO t_queue(queue_name,queue_concurrency) VALUES('default',1);
+INSERT INTO t_user VALUES('admin',SHA1('admin'),'ADMIN');
+INSERT INTO t_notification_type VALUES (1, 'email', 'Sends an email', 'email.php');
