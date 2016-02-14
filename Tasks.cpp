@@ -78,7 +78,7 @@ void Tasks::Reload(void)
 
 void Tasks::SyncBinaries(void)
 {
-	Logger::Log(LOG_INFO,"[ Tasks ] Syncing binaries");
+	Logger::Log(LOG_NOTICE,"[ Tasks ] Syncing binaries");
 	
 	pthread_mutex_lock(&lock);
 	
