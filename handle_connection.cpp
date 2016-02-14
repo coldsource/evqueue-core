@@ -51,6 +51,13 @@
 
 using namespace std;
 
+static void send_error_status(int s, const char *error)
+{
+	send(s,"<return status='KO' error=\"",27,0);
+	send(s,error,strlen(error),0);
+	send(s,"\" />",4,0);
+}
+
 void *handle_connection(void *sp)
 {
 	int s  = *((int *)sp);
@@ -168,9 +175,7 @@ void *handle_connection(void *sp)
 			{
 				stats->IncWorkflowExceptions();
 				
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 				
 				Logger::Log(LOG_WARNING,"Unexpected exception trying to instanciate workflow '%s' : [ %s ] %s",workflow_name,e.context,e.error);
 				throw (void *)0;
@@ -202,7 +207,7 @@ void *handle_connection(void *sp)
 			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,config->Get("network.node.name").c_str());
 			if(!db.FetchRow())
 			{
-				send(s,"<return status='KO' error=\"Workflow ID not found or already belongs to this node\" />",84,0);
+				send_error_status(s,"Workflow ID not found or already belongs to this node");
 				throw (void *)0;
 			}
 			
@@ -219,9 +224,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 				
 				Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to migrate : [ %s ] %s\n",db.GetFieldInt(0),e.context,e.error);
 				
@@ -250,7 +253,7 @@ void *handle_connection(void *sp)
 				if(db.FetchRow())
 					send(s,db.GetField(0),strlen(db.GetField(0)),0);
 				else
-					send(s,"<return status='KO' error='UNKNOWN-WORKFLOW-INSTANCE' />",56,0);
+					send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
 			}
 			
 			throw (void *)0;
@@ -264,7 +267,7 @@ void *handle_connection(void *sp)
 			// Prevent workflow instance from instanciating new tasks
 			if(!WorkflowInstances::GetInstance()->Cancel(workflow_instance_id))
 			{
-				send(s,"<return status='KO' error='UNKNOWN-WORKFLOW-INSTANCE' />",56,0);
+				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
 				
 				throw (void *)0;
 			}
@@ -285,7 +288,7 @@ void *handle_connection(void *sp)
 			
 			if(!WorkflowInstances::GetInstance()->Wait(workflow_instance_id))
 			{
-				send(s,"<return status='KO' error='UNKNOWN-WORKFLOW-INSTANCE' />",56,0);
+				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
 				
 				throw (void *)0;
 			}
@@ -301,7 +304,7 @@ void *handle_connection(void *sp)
 			
 			if(!WorkflowInstances::GetInstance()->KillTask(workflow_instance_id,task_pid))
 			{
-				send(s,"<return status='KO' error='UNKNOWN-WORKFLOW-INSTANCE' />",56,0);
+				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
 				
 				throw (void *)0;
 			}
@@ -319,9 +322,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
@@ -335,9 +336,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
@@ -354,9 +353,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
@@ -370,9 +367,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
@@ -386,9 +381,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
@@ -402,9 +395,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
@@ -421,9 +412,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
@@ -437,9 +426,7 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send(s,"<return status='KO' error=\"",27,0);
-				send(s,e.error,strlen(e.error),0);
-				send(s,"\" />",4,0);
+				send_error_status(s,e.error);
 			}
 			
 			throw (void *)0;
