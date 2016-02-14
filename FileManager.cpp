@@ -44,7 +44,7 @@ bool FileManager::CheckFileName(const string &file_name)
 void FileManager::PutFile(const string &directory,const string &filename,const string &data,int filetype)
 {
 	if(!CheckFileName(filename))
-		throw Exception("Notification","Invalid file name");
+		throw Exception("FileManager","Invalid file name");
 	
 	string path = directory+"/"+filename;
 	
@@ -59,11 +59,11 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 		if(errno==EEXIST)
 		{
 			Logger::Log(LOG_ERR,"File already exist : %s",path.c_str());
-			throw Exception("Notification","File already exist");
+			throw Exception("FileManager","File already exist");
 		}
 		
 		Logger::Log(LOG_ERR,"Unable to create file : %s",path.c_str());
-		throw Exception("Notification","Unable to create file");
+		throw Exception("FileManager","Unable to create file");
 	}
 	
 	FILE *f = fdopen(fd,"w");
@@ -73,14 +73,14 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 	if(!re)
 	{
 		unlink(path.c_str());
-		throw Exception("Notification","Invalid file data");
+		throw Exception("FileManager","Invalid file data");
 	}
 }
 
 void FileManager::GetFile(const string &directory,const string &filename,string &data)
 {
 	if(!CheckFileName(filename))
-		throw Exception("Notification","Invalid file name");
+		throw Exception("FileManager","Invalid file name");
 	
 	string path = directory+"/"+filename;
 	
@@ -88,7 +88,7 @@ void FileManager::GetFile(const string &directory,const string &filename,string 
 	if(fd==-1)
 	{
 		Logger::Log(LOG_ERR,"Unable to open file : %s",path.c_str());
-		throw Exception("Notification","Unable to open file");
+		throw Exception("FileManager","Unable to open file");
 	}
 	
 	FILE *f = fdopen(fd,"r");
@@ -99,7 +99,7 @@ void FileManager::GetFile(const string &directory,const string &filename,string 
 void FileManager::RemoveFile(const string &directory,const string &filename)
 {
 	if(!CheckFileName(filename))
-		throw Exception("Notification","Invalid file name");
+		throw Exception("FileManager","Invalid file name");
 	
 	string path = directory+"/"+filename;
 	
@@ -107,6 +107,6 @@ void FileManager::RemoveFile(const string &directory,const string &filename)
 	if(re!=0)
 	{
 		Logger::Log(LOG_ERR,"Unable to remove file : %s",path.c_str());
-		throw Exception("Notification","Unable to remove file");
+		throw Exception("FileManager","Unable to remove file");
 	}
 }
