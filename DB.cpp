@@ -222,6 +222,7 @@ bool DB::FetchRow(void)
 		return false;
 
 	row=mysql_fetch_row(res);
+	row_field_length=mysql_fetch_lengths(res);
 
 	if(row)
 		return true;
@@ -280,4 +281,12 @@ double DB::GetFieldDouble(int n)
 		return 0;
 	
 	return atof(v);
+}
+
+unsigned long DB::GetFieldLength(int n)
+{
+	if(res==0 || row==0)
+		return 0;
+
+	return row_field_length[n];
 }

@@ -27,6 +27,7 @@ class DB
 	MYSQL *mysql;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+	unsigned long *row_field_length;
 	
 	bool is_copy;
 	
@@ -53,6 +54,7 @@ public:
 	char *GetField(int n);
 	int GetFieldInt(int n);
 	double GetFieldDouble(int n);
+	unsigned long GetFieldLength(int n);
 };
 
 #endif
