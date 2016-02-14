@@ -215,7 +215,7 @@ void WorkflowScheduler::Reload()
 	
 	DB db;
 	
-	db.QueryPrintf("SELECT workflow_schedule_id FROM t_workflow_schedule WHERE workflow_node=%s AND workflow_schedule_active = 1",Configuration::GetInstance()->Get("network.node.name").c_str());
+	db.QueryPrintf("SELECT workflow_schedule_id FROM t_workflow_schedule WHERE node_name=%s AND workflow_schedule_active = 1",Configuration::GetInstance()->Get("network.node.name").c_str());
 	while(db.FetchRow())
 	{
 		WorkflowSchedule *workflow_schedule = 0;
