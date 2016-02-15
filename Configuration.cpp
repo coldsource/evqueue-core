@@ -129,7 +129,7 @@ void Configuration::Substitute(void)
 	map<string,string>::iterator it;
 	for(it=entries.begin();it!=entries.end();it++)
 	{
-		pcrecpp::RE regex("\\{([a-zA-Z_]+)\\}");
+		pcrecpp::RE regex("(\\{[a-zA-Z_]+\\})");
 		pcrecpp::StringPiece str_to_match(it->second);
 		std::string match;
 		while(regex.FindAndConsume(&str_to_match,&match))
