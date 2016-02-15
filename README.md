@@ -31,6 +31,7 @@ These packages are required to build from the source:
 - libmysqlclient-dev
 - libxqilla-dev
 - libxerces-c-dev
+- libpcre++-dev
 
 ### Packages
 

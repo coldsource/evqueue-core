@@ -20,16 +20,16 @@
 #include <Configuration.h>
 #include <Exception.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-#include <xercesc/dom/DOM.hpp>
-
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <stdlib.h>
+#include <pcrecpp.h>
 
-#include <regex>
+#include <xqilla/xqilla-dom3.hpp>
+#include <xercesc/dom/DOM.hpp>
+
 
 using namespace std;
 using namespace xercesc;
@@ -129,14 +129,12 @@ void Configuration::Substitute(void)
 	map<string,string>::iterator it;
 	for(it=entries.begin();it!=entries.end();it++)
 	{
-		regex variables_regex("\\{([a-zA-Z_]+)\\}");
-		sregex_iterator matches(it->second.begin(),it->second.end(),variables_regex);
-		sregex_iterator matches_end;
-		
-		while(matches!=matches_end)
+		pcrecpp::RE regex("\\{([a-zA-Z_]+)\\}");
+		pcrecpp::StringPiece str_to_match(it->second);
+		std::string match;
+		while(regex.FindAndConsume(&str_to_match,&match))
 		{
-			smatch match = *matches;
-			string var = match.str();
+			string var = match;
 			string var_name =  var.substr(1,var.length()-2);
 			
 			const char *value = getenv(var_name.c_str());
@@ -145,8 +143,6 @@ void Configuration::Substitute(void)
 				size_t start_pos = it->second.find(var);
 				it->second.replace(start_pos,var.length(),string(value));
 			}
-			
-			matches++;
 		}
 	}
 }

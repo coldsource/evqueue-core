@@ -22,6 +22,7 @@ target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue xqilla)
 target_link_libraries(evqueue rt)
+target_link_libraries(evqueue pcrecpp)
 
 
 
