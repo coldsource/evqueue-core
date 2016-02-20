@@ -51,6 +51,11 @@
 
 using namespace std;
 
+static void send_success_status(int s)
+{
+	send(s,"<return status='OK' />",22,0);
+}
+
 static void send_error_status(int s, const char *error)
 {
 	send(s,"<return status='KO' error=\"",27,0);
@@ -135,13 +140,13 @@ void *handle_connection(void *sp)
 			char *message = XMLString::transcode(toCatch.getMessage());
 			Logger::Log(LOG_WARNING,"Invalid workflow XML structure : %s",message);
 			XMLString::release(&message);
-			throw (void *)0;
+			
+			throw Exception("Workflow XML parsing","Invalid workflow XML structure");
 		}
 		catch(Exception &e)
 		{
 			stats->IncInputErrors();
-			Logger::Log(LOG_WARNING,"[ %s ] %s",e.context,e.error);
-			throw (void *)0;
+			throw e;
 		}
 		catch(int e)  // int exception thrown to indicate that we have received a complete XML (usual case)
 		{
@@ -150,14 +155,12 @@ void *handle_connection(void *sp)
 		catch (...)
 		{
 			stats->IncInputErrors();
-			Logger::Log(LOG_WARNING,"Unexpected error trying to parse workflow XML");
-			throw (void *)0;
+			throw Exception("Workflow XML parsing","Unexpected error trying to parse workflow XML");
 		}
 		
 		if ( saxh->GetQueryType() == SocketQuerySAX2Handler::PING)
 		{
 			send(s,"<pong />",8,0);
-			throw (void *)0;
 		}
 		else if (saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH)
 		{
@@ -174,11 +177,7 @@ void *handle_connection(void *sp)
 			catch(Exception &e)
 			{
 				stats->IncWorkflowExceptions();
-				
-				send_error_status(s,e.error);
-				
-				Logger::Log(LOG_WARNING,"Unexpected exception trying to instanciate workflow '%s' : [ %s ] %s",workflow_name,e.context,e.error);
-				throw (void *)0;
+				throw e;
 			}
 			
 			wi->Start(&workflow_terminated);
@@ -193,10 +192,6 @@ void *handle_connection(void *sp)
 			
 			if(workflow_terminated)
 				delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
-			
-			throw (void *)0;
-		
-		// we have a query to find out information about a given workflow instance
 		}
 		else if(saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_MIGRATE)
 		{
@@ -206,10 +201,7 @@ void *handle_connection(void *sp)
 			// Check if workflow instance exists and is eligible to migration
 			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,config->Get("network.node.name").c_str());
 			if(!db.FetchRow())
-			{
-				send_error_status(s,"Workflow ID not found or already belongs to this node");
-				throw (void *)0;
-			}
+				throw Exception("Workflow Migration","Workflow ID not found or already belongs to this node");
 			
 			Logger::Log(LOG_NOTICE,"[WID %d] Migrating",db.GetFieldInt(0));
 			
@@ -224,19 +216,12 @@ void *handle_connection(void *sp)
 			}
 			catch(Exception &e)
 			{
-				send_error_status(s,e.error);
-				
-				Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to migrate : [ %s ] %s\n",db.GetFieldInt(0),e.context,e.error);
-				
 				if(workflow_instance)
 					delete workflow_instance;
-				
-				throw (void *)0;
+				throw e;
 			}
 			
-			send(s,"<return status='OK' />",22,0);
-			
-			throw (void*)0;
+			send_success_status(s);
 		}
 		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_INFO)
 		{
@@ -255,8 +240,6 @@ void *handle_connection(void *sp)
 				else
 					send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
 			}
-			
-			throw (void *)0;
 		}
 		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_CANCEL)
 		{
@@ -266,36 +249,26 @@ void *handle_connection(void *sp)
 			
 			// Prevent workflow instance from instanciating new tasks
 			if(!WorkflowInstances::GetInstance()->Cancel(workflow_instance_id))
-			{
 				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
+			else
+			{
+				// Flush retrier
+				Retrier::GetInstance()->FlushWorkflowInstance(workflow_instance_id);
 				
-				throw (void *)0;
+				// Cancel currently queued tasks
+				QueuePool::GetInstance()->CancelTasks(workflow_instance_id);
+				
+				send_success_status(s);
 			}
-			
-			// Flush retrier
-			Retrier::GetInstance()->FlushWorkflowInstance(workflow_instance_id);
-			
-			// Cancel currently queued tasks
-			QueuePool::GetInstance()->CancelTasks(workflow_instance_id);
-			
-			send(s,"<return status='OK' />",22,0);
-			
-			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_WORKFLOW_WAIT)
 		{
 			unsigned int workflow_instance_id = saxh->GetWorkflowId();
 			
 			if(!WorkflowInstances::GetInstance()->Wait(workflow_instance_id))
-			{
 				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
-				
-				throw (void *)0;
-			}
-			
-			send(s,"<return status='OK' />",22,0);
-			
-			throw (void *)0;
+			else
+				send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_WORKFLOW_KILLTASK)
 		{
@@ -303,133 +276,55 @@ void *handle_connection(void *sp)
 			int task_pid = saxh->GetTaskPID();
 			
 			if(!WorkflowInstances::GetInstance()->KillTask(workflow_instance_id,task_pid))
-			{
 				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
-				
-				throw (void *)0;
-			}
-			
-			send(s,"<return status='OK' />",22,0);
-			
-			throw (void *)0;
+			else
+				send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUT)
 		{
-			try
-			{
-				Notification::PutFile(saxh->GetFileName(),saxh->GetFileData());
-				send(s,"<return status='OK' />",22,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			Notification::PutFile(saxh->GetFileName(),saxh->GetFileData());
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUTCONF)
 		{
-			try
-			{
-				Notification::PutFileConf(saxh->GetFileName(),saxh->GetFileData());
-				send(s,"<return status='OK' />",22,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			Notification::PutFileConf(saxh->GetFileName(),saxh->GetFileData());
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_GETCONF)
 		{
-			try
-			{
-				string file_content;
-				Notification::GetFileConf(saxh->GetFileName(),file_content);
-				send(s,"<return status='OK' data='",26,0);
-				send(s,file_content.c_str(),file_content.length(),0);
-				send(s,"' />",4,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			string file_content;
+			Notification::GetFileConf(saxh->GetFileName(),file_content);
+			send(s,"<return status='OK' data='",26,0);
+			send(s,file_content.c_str(),file_content.length(),0);
+			send(s,"' />",4,0);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_REM)
 		{
-			try
-			{
-				Notification::RemoveFile(saxh->GetFileName());
-				send(s,"<return status='OK' />",22,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			Notification::RemoveFile(saxh->GetFileName());
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_NOTIFICATION_REMCONF)
 		{
-			try
-			{
-				Notification::RemoveFileConf(saxh->GetFileName());
-				send(s,"<return status='OK' />",22,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			Notification::RemoveFileConf(saxh->GetFileName());
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_PUT)
 		{
-			try
-			{
-				Task::PutFile(saxh->GetFileName(),saxh->GetFileData());
-				send(s,"<return status='OK' />",22,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			Task::PutFile(saxh->GetFileName(),saxh->GetFileData());
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_GET)
 		{
-			try
-			{
-				string file_content;
-				Task::GetFile(saxh->GetFileName(),file_content);
-				send(s,"<return status='OK' data='",26,0);
-				send(s,file_content.c_str(),file_content.length(),0);
-				send(s,"' />",4,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			string file_content;
+			Task::GetFile(saxh->GetFileName(),file_content);
+			send(s,"<return status='OK' data='",26,0);
+			send(s,file_content.c_str(),file_content.length(),0);
+			send(s,"' />",4,0);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_REM)
 		{
-			try
-			{
-				Task::RemoveFile(saxh->GetFileName());
-				send(s,"<return status='OK' />",22,0);
-			}
-			catch(Exception &e)
-			{
-				send_error_status(s,e.error);
-			}
-			
-			throw (void *)0;
+			Task::RemoveFile(saxh->GetFileName());
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_QUEUE_STATS)
 		{
@@ -437,22 +332,18 @@ void *handle_connection(void *sp)
 			
 			QueuePool *qp = QueuePool::GetInstance();
 			qp->SendStatistics(s);
-			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_GLOBAL_STATS)
 		{
 			stats->IncStatisticsQueries();
 			
 			stats->SendGlobalStatistics(s);
-			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::RESET_GLOBAL_STATS)
 		{
 			stats->ResetGlobalStatistics();
 			
-			send(s,"<return status='OK' />",22,0);
-			
-			throw (void *)0;
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_WORKFLOWS)
 		{
@@ -460,7 +351,6 @@ void *handle_connection(void *sp)
 			
 			WorkflowInstances *workflow_instances = WorkflowInstances::GetInstance();
 			workflow_instances->SendStatus(s);
-			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_SCHEDULER)
 		{
@@ -468,7 +358,6 @@ void *handle_connection(void *sp)
 			
 			WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
 			scheduler->SendStatus(s);
-			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_CONFIGURATION)
 		{
@@ -476,35 +365,34 @@ void *handle_connection(void *sp)
 			
 			Configuration *config = Configuration::GetInstance();
 			config->SendConfiguration(s);
-			throw (void *)0;
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_RELOAD)
 		{
 			tools_config_reload();
-			send(s,"<return status='OK' />",22,0);
-			throw (void *)0;
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_RETRY)
 		{
 			tools_flush_retrier();
-			send(s,"<return status='OK' />",22,0);
-			throw (void *)0;
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_SYNCTASKS)
 		{
 			tools_sync_tasks();
-			send(s,"<return status='OK' />",22,0);
-			throw (void *)0;
+			send_success_status(s);
 		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_SYNCNOTIFICATIONS)
 		{
 			tools_sync_notifications();
-			send(s,"<return status='OK' />",22,0);
-			throw (void *)0;
+			send_success_status(s);
 		}
 	}
-	catch (void *retval)
+	catch (Exception &e)
 	{
+		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context,e.error);
+		
+		send_error_status(s,e.error);
+		
 		if (parser!=0)
 			delete parser;
 		if (saxh!=0)
@@ -516,7 +404,19 @@ void *handle_connection(void *sp)
 		
 		mysql_thread_end();
 		
-		return retval;
+		return 0;
 		
 	}
+	
+	if (parser!=0)
+		delete parser;
+	if (saxh!=0)
+		delete saxh;
+	if (source)
+		delete source;
+	
+	Sockets::GetInstance()->UnregisterSocket(s);
+	mysql_thread_end();
+	
+	return 0;
 }
