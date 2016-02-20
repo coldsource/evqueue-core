@@ -45,9 +45,10 @@ class Notification
 		
 		pid_t Call(WorkflowInstance *workflow_instance);
 		
-		static void PutFile(const std::string &filename,const std::string &data);
+		static void PutFile(const std::string &filename,const std::string &data,bool base64_encoded=true);
 		static void PutFileConf(const std::string &filename,const std::string &data);
 		static void GetFile(const std::string &filename,std::string &data);
+		static void GetFileHash(const std::string &filename,std::string &hash);
 		static void GetFileConf(const std::string &filename,std::string &data);
 		static void RemoveFile(const std::string &filename);
 		static void RemoveFileConf(const std::string &filename);

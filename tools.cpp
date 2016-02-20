@@ -113,6 +113,12 @@ void tools_sync_tasks(void)
 	tasks->SyncBinaries();
 }
 
+void tools_sync_notifications(void)
+{
+	Notifications *notifications= Notifications::GetInstance();
+	notifications->SyncBinaries();
+}
+
 void tools_flush_retrier(void)
 {
 	Logger::Log(LOG_NOTICE,"Flushing retrier");

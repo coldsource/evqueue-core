@@ -29,7 +29,7 @@ CREATE TABLE `t_log` (
   `log_message` text COLLATE utf8_unicode_ci NOT NULL,
   `log_timestamp` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4425 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -45,7 +45,7 @@ CREATE TABLE `t_notification` (
   `notification_name` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `notification_parameters` text COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`notification_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -60,8 +60,9 @@ CREATE TABLE `t_notification_type` (
   `notification_type_name` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `notification_type_description` text COLLATE utf8_unicode_ci NOT NULL,
   `notification_type_binary` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `notification_type_binary_content` longblob,
   PRIMARY KEY (`notification_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -77,7 +78,7 @@ CREATE TABLE `t_queue` (
   `queue_concurrency` int(10) unsigned NOT NULL,
   PRIMARY KEY (`queue_id`),
   UNIQUE KEY `queue_name` (`queue_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -93,7 +94,7 @@ CREATE TABLE `t_schedule` (
   `schedule_xml` text COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`schedule_id`),
   UNIQUE KEY `schedule_name` (`schedule_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -117,7 +118,7 @@ CREATE TABLE `t_task` (
   `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `workflow_id` int(10) DEFAULT NULL,
   UNIQUE KEY `taskdesc_id` (`task_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=150 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -170,7 +171,7 @@ CREATE TABLE `t_workflow` (
   `workflow_bound` tinyint(1) NOT NULL DEFAULT '0',
   UNIQUE KEY `workflow_id` (`workflow_id`),
   UNIQUE KEY `workflow_name` (`workflow_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=184 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -197,7 +198,7 @@ CREATE TABLE `t_workflow_instance` (
   KEY `t_workflow_instance_errors` (`workflow_instance_errors`),
   KEY `workflow_instance_date_start` (`workflow_instance_start`),
   KEY `workflow_schedule_id` (`workflow_schedule_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -247,7 +248,7 @@ CREATE TABLE `t_workflow_schedule` (
   `workflow_schedule_active` tinyint(4) NOT NULL,
   `workflow_schedule_comment` text COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`workflow_schedule_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -274,7 +275,7 @@ CREATE TABLE `t_workflow_schedule_parameters` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-02-14 18:47:20
+-- Dump completed on 2016-02-20 16:40:26
 INSERT INTO t_queue(queue_name,queue_concurrency) VALUES('default',1);
 INSERT INTO t_user VALUES('admin',SHA1('admin'),'ADMIN');
-INSERT INTO t_notification_type VALUES (1, 'email', 'Sends an email', 'email.php');
+INSERT INTO `t_notification_type` VALUES (1,'email','Send an email to one or several recipients','email.php','#!/usr/bin/php\n<?php\n// Sanity check\nif($argc!=4)\n{\n error_log(\"This process should only be called as an evQueue plugin\\n\");\n    die(5);\n}\n\n// Read plugin configuration\nrequire_once \'conf/email.conf.php\';\n\n// Read configuration\n$stdin = fopen(\'php://stdin\',\'r\');\n\n$config_str = stream_get_contents($stdin);\nif($config_str==false)\n{\n   error_log(\"No configuration could be read on stdin\\n\");\n    die(1);\n}\n\n// Decode configuration\n$config = json_decode($config_str,true);\nif($config===null)\n{\n        error_log(\"Unable to decode json data\\n\");\n die(2);\n}\n\nif(!isset($config[\'subject\']) || !isset($config[\'when\']) || !isset($config[\'to\']) || !isset($config[\'body\']))\n{\n        error_log(\"Invalid configuration\\n\");\n      die(3);\n}\n\n// Read workflow instance informations from evQueue engine\n$vars = array(\'#ID#\'=>$argv[1]);\nif($argv[3])\n{\n    $s = fsockopen(\"unix://{$argv[3]}\");\n    \n    fwrite($s,\"<workflow id=\'{$argv[1]}\' />\");\n    $xml = stream_get_contents($s);\n    fclose($s);\n    \n    $xml = simplexml_load_string($xml);\n    $workflow_attributes = $xml->attributes();\n    $vars[\'#NAME#\'] = (string)$workflow_attributes[\'name\'];\n    $vars[\'#START_TIME#\'] = (string)$workflow_attributes[\'start_time\'];\n    $vars[\'#END_TIME#\'] = (string)$workflow_attributes[\'end_time\'];\n}\n\n// Extract mail informations from config\n$to = $config[\'to\'];\n$subject = $config[\'subject\'];\n$body = $config[\'body\'];\n$when = $config[\'when\'];\n$cc = isset($config[\'cc\'])?$config[\'cc\']:false;\n\nif($when!=\'ON_SUCCESS\' && $when!=\'ON_ERROR\' && $when!=\'ON_BOTH\')\n{\n    error_log(\"Invalid value for \'when\' parameter\\n\");\n       die(6);\n}\n\n// When should be trigger alert\nif($when==\'ON_SUCCESS\' && $argv[2]!=0)\n       die();\n\nif($when==\'ON_ERROR\' && $argv[2]==0)\n      die();\n\n// Do variables substitution\n$values = array_values($vars);\n$vars = array_keys($vars);\n\n$subject = str_replace($vars,$values,$subject);\n$body = str_replace($vars,$values,$body);\n\n// Send email\n$cmdline = \'/usr/bin/mail\';\n$cmdline .= \" -s \'\".addslashes($subject).\"\'\";\nif($cc)\n       $cmdline .= \" -c \'\".addslashes($cc).\"\'\";\n$cmdline .= \" -a \'\".addslashes(\'From: \'.$EMAIL_CONFIG[\'from\']).\"\'\";\n$cmdline .= \' \'.addslashes($to);\n\n$fd = array(0 => array(\'pipe\', \'r\'));\n$proc = proc_open($cmdline, $fd, $pipes);\n\nif(!is_resource($proc))\n   die(4);\n\nfwrite($pipes[0],$body);\nfclose($pipes[0]);\n$return_value = proc_close($proc);\n\ndie($return_value);\n?>');

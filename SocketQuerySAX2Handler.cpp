@@ -85,6 +85,8 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					query_type = SocketQuerySAX2Handler::QUERY_CONTROL_RETRY;
 				else if(XMLString::compareString(action_attr,X("synctasks"))==0)
 					query_type = SocketQuerySAX2Handler::QUERY_CONTROL_SYNCTASKS;
+				else if(XMLString::compareString(action_attr,X("syncnotifications"))==0)
+					query_type = SocketQuerySAX2Handler::QUERY_CONTROL_SYNCNOTIFICATIONS;
 				else
 					throw Exception("SocketQuerySAX2Handler","Unknown control action");
 			}

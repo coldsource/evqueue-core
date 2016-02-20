@@ -108,9 +108,12 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 	return pid;
 }
 
-void Notification::PutFile(const string &filename,const string &data)
+void Notification::PutFile(const string &filename,const string &data,bool base64_encoded)
 {
-	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY);
+	if(base64_encoded)
+		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BASE64);
+	else
+		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BINARY);
 }
 
 void Notification::PutFileConf(const string &filename,const string &data)
@@ -121,6 +124,11 @@ void Notification::PutFileConf(const string &filename,const string &data)
 void Notification::GetFile(const string &filename,string &data)
 {
 	FileManager::GetFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data);
+}
+
+void Notification::GetFileHash(const string &filename,string &hash)
+{
+	FileManager::GetFileHash(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,hash);
 }
 
 void Notification::GetFileConf(const string &filename,string &data)

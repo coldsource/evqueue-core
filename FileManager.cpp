@@ -111,7 +111,7 @@ void FileManager::GetFileHash(const string &directory,const string &filename,str
 	int fd = open(path.c_str(),O_RDONLY);
 	if(fd==-1)
 	{
-		Logger::Log(LOG_ERR,"Unable to open file : %s",path.c_str());
+		Logger::Log(LOG_NOTICE,"Unable to open file : %s",path.c_str());
 		throw Exception("FileManager","Unable to open file");
 	}
 	

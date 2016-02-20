@@ -6,6 +6,8 @@ ALTER TABLE t_log ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NO
 
 ALTER TABLE t_task ADD COLUMN task_binary_content LONGBLOB NULL DEFAULT NULL AFTER task_binary;
 
+ALTER TABLE t_notification_type ADD COLUMN notification_type_binary_content LONGBLOB NULL DEFAULT NULL AFTER notification_type_binary;
+
 -- Alter version number --
 ALTER TABLE t_log COMMENT 'v1.5';
 ALTER TABLE t_notification COMMENT 'v1.5';

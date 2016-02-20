@@ -53,6 +53,7 @@ class Notifications
 		static Notifications *GetInstance() { return instance; }
 		
 		void Reload(void);
+		void SyncBinaries(void);
 		Notification GetNotification(unsigned int id);
 		
 		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
