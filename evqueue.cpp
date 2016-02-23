@@ -226,6 +226,13 @@ int main(int argc,const char **argv)
 			throw Exception("core","Invalid UID");
 		}
 		
+		// Change working directory
+		if(config->Get("core.wd").length()>0)
+		{
+			if(chdir(config->Get("core.wd").c_str())!=0)
+				throw Exception("core","Unable to change working directory");
+		}
+		
 		// Create directory for PID (usually in /var/run)
 		char *pid_file2 = strdup(config->Get("core.pidfile").c_str());
 		char *pid_directory = dirname(pid_file2);

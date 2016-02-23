@@ -43,6 +43,7 @@ Configuration::Configuration(void)
 	entries["core.gid"] = "0";
 	entries["core.pidfile"] = "/var/run/evqueue/evqueue.pid";
 	entries["core.uid"] = "0";
+	entries["core.wd"] = "";
 	entries["gc.delay"] = "2";
 	entries["gc.enable"] = "yes";
 	entries["gc.interval"] = "43200";
