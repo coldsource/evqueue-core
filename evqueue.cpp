@@ -65,6 +65,7 @@
 #include <Sockets.h>
 #include <handle_connection.h>
 #include <tools.h>
+#include <tools_db.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -261,6 +262,9 @@ int main(int argc,const char **argv)
 		// Check database connection
 		DB db;
 		db.Ping();
+		
+		// Initialize DB
+		tools_init_db();
 		
 		if(daemonize)
 		{
