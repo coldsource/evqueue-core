@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 
+set(EVQUEUE_VERSION "1.5")
+
 project(evqueue)
+
+add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
 add_executable(evqueue evqueue.cpp Configuration.cpp ConfigurationReader.cpp DB.cpp Exception.cpp Queue.cpp QueuePool.cpp WorkflowInstance.cpp WorkflowInstances.cpp Scheduler.cpp Retrier.cpp SocketQuerySAX2Handler.cpp ProcessManager.cpp WorkflowParameters.cpp handle_connection.cpp Statistics.cpp NetworkInputSource.cpp BinNetworkInputStream.cpp Schedule.cpp WorkflowSchedule.cpp WorkflowScheduler.cpp Tasks.cpp Task.cpp Workflow.cpp Workflows.cpp Logger.cpp GarbageCollector.cpp RetrySchedule.cpp RetrySchedules.cpp SequenceGenerator.cpp tools.cpp tools_ipc.cpp Notification.cpp Notifications.cpp Sockets.cpp FileManager.cpp base64.cpp sha1.c)
 
@@ -63,14 +67,14 @@ install(DIRECTORY DESTINATION /usr/share/evqueue-core/tasks)
 install(DIRECTORY debian/usr/share/doc/evqueue DESTINATION /usr/share/doc DIRECTORY_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man8)
 
-set(CPACK_PACKAGE_FILE_NAME "evqueue-core_1.5_amd64")
+set(CPACK_PACKAGE_FILE_NAME "evqueue-core_${EVQUEUE_VERSION}_amd64")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "evQueue core module")
 set(CPACK_PACKAGE_DESCRIPTION "evQueue is a fast event driven scheduler and queueing engine")
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/conffiles;${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/prerm;${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/postrm;")
 
 set(CPACK_GENERATOR "DEB" "RPM")
 set(CPACK_DEBIAN_PACKAGE_NAME "evqueue-core")
-set(CPACK_DEBIAN_PACKAGE_VERSION "1.5")
+set(CPACK_DEBIAN_PACKAGE_VERSION "${EVQUEUE_VERSION}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Thibault Kummer <bob@coldsource.net>")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
