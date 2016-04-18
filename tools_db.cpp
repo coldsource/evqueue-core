@@ -17,9 +17,9 @@ void tools_init_db(void)
 	for(it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 	{
 		db.QueryPrintf(
-			"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%t AND table_name=%t",
-			config->Get("mysql.database"),
-			it->first
+			"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
+			config->Get("mysql.database").c_str(),
+			it->first.c_str()
 		);
 		
 		if(!db.FetchRow())

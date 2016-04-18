@@ -129,15 +129,6 @@ void DB::QueryPrintf(const char *query,...)
 					i++;
 					break;
 				
-				case 't':
-					arg_str = va_arg(ap,std::string).c_str();
-					if(arg_str)
-						escaped_len += 2+2*strlen(arg_str); // 2 Quotes + Escaped string
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-				
 				case 'i':
 					arg_int = va_arg(ap,const int *);
 					if(arg_int)
@@ -185,24 +176,6 @@ void DB::QueryPrintf(const char *query,...)
 					i++;
 					break;
 				
-				case 't':
-					arg_str = va_arg(ap,std::string).c_str();
-					if(arg_str)
-					{
-						escaped_query[j++] = '\'';
-						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str, strlen(arg_str));
-						escaped_query[j++] = '\'';
-					}
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-
-				
-
 				case 'i':
 					arg_int = va_arg(ap,const int *);
 					if(arg_int)
