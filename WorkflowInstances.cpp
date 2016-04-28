@@ -150,7 +150,7 @@ void WorkflowInstances::SendStatus(int s)
 	send(s,"<workflows>",11,0);
 	
 	for(std::map<unsigned int,WorkflowInstance *>::iterator i = wi.begin();i!=wi.end();++i)
-		i->second->SendStatus(s);
+		i->second->SendStatus(s,false);
 	
 	send(s,"</workflows>",12,0);
 	
@@ -167,7 +167,7 @@ bool WorkflowInstances::SendStatus(int s,unsigned int workflow_instance_id)
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
-		i->second->SendStatus(s);
+		i->second->SendStatus(s,true);
 		found = true;
 	}
 	

@@ -88,6 +88,7 @@ WorkflowInstance::WorkflowInstance(void):
 	is_cancelling = false;
 	
 	running_tasks = 0;
+	queued_tasks = 0;
 	retrying_tasks = 0;
 	error_tasks = 0;
 	
@@ -466,7 +467,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 		else if(XMLString::compareString(X("EXECUTING"),((DOMElement *)task)->getAttribute(X("status")))==0)
 		{
 			// Fake task ending with generic error code
-			running_tasks++;
+			running_tasks++; // Inc running_tasks before calling TaskStop
 			TaskStop(task,-1,"Task migrated",workflow_terminated);
 		}
 		else if(XMLString::compareString(X("TERMINATED"),((DOMElement *)task)->getAttribute(X("status")))==0)
@@ -675,6 +676,9 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 	Task task;
 	
 	pthread_mutex_lock(&lock);
+	
+	// As we arrive here, the task is queued. Whatever comes, its status will not be queued anymore (will be executing or aborted)
+	queued_tasks--;
 	
 	if(is_cancelling)
 	{
@@ -980,17 +984,34 @@ bool WorkflowInstance::CheckTaskName(const char *task_name)
 	return true;
 }
 
-void WorkflowInstance::SendStatus(int s)
+void WorkflowInstance::SendStatus(int s, bool full_status)
 {
 	pthread_mutex_lock(&lock);
 	
-	XMLCh *savepoint = serializer->writeToString(xmldoc->getDocumentElement());
-	char *savepoint_c = XMLString::transcode(savepoint);
+	DOMDocument *status_doc;
 	
-	send(s,savepoint_c,strlen(savepoint_c),0);
+	if(!full_status)
+	{
+		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+		status_doc = xqillaImplementation->createDocument();
+		
+		DOMNode *workflow_node = status_doc->importNode(xmldoc->getDocumentElement(),false);
+		status_doc->appendChild(workflow_node);
+	}
+	else
+		status_doc = xmldoc;
 	
-	XMLString::release(&savepoint);
-	XMLString::release(&savepoint_c);
+	XMLCh *status = serializer->writeToString(status_doc->getDocumentElement());
+	char *status_c = XMLString::transcode(status);
+	
+	send(s,status_c,strlen(status_c),0);
+	
+	XMLString::release(&status);
+	XMLString::release(&status_c);
+	
+	
+	if(!full_status)
+		status_doc->release();
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -1433,6 +1454,7 @@ void WorkflowInstance::enqueue_task(DOMNode *task)
 	}
 	
 	running_tasks++;
+	queued_tasks++;
 	
 	char *task_name_c = XMLString::transcode(task_name);
 	Logger::Log(LOG_NOTICE,"[WID %d] Added task %s to queue %s\n",workflow_instance_id,task_name_c,queue_name_c);
@@ -1524,6 +1546,9 @@ bool WorkflowInstance::workflow_ended(void)
 
 void WorkflowInstance::record_savepoint(bool force)
 {
+	// Always update XML statistics
+	update_statistics();
+	
 	// Also workflow XML attributes if necessary
 	if(XMLString::compareString(X("TERMINATED"),xmldoc->getDocumentElement()->getAttribute(X("status")))==0)
 	{
@@ -1627,4 +1652,21 @@ void WorkflowInstance::format_datetime(char *str)
 	localtime_r(&t,&t_desc);
 	
 	sprintf(str,"%d-%02d-%02d %02d:%02d:%02d",1900+t_desc.tm_year,t_desc.tm_mon+1,t_desc.tm_mday,t_desc.tm_hour,t_desc.tm_min,t_desc.tm_sec);
+}
+
+void WorkflowInstance::update_statistics()
+{
+	char buf[16];
+	
+	sprintf(buf,"%d",running_tasks);
+	xmldoc->getDocumentElement()->setAttribute(X("running_tasks"),X(buf));
+	
+	sprintf(buf,"%d",queued_tasks);
+	xmldoc->getDocumentElement()->setAttribute(X("queued_tasks"),X(buf));
+	
+	sprintf(buf,"%d",retrying_tasks);
+	xmldoc->getDocumentElement()->setAttribute(X("retrying_tasks"),X(buf));
+	
+	sprintf(buf,"%d",error_tasks);
+	xmldoc->getDocumentElement()->setAttribute(X("error_tasks"),X(buf));
 }

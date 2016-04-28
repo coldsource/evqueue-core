@@ -40,7 +40,7 @@ class WorkflowInstance
 		
 		unsigned int workflow_id;
 		unsigned int workflow_instance_id;
-		unsigned int running_tasks,retrying_tasks,error_tasks;
+		unsigned int running_tasks,queued_tasks,retrying_tasks,error_tasks;
 		
 		unsigned int workflow_schedule_id;
 		
@@ -85,7 +85,7 @@ class WorkflowInstance
 		pid_t TaskExecute(DOMNode *task,pid_t tid,bool *workflow_terminated);
 		bool CheckTaskName(const char *task_name);
 		
-		void SendStatus(int s);
+		void SendStatus(int s, bool full_status);
 		void RecordSavepoint();
 		
 		bool KillTask(pid_t pid);
@@ -103,6 +103,7 @@ class WorkflowInstance
 		void record_savepoint(bool force=false);
 		void replace_value(DOMNode *task,DOMNode *context_node);
 		void format_datetime(char *str);
+		void update_statistics();
 };
 
 #endif
