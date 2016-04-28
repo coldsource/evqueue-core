@@ -640,7 +640,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 	tasks_count = res->getIntegerValue();
 	res->release();
 	
-	res = xmldoc->evaluate(X("count(../task[@status='TERMINATED' and @retval = 0])"),task_node,resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+	res = xmldoc->evaluate(X("count(../task[(@status='TERMINATED' and @retval = 0) or (@status='SKIPPED')])"),task_node,resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
 	tasks_successful = res->getIntegerValue();
 	res->release();
 	
@@ -1153,6 +1153,48 @@ void WorkflowInstance::run(DOMNode *job,DOMNode *context_node)
 			
 			if(task_status && (XMLString::equals(task_status,X("TERMINATED"))))
 				continue; // Skip tasks that are already terminated (can happen on resume)
+			
+			// Check for conditional tasks
+			if(task->getAttributes()->getNamedItem(X("condition")))
+			{
+				DOMXPathResult *test_expr;
+				
+				try
+				{
+					// This is unchecked user input, try evaluation
+					test_expr = xmldoc->evaluate(task->getAttributes()->getNamedItem(X("condition"))->getNodeValue(),context_node,resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+				}
+				catch(XQillaException &xqe)
+				{
+					// XPath expression error
+					throw Exception("WorkflowInstance","Error while evaluating condition");
+				}
+				
+				int test_value;
+				try
+				{
+					// Xpath expression is correct but evaluation may return no result (e.g. expression refers to inexistant nodes)
+					test_value = test_expr->getIntegerValue();
+				}
+				catch(XQillaException &xqe)
+				{
+					test_expr->release();
+					
+					throw Exception("WorkflowInstance","Condition evaluation returned no result");
+				}
+				
+				
+				if(!test_value)
+				{
+					test_expr->release();
+					
+					((DOMElement *)task)->setAttribute(X("status"),X("SKIPPED"));
+					((DOMElement *)task)->setAttribute(X("details"),X("Condition evaluates to false"));
+					continue;
+				}
+				
+				test_expr->release();
+			}
 			
 			// Check for looped tasks (must expand them before execution)
 			if(task->getAttributes()->getNamedItem(X("loop")))
