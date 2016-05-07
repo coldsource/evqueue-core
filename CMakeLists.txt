@@ -46,6 +46,12 @@ include_directories(include /usr/include)
 
 
 
+project(libevqueuesyslog)
+
+add_library(evqueuesyslog SHARED libevqueuesyslog.cpp)
+
+
+
 ADD_CUSTOM_TARGET(man ALL)
 
 ADD_CUSTOM_COMMAND(
