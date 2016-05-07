@@ -81,7 +81,7 @@ class WorkflowInstance
 		void Cancel();
 		
 		void TaskRestart(DOMNode *task, bool *workflow_terminated);
-		bool TaskStop(DOMNode *task,int retval,const char *output,bool *workflow_terminated);
+		bool TaskStop(DOMNode *task,int retval,const char *output,const char *evqlog_output,bool *workflow_terminated);
 		pid_t TaskExecute(DOMNode *task,pid_t tid,bool *workflow_terminated);
 		bool CheckTaskName(const char *task_name);
 		

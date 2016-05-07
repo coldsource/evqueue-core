@@ -46,9 +46,9 @@ include_directories(include /usr/include)
 
 
 
-project(libevqueuesyslog)
+project(evqueue_log)
 
-add_library(evqueuesyslog SHARED libevqueuesyslog.cpp)
+add_executable(evqueue_log evqueue_log.cpp)
 
 
 
@@ -61,7 +61,7 @@ ADD_CUSTOM_COMMAND(
 
 
 
-install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor DESTINATION bin)
+install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor evqueue_log DESTINATION bin)
 install(FILES debian/etc/evqueue.conf DESTINATION /etc)
 install(FILES debian/etc/init.d/evqueue DESTINATION /etc/init.d PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 install(FILES debian/etc/default/evqueue DESTINATION /etc/default PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)

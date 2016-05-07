@@ -468,7 +468,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 		{
 			// Fake task ending with generic error code
 			running_tasks++; // Inc running_tasks before calling TaskStop
-			TaskStop(task,-1,"Task migrated",workflow_terminated);
+			TaskStop(task,-1,"Task migrated",0,workflow_terminated);
 		}
 		else if(XMLString::compareString(X("TERMINATED"),((DOMElement *)task)->getAttribute(X("status")))==0)
 		{
@@ -518,7 +518,7 @@ void WorkflowInstance::TaskRestart(DOMNode *task, bool *workflow_terminated)
 	pthread_mutex_unlock(&lock);
 }
 
-bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output,bool *workflow_terminated)
+bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output,const char *evqlog_output,bool *workflow_terminated)
 {
 	char buf[256];
 	
@@ -631,6 +631,17 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 		}
 		else
 			retry_task(task_node);
+	}
+	
+	// Add evqueue log output if present
+	if(evqlog_output)
+	{
+		DOMElement *syslog_element = xmldoc->createElement(X("log"));
+		
+		XMLCh *out = XMLString::transcode(evqlog_output);
+		syslog_element->appendChild(xmldoc->createTextNode(out));
+		task_node->appendChild(syslog_element);
+		XMLString::release(&out);
 	}
 	
 	DOMXPathResult *res;
@@ -872,6 +883,14 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 			dup2(parameters_pipe[0],STDIN_FILENO);
 			close(parameters_pipe[1]);
 		}
+		
+		// Set evqueue log file in environment to enable evqueue_log
+		log_filename = new char[logs_directory.length()+32];
+		
+		sprintf(log_filename,"%s/%d.evqlog",logs_directory.c_str(),tid);
+		setenv("EVQUEUE_LOG_FILE",log_filename,true);
+		
+		delete[] log_filename;
 		
 		if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
 		{
