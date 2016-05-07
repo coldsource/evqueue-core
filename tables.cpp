@@ -108,8 +108,8 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_instance_start` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \
   `workflow_instance_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \
   `workflow_instance_status` enum('EXECUTING','TERMINATED','ABORTED') COLLATE utf8_unicode_ci NOT NULL, \
-  `workflow_instance_errors` int(10) unsigned NOT NULL, \
-  `workflow_instance_savepoint` longtext COLLATE utf8_unicode_ci NOT NULL, \
+  `workflow_instance_errors` int(10) unsigned NOT NULL DEFAULT 0, \
+  `workflow_instance_savepoint` longtext COLLATE utf8_unicode_ci NULL DEFAULT NULL, \
   UNIQUE KEY `workflow_instance_id` (`workflow_instance_id`), \
   KEY `workflow_instance_status` (`workflow_instance_status`), \
   KEY `workflow_instance_date_end` (`workflow_instance_end`), \
