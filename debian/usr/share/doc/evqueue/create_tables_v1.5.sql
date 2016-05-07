@@ -27,7 +27,7 @@ CREATE TABLE `t_log` (
   `node_name` varchar(32) CHARACTER SET ascii NOT NULL DEFAULT '',
   `log_level` int(11) NOT NULL,
   `log_message` text COLLATE utf8_unicode_ci NOT NULL,
-  `log_timestamp` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP,
+  `log_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`log_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -188,7 +188,7 @@ CREATE TABLE `t_workflow_instance` (
   `workflow_schedule_id` int(10) unsigned DEFAULT NULL,
   `workflow_instance_host` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL,
   `workflow_instance_start` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `workflow_instance_end` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `workflow_instance_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `workflow_instance_status` enum('EXECUTING','TERMINATED','ABORTED') COLLATE utf8_unicode_ci NOT NULL,
   `workflow_instance_errors` int(10) unsigned NOT NULL,
   `workflow_instance_savepoint` longtext COLLATE utf8_unicode_ci NOT NULL,
