@@ -23,12 +23,15 @@
 #include <Exception.h>
 #include <WorkflowInstance.h>
 #include <Logger.h>
+#include <Configuration.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <string>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -39,6 +42,17 @@ QueuePool::QueuePool(void)
 {
 	int i;
 	DB db;
+	
+	std::string scheduler_str = Configuration::GetInstance()->Get("queuepool.scheduler");
+	int scheduler;
+	if(scheduler_str=="fifo")
+		scheduler = QUEUE_SCHEDULER_FIFO;
+	else if(scheduler_str=="prio")
+		scheduler = QUEUE_SCHEDULER_PRIO;
+	else
+		throw Exception("QueuePool","Invalid scheduler name, allowed values are 'fifo' or 'prio'");
+	
+	Logger::Log(LOG_NOTICE,"[ QueuePool ] Loaded scheduler '%s'",scheduler_str.c_str());
 	
 	name = 0;
 	queue = 0;
@@ -59,7 +73,7 @@ QueuePool::QueuePool(void)
 	{
 		name[i] = new char[strlen(db.GetField(0))+1];
 		strcpy(name[i],db.GetField(0));
-		queue[i] = new Queue(name[i]);
+		queue[i] = new Queue(name[i],scheduler);
 		
 		i++;
 	}

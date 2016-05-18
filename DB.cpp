@@ -26,41 +26,25 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-DB::DB(const char *host,const char *user,const char *password,const char *dbname)
+DB::DB(DB *db)
 {
-	// Initialisation de mysql
-	mysql = mysql_init(0);
-
-	// Connection à la base
-	if(!mysql_real_connect(mysql,host,user,password,dbname,0,0,0))
-		throw Exception("DB",mysql_error(mysql));
-
-	res=0;
-	is_copy = false;
+	// We share the same MySQL handle but is_connected is split. We must be connected before cloning or the connection will be made twice
+	db->connect();
 	
-	Query("SET NAMES 'UTF8'");
-}
-
-DB::DB(const DB *db)
-{
 	mysql = db->mysql;
 	res = 0;
+	is_connected = db->is_connected;
 	is_copy = true;
 }
 
 DB::DB(void)
 {
-	Configuration *config = Configuration::GetInstance();
-
 	// Initialisation de mysql
 	mysql = mysql_init(0);
 	mysql_options(mysql, MYSQL_SET_CHARSET_NAME, "UTF8");
-
-	// Connection à la base
-	if(!mysql_real_connect(mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
-		throw Exception("DB",mysql_error(mysql));
-
+	
 	res=0;
+	is_connected = false;
 	is_copy = false;
 }
 
@@ -69,7 +53,7 @@ DB::~DB(void)
 	if(res)
 		mysql_free_result(res);
 
-	if(!is_copy)
+	if(is_connected && !is_copy)
 		mysql_close(mysql);
 }
 
@@ -80,12 +64,16 @@ DB *DB::Clone(void)
 
 void DB::Ping(void)
 {
+	connect();
+	
 	if(mysql_ping(mysql)!=0)
 		throw Exception("DB",mysql_error(mysql));
 }
 
 void DB::Query(const char *query)
 {
+	connect();
+	
 	if(res)
 	{
 		mysql_free_result(res);
@@ -289,4 +277,26 @@ unsigned long DB::GetFieldLength(int n)
 		return 0;
 
 	return row_field_length[n];
+}
+
+void DB::Disconnect()
+{
+	if(is_connected && !is_copy)
+	{
+		mysql_close(mysql);
+		is_connected = false;
+	}
+}
+
+void DB::connect(void)
+{
+	if(is_connected)
+		return; // Nothing to do
+	
+	Configuration *config = Configuration::GetInstance();
+	
+	if(!mysql_real_connect(mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
+		throw Exception("DB",mysql_error(mysql));
+	
+	is_connected = true;
 }

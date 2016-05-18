@@ -356,6 +356,9 @@ int main(int argc,const char **argv)
 			}
 		}
 		
+		// Release database connection
+		db.Disconnect();
+		
 		// Start Process Manager (Forker & Gatherer)
 		ProcessManager *pm = new ProcessManager();
 		

@@ -44,6 +44,7 @@ Configuration::Configuration(void)
 	entries["core.pidfile"] = "/var/run/evqueue/evqueue.pid";
 	entries["core.uid"] = "0";
 	entries["core.wd"] = "";
+	entries["queuepool.scheduler"] = "fifo";
 	entries["gc.delay"] = "2";
 	entries["gc.enable"] = "yes";
 	entries["gc.interval"] = "43200";

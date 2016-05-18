@@ -25,6 +25,13 @@ using namespace xercesc;
 
 #include <global.h>
 
+#include <deque>
+#include <queue>
+#include <map>
+
+#define QUEUE_SCHEDULER_FIFO 1
+#define QUEUE_SCHEDULER_PRIO 2
+
 class WorkflowInstance;
 
 class Queue
@@ -44,12 +51,15 @@ class Queue
 		unsigned int size;
 		unsigned int running_tasks;
 		
-		Task *first_task;
-		Task *last_task;
-		Task *cancelled_tasks;
-	
+		std::multimap<unsigned int,Task *> prio_queue;
+		std::deque<Task *> queue;
+		
+		std::queue<Task *>cancelled_tasks;
+		
+		int scheduler;
+		
 	public:
-		Queue(const char *name);
+		Queue(const char *name, int scheduler);
 		
 		bool CheckQueueName(const char *queue_name);
 		
@@ -64,6 +74,10 @@ class Queue
 		inline unsigned int GetConcurrency(void) { return concurrency; }
 		
 		bool IsLocked(void);
+	
+	private:
+		void enqueue_task(WorkflowInstance *workflow_instance,DOMNode *task);
+		void dequeue_task(WorkflowInstance **p_workflow_instance,DOMNode **p_task);
 };
 
 #endif
