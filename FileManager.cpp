@@ -27,16 +27,24 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
 
 using namespace std;
 
-bool FileManager::CheckFileName(const string &file_name)
+bool FileManager::CheckFileName(const std::string &directory,const string &file_name)
 {
-	if(file_name[0]=='.')
+	string path = directory+"/"+file_name;
+	
+	char buf[PATH_MAX];
+	if(!realpath(path.c_str(),buf))
+		return false;
+	
+	if(string(buf).find(path,0)!=0)
 		return false;
 	
 	for(int i=0;i<file_name.length();i++)
-		if(!isalnum(file_name[i]) && file_name[i]!='_' && file_name[i]!='-' && file_name[i]!='.')
+		if(!isalnum(file_name[i]) && file_name[i]!='_' && file_name[i]!='-' && file_name[i]!='.' && file_name[i]!='/')
 			return false;
 	
 	return true;
@@ -44,7 +52,7 @@ bool FileManager::CheckFileName(const string &file_name)
 
 void FileManager::PutFile(const string &directory,const string &filename,const string &data,int filetype,int datatype)
 {
-	if(!CheckFileName(filename))
+	if(!CheckFileName(directory,filename))
 		throw Exception("FileManager","Invalid file name");
 	
 	string path = directory+"/"+filename;
@@ -84,7 +92,7 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 
 void FileManager::GetFile(const string &directory,const string &filename,string &data)
 {
-	if(!CheckFileName(filename))
+	if(!CheckFileName(directory,filename))
 		throw Exception("FileManager","Invalid file name");
 	
 	string path = directory+"/"+filename;
@@ -103,7 +111,7 @@ void FileManager::GetFile(const string &directory,const string &filename,string 
 
 void FileManager::GetFileHash(const string &directory,const string &filename,string &hash)
 {
-	if(!CheckFileName(filename))
+	if(!CheckFileName(directory,filename))
 		throw Exception("FileManager","Invalid file name");
 	
 	string path = directory+"/"+filename;
@@ -127,7 +135,7 @@ void FileManager::GetFileHash(const string &directory,const string &filename,str
 
 void FileManager::RemoveFile(const string &directory,const string &filename)
 {
-	if(!CheckFileName(filename))
+	if(!CheckFileName(directory,filename))
 		throw Exception("FileManager","Invalid file name");
 	
 	string path = directory+"/"+filename;

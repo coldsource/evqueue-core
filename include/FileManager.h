@@ -30,7 +30,7 @@ class FileManager
 		static const int DATATYPE_BASE64 = 1;
 		static const int DATATYPE_BINARY = 2;
 		
-		static bool CheckFileName(const std::string &file_name);
+		static bool CheckFileName(const std::string &directory,const std::string &file_name);
 		
 		static void PutFile(const std::string &directory,const std::string &filename,const std::string &data,int filetype,int datatype=DATATYPE_BASE64);
 		static void GetFile(const std::string &directory,const std::string &filename,std::string &data);
