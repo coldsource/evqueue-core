@@ -20,17 +20,18 @@
 #include <Queue.h>
 #include <DB.h>
 #include <WorkflowInstance.h>
-#include <Configuration.h>
 #include <Exception.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 
-Queue::Queue(const char *name)
+Queue::Queue(const char *name, int scheduler)
 {
 	if(!CheckQueueName(name))
 		throw Exception("Queue","Invalid queue name");
+	
+	this->scheduler = scheduler;
 	
 	strcpy(this->name,name);
 	
@@ -44,9 +45,6 @@ Queue::Queue(const char *name)
 	
 	size = 0;
 	running_tasks = 0;
-	first_task = 0;
-	last_task = 0;
-	cancelled_tasks = 0;
 }
 
 bool Queue::CheckQueueName(const char *queue_name)
@@ -69,41 +67,44 @@ void Queue::EnqueueTask(WorkflowInstance *workflow_instance,DOMNode *task)
 	Task *new_task = new Task;
 	new_task->workflow_instance = workflow_instance;
 	new_task->task = task;
-	new_task->next_task = 0;
 	
-	if(first_task==0)
-	{
-		last_task = new_task;
-		first_task = new_task;
-	}
-	else
-	{
-		last_task->next_task = new_task;
-		last_task = new_task;
-	}
+	if(scheduler==QUEUE_SCHEDULER_FIFO)
+		queue.push_back(new_task);
+	else if(scheduler==QUEUE_SCHEDULER_PRIO)
+		prio_queue.insert(std::pair<unsigned int,Task *>(workflow_instance->GetInstanceID(),new_task));
 	
 	size++;
 }
 
 bool Queue::DequeueTask(WorkflowInstance **p_workflow_instance,DOMNode **p_task)
 {
-	Task *tmp;
-	
 	if(IsLocked())
 		return false;
 	
+	Task *tmp;
+	
 	// If we have cancelled tasks, return it first
-	if(cancelled_tasks)
+	if(cancelled_tasks.size())
 	{
 		// Dequeue cancelled task
-		tmp = cancelled_tasks;
-		cancelled_tasks = cancelled_tasks->next_task;
+		tmp = cancelled_tasks.front();
+		cancelled_tasks.pop();
 	}
 	else
 	{
 		// Dequeue task
-		tmp = first_task;
-		first_task = first_task->next_task;
+		if(scheduler==QUEUE_SCHEDULER_FIFO)
+		{
+			tmp = queue.front();
+			queue.pop_front();
+		}
+		else if(scheduler==QUEUE_SCHEDULER_PRIO)
+		{
+			std::multimap<unsigned int,Task *>::iterator it;
+			it=prio_queue.begin();
+			tmp = it->second;
+			prio_queue.erase(it);
+		}
 		
 		size--;
 	}
@@ -132,23 +133,33 @@ bool Queue::TerminateTask(void)
 
 bool Queue::CancelTasks(unsigned int workflow_instance_id)
 {
-	Task *tmp;
-	Task **task = &first_task;
-	
-	while(*task)
+	if(scheduler==QUEUE_SCHEDULER_FIFO)
 	{
-		if((*task)->workflow_instance->GetInstanceID()==workflow_instance_id)
+		std::deque<Task *>::iterator it;
+		for(it=queue.begin();it!=queue.end();it++)
 		{
-			tmp = *task;
-			*task = (*task)->next_task;
-			
-			tmp->next_task = cancelled_tasks;
-			cancelled_tasks = tmp;
-			
-			size--;
+			if((*it)->workflow_instance->GetInstanceID()==workflow_instance_id)
+			{
+				cancelled_tasks.push((*it));
+				queue.erase(it);
+				
+				size--;
+			}
 		}
-		else
-			task = &((*task)->next_task);
+	}
+	else if(scheduler==QUEUE_SCHEDULER_PRIO)
+	{
+		std::multimap<unsigned int,Task *>::iterator it;
+		for(it=prio_queue.begin();it!=prio_queue.end();it++)
+		{
+			if(it->second->workflow_instance->GetInstanceID()==workflow_instance_id)
+			{
+				cancelled_tasks.push(it->second);
+				prio_queue.erase(it);
+				
+				size--;
+			}
+		}
 	}
 	
 	return true;
@@ -156,7 +167,7 @@ bool Queue::CancelTasks(unsigned int workflow_instance_id)
 
 bool Queue::IsLocked(void)
 {
-	if(cancelled_tasks)
+	if(cancelled_tasks.size())
 		return false; // Always return cancelled tasks
 	if(size>0 && running_tasks<concurrency)
 		return false; // Return new tasks only if concurrency is not reached
