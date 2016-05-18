@@ -29,11 +29,11 @@ class DB
 	MYSQL_ROW row;
 	unsigned long *row_field_length;
 	
+	bool is_connected;
 	bool is_copy;
 	
 public:
-	DB(const char *host,const char *user,const char *password,const char *dbname);
-	DB(const DB *db);
+	DB(DB *db);
 	DB(void);
 	~DB(void);
 	
@@ -55,6 +55,11 @@ public:
 	int GetFieldInt(int n);
 	double GetFieldDouble(int n);
 	unsigned long GetFieldLength(int n);
+	
+	void Disconnect();
+	
+private:
+	void connect();
 };
 
 #endif
