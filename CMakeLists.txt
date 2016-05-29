@@ -46,6 +46,14 @@ include_directories(include /usr/include)
 
 
 
+project(evqueue_agent)
+
+add_executable(evqueue_agent evqueue_agent.cpp)
+
+include_directories(include /usr/include)
+
+
+
 ADD_CUSTOM_TARGET(man ALL)
 
 ADD_CUSTOM_COMMAND(
@@ -56,6 +64,7 @@ ADD_CUSTOM_COMMAND(
 
 
 install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor DESTINATION bin)
+install(TARGETS evqueue_agent DESTINATION bin)
 install(FILES debian/etc/evqueue.conf DESTINATION /etc)
 install(FILES debian/etc/init.d/evqueue DESTINATION /etc/init.d PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 install(FILES debian/etc/default/evqueue DESTINATION /etc/default PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
@@ -70,6 +79,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue.8.gz DESTINATION ${CMAKE_INSTA
 set(CPACK_PACKAGE_FILE_NAME "evqueue-core_${EVQUEUE_VERSION}_amd64")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "evQueue core module")
 set(CPACK_PACKAGE_DESCRIPTION "evQueue is a fast event driven scheduler and queueing engine")
+set(CPACK_PACKAGE_VERSION "1.5")
+
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/conffiles;${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/prerm;${CMAKE_CURRENT_SOURCE_DIR}/debian/DEBIAN/postrm;")
 
 set(CPACK_GENERATOR "DEB" "RPM")

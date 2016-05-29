@@ -17,41 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _PROCESS_MANAGER_H_
-#define _PROCESS_MANAGER_H_
+#ifndef _EVQUEUE_AGENT_H_
+#define _EVQUEUE_AGENT_H_
 
-#include <sys/types.h>
-#include <pthread.h>
-
-#include <string>
-
-class ProcessManager
-{
-	private:
-		int msgqid;
-		
-		std::string logs_directory;
-		char *log_filename;
-		bool logs_delete;
-		
-		static volatile bool is_shutting_down;
-		
-		pthread_t forker_thread_handle;
-		pthread_t gatherer_thread_handle;
-		
-	public:
-		ProcessManager();
-		~ProcessManager();
-		
-		pid_t ExecuteTask(const char *binary);
-		static void *Fork(void *context);
-		static void *Gather(void *context);
-		
-		void Shutdown(void);
-		void WaitForShutdown(void);
-	
-	private:
-		static char *read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno);
-};
+#define MAXFD_FORWARD 3
 
 #endif

@@ -63,6 +63,7 @@ class QueuePool
 		bool DequeueTask(char *queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
 		pid_t ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const char *queue_name,pid_t task_id);
 		bool TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
+		bool GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
 		
 		bool CancelTasks(unsigned int workflow_instance_id);
 		

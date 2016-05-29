@@ -31,6 +31,8 @@
 
 pid_t pid = 0;
 
+bool send_progress_message(int msgqid,const char* buf,pid_t tid);
+
 void signal_callback_handler(int signum)
 {
 	if(signum==SIGTERM)
@@ -67,6 +69,14 @@ int main(int argc,char ** argv)
 	pid_t tid = atoi(argv[2]);
 	int status;
 	
+	int log_pipe[2];
+	int stdout_pipe[2];
+	
+	if(getenv("EVQUEUE_SSH_AGENT"))
+		pipe(stdout_pipe);
+	else
+		pipe(log_pipe);
+	
 	pid = fork();
 	
 	if(pid==0)
@@ -79,6 +89,21 @@ int main(int argc,char ** argv)
 			ssh_nargs++;
 		if(getenv("EVQUEUE_SSH_KEY"))
 			ssh_nargs+=2;
+		
+		if(getenv("EVQUEUE_SSH_AGENT"))
+		{
+			close(stdout_pipe[0]);
+		
+			dup2(stdout_pipe[1],STDOUT_FILENO);
+			
+			ssh_nargs++;
+		}
+		else
+		{
+			dup2(log_pipe[1],LOG_FILENO);
+			close(log_pipe[0]);
+		}
+		
 		if(ssh_nargs>0 && working_directory)
 			ssh_nargs++;
 		
@@ -137,6 +162,10 @@ int main(int argc,char ** argv)
 				sprintf(task_argv[current_arg],"cd %s;",working_directory);
 				current_arg++;
 			}
+			
+			// Call agent if needed
+			if(getenv("EVQUEUE_SSH_AGENT"))
+				task_argv[current_arg++] = getenv("EVQUEUE_SSH_AGENT");
 			
 			// Task binary
 			task_argv[current_arg++] = argv[1];
@@ -203,6 +232,107 @@ int main(int argc,char ** argv)
 	}
 	else
 	{
+		if(getenv("EVQUEUE_SSH_AGENT"))
+		{
+			close(stdout_pipe[1]);
+			
+			// When using evqueue agent over SSH we receive 3 FDs multiplexed on stdout
+			
+			char line_buf[4096];
+			int line_buf_size = 0;
+	
+			// Demultiplex Data
+			FILE *log_in = fdopen(stdout_pipe[0],"r");
+			while(1)
+			{
+				char buf[4096];
+				int read_size,data_size,data_fd;
+				
+				// Read file descriptor
+				read_size = fread(buf,1,2,log_in);
+				if(read_size==0)
+					break;
+				
+				if(read_size!=2)
+				{
+					fprintf(stderr,"Corrupted data received from evqueue agent");
+					exit(-1);
+				}
+				
+				buf[read_size] = '\0';
+				data_fd = atoi(buf);
+				
+				// Read data length
+				read_size = fread(buf,1,9,log_in);
+				if(read_size!=9)
+				{
+					fprintf(stderr,"Corrupted data received from evqueue agent");
+					exit(-1);
+				}
+				
+				buf[read_size] = '\0';
+				data_size = atoi(buf);
+				
+				if(data_size>4096)
+				{
+					fprintf(stderr,"Corrupted data received from evqueue agent");
+					exit(-1);
+				}
+				
+				read_size = fread(buf,1,data_size,log_in);
+				if(read_size!=data_size)
+				{
+					fprintf(stderr,"Corrupted data received from evqueue agent");
+					exit(-1);
+				}
+				
+				if(data_fd==LOG_FILENO)
+				{
+					// Parse evqueue log
+					for(int i=0;i<read_size;i++)
+					{
+						line_buf[line_buf_size++] = buf[i];
+						if(buf[i]=='\n' || line_buf_size==4095)
+						{
+							line_buf[line_buf_size] = '\0';
+							
+							if(!send_progress_message(msgqid,line_buf,tid))
+							{
+								if(line_buf[0]=='%')
+									write(LOG_FILENO,line_buf+1,line_buf_size-1);
+								else
+									write(LOG_FILENO,line_buf,line_buf_size);
+							}
+							
+							line_buf_size = 0;
+						}
+					}
+				}
+				else // Directly forward stdout and sterr
+					write(data_fd,buf,read_size);
+			}
+		}
+		else
+		{
+			close(log_pipe[1]);
+			
+			// No agent is used, stdout and stderr are already handled, just parse evqueue log
+		
+			char buf[4096];
+			FILE *log_in = fdopen(log_pipe[0],"r");
+			FILE *log_out = fdopen(LOG_FILENO,"w");
+			while(fgets(buf,4096,log_in))
+			{
+				if(!send_progress_message(msgqid,buf,tid))
+				{
+					if(buf[0]=='%')
+						fputs(buf+1,log_out);
+					else
+						fputs(buf,log_out);
+				}
+			}
+		}
+		
 		waitpid(pid,&status,0);
 		if(WIFEXITED(status))
 			msgbuf.mtext.retcode = WEXITSTATUS(status);
@@ -213,4 +343,26 @@ int main(int argc,char ** argv)
 	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0); // Notify evqueue
 	
 	return msgbuf.mtext.retcode;
+}
+
+bool send_progress_message(int msgqid,const char* buf,pid_t tid)
+{
+	if(buf[0]!='%' || buf[1]=='%')
+		return  false;
+	
+	int prct = atoi(buf+1);
+	if(prct<0)
+		prct = 0;
+	else if(prct>100)
+		prct = 100;
+	
+	st_msgbuf msgbuf_progress;
+	msgbuf_progress.type = 3;
+	msgbuf_progress.mtext.pid = getpid();
+	msgbuf_progress.mtext.tid = tid;
+	msgbuf_progress.mtext.retcode = prct;
+	
+	msgsnd(msgqid,&msgbuf_progress,sizeof(st_msgbuf::mtext),0);
+	
+	return  true;
 }

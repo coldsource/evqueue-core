@@ -81,9 +81,10 @@ class WorkflowInstance
 		void Cancel();
 		
 		void TaskRestart(DOMNode *task, bool *workflow_terminated);
-		bool TaskStop(DOMNode *task,int retval,const char *output,const char *evqlog_output,bool *workflow_terminated);
+		bool TaskStop(DOMNode *task,int retval,const char *stdout_output,const char * stderr_output,const char *log_output,bool *workflow_terminated);
 		pid_t TaskExecute(DOMNode *task,pid_t tid,bool *workflow_terminated);
 		bool CheckTaskName(const char *task_name);
+		void TaskUpdateProgression(DOMNode *task, int prct);
 		
 		void SendStatus(int s, bool full_status);
 		void RecordSavepoint();
@@ -103,6 +104,7 @@ class WorkflowInstance
 		void record_savepoint(bool force=false);
 		void replace_value(DOMNode *task,DOMNode *context_node);
 		void format_datetime(char *str);
+		int open_log_file(int tid, int fileno);
 		void update_statistics();
 };
 

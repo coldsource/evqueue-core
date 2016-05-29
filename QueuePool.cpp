@@ -313,6 +313,25 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	return true;
 }
 
+bool QueuePool::GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task)
+{
+	pthread_mutex_lock(&mutex);
+	
+	if(tid_workflow_instance[task_id]==0)
+	{
+		// Task not found
+		pthread_mutex_unlock(&mutex);
+		return false;
+	}
+	
+	*p_workflow_instance = tid_workflow_instance[task_id];
+	*p_task = tid_task[task_id];
+	
+	pthread_mutex_unlock(&mutex);
+	
+	return true;
+}
+
 bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 {
 	pthread_mutex_lock(&mutex);

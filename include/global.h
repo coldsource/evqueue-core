@@ -46,4 +46,7 @@ struct st_msgbuf
 // Global MACROS
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
+// Logs fileno
+#define LOG_FILENO 3
+
 #endif

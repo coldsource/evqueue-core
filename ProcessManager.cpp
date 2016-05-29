@@ -149,13 +149,11 @@ void *ProcessManager::Gather(void *process_manager)
 	
 	ProcessManager *pm = (ProcessManager *)process_manager;
 	
-	char *output,*evqlog_output;
-	long log_size;
+	char *stdout_output,*stderr_output,*log_output;
 	bool workflow_terminated;
 	pid_t pid,tid;
 	int status;
 	char retcode;
-	FILE *f;
 	st_msgbuf msgbuf;
 	
 	WorkflowInstance *workflow_instance;
@@ -190,57 +188,10 @@ void *ProcessManager::Gather(void *process_manager)
 		
 		if(msgbuf.type==1)
 		{
-			// Fetch task output in log file before releasing tid
-			sprintf(pm->log_filename,"%s/%d.log",pm->logs_directory.c_str(),tid);
-			f = fopen(pm->log_filename,"r");
-			
-			if(f)
-			{
-				// Get file size
-				fseek(f,0,SEEK_END);
-				log_size = ftell(f);
-				
-				// Read output log
-				fseek(f,0,SEEK_SET);
-				output = new char[log_size+1];
-				fread(output,1,log_size,f);
-				output[log_size] = '\0';
-				
-				fclose(f);
-			}
-			else
-			{
-				output = 0;
-				
-				Logger::Log(LOG_WARNING,"[ ProcessManager ] Could not read task output for pid %d",pid);
-			}
-			
-			if(pm->logs_delete)
-				unlink(pm->log_filename); // Delete log file since it is not usefull anymore
-				
-			// Fetch task evqlog output
-			sprintf(pm->log_filename,"%s/%d.evqlog",pm->logs_directory.c_str(),tid);
-			f = fopen(pm->log_filename,"r");
-			
-			if(f)
-			{
-				// Get file size
-				fseek(f,0,SEEK_END);
-				log_size = ftell(f);
-				
-				// Read output log
-				fseek(f,0,SEEK_SET);
-				evqlog_output = new char[log_size+1];
-				fread(evqlog_output,1,log_size,f);
-				evqlog_output[log_size] = '\0';
-				
-				fclose(f);
-			}
-			else
-				evqlog_output = 0;
-			
-			if(pm->logs_delete)
-				unlink(pm->log_filename); // Delete log file since it is not usefull anymore
+			// Fetch task output in log files before releasing tid
+			stdout_output =  read_log_file(pm,pid,tid,STDOUT_FILENO);
+			stderr_output =  read_log_file(pm,pid,tid,STDERR_FILENO);
+			log_output =  read_log_file(pm,pid,tid,LOG_FILENO);
 			
 			// Get task informations
 			if(!QueuePool::GetInstance()->TerminateTask(tid,&workflow_instance,&task))
@@ -249,25 +200,36 @@ void *ProcessManager::Gather(void *process_manager)
 				continue; // Oops task was not found, this can happen on resume when tables have been cleaned
 			}
 			
-			if(output)
-				workflow_instance->TaskStop(task,retcode,output,evqlog_output,&workflow_terminated);
+			if(stdout_output)
+				workflow_instance->TaskStop(task,retcode,stdout_output,stderr_output,log_output,&workflow_terminated);
 			else
-				workflow_instance->TaskStop(task,-1,"[ ProcessManager ] Could not read task log, setting retcode to -1 to block subjobs",evqlog_output,&workflow_terminated);
+				workflow_instance->TaskStop(task,-1,"[ ProcessManager ] Could not read task log, setting retcode to -1 to block subjobs",stderr_output,log_output,&workflow_terminated);
 			
 			if(workflow_terminated)
 				delete workflow_instance;
 			
-			if(output)
-				delete[] output;
+			if(stdout_output)
+				delete[] stdout_output;
 			
-			if(evqlog_output)
-				delete[] evqlog_output;
+			if(stderr_output)
+				delete[] stderr_output;
+			
+			if(log_output)
+				delete[] log_output;
 		}
 		
 		if(msgbuf.type==2)
 		{
 			// Notification task
 			Notifications::GetInstance()->Exit(pid,tid,retcode);
+		}
+		
+		if(msgbuf.type==3)
+		{
+			if(!QueuePool::GetInstance()->GetTask(tid,&workflow_instance,&task))
+				continue;
+			
+			workflow_instance->TaskUpdateProgression(task,msgbuf.mtext.retcode);
 		}
 	}
 	
@@ -293,4 +255,46 @@ void ProcessManager::WaitForShutdown(void)
 {
 	pthread_join(forker_thread_handle,0);
 	pthread_join(gatherer_thread_handle,0);
+}
+
+char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno)
+{
+	if(fileno==STDOUT_FILENO)
+		sprintf(pm->log_filename,"%s/%d.stdout",pm->logs_directory.c_str(),tid);
+	else if(fileno==STDERR_FILENO)
+		sprintf(pm->log_filename,"%s/%d.stderr",pm->logs_directory.c_str(),tid);
+	else
+		sprintf(pm->log_filename,"%s/%d.log",pm->logs_directory.c_str(),tid);
+	
+	FILE *f;
+	long log_size;
+	char *output;
+	
+	f  = fopen(pm->log_filename,"r");
+	
+	if(f)
+	{
+		// Get file size
+		fseek(f,0,SEEK_END);
+		log_size = ftell(f);
+		
+		// Read output log
+		fseek(f,0,SEEK_SET);
+		output = new char[log_size+1];
+		fread(output,1,log_size,f);
+		output[log_size] = '\0';
+		
+		fclose(f);
+	}
+	else
+	{
+		output = 0;
+		
+		Logger::Log(LOG_WARNING,"[ ProcessManager ] Could not read task output for pid %d",pid);
+	}
+	
+	if(pm->logs_delete)
+		unlink(pm->log_filename); // Delete log file since it is not usefull anymore
+	
+	return output;
 }

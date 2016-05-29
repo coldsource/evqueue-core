@@ -33,8 +33,10 @@ class Task
 	std::string task_wd;
 	std::string task_user;
 	std::string task_host;
+	bool task_use_agent;
 	task_parameters_mode::task_parameters_mode parameters_mode;
 	task_output_method::task_output_method output_method;
+	bool task_merge_stderr;
 		
 	public:
 		Task();
@@ -44,6 +46,8 @@ class Task
 		const std::string &GetWorkingDirectory() const { return task_wd; }
 		const std::string &GetUser() const { return task_user; }
 		const std::string &GetHost() const { return task_host; }
+		bool GetMergeStderr() const { return  task_merge_stderr; }
+		bool GetUseAgent() const { return  task_use_agent; }
 		bool IsAbsolutePath() const { return task_binary[0]=='/'?true:false; }
 		task_parameters_mode::task_parameters_mode GetParametersMode() const  { return parameters_mode; }
 		task_output_method::task_output_method GetOutputMethod() const  { return output_method; }

@@ -468,7 +468,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 		{
 			// Fake task ending with generic error code
 			running_tasks++; // Inc running_tasks before calling TaskStop
-			TaskStop(task,-1,"Task migrated",0,workflow_terminated);
+			TaskStop(task,-1,"Task migrated",0,0,workflow_terminated);
 		}
 		else if(XMLString::compareString(X("TERMINATED"),((DOMElement *)task)->getAttribute(X("status")))==0)
 		{
@@ -518,7 +518,7 @@ void WorkflowInstance::TaskRestart(DOMNode *task, bool *workflow_terminated)
 	pthread_mutex_unlock(&lock);
 }
 
-bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output,const char *evqlog_output,bool *workflow_terminated)
+bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *stdout_output,const char *stderr_output,const char *log_output,bool *workflow_terminated)
 {
 	char buf[256];
 	
@@ -529,6 +529,8 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 	((DOMElement *)task_node)->setAttribute(X("retval"),X(buf));
 	((DOMElement *)task_node)->removeAttribute(X("tid"));
 	((DOMElement *)task_node)->removeAttribute(X("pid"));
+	
+	TaskUpdateProgression(task_node,100);
 	
 	// Generate output node
 	DOMElement *output_element = xmldoc->createElement(X("output"));
@@ -567,7 +569,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 			DOMLSInput *input = xqillaImplementation->createLSInput();
 			
 			// Set XML content and parse document
-			XMLCh *xml = XMLString::transcode(output);
+			XMLCh *xml = XMLString::transcode(stdout_output);
 			input->setStringData(xml);
 			
 			DOMDocument *output_xmldoc = parser->parse(input);
@@ -587,7 +589,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 					sprintf(errlog_filename,"%s/%d-XXXXXX.log",errlogs_directory.c_str(),workflow_instance_id);
 					
 					int fno = mkstemps(errlog_filename,4);
-					write(fno,output,strlen(output));
+					write(fno,stdout_output,strlen(stdout_output));
 					close(fno);
 					
 					Logger::Log(LOG_WARNING,"[WID %d] Invalid XML returned, output has been saved as %s",workflow_instance_id,errlog_filename);
@@ -609,7 +611,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 		{
 			// We are in text mode
 			output_element->setAttribute(X("method"),X("text"));
-			XMLCh *out = XMLString::transcode(output);
+			XMLCh *out = XMLString::transcode(stdout_output);
 			output_element->appendChild(xmldoc->createTextNode(out));
 			task_node->appendChild(output_element);
 			XMLString::release(&out);
@@ -619,7 +621,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 	{
 		// Store task log in output node. We treat this as TEXT since errors can corrupt XML
 		output_element->setAttribute(X("method"),X("text"));
-		XMLCh *out = XMLString::transcode(output);
+		XMLCh *out = XMLString::transcode(stdout_output);
 		output_element->appendChild(xmldoc->createTextNode(out));
 		task_node->appendChild(output_element);
 		XMLString::release(&out);
@@ -633,14 +635,25 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *output
 			retry_task(task_node);
 	}
 	
-	// Add evqueue log output if present
-	if(evqlog_output)
+	// Add stderr output if present
+	if(stderr_output)
 	{
-		DOMElement *syslog_element = xmldoc->createElement(X("log"));
+		DOMElement *stderr_element = xmldoc->createElement(X("stderr"));
 		
-		XMLCh *out = XMLString::transcode(evqlog_output);
-		syslog_element->appendChild(xmldoc->createTextNode(out));
-		task_node->appendChild(syslog_element);
+		XMLCh *out = XMLString::transcode(stderr_output);
+		stderr_element->appendChild(xmldoc->createTextNode(out));
+		task_node->appendChild(stderr_element);
+		XMLString::release(&out);
+	}
+	
+	// Add evqueue log output if present
+	if(log_output)
+	{
+		DOMElement *log_element = xmldoc->createElement(X("log"));
+		
+		XMLCh *out = XMLString::transcode(log_output);
+		log_element->appendChild(xmldoc->createTextNode(out));
+		task_node->appendChild(log_element);
 		XMLString::release(&out);
 	}
 	
@@ -857,26 +870,11 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 			
 			if(config->Get("processmanager.monitor.ssh_key").length()>0)
 				setenv("EVQUEUE_SSH_KEY",config->Get("processmanager.monitor.ssh_key").c_str(),true);
+			
+			// Send agent path if needed
+			if(task.GetUseAgent())
+				setenv("EVQUEUE_SSH_AGENT",config->Get("processmanager.agent.path").c_str(),true);
 		}
-		
-		// Redirect output to log file
-		char *log_filename = new char[logs_directory.length()+32];
-		sprintf(log_filename,"%s/%d.log",logs_directory.c_str(),tid);
-		
-		int fno;
-		fno=open(log_filename,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
-		
-		delete[] log_filename;
-		
-		if(fno==-1)
-		{
-			Logger::Log(LOG_ERR,"Unable to open task output log file");
-			tools_send_exit_msg(1,tid,-1);
-			exit(-1);
-		}
-		
-		dup2(fno,STDOUT_FILENO);
-		dup2(fno,STDERR_FILENO);
 		
 		if(stdin_parameter_c)
 		{
@@ -884,13 +882,20 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 			close(parameters_pipe[1]);
 		}
 		
-		// Set evqueue log file in environment to enable evqueue_log
-		log_filename = new char[logs_directory.length()+32];
+		// Redirect output to log files
+		int fno;
 		
-		sprintf(log_filename,"%s/%d.evqlog",logs_directory.c_str(),tid);
-		setenv("EVQUEUE_LOG_FILE",log_filename,true);
+		fno = open_log_file(tid,LOG_FILENO);
+		dup2(fno,LOG_FILENO);
+		//close(fno);
 		
-		delete[] log_filename;
+		fno = open_log_file(tid,STDOUT_FILENO);
+		dup2(fno,STDOUT_FILENO);
+		
+		if(!task.GetMergeStderr())
+			fno = open_log_file(tid,STDERR_FILENO);
+		
+		dup2(fno,STDERR_FILENO);
 		
 		if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
 		{
@@ -1001,6 +1006,13 @@ bool WorkflowInstance::CheckTaskName(const char *task_name)
 			return false;
 	
 	return true;
+}
+
+void WorkflowInstance::TaskUpdateProgression(DOMNode *task, int prct)
+{
+	char buf[16];
+	sprintf(buf,"%d",prct);
+	((DOMElement *)task)->setAttribute(X("progression"),X(buf));
 }
 
 void WorkflowInstance::SendStatus(int s, bool full_status)
@@ -1713,6 +1725,32 @@ void WorkflowInstance::format_datetime(char *str)
 	localtime_r(&t,&t_desc);
 	
 	sprintf(str,"%d-%02d-%02d %02d:%02d:%02d",1900+t_desc.tm_year,t_desc.tm_mon+1,t_desc.tm_mday,t_desc.tm_hour,t_desc.tm_min,t_desc.tm_sec);
+}
+
+int WorkflowInstance::open_log_file(int tid, int fileno)
+{
+	char *log_filename = new char[logs_directory.length()+32];
+	
+	if(fileno==STDOUT_FILENO)
+		sprintf(log_filename,"%s/%d.stdout",logs_directory.c_str(),tid);
+	else if(fileno==STDERR_FILENO)
+		sprintf(log_filename,"%s/%d.stderr",logs_directory.c_str(),tid);
+	else
+		sprintf(log_filename,"%s/%d.log",logs_directory.c_str(),tid);
+	
+	int fno;
+	fno=open(log_filename,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+	
+	delete[] log_filename;
+	
+	if(fno==-1)
+	{
+		Logger::Log(LOG_ERR,"Unable to open task output log file (%d)",fileno);
+		tools_send_exit_msg(1,tid,-1);
+		exit(-1);
+	}
+	
+	return fno;
 }
 
 void WorkflowInstance::update_statistics()

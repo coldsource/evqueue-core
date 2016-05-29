@@ -78,6 +78,7 @@ Configuration::Configuration(void)
 	entries["processmanager.monitor.path"] = "/usr/bin/evqueue_monitor";
 	entries["processmanager.monitor.ssh_key"] = "";
 	entries["processmanager.monitor.ssh_path"] = "/usr/bin/ssh";
+	entries["processmanager.agent.path"] = "/usr/bin/evqueue_agent";
 	entries["processmanager.tasks.directory"] = ".";
 	entries["workflowinstance.saveparameters"] = "yes";
 	entries["workflowinstance.savepoint.level"] = "2";

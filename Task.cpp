@@ -35,7 +35,7 @@ Task::Task()
 
 Task::Task(DB *db,const string &task_name)
 {
-	db->QueryPrintf("SELECT task_binary,task_wd,task_user,task_host,task_parameters_mode,task_output_method FROM t_task WHERE task_name=%s",task_name.c_str());
+	db->QueryPrintf("SELECT task_binary,task_wd,task_user,task_host,task_use_agent,task_parameters_mode,task_output_method,task_merge_stderr FROM t_task WHERE task_name=%s",task_name.c_str());
 	
 	if(!db->FetchRow())
 		throw Exception("Task","Unknown task");
@@ -51,15 +51,19 @@ Task::Task(DB *db,const string &task_name)
 	if(db->GetField(3))
 		task_host = db->GetField(3);
 	
-	if(strcmp(db->GetField(4),"ENV")==0)
+	task_use_agent = db->GetFieldInt(4);
+	
+	if(strcmp(db->GetField(5),"ENV")==0)
 		parameters_mode = task_parameters_mode::ENV;
 	else
 		parameters_mode = task_parameters_mode::CMDLINE;
 	
-	if(strcmp(db->GetField(5),"XML")==0)
+	if(strcmp(db->GetField(6),"XML")==0)
 		output_method = task_output_method::XML;
 	else
 		output_method = task_output_method::TEXT;
+	
+	task_merge_stderr = db->GetFieldInt(7);
 }
 
 void Task::PutFile(const string &filename,const string &data,bool base64_encoded)

@@ -77,8 +77,10 @@ std::map<std::string,std::string> evqueue_tables = {
   `task_wd` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL, \
   `task_user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL, \
   `task_host` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL, \
+  `task_use_agent` tinyint NOT NULL DEFAULT 0, \
   `task_parameters_mode` enum('CMDLINE','PIPE','ENV') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `task_output_method` enum('XML','TEXT') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'XML', \
+  `task_merge_stderr` tinyint NOT NULL DEFAULT 0, \
   `task_xsd` longtext COLLATE utf8_unicode_ci, \
   `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_id` int(10) DEFAULT NULL, \
