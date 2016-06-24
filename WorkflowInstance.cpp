@@ -301,14 +301,14 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 	if(!db.FetchRow())
 		throw Exception("WorkflowInstance","Unknown workflow instance");
 	
-	this->workflow_instance_id = workflow_instance_id;
-	
 	if(!db.GetField(0) || strlen(db.GetField(0))==0)
 	{
 		db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_status='TERMINATED' WHERE workflow_instance_id=%i",&workflow_instance_id);
 		
 		throw Exception("WorkflowInstance","Could not resume workflow : empty savepoint");
 	}
+	
+	this->workflow_instance_id = workflow_instance_id;
 	
 	// Load workflow XML
 	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
@@ -383,7 +383,6 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 	xmldoc->getDocumentElement()->setAttribute(X("status"),X("EXECUTING"));
 	format_datetime(buf);
 	xmldoc->getDocumentElement()->setAttribute(X("start_time"),X(buf));
-	
 	
 	try
 	{

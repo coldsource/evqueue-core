@@ -153,19 +153,21 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		
 		WorkflowInstance *wi = 0;
 		
+		int i = lookup_wfs(scheduled_wf->workflow_schedule->GetID());
+		
 		try
 		{
+			// We have to fill this first because WorkflowInstance() can throw an exception and call ScheduledWorkflowInstanceStop() in it's destructor
+			if(i!=-1)
+				wfs_executing_instances[i] = scheduled_wf->workflow_schedule;
+			
 			wi = new WorkflowInstance(workflow_name,scheduled_wf->workflow_schedule->GetParameters(),scheduled_wf->workflow_schedule->GetID(),scheduled_wf->workflow_schedule->GetHost(),scheduled_wf->workflow_schedule->GetUser());
 			
 			// Put instance in executing list
 			pthread_mutex_lock(&wfs_mutex);
 			
-			int i = lookup_wfs(scheduled_wf->workflow_schedule->GetID());
 			if(i!=-1)
-			{
 				wfs_wi_ids[i] = wi->GetInstanceID();
-				wfs_executing_instances[i] = scheduled_wf->workflow_schedule;
-			}
 			
 			pthread_mutex_unlock(&wfs_mutex);
 			
@@ -176,7 +178,6 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			stats->IncWorkflowExceptions();
 			
 			Logger::Log(LOG_WARNING,"[ WorkflowScheduler ] Unexpected exception trying to instanciate workflow '%s': [ %s ] %s",workflow_name,e.context,e.error);
-			delete scheduled_wf->workflow_schedule;
 			delete scheduled_wf;
 			
 			if(wi)
