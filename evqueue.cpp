@@ -111,8 +111,12 @@ void fork_child_handler(void)
 	// We entered in locked state, unlock before following calls
 	Sockets::GetInstance()->Unlock();
 	
-	close(listen_socket); // Close listen socket in child to allow process to restart when children are still running
-	close(listen_socket_unix); // Close listen socket in child to allow process to restart when children are still running
+	if(listen_socket!=-1)
+		close(listen_socket); // Close listen socket in child to allow process to restart when children are still running
+	
+	if(listen_socket_unix!=-1)
+		close(listen_socket_unix); // Close listen socket in child to allow process to restart when children are still running
+	
 	Sockets::GetInstance()->CloseSockets(); // Close all open sockets to prevent hanged connections
 }
 
