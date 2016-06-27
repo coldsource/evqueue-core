@@ -886,7 +886,6 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		
 		fno = open_log_file(tid,LOG_FILENO);
 		dup2(fno,LOG_FILENO);
-		//close(fno);
 		
 		fno = open_log_file(tid,STDOUT_FILENO);
 		dup2(fno,STDOUT_FILENO);
