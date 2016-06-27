@@ -95,6 +95,8 @@ WorkflowInstance::WorkflowInstance(void):
 	parser = 0;
 	serializer = 0;
 	
+	is_shutting_down = false;
+	
 	// Initialize mutex
 	pthread_mutexattr_t lock_attr;
 	pthread_mutexattr_init(&lock_attr);
@@ -344,12 +346,25 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 
 WorkflowInstance::~WorkflowInstance()
 {
-	// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
-	for(int i = 0; i < notifications.size(); i++)
-		Notifications::GetInstance()->Call(notifications.at(i),this);
+	if(!is_shutting_down)
+	{
+		// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
+		for(int i = 0; i < notifications.size(); i++)
+			Notifications::GetInstance()->Call(notifications.at(i),this);
+		
+		// Unregister new instance to ensure noone is still using it
+		WorkflowInstances::GetInstance()->Remove(workflow_instance_id);
 	
-	// Unregister new instance to ensure noone is still using it
-	WorkflowInstances::GetInstance()->Remove(workflow_instance_id);
+		if(workflow_schedule_id)
+		{
+			// If this is a scheduled workflow, notify scheduler of end
+			WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
+			scheduler->ScheduledWorkflowInstanceStop(workflow_schedule_id,error_tasks==0);
+		}
+		
+		if(workflow_instance_id)
+			Statistics::GetInstance()->DecWorkflowInstanceExecuting();
+	}
 	
 	if(parser)
 		parser->release();
@@ -358,16 +373,6 @@ WorkflowInstance::~WorkflowInstance()
 		serializer->release();
 	
 	Logger::Log(LOG_NOTICE,"[WID %d] Terminated",workflow_instance_id);
-	
-	if(workflow_schedule_id)
-	{
-		// If this is a scheduled workflow, notify scheduler of end
-		WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
-		scheduler->ScheduledWorkflowInstanceStop(workflow_schedule_id,error_tasks==0);
-	}
-	
-	if(workflow_instance_id)
-		Statistics::GetInstance()->DecWorkflowInstanceExecuting();
 }
 
 void WorkflowInstance::Start(bool *workflow_terminated)
@@ -501,6 +506,11 @@ void WorkflowInstance::Cancel()
 	is_cancelling = true;
 	
 	pthread_mutex_unlock(&lock);
+}
+
+void WorkflowInstance::Shutdown(void)
+{
+	is_shutting_down = true;
 }
 
 void WorkflowInstance::TaskRestart(DOMNode *task, bool *workflow_terminated)

@@ -181,7 +181,11 @@ void WorkflowInstances::RecordSavepoint()
 	pthread_mutex_lock(&lock);
 	
 	for(std::map<unsigned int,WorkflowInstance *>::iterator i = wi.begin();i!=wi.end();++i)
+	{
 		i->second->RecordSavepoint();
+		i->second->Shutdown();
+		delete i->second;
+	}
 	
 	pthread_mutex_unlock(&lock);
 }

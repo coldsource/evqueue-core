@@ -65,6 +65,8 @@ class WorkflowInstance
 		unsigned int savepoint_retry_times;
 		unsigned int savepoint_retry_wait;
 		
+		bool is_shutting_down;
+		
 		pthread_mutex_t lock;
 	
 	public:
@@ -79,6 +81,7 @@ class WorkflowInstance
 		void Resume(bool *workflow_terminated);
 		void Migrate(bool *workflow_terminated);
 		void Cancel();
+		void Shutdown();
 		
 		void TaskRestart(DOMNode *task, bool *workflow_terminated);
 		bool TaskStop(DOMNode *task,int retval,const char *stdout_output,const char * stderr_output,const char *log_output,bool *workflow_terminated);
