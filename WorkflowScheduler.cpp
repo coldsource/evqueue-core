@@ -172,6 +172,11 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			pthread_mutex_unlock(&wfs_mutex);
 			
 			Logger::Log(LOG_NOTICE,"[WID %d] Instanciated by workflow scheduler",wi->GetInstanceID());
+			
+			wi->Start(&workflow_terminated);
+			
+			if(workflow_terminated)
+				delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
 		}
 		catch(Exception &e)
 		{
@@ -185,11 +190,6 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			
 			return;
 		}
-		
-		wi->Start(&workflow_terminated);
-			
-		if(workflow_terminated)
-			delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
 	}
 	else if(reason==FLUSH)
 		delete scheduled_wf->workflow_schedule;

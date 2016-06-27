@@ -34,6 +34,7 @@ Scheduler::Scheduler()
 	first_event = 0;
 	
 	is_shutting_down = false;
+	thread_is_running = false;
 	
 	pthread_mutex_init(&mutex,NULL);
 	pthread_cond_init(&sleep_cond,NULL);
@@ -66,11 +67,16 @@ void Scheduler::InsertEvent(Event *new_event)
 		number_of_events = 0;
 		
 		// Create our thread
-		pthread_attr_t attr;
-		pthread_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-		pthread_create(&retry_thread_handle, &attr, &Scheduler::retry_thread,this);
-		pthread_setname_np(retry_thread_handle,self_name);
+		if(!thread_is_running)
+		{
+			thread_is_running = true;
+			
+			pthread_attr_t attr;
+			pthread_attr_init(&attr);
+			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+			pthread_create(&retry_thread_handle, &attr, &Scheduler::retry_thread,this);
+			pthread_setname_np(retry_thread_handle,self_name);
+		}
 	}
 	else if (new_event->scheduled_at < first_event->scheduled_at)
 	{
@@ -180,6 +186,8 @@ void *Scheduler::retry_thread( void *context )
 		
 		if (scheduler->number_of_events == 0)
 		{
+			scheduler->thread_is_running = false;
+			
 			pthread_mutex_unlock(&scheduler->mutex);
 			pthread_detach(scheduler->retry_thread_handle); // We are not in shutdown status, we won't be joined
 			

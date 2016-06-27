@@ -44,6 +44,7 @@ class Scheduler
 		pthread_cond_t sleep_cond;
 		
 		bool is_shutting_down;
+		bool thread_is_running;
 	
 	public:
 		Scheduler();
