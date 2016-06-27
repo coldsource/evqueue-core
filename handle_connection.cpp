@@ -180,14 +180,21 @@ void *handle_connection(void *sp)
 				throw e;
 			}
 			
+			unsigned int instance_id = wi->GetInstanceID();
+			
 			wi->Start(&workflow_terminated);
 			
 			Logger::Log(LOG_NOTICE,"[WID %d] Instanciated from %s:%d",wi->GetInstanceID(),remote_addr_str,remote_port);
 			
+			int wait_re = true;
 			if(saxh->GetQueryOptions()==SocketQuerySAX2Handler::QUERY_OPTION_MODE_SYNCHRONOUS)
-				WorkflowInstances::GetInstance()->Wait(wi->GetInstanceID());
+				wait_re = WorkflowInstances::GetInstance()->Wait(instance_id,saxh->GetWaitTimeout());
 			
-			sprintf(buf,"<return status='OK' workflow-instance-id='%d' />",wi->GetInstanceID());
+			if(wait_re)
+				sprintf(buf,"<return status='OK' workflow-instance-id='%d' />",instance_id);
+			else
+				sprintf(buf,"<return status='OK' workflow-instance-id='%d' wait='timedout' />",instance_id);
+			
 			send(s,buf,strlen(buf),0);
 			
 			if(workflow_terminated)
@@ -265,8 +272,8 @@ void *handle_connection(void *sp)
 		{
 			unsigned int workflow_instance_id = saxh->GetWorkflowId();
 			
-			if(!WorkflowInstances::GetInstance()->Wait(workflow_instance_id))
-				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
+			if(!WorkflowInstances::GetInstance()->Wait(workflow_instance_id,saxh->GetWaitTimeout()))
+				send_error_status(s,"TIMEDOUT");
 			else
 				send_success_status(s);
 		}

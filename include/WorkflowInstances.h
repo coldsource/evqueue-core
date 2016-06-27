@@ -43,12 +43,15 @@ class WorkflowInstances
 		void Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance);
 		void Remove(unsigned int workflow_instance_id);
 		bool Cancel(unsigned int workflow_instance_id);
-		bool Wait(unsigned int workflow_instance_id);
+		bool Wait(unsigned int workflow_instance_id, int timeout=0);
 		bool KillTask(unsigned int workflow_instance_id, pid_t pid);
 		
 		void SendStatus(int s);
 		bool SendStatus(int s,unsigned int workflow_instance_id);
 		void RecordSavepoint();
+	
+	private:
+		void release_waiters(unsigned int workflow_instance_id);
 };
 
 #endif

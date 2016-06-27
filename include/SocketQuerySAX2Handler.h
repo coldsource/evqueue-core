@@ -30,6 +30,7 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		int query_options;
 		int workflow_id;
 		int task_pid;
+		int wait_timeout;
 		char *workflow_name;
 		char *workflow_host;
 		char *workflow_user;
@@ -89,5 +90,6 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		const char *GetFileData() { return file_data; }
 		int GetWorkflowId() { return workflow_id; }
 		int GetTaskPID() { return task_pid; }
+		int GetWaitTimeout() { return wait_timeout; }
 		WorkflowParameters *GetWorkflowParameters() {return &params;};
 };

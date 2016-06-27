@@ -19,6 +19,7 @@
 
 #include <WorkflowInstances.h>
 #include <WorkflowInstance.h>
+#include <Exception.h>
 
 #include <pthread.h>
 #include <sys/socket.h>
@@ -48,23 +49,7 @@ void WorkflowInstances::Remove(unsigned int workflow_instance_id)
 	
 	wi.erase(workflow_instance_id);
 	
-	// Check for waiters
-	std::map<unsigned int,pthread_cond_t *>::iterator i;
-	i = wi_wait.find(workflow_instance_id);
-	if(i==wi_wait.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return;
-	}
-	
-	// Release waiters
-	pthread_cond_t *wait_cond = i->second;
-	pthread_cond_broadcast(wait_cond);
-	
-	wi_wait.erase(workflow_instance_id);
-	pthread_cond_destroy(wait_cond);
-	delete wait_cond;
+	release_waiters(workflow_instance_id);
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -88,8 +73,11 @@ bool WorkflowInstances::Cancel(unsigned int workflow_instance_id)
 	return found;
 }
 
-bool WorkflowInstances::Wait(unsigned int workflow_instance_id)
+bool WorkflowInstances::Wait(unsigned int workflow_instance_id, int timeout)
 {
+	if(timeout<0)
+		return false;
+	
 	pthread_mutex_lock(&lock);
 	
 	// First check specified instance exists
@@ -99,7 +87,7 @@ bool WorkflowInstances::Wait(unsigned int workflow_instance_id)
 	{
 		pthread_mutex_unlock(&lock);
 		
-		return false;
+		throw Exception("WorkflowInstances","Unknown instance ID");
 	}
 	
 	pthread_cond_t *wait_cond;
@@ -117,11 +105,21 @@ bool WorkflowInstances::Wait(unsigned int workflow_instance_id)
 	else
 		wait_cond = j->second; // Another thread is already waiting, wait together
 	
-	pthread_cond_wait(wait_cond, &lock);
+	int re;
 	
+	if(timeout==0)
+		re = pthread_cond_wait(wait_cond, &lock);
+	else
+	{
+		timespec abstime;
+		clock_gettime(CLOCK_REALTIME,&abstime);
+		abstime.tv_sec += timeout;
+		re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
+	}
+		
 	pthread_mutex_unlock(&lock);
 	
-	return true;
+	return (re==0);
 }
 
 bool WorkflowInstances::KillTask(unsigned int workflow_instance_id, pid_t pid)
@@ -184,8 +182,28 @@ void WorkflowInstances::RecordSavepoint()
 	{
 		i->second->RecordSavepoint();
 		i->second->Shutdown();
+		
+		release_waiters(i->second->GetInstanceID());
+		
 		delete i->second;
 	}
 	
 	pthread_mutex_unlock(&lock);
+}
+
+void WorkflowInstances::release_waiters(unsigned int workflow_instance_id)
+{
+	// Check for waiters
+	std::map<unsigned int,pthread_cond_t *>::iterator i;
+	i = wi_wait.find(workflow_instance_id);
+	if(i==wi_wait.end())
+		return;
+	
+	// Release waiters
+	pthread_cond_t *wait_cond = i->second;
+	pthread_cond_broadcast(wait_cond);
+	
+	wi_wait.erase(workflow_instance_id);
+	pthread_cond_destroy(wait_cond);
+	delete wait_cond;
 }

@@ -229,6 +229,15 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					else if(XMLString::compareString(mode_attr,X("synchronous"))==0)
 						query_options = SocketQuerySAX2Handler::QUERY_OPTION_MODE_SYNCHRONOUS;
 					
+					if(query_options == SocketQuerySAX2Handler::QUERY_OPTION_MODE_SYNCHRONOUS)
+					{
+						wait_timeout = 0;
+						
+						const XMLCh *timeout_attr = attrs.getValue(X("timeout"));
+						if(timeout_attr)
+							wait_timeout = XMLString::parseInt(timeout_attr);
+					}
+					
 					const XMLCh *host_attr = attrs.getValue(X("host"));
 					if(host_attr!=0)
 						workflow_host = XMLString::transcode(host_attr);
@@ -250,7 +259,15 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					else if(XMLString::compareString(action_attr,X("cancel"))==0)
 						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_CANCEL;
 					else if(XMLString::compareString(action_attr,X("wait"))==0)
+					{
 						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_WAIT;
+						
+						wait_timeout = 0;
+						
+						const XMLCh *timeout_attr = attrs.getValue(X("timeout"));
+						if(timeout_attr)
+							wait_timeout = XMLString::parseInt(timeout_attr);
+					}
 					else if(XMLString::compareString(action_attr,X("killtask"))==0)
 					{
 						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_KILLTASK;
