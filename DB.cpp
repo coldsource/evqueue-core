@@ -40,8 +40,8 @@ DB::DB(DB *db)
 DB::DB(void)
 {
 	// Initialisation de mysql
-	mysql = mysql_init(0);
-	mysql_options(mysql, MYSQL_SET_CHARSET_NAME, "UTF8");
+	mysql_init(&mysql);
+	mysql_options(&mysql, MYSQL_SET_CHARSET_NAME, "UTF8");
 	
 	res=0;
 	is_connected = false;
@@ -54,7 +54,7 @@ DB::~DB(void)
 		mysql_free_result(res);
 
 	if(is_connected && !is_copy)
-		mysql_close(mysql);
+		mysql_close(&mysql);
 }
 
 DB *DB::Clone(void)
@@ -66,8 +66,8 @@ void DB::Ping(void)
 {
 	connect();
 	
-	if(mysql_ping(mysql)!=0)
-		throw Exception("DB",mysql_error(mysql));
+	if(mysql_ping(&mysql)!=0)
+		throw Exception("DB",mysql_error(&mysql));
 }
 
 void DB::Query(const char *query)
@@ -80,14 +80,14 @@ void DB::Query(const char *query)
 		res=0;
 	}
 
-	if(mysql_query(mysql,query)!=0)
-		throw Exception("DB",mysql_error(mysql));
+	if(mysql_query(&mysql,query)!=0)
+		throw Exception("DB",mysql_error(&mysql));
 
-	res=mysql_store_result(mysql);
+	res=mysql_store_result(&mysql);
 	if(res==0)
 	{
-		if(mysql_field_count(mysql)!=0)
-			throw Exception("DB",mysql_error(mysql));
+		if(mysql_field_count(&mysql)!=0)
+			throw Exception("DB",mysql_error(&mysql));
 	}
 }
 
@@ -153,7 +153,7 @@ void DB::QueryPrintf(const char *query,...)
 					if(arg_str)
 					{
 						escaped_query[j++] = '\'';
-						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str, strlen(arg_str));
+						j += mysql_real_escape_string(&mysql, escaped_query+j, arg_str, strlen(arg_str));
 						escaped_query[j++] = '\'';
 					}
 					else
@@ -189,19 +189,27 @@ void DB::QueryPrintf(const char *query,...)
 
 	escaped_query[j] = '\0';
 
-	Query(escaped_query);
-
+	try
+	{
+		Query(escaped_query);
+	}
+	catch(Exception &e)
+	{
+		delete[] escaped_query;
+		throw e;
+	}
+	
 	delete[] escaped_query;
 }
 
 void DB::EscapeString(const char *string, char *escaped_string)
 {
-	mysql_real_escape_string(mysql, escaped_string, string, strlen(string));
+	mysql_real_escape_string(&mysql, escaped_string, string, strlen(string));
 }
 
 int DB::InsertID(void)
 {
-	return mysql_insert_id(mysql);
+	return mysql_insert_id(&mysql);
 }
 
 bool DB::FetchRow(void)
@@ -242,7 +250,7 @@ int DB::NumRows(void)
 
 int DB::AffectedRows(void)
 {
-	return mysql_affected_rows(mysql);
+	return mysql_affected_rows(&mysql);
 }
 
 char *DB::GetField(int n)
@@ -283,7 +291,7 @@ void DB::Disconnect()
 {
 	if(is_connected && !is_copy)
 	{
-		mysql_close(mysql);
+		mysql_close(&mysql);
 		is_connected = false;
 	}
 }
@@ -295,8 +303,8 @@ void DB::connect(void)
 	
 	Configuration *config = Configuration::GetInstance();
 	
-	if(!mysql_real_connect(mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
-		throw Exception("DB",mysql_error(mysql));
+	if(!mysql_real_connect(&mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
+		throw Exception("DB",mysql_error(&mysql));
 	
 	is_connected = true;
 }
