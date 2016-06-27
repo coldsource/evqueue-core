@@ -352,7 +352,7 @@ WorkflowInstance::~WorkflowInstance()
 		for(int i = 0; i < notifications.size(); i++)
 			Notifications::GetInstance()->Call(notifications.at(i),this);
 		
-		// Unregister new instance to ensure noone is still using it
+		// Unregister new instance to ensure no one is still using it
 		WorkflowInstances::GetInstance()->Remove(workflow_instance_id);
 	
 		if(workflow_schedule_id)
@@ -372,7 +372,10 @@ WorkflowInstance::~WorkflowInstance()
 	if(serializer)
 		serializer->release();
 	
-	Logger::Log(LOG_NOTICE,"[WID %d] Terminated",workflow_instance_id);
+	if(!is_shutting_down)
+		Logger::Log(LOG_NOTICE,"[WID %d] Terminated",workflow_instance_id);
+	else
+		Logger::Log(LOG_NOTICE,"[WID %d] Suspended during shutdown",workflow_instance_id);
 }
 
 void WorkflowInstance::Start(bool *workflow_terminated)
