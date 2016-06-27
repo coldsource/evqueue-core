@@ -47,6 +47,22 @@ Queue::Queue(const char *name, int scheduler)
 	running_tasks = 0;
 }
 
+Queue::~Queue()
+{
+	if(scheduler==QUEUE_SCHEDULER_FIFO)
+	{
+		std::deque<Task *>::iterator it;
+		for(it=queue.begin();it!=queue.end();it++)
+			delete (*it);
+	}
+	else if(scheduler==QUEUE_SCHEDULER_PRIO)
+	{
+		std::multimap<unsigned int,Task *>::iterator it;
+		for(it=prio_queue.begin();it!=prio_queue.end();it++)
+			delete it->second;
+	}
+}
+
 bool Queue::CheckQueueName(const char *queue_name)
 {
 	int i,len;

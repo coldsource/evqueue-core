@@ -60,6 +60,7 @@ class Queue
 		
 	public:
 		Queue(const char *name, int scheduler);
+		~Queue();
 		
 		bool CheckQueueName(const char *queue_name);
 		
