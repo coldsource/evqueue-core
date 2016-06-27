@@ -78,8 +78,11 @@ void signal_callback_handler(int signum)
 	{
 		// Shutdown requested
 		// Close main listen socket, this will release accept() loop
-		close(listen_socket);
-		close(listen_socket_unix);
+		if(listen_socket!=-1)
+			close(listen_socket);
+		
+		if(listen_socket_unix!=-1)
+			close(listen_socket_unix);
 	}
 	else if(signum==SIGHUP)
 	{
