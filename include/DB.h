@@ -24,7 +24,7 @@
 
 class DB
 {
-	MYSQL mysql;
+	MYSQL *mysql;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 	unsigned long *row_field_length;
