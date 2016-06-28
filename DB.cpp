@@ -53,7 +53,7 @@ DB::~DB(void)
 	if(res)
 		mysql_free_result(res);
 
-	if(is_connected && !is_copy)
+	if(mysql && !is_copy)
 		mysql_close(mysql);
 }
 
@@ -292,6 +292,7 @@ void DB::Disconnect()
 	if(is_connected && !is_copy)
 	{
 		mysql_close(mysql);
+		mysql = 0;
 		is_connected = false;
 	}
 }
