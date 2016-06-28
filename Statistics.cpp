@@ -18,6 +18,7 @@
  */
 
 #include <Statistics.h>
+#include <Sockets.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
@@ -133,6 +134,9 @@ void Statistics::SendGlobalStatistics(int s)
 	
 	sprintf(buf,"%d",accepted_connections);
 	statistics_node->setAttribute(X("accepted_connections"),X(buf));
+	
+	sprintf(buf,"%d",Sockets::GetInstance()->GetNumber());
+	statistics_node->setAttribute(X("current_connections"),X(buf));
 	
 	sprintf(buf,"%d",input_errors);
 	statistics_node->setAttribute(X("input_errors"),X(buf));
