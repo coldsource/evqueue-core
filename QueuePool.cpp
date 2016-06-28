@@ -38,6 +38,8 @@
 
 QueuePool *QueuePool::instance = 0;
 
+using namespace std;
+
 QueuePool::QueuePool(void)
 {
 	int i;
@@ -54,29 +56,10 @@ QueuePool::QueuePool(void)
 	
 	Logger::Log(LOG_NOTICE,"[ QueuePool ] Loaded scheduler '%s'",scheduler_str.c_str());
 	
-	name = 0;
-	queue = 0;
-	
 	db.Query("SELECT queue_name FROM t_queue ORDER BY queue_name ASC");
-	pool_size = db.NumRows();
 	
-	name = new char *[pool_size];
-	queue = new Queue *[pool_size];
-	for(i=0;i<pool_size;i++)
-	{
-		name[i] = 0;
-		queue[i] = 0;
-	}
-	
-	i = 0;
 	while(db.FetchRow())
-	{
-		name[i] = new char[strlen(db.GetField(0))+1];
-		strcpy(name[i],db.GetField(0));
-		queue[i] = new Queue(name[i],scheduler);
-		
-		i++;
-	}
+		queues[db.GetField(0)] = new Queue(db.GetField(0),scheduler);
 	
 	FILE *f;
 	char buf[10];
@@ -91,13 +74,13 @@ QueuePool::QueuePool(void)
 	maxpid = atoi(buf);
 	lasttid = 0;
 	
-	tid_queue_index = new unsigned int[maxpid+1];
+	tid_queue = new Queue*[maxpid+1];
 	tid_task = new DOMNode*[maxpid+1];
 	tid_workflow_instance = new WorkflowInstance*[maxpid+1];
 	
 	for(int i=0;i<=maxpid;i++)
 	{
-		tid_queue_index[i] = 0;
+		tid_queue[i] = 0;
 		tid_task[i] = 0;
 		tid_workflow_instance[i] = 0;
 	}
@@ -118,75 +101,38 @@ QueuePool::QueuePool(void)
 
 QueuePool::~QueuePool(void)
 {
-	int i;
+	map<string,Queue *>::iterator it;
+	for(it=queues.begin();it!=queues.end();++it)
+		delete it->second;
 	
-	if(name)
-	{
-		for(i=0;i<pool_size;i++)
-			if(name[i]!=0)
-				delete[] name[i];
-		delete[] name;
-	}
+	queues.clear();
 	
-	if(queue)
-	{
-		for(i=0;i<pool_size;i++)
-			if(queue[i]!=0)
-				delete queue[i];
-		delete[] queue;
-	}
-	
-	delete[] tid_queue_index;
+	delete[] tid_queue;
 	delete[] tid_task;
 	delete[] tid_workflow_instance;
 }
 
-int QueuePool::lookup(const char *queue_name)
+Queue *QueuePool::GetQueue(const string &name)
 {
-	int cmp,begin,middle,end;
-	
-	begin=0;
-	end=pool_size-1;
-	while(begin<=end)
-	{
-		middle=(end+begin)/2;
-		cmp=strcmp(name[middle],queue_name);
-		if(cmp==0)
-			return middle;
-		if(cmp<0)
-			begin=middle+1;
-		else
-			end=middle-1;
-	}
-	
-	return -1;
+	map<string,Queue *>::const_iterator it = queues.find(name);
+	if(it==queues.end())
+		return 0;
+	return it->second;
 }
 
-Queue *QueuePool::GetQueue(const char *queue_name)
+bool QueuePool::EnqueueTask(const string &queue_name,WorkflowInstance *workflow_instance,DOMNode *task)
 {
-	int i;
-	
-	i = lookup(queue_name);
-	if(i!=-1)
-		return queue[i];
-	
-	return 0;
-}
-
-bool QueuePool::EnqueueTask(const char *queue_name,WorkflowInstance *workflow_instance,DOMNode *task)
-{
-	int i;
-	
 	pthread_mutex_lock(&mutex);
 	
-	i = lookup(queue_name);
-	if(i==-1)
+	Queue *q = GetQueue(queue_name);
+	
+	if(!q)
 	{
 		pthread_mutex_unlock(&mutex);
 		return false;
 	}
 	
-	queue[i]->EnqueueTask(workflow_instance,task);
+	q->EnqueueTask(workflow_instance,task);
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
@@ -196,7 +142,7 @@ bool QueuePool::EnqueueTask(const char *queue_name,WorkflowInstance *workflow_in
 	return true;
 }
 
-bool QueuePool::DequeueTask(char *queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task)
+bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task)
 {
 	int i;
 	unsigned int task_instance_id;
@@ -223,11 +169,12 @@ bool QueuePool::DequeueTask(char *queue_name,WorkflowInstance **p_workflow_insta
 	
 	fork_locked = false;
 	
-	for(i=0;i<pool_size;i++)
+	map<string,Queue *>::iterator it;
+	for(it=queues.begin();it!=queues.end();++it)
 	{
-		if(queue[i]->DequeueTask(p_workflow_instance,p_task))
+		if(it->second->DequeueTask(p_workflow_instance,p_task))
 		{
-			strcpy(queue_name,name[i]);
+			queue_name = it->first;
 			
 			fork_possible = !IsLocked();
 		
@@ -242,12 +189,11 @@ bool QueuePool::DequeueTask(char *queue_name,WorkflowInstance **p_workflow_insta
 	return false;
 }
 
-pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const char *queue_name,pid_t task_id)
+pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const string &queue_name,pid_t task_id)
 {
-	int i;
+	Queue *q = GetQueue(queue_name);
 	
-	i = lookup(queue_name);
-	if(i==-1)
+	if(!q)
 		return 0;
 	
 	pthread_mutex_lock(&mutex);
@@ -269,11 +215,11 @@ pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,c
 		}
 	}
 	
-	tid_queue_index[task_id] = i;
+	tid_queue[task_id] = q;
 	tid_task[task_id] = task;
 	tid_workflow_instance[task_id] = workflow_instance;
 	
-	queue[i]->ExecuteTask();
+	q->ExecuteTask();
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
@@ -295,12 +241,12 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 		return false;
 	}
 	
-	queue[tid_queue_index[task_id]]->TerminateTask();
+	tid_queue[task_id]->TerminateTask();
 	
 	*p_workflow_instance = tid_workflow_instance[task_id];
 	*p_task = tid_task[task_id];
 	
-	tid_queue_index[task_id] = 0;
+	tid_queue[task_id] = 0;
 	tid_task[task_id] = 0;
 	tid_workflow_instance[task_id] = 0;
 	
@@ -336,8 +282,9 @@ bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 {
 	pthread_mutex_lock(&mutex);
 	
-	for(int i=0;i<pool_size;i++)
-		queue[i]->CancelTasks(workflow_instance_id);
+	map<string,Queue *>::iterator it;
+	for(it=queues.begin();it!=queues.end();++it)
+		it->second->CancelTasks(workflow_instance_id);
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
@@ -351,8 +298,9 @@ bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 bool QueuePool::IsLocked(void)
 {
 	int i;
-	for(i=0;i<pool_size;i++)
-		if(!queue[i]->IsLocked())
+	map<string,Queue *>::iterator it;
+	for(it=queues.begin();it!=queues.end();++it)
+		if(!it->second->IsLocked())
 			return false;
 	return true;
 }
@@ -379,18 +327,19 @@ void QueuePool::SendStatistics(int s)
 	DOMElement *statistics_node = xmldoc->createElement(X("statistics"));
 	xmldoc->appendChild(statistics_node);
 	
-	for(int i=0;i<pool_size;i++)
+	map<string,Queue *>::iterator it;
+	for(it=queues.begin();it!=queues.end();++it)
 	{
 		DOMElement *queue_node = xmldoc->createElement(X("queue"));
-		queue_node->setAttribute(X("name"),X(name[i]));
+		queue_node->setAttribute(X("name"),X(it->first.c_str()));
 		
-		sprintf(buf,"%d",queue[i]->GetConcurrency());
+		sprintf(buf,"%d",it->second->GetConcurrency());
 		queue_node->setAttribute(X("concurrency"),X(buf));
 		
-		sprintf(buf,"%d",queue[i]->GetSize());
+		sprintf(buf,"%d",it->second->GetSize());
 		queue_node->setAttribute(X("size"),X(buf));
 		
-		sprintf(buf,"%d",queue[i]->GetRunningTasks());
+		sprintf(buf,"%d",it->second->GetRunningTasks());
 		queue_node->setAttribute(X("running_tasks"),X(buf));
 		
 		statistics_node->appendChild(queue_node);

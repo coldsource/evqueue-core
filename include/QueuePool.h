@@ -26,6 +26,9 @@ using namespace xercesc;
 #include <sys/types.h>
 #include <pthread.h>
 
+#include <map>
+#include <string>
+
 class Queue;
 class WorkflowInstance;
 
@@ -34,11 +37,9 @@ class QueuePool
 	private:
 		static QueuePool *instance;
 		
-		char **name;
-		Queue **queue;
-		unsigned int pool_size;
+		std::map<std::string,Queue *> queues;
 		
-		unsigned int *tid_queue_index;
+		Queue **tid_queue;
 		DOMNode **tid_task;
 		WorkflowInstance **tid_workflow_instance;
 		unsigned int maxpid;
@@ -48,8 +49,6 @@ class QueuePool
 		pthread_cond_t fork_lock;
 		bool fork_locked,fork_possible;
 		bool is_shutting_down;
-		
-		int lookup(const char *queue_name);
 	
 	public:
 		QueuePool(void);
@@ -57,17 +56,17 @@ class QueuePool
 		
 		static QueuePool *GetInstance() { return instance; }
 		
-		Queue *GetQueue(const char *queue_name);
+		Queue *GetQueue(const std::string &name);
 		
-		bool EnqueueTask(const char *queue_name,WorkflowInstance *workflow_instance,DOMNode *task);
-		bool DequeueTask(char *queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
-		pid_t ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const char *queue_name,pid_t task_id);
+		bool EnqueueTask(const std::string &queue_name,WorkflowInstance *workflow_instance,DOMNode *task);
+		bool DequeueTask(std::string &queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
+		pid_t ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const std::string &queue_name,pid_t task_id);
 		bool TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
 		bool GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
 		
 		bool CancelTasks(unsigned int workflow_instance_id);
 		
-		inline unsigned int GetPoolSize(void) { return pool_size; }
+		inline unsigned int GetPoolSize(void) { return queues.size(); }
 		
 		bool IsLocked(void);
 		

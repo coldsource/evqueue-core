@@ -49,6 +49,10 @@
 #include <sys/msg.h>
 #include <arpa/inet.h>
 
+#include <string>
+
+using namespace std;
+
 volatile bool ProcessManager::is_shutting_down=false;
 
 ProcessManager::ProcessManager()
@@ -101,7 +105,7 @@ void *ProcessManager::Fork(void *process_manager)
 	WorkflowInstance *workflow_instance;
 	DOMNode *task;
 	
-	char queue_name[QUEUE_NAME_MAX_LEN+1];
+	string queue_name;
 	bool workflow_terminated;
 	pid_t pid,tid;
 	
