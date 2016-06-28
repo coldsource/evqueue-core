@@ -58,11 +58,14 @@ class Queue
 		
 		int scheduler;
 		
+		bool removed;
+		
 	public:
 		Queue(const char *name, int scheduler);
 		~Queue();
 		
 		bool CheckQueueName(const char *queue_name);
+		inline const char *GetName(void) { return name; }
 		
 		void EnqueueTask(WorkflowInstance *workflow_instance,DOMNode *task);
 		bool DequeueTask(WorkflowInstance **p_workflow_instance,DOMNode **p_task);
@@ -72,7 +75,12 @@ class Queue
 		
 		inline unsigned int GetSize(void) { return size; }
 		inline unsigned int GetRunningTasks(void) { return running_tasks; }
+		
+		void SetConcurrency(unsigned int concurrency);
 		inline unsigned int GetConcurrency(void) { return concurrency; }
+		
+		inline void Remove() { removed = true; }
+		inline bool IsRemoved() { return removed; }
 		
 		bool IsLocked(void);
 	

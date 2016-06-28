@@ -27,6 +27,7 @@
 #include <Workflows.h>
 #include <Notifications.h>
 #include <Retrier.h>
+#include <QueuePool.h>
 #include <Configuration.h>
 
 #include <sys/types.h>
@@ -105,6 +106,9 @@ void tools_config_reload(void)
 	
 	Notifications *notifications = Notifications::GetInstance();
 	notifications->Reload();
+	
+	QueuePool *qp = QueuePool::GetInstance();
+	qp->Reload();
 }
 
 void tools_sync_tasks(void)

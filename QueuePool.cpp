@@ -42,11 +42,7 @@ using namespace std;
 
 QueuePool::QueuePool(void)
 {
-	int i;
-	DB db;
-	
 	std::string scheduler_str = Configuration::GetInstance()->Get("queuepool.scheduler");
-	int scheduler;
 	if(scheduler_str=="fifo")
 		scheduler = QUEUE_SCHEDULER_FIFO;
 	else if(scheduler_str=="prio")
@@ -55,11 +51,6 @@ QueuePool::QueuePool(void)
 		throw Exception("QueuePool","Invalid scheduler name, allowed values are 'fifo' or 'prio'");
 	
 	Logger::Log(LOG_NOTICE,"[ QueuePool ] Loaded scheduler '%s'",scheduler_str.c_str());
-	
-	db.Query("SELECT queue_name FROM t_queue ORDER BY queue_name ASC");
-	
-	while(db.FetchRow())
-		queues[db.GetField(0)] = new Queue(db.GetField(0),scheduler);
 	
 	FILE *f;
 	char buf[10];
@@ -97,12 +88,13 @@ QueuePool::QueuePool(void)
 	fork_locked = false;
 	
 	instance = this;
+	
+	Reload();
 }
 
 QueuePool::~QueuePool(void)
 {
-	map<string,Queue *>::iterator it;
-	for(it=queues.begin();it!=queues.end();++it)
+	for(auto it=queues.begin();it!=queues.end();++it)
 		delete it->second;
 	
 	queues.clear();
@@ -241,7 +233,8 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 		return false;
 	}
 	
-	tid_queue[task_id]->TerminateTask();
+	Queue *q = tid_queue[task_id];
+	q->TerminateTask();
 	
 	*p_workflow_instance = tid_workflow_instance[task_id];
 	*p_task = tid_task[task_id];
@@ -249,6 +242,15 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	tid_queue[task_id] = 0;
 	tid_task[task_id] = 0;
 	tid_workflow_instance[task_id] = 0;
+	
+	// Check if queue has been marked as 'to be removed'
+	if(q->IsRemoved() && q->GetSize()==0 && q->GetRunningTasks()==0)
+	{
+		Logger::Log(LOG_NOTICE,"[ QueuePool ] Removed queue %s",q->GetName());
+		
+		queues.erase(q->GetName());
+		delete q;
+	}
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
@@ -295,11 +297,53 @@ bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 	return true;
 }
 
+void QueuePool::Reload(void)
+{
+	DB db;
+	
+	Logger::Log(LOG_NOTICE,"[ QueuePool ] Reloading queues definitions");
+	
+	pthread_mutex_lock(&mutex);
+	
+	// First, remove empty queues and mark others as to be removed
+	for(auto it=queues.cbegin();it!=queues.cend();)
+	{
+		if(it->second->GetSize()==0 && it->second->GetRunningTasks()==0)
+		{
+			delete it->second;
+			queues.erase(it++);
+		}
+		else
+		{
+			it->second->Remove();
+			++it;
+		}
+	}
+	
+	// Reload new parameters or re-create removed queues
+	db.Query("SELECT queue_name,queue_concurrency FROM t_queue ORDER BY queue_name ASC");
+	
+	while(db.FetchRow())
+	{
+		Queue *q = GetQueue(db.GetField(0));
+		if(!q)
+			queues[db.GetField(0)] = new Queue(db.GetField(0),scheduler);
+		else
+			q->SetConcurrency(db.GetFieldInt(1));
+	}
+	
+	// Update locked status as concurrencies might have changed
+	fork_possible = !IsLocked();
+	if(fork_locked && fork_possible)
+		pthread_cond_signal(&fork_lock);
+	
+	pthread_mutex_unlock(&mutex);
+}
+
 bool QueuePool::IsLocked(void)
 {
 	int i;
-	map<string,Queue *>::iterator it;
-	for(it=queues.begin();it!=queues.end();++it)
+	for(auto it=queues.begin();it!=queues.end();++it)
 		if(!it->second->IsLocked())
 			return false;
 	return true;
@@ -327,8 +371,7 @@ void QueuePool::SendStatistics(int s)
 	DOMElement *statistics_node = xmldoc->createElement(X("statistics"));
 	xmldoc->appendChild(statistics_node);
 	
-	map<string,Queue *>::iterator it;
-	for(it=queues.begin();it!=queues.end();++it)
+	for(auto it=queues.begin();it!=queues.end();++it)
 	{
 		DOMElement *queue_node = xmldoc->createElement(X("queue"));
 		queue_node->setAttribute(X("name"),X(it->first.c_str()));

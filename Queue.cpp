@@ -45,6 +45,8 @@ Queue::Queue(const char *name, int scheduler)
 	
 	size = 0;
 	running_tasks = 0;
+	
+	removed = false;
 }
 
 Queue::~Queue()
@@ -151,34 +153,42 @@ bool Queue::CancelTasks(unsigned int workflow_instance_id)
 {
 	if(scheduler==QUEUE_SCHEDULER_FIFO)
 	{
-		std::deque<Task *>::iterator it;
-		for(it=queue.begin();it!=queue.end();it++)
+		for(auto it=queue.begin();it!=queue.end();)
 		{
 			if((*it)->workflow_instance->GetInstanceID()==workflow_instance_id)
 			{
 				cancelled_tasks.push((*it));
-				queue.erase(it);
+				it = queue.erase(it);
 				
 				size--;
 			}
+			else
+				++it;
 		}
 	}
 	else if(scheduler==QUEUE_SCHEDULER_PRIO)
 	{
-		std::multimap<unsigned int,Task *>::iterator it;
-		for(it=prio_queue.begin();it!=prio_queue.end();it++)
+		for(auto it=prio_queue.cbegin();it!=prio_queue.cend();)
 		{
 			if(it->second->workflow_instance->GetInstanceID()==workflow_instance_id)
 			{
 				cancelled_tasks.push(it->second);
-				prio_queue.erase(it);
+				prio_queue.erase(it++);
 				
 				size--;
 			}
+			else
+				++it;
 		}
 	}
 	
 	return true;
+}
+
+void Queue::SetConcurrency(unsigned int concurrency)
+{
+	this->concurrency = concurrency;
+	removed = false;
 }
 
 bool Queue::IsLocked(void)

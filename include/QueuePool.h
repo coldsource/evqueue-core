@@ -37,6 +37,7 @@ class QueuePool
 	private:
 		static QueuePool *instance;
 		
+		int scheduler;
 		std::map<std::string,Queue *> queues;
 		
 		Queue **tid_queue;
@@ -67,6 +68,8 @@ class QueuePool
 		bool CancelTasks(unsigned int workflow_instance_id);
 		
 		inline unsigned int GetPoolSize(void) { return queues.size(); }
+		
+		void Reload(void);
 		
 		bool IsLocked(void);
 		
