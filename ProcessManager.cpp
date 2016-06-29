@@ -188,6 +188,16 @@ void *ProcessManager::Gather(void *process_manager)
 			return 0; // Shutdown requested
 		}
 		
+		if(msgbuf.type==3)
+		{
+			if(!QueuePool::GetInstance()->GetTask(tid,&workflow_instance,&task))
+				continue;
+			
+			workflow_instance->TaskUpdateProgression(task,msgbuf.mtext.retcode);
+			
+			continue; // Not process is terminated, skip waitpid
+		}
+		
 		waitpid(pid,&status,0); // We only do this to avoid zombie processes (retcode has already been returned by the task monitor)
 		
 		if(msgbuf.type==1)
@@ -226,14 +236,6 @@ void *ProcessManager::Gather(void *process_manager)
 		{
 			// Notification task
 			Notifications::GetInstance()->Exit(pid,tid,retcode);
-		}
-		
-		if(msgbuf.type==3)
-		{
-			if(!QueuePool::GetInstance()->GetTask(tid,&workflow_instance,&task))
-				continue;
-			
-			workflow_instance->TaskUpdateProgression(task,msgbuf.mtext.retcode);
 		}
 	}
 	
