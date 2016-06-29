@@ -37,7 +37,7 @@ class QueuePool
 	private:
 		static QueuePool *instance;
 		
-		int scheduler;
+		int default_scheduler;
 		std::map<std::string,Queue *> queues;
 		
 		Queue **tid_queue;
@@ -76,6 +76,9 @@ class QueuePool
 		void Shutdown(void);
 		
 		void SendStatistics(int s);
+	
+		int get_scheduler_from_string(std::string scheduler_str);
+		static std::string get_scheduler_from_int(int scheduler);
 };
 
 #endif

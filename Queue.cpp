@@ -18,7 +18,8 @@
  */
 
 #include <Queue.h>
-#include <DB.h>
+#include <QueuePool.h>
+#include <Logger.h>
 #include <WorkflowInstance.h>
 #include <Exception.h>
 
@@ -26,22 +27,15 @@
 #include <stdio.h>
 #include <ctype.h>
 
-Queue::Queue(const char *name, int scheduler)
+Queue::Queue(const char *name, int concurrency, int scheduler)
 {
 	if(!CheckQueueName(name))
 		throw Exception("Queue","Invalid queue name");
 	
-	this->scheduler = scheduler;
-	
 	strcpy(this->name,name);
 	
-	DB db;
-	
-	db.QueryPrintf("SELECT queue_id,queue_concurrency FROM t_queue WHERE queue_name=%s",name);
-	if(!db.FetchRow())
-		throw Exception("Queue","Unknown queue");
-	id = db.GetFieldInt(0);
-	concurrency = db.GetFieldInt(1);
+	this->concurrency = concurrency;
+	this->scheduler = scheduler;
 	
 	size = 0;
 	running_tasks = 0;
@@ -53,14 +47,12 @@ Queue::~Queue()
 {
 	if(scheduler==QUEUE_SCHEDULER_FIFO)
 	{
-		std::deque<Task *>::iterator it;
-		for(it=queue.begin();it!=queue.end();it++)
+		for(auto it=queue.begin();it!=queue.end();it++)
 			delete (*it);
 	}
 	else if(scheduler==QUEUE_SCHEDULER_PRIO)
 	{
-		std::multimap<unsigned int,Task *>::iterator it;
-		for(it=prio_queue.begin();it!=prio_queue.end();it++)
+		for(auto it=prio_queue.begin();it!=prio_queue.end();it++)
 			delete it->second;
 	}
 }
@@ -189,6 +181,30 @@ void Queue::SetConcurrency(unsigned int concurrency)
 {
 	this->concurrency = concurrency;
 	removed = false;
+}
+
+void Queue::SetScheduler(unsigned int new_scheduler)
+{
+	if(new_scheduler==scheduler)
+		return;
+	
+	Logger::Log(LOG_NOTICE,"[ Queue ] %s : migrating scheduler to %s",name,QueuePool::get_scheduler_from_int(new_scheduler).c_str());
+	
+	if(new_scheduler==QUEUE_SCHEDULER_FIFO)
+	{
+		for(auto it=prio_queue.begin();it!=prio_queue.end();it++)
+			queue.push_back(it->second);
+		prio_queue.clear();
+	}
+	
+	if(new_scheduler==QUEUE_SCHEDULER_PRIO)
+	{
+		for(auto it=queue.begin();it!=queue.end();it++)
+			prio_queue.insert(std::pair<unsigned int,Task *>((*it)->workflow_instance->GetInstanceID(),(*it)));
+		queue.clear();
+	}
+	
+	scheduler = new_scheduler;
 }
 
 bool Queue::IsLocked(void)

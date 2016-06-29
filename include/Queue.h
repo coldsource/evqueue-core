@@ -41,11 +41,9 @@ class Queue
 		{
 			WorkflowInstance *workflow_instance;
 			DOMNode *task;
-			Task *next_task;
 		};
 		
 		char name[QUEUE_NAME_MAX_LEN+1];
-		unsigned int id;
 		
 		unsigned int concurrency;
 		unsigned int size;
@@ -61,7 +59,7 @@ class Queue
 		bool removed;
 		
 	public:
-		Queue(const char *name, int scheduler);
+		Queue(const char *name, int concurrency, int scheduler);
 		~Queue();
 		
 		bool CheckQueueName(const char *queue_name);
@@ -78,6 +76,9 @@ class Queue
 		
 		void SetConcurrency(unsigned int concurrency);
 		inline unsigned int GetConcurrency(void) { return concurrency; }
+		
+		void SetScheduler(unsigned int new_scheduler);
+		inline unsigned int GetScheduler(void) { return scheduler; }
 		
 		inline void Remove() { removed = true; }
 		inline bool IsRemoved() { return removed; }

@@ -43,14 +43,9 @@ using namespace std;
 QueuePool::QueuePool(void)
 {
 	std::string scheduler_str = Configuration::GetInstance()->Get("queuepool.scheduler");
-	if(scheduler_str=="fifo")
-		scheduler = QUEUE_SCHEDULER_FIFO;
-	else if(scheduler_str=="prio")
-		scheduler = QUEUE_SCHEDULER_PRIO;
-	else
-		throw Exception("QueuePool","Invalid scheduler name, allowed values are 'fifo' or 'prio'");
+	default_scheduler = get_scheduler_from_string(scheduler_str);
 	
-	Logger::Log(LOG_NOTICE,"[ QueuePool ] Loaded scheduler '%s'",scheduler_str.c_str());
+	Logger::Log(LOG_NOTICE,"[ QueuePool ] Loaded default scheduler '%s'",scheduler_str.c_str());
 	
 	FILE *f;
 	char buf[10];
@@ -321,15 +316,18 @@ void QueuePool::Reload(void)
 	}
 	
 	// Reload new parameters or re-create removed queues
-	db.Query("SELECT queue_name,queue_concurrency FROM t_queue ORDER BY queue_name ASC");
+	db.Query("SELECT queue_name,queue_concurrency,queue_scheduler FROM t_queue ORDER BY queue_name ASC");
 	
 	while(db.FetchRow())
 	{
 		Queue *q = GetQueue(db.GetField(0));
 		if(!q)
-			queues[db.GetField(0)] = new Queue(db.GetField(0),scheduler);
+			queues[db.GetField(0)] = new Queue(db.GetField(0),db.GetFieldInt(1),get_scheduler_from_string(db.GetField(2)));
 		else
+		{
 			q->SetConcurrency(db.GetFieldInt(1));
+			q->SetScheduler(get_scheduler_from_string(db.GetField(2)));
+		}
 	}
 	
 	// Update locked status as concurrencies might have changed
@@ -385,6 +383,8 @@ void QueuePool::SendStatistics(int s)
 		sprintf(buf,"%d",it->second->GetRunningTasks());
 		queue_node->setAttribute(X("running_tasks"),X(buf));
 		
+		queue_node->setAttribute(X("scheduler"),X(get_scheduler_from_int(it->second->GetScheduler()).c_str()));
+		
 		statistics_node->appendChild(queue_node);
 	}
 	
@@ -398,4 +398,26 @@ void QueuePool::SendStatistics(int s)
 	XMLString::release(&statistics_xml_c);
 	serializer->release();
 	xmldoc->release();
+}
+
+int QueuePool::get_scheduler_from_string(std::string scheduler_str)
+{
+	if(scheduler_str=="default")
+		return default_scheduler;
+	else if(scheduler_str=="fifo")
+		return QUEUE_SCHEDULER_FIFO;
+	else if(scheduler_str=="prio")
+		return QUEUE_SCHEDULER_PRIO;
+	else
+		throw Exception("QueuePool","Invalid scheduler name, allowed values are 'fifo' or 'prio'");
+}
+
+std::string QueuePool::get_scheduler_from_int(int scheduler)
+{
+	if(scheduler==QUEUE_SCHEDULER_FIFO)
+		return "fifo";
+	else if(scheduler==QUEUE_SCHEDULER_PRIO)
+		return "prio";
+	else
+		return "";
 }
