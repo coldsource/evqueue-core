@@ -162,7 +162,6 @@ int main(int argc,const char **argv)
 	// Initialize external libraries
 	mysql_library_init(0,0,0);
 	mysql_thread_init();
-	XQillaPlatformUtils::initialize();
 	
 	openlog("evqueue",0,LOG_DAEMON);
 	
@@ -202,6 +201,9 @@ int main(int argc,const char **argv)
 			Logger::Log(LOG_ERR,"Unknown locale : %s",config->Get("core.locale").c_str());
 			throw Exception("core","Unable to set locale");
 		}
+		
+		// Init xQilla after locale
+		XQillaPlatformUtils::initialize();
 		
 		// Get/Compute GID
 		int gid;
