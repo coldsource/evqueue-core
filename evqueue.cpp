@@ -196,6 +196,13 @@ int main(int argc,const char **argv)
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
 		
+		// Set locale
+		if(!setlocale(LC_ALL,config->Get("core.locale").c_str()))
+		{
+			Logger::Log(LOG_ERR,"Unknown locale : %s",config->Get("core.locale").c_str());
+			throw Exception("core","Unable to set locale");
+		}
+		
 		// Get/Compute GID
 		int gid;
 		try
