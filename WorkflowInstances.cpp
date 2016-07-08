@@ -163,7 +163,7 @@ bool WorkflowInstances::Wait(int socket, unsigned int workflow_instance_id, int 
 		re = send(socket,"<ping/>",7,0);
 		if(re!=7)
 		{
-			Logger::Log(LOG_NOTICE,"Remote host is gone, closing terminating wait thread...");
+			Logger::Log(LOG_NOTICE,"Remote host is gone, terminating wait thread...");
 			break;
 		}
 	}
