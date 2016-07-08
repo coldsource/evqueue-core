@@ -48,6 +48,7 @@ Statistics::Statistics(void)
 	workflow_instance_launched = 0;
 	workflow_instance_executing = 0;
 	workflow_instance_errors = 0;
+	waiting_threads = 0;
 }
 
 void Statistics::IncAcceptedConnections(void)
@@ -122,6 +123,20 @@ void Statistics::IncWorkflowInstanceErrors(void)
 	pthread_mutex_unlock(&lock);
 }
 
+void Statistics::IncWaitingThreads(void)
+{
+	pthread_mutex_lock(&lock);
+	waiting_threads++;
+	pthread_mutex_unlock(&lock);
+}
+
+void Statistics::DecWaitingThreads(void)
+{
+	pthread_mutex_lock(&lock);
+	waiting_threads--;
+	pthread_mutex_unlock(&lock);
+}
+
 void Statistics::SendGlobalStatistics(int s)
 {
 	char buf[16];
@@ -164,6 +179,9 @@ void Statistics::SendGlobalStatistics(int s)
 	
 	sprintf(buf,"%d",workflow_instance_errors);
 	statistics_node->setAttribute(X("workflow_instance_errors"),X(buf));
+	
+	sprintf(buf,"%d",waiting_threads);
+	statistics_node->setAttribute(X("waiting_threads"),X(buf));
 	
 	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
 	XMLCh *statistics_xml = serializer->writeToString(statistics_node);

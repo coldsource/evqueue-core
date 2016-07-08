@@ -37,6 +37,7 @@ class Statistics
 		unsigned int workflow_instance_launched;
 		unsigned int workflow_instance_executing;
 		unsigned int workflow_instance_errors;
+		unsigned int waiting_threads;
 		
 		pthread_mutex_t lock;
 	
@@ -55,6 +56,8 @@ class Statistics
 		void IncWorkflowInstanceExecuting(void);
 		void DecWorkflowInstanceExecuting(void);
 		void IncWorkflowInstanceErrors(void);
+		void IncWaitingThreads(void);
+		void DecWaitingThreads(void);
 		
 		void SendGlobalStatistics(int s);
 		void ResetGlobalStatistics();

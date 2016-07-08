@@ -19,6 +19,7 @@
 
 #include <WorkflowInstances.h>
 #include <WorkflowInstance.h>
+#include <Statistics.h>
 #include <Exception.h>
 
 #include <pthread.h>
@@ -107,6 +108,8 @@ bool WorkflowInstances::Wait(unsigned int workflow_instance_id, int timeout)
 	
 	int re;
 	
+	Statistics::GetInstance()->IncWaitingThreads();
+	
 	if(timeout==0)
 		re = pthread_cond_wait(wait_cond, &lock);
 	else
@@ -116,6 +119,8 @@ bool WorkflowInstances::Wait(unsigned int workflow_instance_id, int timeout)
 		abstime.tv_sec += timeout;
 		re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
 	}
+	
+	Statistics::GetInstance()->DecWaitingThreads();
 		
 	pthread_mutex_unlock(&lock);
 	
