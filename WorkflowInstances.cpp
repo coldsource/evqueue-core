@@ -20,10 +20,13 @@
 #include <WorkflowInstances.h>
 #include <WorkflowInstance.h>
 #include <Statistics.h>
+#include <Logger.h>
+#include <Configuration.h>
 #include <Exception.h>
 
 #include <pthread.h>
 #include <sys/socket.h>
+#include <poll.h>
 
 WorkflowInstances *WorkflowInstances::instance = 0;
 
@@ -31,6 +34,12 @@ WorkflowInstances::WorkflowInstances()
 {
 	if(!instance)
 		instance = this;
+	
+	poll_interval = Configuration::GetInstance()->GetInt("core.poll.interval");
+	if(poll_interval<=0)
+		throw Exception("WorkflowInstances","Invalid poll interval, should be greater than 0");
+	
+	is_shutting_down = false;
 	
 	pthread_mutex_init(&lock, NULL);
 }
@@ -74,7 +83,7 @@ bool WorkflowInstances::Cancel(unsigned int workflow_instance_id)
 	return found;
 }
 
-bool WorkflowInstances::Wait(unsigned int workflow_instance_id, int timeout)
+bool WorkflowInstances::Wait(int socket, unsigned int workflow_instance_id, int timeout)
 {
 	if(timeout<0)
 		return false;
@@ -106,25 +115,64 @@ bool WorkflowInstances::Wait(unsigned int workflow_instance_id, int timeout)
 	else
 		wait_cond = j->second; // Another thread is already waiting, wait together
 	
-	int re;
+	int cond_re,re;
 	
 	Statistics::GetInstance()->IncWaitingThreads();
 	
-	if(timeout==0)
-		re = pthread_cond_wait(wait_cond, &lock);
-	else
+	timespec abstime_end;
+	if(timeout!=0)
 	{
+		clock_gettime(CLOCK_REALTIME,&abstime_end);
+		abstime_end.tv_sec += timeout;
+	}
+	
+	while(1)
+	{
+		// Determine the amount of time we will wait
 		timespec abstime;
 		clock_gettime(CLOCK_REALTIME,&abstime);
-		abstime.tv_sec += timeout;
-		re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
+		
+		if(timeout==0)
+			abstime.tv_sec += poll_interval;
+		else
+		{
+			if(abstime.tv_sec+poll_interval>abstime_end.tv_sec || (abstime.tv_sec+poll_interval==abstime_end.tv_sec && abstime.tv_nsec>abstime_end.tv_nsec))
+				abstime = abstime_end;
+			else
+				abstime.tv_sec += poll_interval;
+		}
+		
+		cond_re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
+		
+		if(is_shutting_down)
+		{
+			cond_re = -1;
+			break;
+		}
+		
+		if(cond_re==0)
+			break; // Workflow has ended, normal exit condition
+		else if(timeout!=0)
+		{
+			clock_gettime(CLOCK_REALTIME,&abstime);
+			if(abstime.tv_sec>abstime_end.tv_sec || (abstime.tv_sec==abstime_end.tv_sec && abstime.tv_nsec>=abstime_end.tv_nsec))
+				break; // We have reached timeout
+		}
+		
+		// Check if remote client is still alive
+		re = send(socket,"<ping/>",7,0);
+		if(re!=7)
+		{
+			Logger::Log(LOG_NOTICE,"Remote host is gone, closing terminating wait thread...");
+			break;
+		}
 	}
 	
 	Statistics::GetInstance()->DecWaitingThreads();
 		
 	pthread_mutex_unlock(&lock);
 	
-	return (re==0);
+	return (cond_re==0);
 }
 
 bool WorkflowInstances::KillTask(unsigned int workflow_instance_id, pid_t pid)
@@ -182,6 +230,8 @@ bool WorkflowInstances::SendStatus(int s,unsigned int workflow_instance_id)
 void WorkflowInstances::RecordSavepoint()
 {
 	pthread_mutex_lock(&lock);
+	
+	is_shutting_down = true;
 	
 	for(std::map<unsigned int,WorkflowInstance *>::iterator i = wi.begin();i!=wi.end();++i)
 	{

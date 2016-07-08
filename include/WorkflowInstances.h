@@ -29,6 +29,10 @@ class WorkflowInstances
 {
 	static WorkflowInstances *instance;
 	
+	int poll_interval;
+	
+	bool is_shutting_down;
+	
 	pthread_mutex_t lock;
 	
 	std::map<unsigned int,WorkflowInstance *> wi;
@@ -43,7 +47,7 @@ class WorkflowInstances
 		void Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance);
 		void Remove(unsigned int workflow_instance_id);
 		bool Cancel(unsigned int workflow_instance_id);
-		bool Wait(unsigned int workflow_instance_id, int timeout=0);
+		bool Wait(int socket, unsigned int workflow_instance_id, int timeout=0);
 		bool KillTask(unsigned int workflow_instance_id, pid_t pid);
 		
 		void SendStatus(int s);

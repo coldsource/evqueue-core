@@ -188,7 +188,7 @@ void *handle_connection(void *sp)
 			
 			int wait_re = true;
 			if(saxh->GetQueryOptions()==SocketQuerySAX2Handler::QUERY_OPTION_MODE_SYNCHRONOUS)
-				wait_re = WorkflowInstances::GetInstance()->Wait(instance_id,saxh->GetWaitTimeout());
+				wait_re = WorkflowInstances::GetInstance()->Wait(s,instance_id,saxh->GetWaitTimeout());
 			
 			if(wait_re)
 				sprintf(buf,"<return status='OK' workflow-instance-id='%d' />",instance_id);
@@ -272,7 +272,7 @@ void *handle_connection(void *sp)
 		{
 			unsigned int workflow_instance_id = saxh->GetWorkflowId();
 			
-			if(!WorkflowInstances::GetInstance()->Wait(workflow_instance_id,saxh->GetWaitTimeout()))
+			if(!WorkflowInstances::GetInstance()->Wait(s,workflow_instance_id,saxh->GetWaitTimeout()))
 				send_error_status(s,"TIMEDOUT");
 			else
 				send_success_status(s);
