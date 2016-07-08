@@ -83,9 +83,9 @@ void tools_print_usage()
 {
 	fprintf(stderr,"Usage :\n");
 	fprintf(stderr,"  Launch evqueue      : evqueue (--daemon) --config <path to config file>\n");
+	fprintf(stderr,"  Clean IPC queue     : evqueue --config <path to config file> --ipcq-remove\n");
+	fprintf(stderr,"  Get IPC queue stats : evqueue --config <path to config file> --ipcq-stats\n");
 	fprintf(stderr,"  Show version        : evqueue --version\n");
-	fprintf(stderr,"  Clean IPC queue     : evqueue --ipcq-remove\n");
-	fprintf(stderr,"  Get IPC queue stats : evqueue --ipcq-stats\n");
 }
 
 void tools_config_reload(void)

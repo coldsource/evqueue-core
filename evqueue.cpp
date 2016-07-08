@@ -127,6 +127,9 @@ int main(int argc,const char **argv)
 	bool daemonize = false;
 	bool daemonized = false;
 	
+	bool ipcq_remove = false;
+	bool ipcq_stats = false;
+	
 	for(int i=1;i<argc;i++)
 	{
 		if(strcmp(argv[i],"--daemon")==0)
@@ -137,9 +140,15 @@ int main(int argc,const char **argv)
 			i++;
 		}
 		else if(strcmp(argv[i],"--ipcq-remove")==0)
-			return tools_queue_destroy();
+		{
+			ipcq_remove = true;
+			break;
+		}
 		else if(strcmp(argv[i],"--ipcq-stats")==0)
-			return tools_queue_stats();
+		{
+			ipcq_stats = true;
+			break;
+		}
 		else if(strcmp(argv[i],"--version")==0)
 		{
 			printf("evQueue version " EVQUEUE_VERSION " (built " __DATE__ ")\n");
@@ -191,6 +200,12 @@ int main(int argc,const char **argv)
 		
 		// Substitute configuration variables with environment if needed
 		config->Substitute();
+		
+		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
+		if(ipcq_remove)
+			return tools_queue_destroy();
+		else if(ipcq_stats)
+			return tools_queue_stats();
 		
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
