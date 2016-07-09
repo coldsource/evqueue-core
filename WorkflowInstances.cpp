@@ -35,9 +35,9 @@ WorkflowInstances::WorkflowInstances()
 	if(!instance)
 		instance = this;
 	
-	poll_interval = Configuration::GetInstance()->GetInt("core.poll.interval");
-	if(poll_interval<=0)
-		throw Exception("WorkflowInstances","Invalid poll interval, should be greater than 0");
+	poll_interval = Configuration::GetInstance()->GetInt("dpd.interval");
+	if(poll_interval<0)
+		throw Exception("WorkflowInstances","DPD: Invalid poll interval, should be greater or equal than 0");
 	
 	is_shutting_down = false;
 	
@@ -119,52 +119,65 @@ bool WorkflowInstances::Wait(int socket, unsigned int workflow_instance_id, int 
 	
 	Statistics::GetInstance()->IncWaitingThreads();
 	
-	timespec abstime_end;
-	if(timeout!=0)
+	if(poll_interval==0)
 	{
-		clock_gettime(CLOCK_REALTIME,&abstime_end);
-		abstime_end.tv_sec += timeout;
-	}
-	
-	while(1)
-	{
-		// Determine the amount of time we will wait
-		timespec abstime;
-		clock_gettime(CLOCK_REALTIME,&abstime);
+		// Dead peer detection is disabled
 		
 		if(timeout==0)
-			abstime.tv_sec += poll_interval;
+			cond_re = pthread_cond_wait(wait_cond, &lock);
 		else
 		{
-			if(abstime.tv_sec+poll_interval>abstime_end.tv_sec || (abstime.tv_sec+poll_interval==abstime_end.tv_sec && abstime.tv_nsec>abstime_end.tv_nsec))
-				abstime = abstime_end;
-			else
-				abstime.tv_sec += poll_interval;
-		}
-		
-		cond_re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
-		
-		if(is_shutting_down)
-		{
-			cond_re = -1;
-			break;
-		}
-		
-		if(cond_re==0)
-			break; // Workflow has ended, normal exit condition
-		else if(timeout!=0)
-		{
+			timespec abstime;
 			clock_gettime(CLOCK_REALTIME,&abstime);
-			if(abstime.tv_sec>abstime_end.tv_sec || (abstime.tv_sec==abstime_end.tv_sec && abstime.tv_nsec>=abstime_end.tv_nsec))
-				break; // We have reached timeout
+			abstime.tv_sec += timeout;
+			cond_re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
+		}
+	}
+	else
+	{
+		// Dead peer detection is enabled, use poll_interval as timeout
+		
+		timespec abstime_end;
+		if(timeout!=0)
+		{
+			clock_gettime(CLOCK_REALTIME,&abstime_end);
+			abstime_end.tv_sec += timeout;
 		}
 		
-		// Check if remote client is still alive
-		re = send(socket,"<ping/>",7,0);
-		if(re!=7)
+		while(1)
 		{
-			Logger::Log(LOG_NOTICE,"Remote host is gone, terminating wait thread...");
-			break;
+			// Determine the amount of time we will wait
+			timespec abstime;
+			clock_gettime(CLOCK_REALTIME,&abstime);
+			
+			if(timeout==0)
+				abstime.tv_sec += poll_interval;
+			else
+			{
+				if(abstime.tv_sec+poll_interval>abstime_end.tv_sec || (abstime.tv_sec+poll_interval==abstime_end.tv_sec && abstime.tv_nsec>abstime_end.tv_nsec))
+					abstime = abstime_end;
+				else
+					abstime.tv_sec += poll_interval;
+			}
+			
+			cond_re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
+			
+			if(cond_re==0)
+				break; // Workflow has ended, normal exit condition
+			else if(timeout!=0)
+			{
+				clock_gettime(CLOCK_REALTIME,&abstime);
+				if(abstime.tv_sec>abstime_end.tv_sec || (abstime.tv_sec==abstime_end.tv_sec && abstime.tv_nsec>=abstime_end.tv_nsec))
+					break; // We have reached timeout
+			}
+			
+			// Check if remote client is still alive
+			re = send(socket,"<ping/>",7,0);
+			if(re!=7)
+			{
+				Logger::Log(LOG_NOTICE,"Remote host is gone, terminating wait thread...");
+				break;
+			}
 		}
 	}
 	
@@ -172,6 +185,8 @@ bool WorkflowInstances::Wait(int socket, unsigned int workflow_instance_id, int 
 		
 	pthread_mutex_unlock(&lock);
 	
+	if(is_shutting_down)
+		return false; // Force error even if cond_re==0
 	return (cond_re==0);
 }
 
