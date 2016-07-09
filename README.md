@@ -6,7 +6,9 @@ It provides both simple task execution and complex task chaining (workflow) usin
 
 The network API provides an easy way, XML based, for synchronous or asynchronous workflow launching and control, allowing tasks to be launched from external applications or web pages.
 
-evQueue is agentless (remote connection is made through SSH) and works on Linux environments. We provide debian packages. For other distributions you can easily compile from source.
+evQueue is agentless (remote connection is made through SSH) and works on Linux environments. An agent is however provided to enable additional features when working over SSH.
+
+We provide debian packages. For other distributions you can easily compile from source.
 
 For documentation and binary download, [visit the official website!](http://www.evqueue.net/)
 
