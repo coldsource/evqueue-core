@@ -62,7 +62,7 @@ bool Queue::CheckQueueName(const char *queue_name)
 	int i,len;
 	
 	len = strlen(queue_name);
-	if(len>QUEUE_NAME_MAX_LEN)
+	if(len==0 || len>QUEUE_NAME_MAX_LEN)
 		return false;
 	
 	for(i=0;i<len;i++)
