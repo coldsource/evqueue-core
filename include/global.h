@@ -20,7 +20,7 @@
 #ifndef _GLOBAL_H_
 #define _GLOBAL_H_
 
-#define WORKFLOW_NAME_MAXLEN            64
+#define WORKFLOW_NAME_MAX_LEN           64
 #define QUEUE_NAME_MAX_LEN              64
 #define TASK_NAME_MAX_LEN               64
 #define TASK_BINARY_MAX_LEN            128
