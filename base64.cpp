@@ -78,6 +78,54 @@ bool base64_decode_file(FILE *f,const string &base64_str)
 	return true;
 }
 
+bool base64_decode_string(string &str,const string &base64_str)
+{
+	unsigned char b64_rev_table[0x80];
+	memset(b64_rev_table,'\xFF',64);
+	for(int i=0;i<64;i++)
+		b64_rev_table[b64_table[i]] = i;
+	
+	unsigned int block = 0, block_size = 0, block_padding = 0;
+	char block_str[3];
+	for(int i=0;i<base64_str.length();i++)
+	{
+		if(base64_str[i]>=0x80)
+			return false; // Illegal character
+		else if(base64_str[i]=='=')
+		{
+			// PAD
+			block <<= 6;
+			block_size++;
+			block_padding++;
+		}
+		else if(base64_str[i]==' ' || base64_str[i]=='\r' || base64_str[i]=='\n' || base64_str[i]=='\t')
+			continue; // Skip blanks
+		else if(b64_rev_table[base64_str[i]]==0xFF)
+			return false; // Illegal character
+		else
+		{
+			block <<= 6;
+			block |= b64_rev_table[base64_str[i]];
+			
+			block_size++;
+		}
+		
+		if(block_size==4)
+		{
+			block_str[0] = (block & 0x00FF0000) >> 16;
+			block_str[1] = (block & 0x0000FF00) >> 8;
+			block_str[2] = (block & 0x000000FF);
+			str.append(block_str,3-block_padding);
+			
+			block = 0;
+			block_size = 0;
+			block_padding = 0;
+		}
+	}
+	
+	return true;
+}
+
 void base64_encode_file(FILE *f,string &base64_str)
 {
 	unsigned int block = 0, block_size = 0;
