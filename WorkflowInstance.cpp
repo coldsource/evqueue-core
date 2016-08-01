@@ -108,9 +108,9 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 	WorkflowInstance()
 {
 	DB db;
-	char buf[256+WORKFLOW_NAME_MAXLEN];
+	char buf[256+WORKFLOW_NAME_MAX_LEN];
 	
-	if(strlen(workflow_name)>WORKFLOW_NAME_MAXLEN)
+	if(strlen(workflow_name)>WORKFLOW_NAME_MAX_LEN)
 		throw Exception("WorkflowInstance","Workflow name is too long");
 
 	// Get workflow. This will throw an exception if workflow doesn't exist
