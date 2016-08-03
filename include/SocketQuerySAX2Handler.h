@@ -23,9 +23,16 @@
 
 using namespace xercesc;
 
+#include <string>
+#include <map>
+
 class SocketQuerySAX2Handler : public DefaultHandler {
 	
 	private:
+		std::string group;
+		std::string action;
+		std::map<std::string,std::string> root_attributes;
+		
 		int query_type;
 		int query_options;
 		int workflow_id;
@@ -81,6 +88,8 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		void endDocument();
 		
 		bool IsReady() { return ready; }
+		const std::string &GetQueryGroup() { return group; }
+		const std::map<std::string,std::string> &GetRootAttributes() { return root_attributes; }
 		int GetQueryType() { return query_type; }
 		int GetQueryOptions() { return query_options; }
 		const char *GetWorkflowName() { return workflow_name; }
