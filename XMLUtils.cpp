@@ -67,7 +67,6 @@ void XMLUtils::ValidateXML(const std::string &xml, const std::string &xsd)
 	xsd_input->release();
 	XMLString::release(&xsd_xmlch);
 	
-	
 	// Load and validate XML
 	DOMLSInput *xml_input = xqillaImplementation->createLSInput();
 	
@@ -85,6 +84,7 @@ void XMLUtils::ValidateXML(const std::string &xml, const std::string &xsd)
 	
 	xml_input->release();
 	XMLString::release(&xml_xmlch);
+	parser->release();
 	
 	string errors = eh.GetErrors();
 	if(errors.length()!=0)
