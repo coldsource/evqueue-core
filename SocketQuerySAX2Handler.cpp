@@ -28,6 +28,7 @@
 
 SocketQuerySAX2Handler::SocketQuerySAX2Handler()
 {
+	query_type = 0;
 	workflow_name = 0;
 	workflow_host = 0;
 	workflow_user = 0;
@@ -68,14 +69,34 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 	{
 		if(level==1)
 		{
+			// Generic data storage for Query Handlers
+			group = node_name_c;
+			
+			for(int i=0;i<attrs.getLength();i++)
+			{
+				const XMLCh *attr_name, *attr_value;
+				attr_name = attrs.getLocalName(i);
+				attr_value = attrs.getValue(i);
+				
+				char *attr_name_c, *attr_value_c;
+				attr_name_c = XMLString::transcode(attr_name);
+				attr_value_c = XMLString::transcode(attr_value);
+				
+				root_attributes[attr_name_c] = attr_value_c;
+				
+				XMLString::release(&attr_name_c);
+				XMLString::release(&attr_value_c);
+			}
+			
+			// Specific cases
+			const XMLCh *action_attr = attrs.getValue(X("action"));
+			
 			if(strcmp(node_name_c,"ping")==0)
 			{
 				query_type = SocketQuerySAX2Handler::PING;
 			}
 			else if(strcmp(node_name_c,"control")==0)
 			{
-				const XMLCh *action_attr = attrs.getValue(X("action"));
-				
 				if(action_attr==0)
 					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node control");
 				
@@ -92,8 +113,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			}
 			else if(strcmp(node_name_c,"notification")==0)
 			{
-				const XMLCh *action_attr = attrs.getValue(X("action"));
-				
 				if(action_attr==0)
 					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node notification");
 				
@@ -132,8 +151,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			}
 			else if(strcmp(node_name_c,"task")==0)
 			{
-				const XMLCh *action_attr = attrs.getValue(X("action"));
-				
 				if(action_attr==0)
 					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node task");
 				
@@ -175,8 +192,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				
 				if(XMLString::compareString(type_attr,X("global"))==0)
 				{
-					const XMLCh *action_attr = attrs.getValue(X("action"));
-					
 					if(action_attr==0 || XMLString::compareString(action_attr,X("query"))==0)
 						query_type = SocketQuerySAX2Handler::QUERY_GLOBAL_STATS;
 					else if(XMLString::compareString(action_attr,X("reset"))==0)
@@ -205,7 +220,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				else
 					throw Exception("SocketQuerySAX2Handler","Unknown statistics type");
 			}
-			else if(strcmp(node_name_c,"workflow")==0)
+			else if(strcmp(node_name_c,"workflow")==0 && !action_attr)
 			{
 				const XMLCh *name_attr = attrs.getValue(X("name"));
 				const XMLCh *id_attr = attrs.getValue(X("id"));
@@ -249,7 +264,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				}
 				else
 				{
-					const XMLCh *action_attr = attrs.getValue(X("action"));
 					workflow_id = XMLString::parseInt(id_attr);
 					
 					if(action_attr==0 || XMLString::compareString(action_attr,X("info"))==0)
@@ -280,8 +294,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					}
 				}
 			}
-			else
-				throw Exception("SocketQuerySAX2Handler","Invalid root node name, expecting 'workflow' or 'statistics'");
 		}
 		
 		if(query_type==QUERY_WORKFLOW_LAUNCH && level==2)

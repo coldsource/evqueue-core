@@ -32,6 +32,7 @@
 #include <Configuration.h>
 #include <Sockets.h>
 #include <Notification.h>
+#include <QueryHandlers.h>
 #include <Task.h>
 #include <tools.h>
 
@@ -158,7 +159,12 @@ void *handle_connection(void *sp)
 			throw Exception("Workflow XML parsing","Unexpected error trying to parse workflow XML");
 		}
 		
-		if ( saxh->GetQueryType() == SocketQuerySAX2Handler::PING)
+		if(QueryHandlers::GetInstance()->HandleQuery(saxh->GetQueryGroup(),saxh))
+		{
+			// Handled by external handler
+			send_success_status(s);
+		}
+		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::PING)
 		{
 			send(s,"<pong />",8,0);
 		}
@@ -393,6 +399,8 @@ void *handle_connection(void *sp)
 			tools_sync_notifications();
 			send_success_status(s);
 		}
+		else
+			send_error_status(s,"Unknown command or action");
 	}
 	catch (Exception &e)
 	{

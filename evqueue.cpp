@@ -45,6 +45,7 @@
 #include <Logger.h>
 #include <Queue.h>
 #include <QueuePool.h>
+#include <Workflow.h>
 #include <Workflows.h>
 #include <WorkflowInstance.h>
 #include <WorkflowInstances.h>
@@ -63,6 +64,7 @@
 #include <SequenceGenerator.h>
 #include <Notifications.h>
 #include <Sockets.h>
+#include <QueryHandlers.h>
 #include <handle_connection.h>
 #include <tools.h>
 #include <tools_db.h>
@@ -396,6 +398,10 @@ int main(int argc,const char **argv)
 		// Start garbage GarbageCollector
 		GarbageCollector *gc = new GarbageCollector();
 		
+		// Initialize query handlers
+		QueryHandlers *qh = new QueryHandlers();
+		qh->RegisterHandler("workflow",Workflow::HandleQuery);
+		
 		// Create sockets set
 		Sockets *sockets = new Sockets();
 		pthread_atfork(fork_parent_pre_handler,fork_parent_post_handler,fork_child_handler);
@@ -525,6 +531,7 @@ int main(int argc,const char **argv)
 				delete pm;
 				delete gc;
 				delete seq;
+				delete qh;
 				delete sockets;
 				
 				XQillaPlatformUtils::terminate();
