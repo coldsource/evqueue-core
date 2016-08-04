@@ -29,7 +29,10 @@
 
 #include <string.h>
 
+#include <xqilla/xqilla-dom3.hpp>
+
 using namespace std;
+using namespace xercesc;
 
 extern string workflow_xsd_str;
 
@@ -81,7 +84,8 @@ void Workflow::Get(unsigned int id, QueryResponse *response)
 {
 	Workflow workflow = Workflows::GetInstance()->GetWorkflow(id);
 	
-	response->AppendXML(workflow.GetXML());
+	DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
+	node->setAttribute(X("name"),X(workflow.GetName().c_str()));
 }
 
 void Workflow::Create(const string &name, const string &base64, const string &group, const string &comment)
