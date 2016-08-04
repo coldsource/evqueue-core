@@ -18,9 +18,12 @@
  */
 
 #include <Workflow.h>
+#include <Workflows.h>
 #include <DB.h>
 #include <Exception.h>
 #include <XMLUtils.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 #include <global.h>
 #include <base64.h>
 
@@ -65,6 +68,13 @@ bool Workflow::CheckWorkflowName(const string &workflow_name)
 			return false;
 	
 	return true;
+}
+
+void Workflow::Get(const string &name, QueryResponse *response)
+{
+	Workflow workflow = Workflows::GetInstance()->GetWorkflow(name);
+	
+	response->AppendXML(workflow.GetXML());
 }
 
 void Workflow::Create(const string &name, const string &base64, const string &group, const string &comment)
@@ -118,4 +128,65 @@ string Workflow::create_edit_check(const string &name, const string &base64, con
 	XMLUtils::ValidateXML(workflow_xml,workflow_xsd_str);
 	
 	return workflow_xml;
+}
+
+bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="get")
+	{
+		auto it_name = attrs.find("name");
+		if(it_name==attrs.end())
+			throw Exception("Workflow","Missing 'name' attribute");
+		
+		Get(it_name->second,response);
+		
+		return true;
+	}
+	else if(it_action->second=="create" || it_action->second=="edit")
+	{
+		auto it_name = attrs.find("name");
+		if(it_name==attrs.end())
+			throw Exception("Workflow","Missing 'name' attribute");
+		
+		auto it_content = attrs.find("content");
+		if(it_content==attrs.end())
+			throw Exception("Workflow","Missing 'content' attribute");
+		
+		auto it_group = attrs.find("group");
+		if(it_group==attrs.end())
+			throw Exception("Workflow","Missing 'group' attribute");
+		
+		auto it_comment = attrs.find("comment");
+		if(it_comment==attrs.end())
+			throw Exception("Workflow","Missing 'comment' attribute");
+		
+		if(it_action->second=="create")
+			Create(it_name->second, it_content->second, it_group->second, it_comment->second);
+		else
+			Edit(it_name->second, it_content->second, it_group->second, it_comment->second);
+		
+		Workflows::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(it_action->second=="delete")
+	{
+		auto it_name = attrs.find("name");
+		if(it_name==attrs.end())
+			throw Exception("Workflow","Missing 'name' attribute");
+		
+		Delete(it_name->second);
+		
+		Workflows::GetInstance()->Reload();
+		
+		return true;
+	}
+	
+	return false;
 }

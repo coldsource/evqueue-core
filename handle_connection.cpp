@@ -32,6 +32,7 @@
 #include <Configuration.h>
 #include <Sockets.h>
 #include <Notification.h>
+#include <QueryResponse.h>
 #include <QueryHandlers.h>
 #include <Task.h>
 #include <tools.h>
@@ -139,10 +140,10 @@ void *handle_connection(void *sp)
 		catch (const SAXParseException& toCatch)
 		{
 			char *message = XMLString::transcode(toCatch.getMessage());
-			Logger::Log(LOG_WARNING,"Invalid workflow XML structure : %s",message);
+			Logger::Log(LOG_WARNING,"Invalid query XML structure : %s",message);
 			XMLString::release(&message);
 			
-			throw Exception("Workflow XML parsing","Invalid workflow XML structure");
+			throw Exception("Query XML parsing","Invalid query XML structure");
 		}
 		catch(Exception &e)
 		{
@@ -159,10 +160,11 @@ void *handle_connection(void *sp)
 			throw Exception("Workflow XML parsing","Unexpected error trying to parse workflow XML");
 		}
 		
-		if(QueryHandlers::GetInstance()->HandleQuery(saxh->GetQueryGroup(),saxh))
+		QueryResponse response;
+		if(QueryHandlers::GetInstance()->HandleQuery(saxh->GetQueryGroup(),saxh, &response))
 		{
 			// Handled by external handler
-			send_success_status(s);
+			response.SendResponse(s);
 		}
 		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::PING)
 		{

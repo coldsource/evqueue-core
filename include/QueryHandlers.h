@@ -24,8 +24,9 @@
 #include <string>
 
 class SocketQuerySAX2Handler;
+class QueryResponse;
 
-typedef bool (*t_query_handler)(SocketQuerySAX2Handler *);
+typedef bool (*t_query_handler)(SocketQuerySAX2Handler *, QueryResponse *);
 
 class QueryHandlers
 {
@@ -39,7 +40,7 @@ class QueryHandlers
 		static QueryHandlers *GetInstance() { return QueryHandlers::instance; }
 		
 		void RegisterHandler(const std::string &type, t_query_handler handler);
-		bool HandleQuery(const std::string &type, SocketQuerySAX2Handler *saxh);
+		bool HandleQuery(const std::string &type, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

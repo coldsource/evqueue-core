@@ -24,6 +24,8 @@
 #include <string>
 
 class DB;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
 class Workflow
 {
@@ -43,9 +45,12 @@ class Workflow
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
 		
 		static bool CheckWorkflowName(const std::string &workflow_name);
+		static void Get(const std::string &name, QueryResponse *response);
 		static void Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
 		static void Edit(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
 		static void Delete(const std::string &name);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		static std::string create_edit_check(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
