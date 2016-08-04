@@ -47,7 +47,7 @@ void QueryResponse::SetError(const string &error)
 	this->error = error;
 }
 
-void QueryResponse::AppendXML(const string &xml)
+DOMNode *QueryResponse::AppendXML(const string &xml)
 {
 	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 	DOMLSParser *parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
@@ -66,6 +66,8 @@ void QueryResponse::AppendXML(const string &xml)
 	xmldoc->getDocumentElement()->appendChild(node);
 	
 	parser->release();
+	
+	return node;
 }
 
 void QueryResponse::SendResponse(int s)

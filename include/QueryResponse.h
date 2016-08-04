@@ -40,7 +40,7 @@ class QueryResponse
 		DOMDocument *GetDOM() { return xmldoc; }
 		void SetError(const std::string &error);
 		
-		void AppendXML(const std::string &xml);
+		DOMNode *AppendXML(const std::string &xml);
 		
 		void SendResponse(int s);
 };
