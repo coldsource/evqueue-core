@@ -22,6 +22,9 @@
 
 #include <pthread.h>
 
+class SocketQuerySAX2Handler;
+class QueryResponse;
+
 class Statistics
 {
 	private:
@@ -59,8 +62,10 @@ class Statistics
 		void IncWaitingThreads(void);
 		void DecWaitingThreads(void);
 		
-		void SendGlobalStatistics(int s);
+		void SendGlobalStatistics(QueryResponse *response);
 		void ResetGlobalStatistics();
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

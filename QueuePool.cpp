@@ -24,6 +24,7 @@
 #include <WorkflowInstance.h>
 #include <Logger.h>
 #include <Configuration.h>
+#include <QueryResponse.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -359,15 +360,14 @@ void QueuePool::Shutdown(void)
 	pthread_mutex_unlock(&mutex);
 }
 
-void QueuePool::SendStatistics(int s)
+void QueuePool::SendStatistics(QueryResponse *response)
 {
 	char buf[16];
 	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	DOMDocument *xmldoc = response->GetDOM();
 	
 	DOMElement *statistics_node = xmldoc->createElement(X("statistics"));
-	xmldoc->appendChild(statistics_node);
+	xmldoc->getDocumentElement()->appendChild(statistics_node);
 	
 	for(auto it=queues.begin();it!=queues.end();++it)
 	{
@@ -387,17 +387,6 @@ void QueuePool::SendStatistics(int s)
 		
 		statistics_node->appendChild(queue_node);
 	}
-	
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *statistics_xml = serializer->writeToString(statistics_node);
-	char *statistics_xml_c = XMLString::transcode(statistics_xml);
-	
-	send(s,statistics_xml_c,strlen(statistics_xml_c),0);
-	
-	XMLString::release(&statistics_xml);
-	XMLString::release(&statistics_xml_c);
-	serializer->release();
-	xmldoc->release();
 }
 
 int QueuePool::get_scheduler_from_string(std::string scheduler_str)

@@ -341,25 +341,6 @@ void *handle_connection(void *sp)
 			Task::RemoveFile(saxh->GetFileName());
 			send_success_status(s);
 		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_QUEUE_STATS)
-		{
-			stats->IncStatisticsQueries();
-			
-			QueuePool *qp = QueuePool::GetInstance();
-			qp->SendStatistics(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_GLOBAL_STATS)
-		{
-			stats->IncStatisticsQueries();
-			
-			stats->SendGlobalStatistics(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::RESET_GLOBAL_STATS)
-		{
-			stats->ResetGlobalStatistics();
-			
-			send_success_status(s);
-		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_WORKFLOWS)
 		{
 			stats->IncStatisticsQueries();

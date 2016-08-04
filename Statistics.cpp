@@ -19,6 +19,10 @@
 
 #include <Statistics.h>
 #include <Sockets.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
+#include <Exception.h>
+#include <QueuePool.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
@@ -137,15 +141,14 @@ void Statistics::DecWaitingThreads(void)
 	pthread_mutex_unlock(&lock);
 }
 
-void Statistics::SendGlobalStatistics(int s)
+void Statistics::SendGlobalStatistics(QueryResponse *response)
 {
 	char buf[16];
 	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	DOMDocument *xmldoc = response->GetDOM();
 	
 	DOMElement *statistics_node = xmldoc->createElement(X("statistics"));
-	xmldoc->appendChild(statistics_node);
+	xmldoc->getDocumentElement()->appendChild(statistics_node);
 	
 	sprintf(buf,"%d",accepted_connections);
 	statistics_node->setAttribute(X("accepted_connections"),X(buf));
@@ -182,17 +185,6 @@ void Statistics::SendGlobalStatistics(int s)
 	
 	sprintf(buf,"%d",waiting_threads);
 	statistics_node->setAttribute(X("waiting_threads"),X(buf));
-	
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *statistics_xml = serializer->writeToString(statistics_node);
-	char *statistics_xml_c = XMLString::transcode(statistics_xml);
-	
-	send(s,statistics_xml_c,strlen(statistics_xml_c),0);
-	
-	XMLString::release(&statistics_xml);
-	XMLString::release(&statistics_xml_c);
-	serializer->release();
-	xmldoc->release();
 }
 
 void Statistics::ResetGlobalStatistics()
@@ -207,4 +199,49 @@ void Statistics::ResetGlobalStatistics()
 	workflow_instance_launched = 0;
 	workflow_instance_executing = 0;
 	workflow_instance_errors = 0;
+}
+
+bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	Statistics *stats = Statistics::GetInstance();
+	
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_type = attrs.find("type");
+	if(it_type==attrs.end())
+		throw Exception("Statistics","Missing type attribute on node statistics");
+	
+	if(it_type->second=="global")
+	{
+		auto it_action = attrs.find("action");
+		if(it_action==attrs.end() || it_action->second=="query")
+		{
+			stats->IncStatisticsQueries();
+			
+			stats->SendGlobalStatistics(response);
+			
+			return true;
+		}
+		else if(it_action->second=="reset")
+		{
+			stats->ResetGlobalStatistics();
+			
+			return true;
+		}
+		else
+			throw Exception("Statistics","Unknown statistics action");
+	}
+	else if(it_type->second=="queue")
+	{
+		stats->IncStatisticsQueries();
+			
+		QueuePool *qp = QueuePool::GetInstance();
+		qp->SendStatistics(response);
+		
+		return true;
+	}
+	else
+		throw Exception("Statistics","Unknown statistics type");
+	
+	return false;
 }

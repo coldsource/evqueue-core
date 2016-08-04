@@ -31,6 +31,7 @@ using namespace xercesc;
 
 class Queue;
 class WorkflowInstance;
+class QueryResponse;
 
 class QueuePool
 {
@@ -75,7 +76,7 @@ class QueuePool
 		
 		void Shutdown(void);
 		
-		void SendStatistics(int s);
+		void SendStatistics(QueryResponse *response);
 	
 		int get_scheduler_from_string(std::string scheduler_str);
 		static std::string get_scheduler_from_int(int scheduler);

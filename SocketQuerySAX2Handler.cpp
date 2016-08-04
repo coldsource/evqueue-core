@@ -167,27 +167,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					}
 				}
 			}
-			else if(strcmp(node_name_c,"statistics")==0)
-			{
-				const XMLCh *type_attr = attrs.getValue(X("type"));
-				
-				if(type_attr==0)
-					throw Exception("SocketQuerySAX2Handler","Missing type attribute on node statistics");
-				
-				if(XMLString::compareString(type_attr,X("global"))==0)
-				{
-					if(action_attr==0 || XMLString::compareString(action_attr,X("query"))==0)
-						query_type = SocketQuerySAX2Handler::QUERY_GLOBAL_STATS;
-					else if(XMLString::compareString(action_attr,X("reset"))==0)
-						query_type = SocketQuerySAX2Handler::RESET_GLOBAL_STATS;
-					else
-						throw Exception("SocketQuerySAX2Handler","Unknown statistics action");
-				}
-				else if(XMLString::compareString(type_attr,X("queue"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_QUEUE_STATS;
-				else
-					throw Exception("SocketQuerySAX2Handler","Unknown statistics type");
-			}
 			else if(strcmp(node_name_c,"status")==0)
 			{
 				const XMLCh *type_attr = attrs.getValue(X("type"));
