@@ -22,12 +22,17 @@
 #include <DB.h>
 #include <Exception.h>
 #include <Logger.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 
 #include <string.h>
+
+#include <xqilla/xqilla-dom3.hpp>
 
 Workflows *Workflows::instance = 0;
 
 using namespace std;
+using namespace xercesc;
 
 Workflows::Workflows()
 {
@@ -93,4 +98,33 @@ Workflow Workflows::GetWorkflow(const string &name)
 	pthread_mutex_unlock(&lock);
 	
 	return workflow;
+}
+
+bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	Workflows *workflows = Workflows::GetInstance();
+	
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="list")
+	{
+		pthread_mutex_lock(&workflows->lock);
+		
+		for(auto it = workflows->workflows.begin(); it!=workflows->workflows.end(); it++)
+		{
+			Workflow workflow = *it->second;
+			DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
+			node->setAttribute(X("name"),X(workflow.GetName()));
+		}
+		
+		pthread_mutex_unlock(&workflows->lock);
+		
+		return true;
+	}
+	
+	return false;
 }

@@ -26,6 +26,8 @@
 #include <string>
 
 class Workflow;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
 class Workflows
 {
@@ -45,6 +47,8 @@ class Workflows
 		
 		void Reload(void);
 		Workflow GetWorkflow(const std::string &name);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif
