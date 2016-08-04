@@ -118,7 +118,11 @@ bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respons
 		{
 			Workflow workflow = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
-			node->setAttribute(X("name"),X(workflow.GetName()));
+			node->setAttribute(X("name"),X(workflow.GetName().c_str()));
+			node->setAttribute(X("group"),X(workflow.GetGroup().c_str()));
+			node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
+			node->setAttribute(X("bound-to-schedule"),workflow.GetIsBoundSchedule()?X("1"):X("0"));
+			node->setAttribute(X("has-bound-task"),workflow.GetIsBoundTask()?X("1"):X("0"));
 		}
 		
 		pthread_mutex_unlock(&workflows->lock);

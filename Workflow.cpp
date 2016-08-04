@@ -40,7 +40,7 @@ Workflow::Workflow()
 
 Workflow::Workflow(DB *db,const char *workflow_name)
 {
-	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml FROM t_workflow WHERE workflow_name=%s",workflow_name);
+	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_bound FROM t_workflow WHERE workflow_name=%s",workflow_name);
 	
 	if(!db->FetchRow())
 		throw Exception("Workflow","Unknown Workflow");
@@ -49,6 +49,13 @@ Workflow::Workflow(DB *db,const char *workflow_name)
 	
 	this->workflow_name = db->GetField(1);
 	workflow_xml = db->GetField(2);
+	group = db->GetField(3);
+	comment = db->GetField(4);
+	bound_schedule = db->GetFieldInt(5);
+	
+	db->QueryPrintf("SELECT COUNT(*) FROM t_task WHERE workflow_id = %i",&workflow_id);
+	db->FetchRow();
+	bound_task = (db->GetFieldInt(0) > 0)?true:false;
 	
 	db->QueryPrintf("SELECT notification_id FROM t_workflow_notification WHERE workflow_id=%i",&workflow_id);
 	while(db->FetchRow())

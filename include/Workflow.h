@@ -32,6 +32,9 @@ class Workflow
 	unsigned int workflow_id;
 	std::string workflow_name;
 	std::string workflow_xml;
+	std::string group;
+	std::string comment;
+	bool bound_schedule, bound_task;
 	
 	std::vector<unsigned int> notifications;
 		
@@ -40,8 +43,12 @@ class Workflow
 		Workflow(DB *db,const char *workflow_name);
 		
 		unsigned int GetID() const { return workflow_id; }
-		const char *GetName() const { return workflow_name.c_str(); }
-		const char *GetXML() const { return workflow_xml.c_str(); }
+		const std::string GetName() const { return workflow_name; }
+		const std::string GetXML() const { return workflow_xml; }
+		const std::string GetGroup() const { return group; }
+		const std::string GetComment() const { return comment; }
+		bool GetIsBoundSchedule() const { return bound_schedule; }
+		bool GetIsBoundTask() const { return bound_task; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
 		
 		static bool CheckWorkflowName(const std::string &workflow_name);

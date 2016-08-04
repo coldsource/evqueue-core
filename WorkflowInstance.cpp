@@ -130,7 +130,7 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 	
 	// Set XML content and parse document
 	XMLCh *xml;
-	xml = XMLString::transcode(workflow.GetXML());
+	xml = XMLString::transcode(workflow.GetXML().c_str());
 	input->setStringData(xml);
 	xmldoc = parser->parse(input);
 	
