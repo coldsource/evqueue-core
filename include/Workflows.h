@@ -36,7 +36,8 @@ class Workflows
 		
 		pthread_mutex_t lock;
 		
-		std::map<std::string,Workflow *> workflows;
+		std::map<std::string,Workflow *> workflows_name;
+		std::map<unsigned int,Workflow *> workflows_id;
 	
 	public:
 		
@@ -46,6 +47,7 @@ class Workflows
 		static Workflows *GetInstance() { return instance; }
 		
 		void Reload(void);
+		Workflow GetWorkflow(unsigned int id);
 		Workflow GetWorkflow(const std::string &name);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);

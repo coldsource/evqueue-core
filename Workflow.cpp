@@ -77,9 +77,9 @@ bool Workflow::CheckWorkflowName(const string &workflow_name)
 	return true;
 }
 
-void Workflow::Get(const string &name, QueryResponse *response)
+void Workflow::Get(unsigned int id, QueryResponse *response)
 {
-	Workflow workflow = Workflows::GetInstance()->GetWorkflow(name);
+	Workflow workflow = Workflows::GetInstance()->GetWorkflow(id);
 	
 	response->AppendXML(workflow.GetXML());
 }
@@ -97,27 +97,27 @@ void Workflow::Create(const string &name, const string &base64, const string &gr
 	);
 }
 
-void Workflow::Edit(const string &name, const string &base64, const string &group, const string &comment)
+void Workflow::Edit(unsigned int id,const string &name, const string &base64, const string &group, const string &comment)
 {
 	string xml = create_edit_check(name,base64,group,comment);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_workflow SET workflow_name=%s,workflow_xml=%s,workflow_group=%s,workflow_comment=%s WHERE workflow_name=%s",
+	db.QueryPrintf("UPDATE t_workflow SET workflow_name=%s,workflow_xml=%s,workflow_group=%s,workflow_comment=%s WHERE workflow_id=%i",
 		name.c_str(),
 		xml.c_str(),
 		group.c_str(),
 		comment.c_str(),
-		name.c_str()
+		&id
 	);
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Workflow","Workflow not found");
 }
 
-void Workflow::Delete(const string &name)
+void Workflow::Delete(unsigned int id)
 {
 	DB db;
-	db.QueryPrintf("DELETE FROM t_workflow WHERE workflow_name=%s",name.c_str());
+	db.QueryPrintf("DELETE FROM t_workflow WHERE workflow_id=%i",&id);
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Workflow","Workflow not found");
@@ -147,11 +147,11 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 	
 	if(it_action->second=="get")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("Workflow","Missing 'name' attribute");
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("Workflow","Missing 'id' attribute");
 		
-		Get(it_name->second,response);
+		Get(std::stoi(it_id->second),response);
 		
 		return true;
 	}
@@ -176,7 +176,13 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 		if(it_action->second=="create")
 			Create(it_name->second, it_content->second, it_group->second, it_comment->second);
 		else
-			Edit(it_name->second, it_content->second, it_group->second, it_comment->second);
+		{
+			auto it_id = attrs.find("id");
+			if(it_id==attrs.end())
+				throw Exception("Workflow","Missing 'id' attribute");
+			
+			Edit(std::stoi(it_id->second),it_name->second, it_content->second, it_group->second, it_comment->second);
+		}
 		
 		Workflows::GetInstance()->Reload();
 		
@@ -184,11 +190,11 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 	}
 	else if(it_action->second=="delete")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("Workflow","Missing 'name' attribute");
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("Workflow","Missing 'id' attribute");
 		
-		Delete(it_name->second);
+		Delete(std::stoi(it_id->second));
 		
 		Workflows::GetInstance()->Reload();
 		

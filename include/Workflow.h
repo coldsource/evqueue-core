@@ -52,10 +52,10 @@ class Workflow
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
 		
 		static bool CheckWorkflowName(const std::string &workflow_name);
-		static void Get(const std::string &name, QueryResponse *response);
+		static void Get(unsigned int id, QueryResponse *response);
 		static void Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
-		static void Edit(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
-		static void Delete(const std::string &name);
+		static void Edit(unsigned int id, const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
+		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
