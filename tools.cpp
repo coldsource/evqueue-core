@@ -29,6 +29,8 @@
 #include <Retrier.h>
 #include <QueuePool.h>
 #include <Configuration.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -145,3 +147,34 @@ int tools_send_exit_msg(int type,int tid,char retcode)
 	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }
 
+bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="reload")
+	{
+		tools_config_reload();
+		return true;
+	}
+	else if(it_action->second=="retry")
+	{
+		tools_flush_retrier();
+		return true;
+	}
+	else if(it_action->second=="synctasks")
+	{
+		tools_sync_tasks();
+		return true;
+	}
+	else if(it_action->second=="syncnotifications")
+	{
+		tools_sync_notifications();
+		return true;
+	}
+	
+	return false;
+}

@@ -20,6 +20,9 @@
 #ifndef _TOOLS_H_
 #define _TOOLS_H_
 
+class SocketQuerySAX2Handler;
+class QueryResponse;
+
 int tools_queue_destroy();
 int tools_queue_stats();
 void tools_print_usage();
@@ -28,5 +31,7 @@ void tools_sync_tasks(void);
 void tools_sync_notifications(void);
 void tools_flush_retrier(void);
 int tools_send_exit_msg(int type,int tid,char retcode);
+
+bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 
 #endif

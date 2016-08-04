@@ -402,6 +402,7 @@ int main(int argc,const char **argv)
 		QueryHandlers *qh = new QueryHandlers();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
+		qh->RegisterHandler("control",tools_handle_query);
 		
 		// Create sockets set
 		Sockets *sockets = new Sockets();

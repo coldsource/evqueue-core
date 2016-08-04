@@ -381,26 +381,6 @@ void *handle_connection(void *sp)
 			Configuration *config = Configuration::GetInstance();
 			config->SendConfiguration(s);
 		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_RELOAD)
-		{
-			tools_config_reload();
-			send_success_status(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_RETRY)
-		{
-			tools_flush_retrier();
-			send_success_status(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_SYNCTASKS)
-		{
-			tools_sync_tasks();
-			send_success_status(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_CONTROL_SYNCNOTIFICATIONS)
-		{
-			tools_sync_notifications();
-			send_success_status(s);
-		}
 		else
 			send_error_status(s,"Unknown command or action");
 	}
