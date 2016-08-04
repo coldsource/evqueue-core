@@ -155,7 +155,17 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 		if(it_id==attrs.end())
 			throw Exception("Workflow","Missing 'id' attribute");
 		
-		Get(std::stoi(it_id->second),response);
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Workflow","Invalid ID");
+		}
+		
+		Get(id,response);
 		
 		return true;
 	}
@@ -185,7 +195,17 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 			if(it_id==attrs.end())
 				throw Exception("Workflow","Missing 'id' attribute");
 			
-			Edit(std::stoi(it_id->second),it_name->second, it_content->second, it_group->second, it_comment->second);
+			unsigned int id;
+			try
+			{
+				id = std::stoi(it_id->second);
+			}
+			catch(...)
+			{
+				throw Exception("Workflow","Invalid ID");
+			}
+			
+			Edit(id,it_name->second, it_content->second, it_group->second, it_comment->second);
 		}
 		
 		Workflows::GetInstance()->Reload();
@@ -198,7 +218,17 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 		if(it_id==attrs.end())
 			throw Exception("Workflow","Missing 'id' attribute");
 		
-		Delete(std::stoi(it_id->second));
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Workflow","Invalid ID");
+		}
+		
+		Delete(id);
 		
 		Workflows::GetInstance()->Reload();
 		
