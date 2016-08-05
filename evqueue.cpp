@@ -66,6 +66,7 @@
 #include <Notifications.h>
 #include <Sockets.h>
 #include <QueryHandlers.h>
+#include <Cluster.h>
 #include <handle_connection.h>
 #include <tools.h>
 #include <tools_db.h>
@@ -414,6 +415,10 @@ int main(int argc,const char **argv)
 		Sockets *sockets = new Sockets();
 		pthread_atfork(fork_parent_pre_handler,fork_parent_post_handler,fork_child_handler);
 		
+		// Initialize cluster
+		Cluster *cluster = new Cluster();
+		cluster->ParseConfiguration(config->Get("cluster.nodes"));
+		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
 		int re,s;
@@ -541,6 +546,7 @@ int main(int argc,const char **argv)
 				delete seq;
 				delete qh;
 				delete sockets;
+				delete cluster;
 				
 				XQillaPlatformUtils::terminate();
 				

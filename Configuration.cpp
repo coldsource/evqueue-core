@@ -87,6 +87,8 @@ Configuration::Configuration(void)
 	entries["workflowinstance.savepoint.retry.enable"] = "yes";
 	entries["workflowinstance.savepoint.retry.times"] = "0";
 	entries["workflowinstance.savepoint.retry.wait"] = "2";
+	entries["cluster.notify"] = "yes";
+	entries["cluster.nodes"] = "";
 	
 	instance=this;
 }
