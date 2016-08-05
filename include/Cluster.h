@@ -33,6 +33,7 @@ class Cluster
 		void ExecuteCommand(const std::string &command);
 	
 	private:
+		void execute_command(const std::string &cnx_str, const std::string &command);
 		int connect_socket(const std::string &connection_str_const);
 };
 
