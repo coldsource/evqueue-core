@@ -87,6 +87,8 @@ void Workflow::Get(unsigned int id, QueryResponse *response)
 	
 	DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
 	node->setAttribute(X("name"),X(workflow.GetName().c_str()));
+	node->setAttribute(X("group"),X(workflow.GetGroup().c_str()));
+	node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
 }
 
 unsigned int Workflow::Create(const string &name, const string &base64, const string &group, const string &comment)
