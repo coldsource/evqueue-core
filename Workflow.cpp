@@ -24,6 +24,7 @@
 #include <XMLUtils.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Tasks.h>
 #include <global.h>
 #include <base64.h>
 
@@ -88,7 +89,7 @@ void Workflow::Get(unsigned int id, QueryResponse *response)
 	node->setAttribute(X("name"),X(workflow.GetName().c_str()));
 }
 
-void Workflow::Create(const string &name, const string &base64, const string &group, const string &comment)
+unsigned int Workflow::Create(const string &name, const string &base64, const string &group, const string &comment)
 {
 	string xml = create_edit_check(name,base64,group,comment);
 	
@@ -99,11 +100,16 @@ void Workflow::Create(const string &name, const string &base64, const string &gr
 		group.c_str(),
 		comment.c_str()
 	);
+	
+	return db.InsertID();
 }
 
 void Workflow::Edit(unsigned int id,const string &name, const string &base64, const string &group, const string &comment)
 {
 	string xml = create_edit_check(name,base64,group,comment);
+	
+	if(!Workflows::GetInstance()->Exists(id))
+		throw Exception("Workflow","Workflow not found");
 	
 	DB db;
 	db.QueryPrintf("UPDATE t_workflow SET workflow_name=%s,workflow_xml=%s,workflow_group=%s,workflow_comment=%s WHERE workflow_id=%i",
@@ -113,18 +119,22 @@ void Workflow::Edit(unsigned int id,const string &name, const string &base64, co
 		comment.c_str(),
 		&id
 	);
-	
-	if(db.AffectedRows()==0)
-		throw Exception("Workflow","Workflow not found");
 }
 
-void Workflow::Delete(unsigned int id)
+void Workflow::Delete(unsigned int id, bool *task_deleted)
 {
 	DB db;
 	db.QueryPrintf("DELETE FROM t_workflow WHERE workflow_id=%i",&id);
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Workflow","Workflow not found");
+	
+	// Also delete associated tasks
+	db.QueryPrintf("DELETE FROM t_task WHERE workflow_id=%i",&id);
+	if(db.AffectedRows()==0)
+		*task_deleted = false;
+	else
+		*task_deleted = true;
 }
 
 string Workflow::create_edit_check(const string &name, const string &base64, const string &group, const string &comment)
@@ -228,12 +238,64 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 			throw Exception("Workflow","Invalid ID");
 		}
 		
-		Delete(id);
+		bool task_deleted;
+		Delete(id,&task_deleted);
 		
 		Workflows::GetInstance()->Reload();
+		
+		if(task_deleted)
+			Tasks::GetInstance()->Reload();
 		
 		return true;
 	}
 	
 	return false;
+}
+
+string Workflow::CreateSimpleWorkflow(const string &task_name, const vector<std::string> &inputs)
+{
+	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	
+	DOMElement *workflow_node = xmldoc->createElement(X("workflow"));
+	xmldoc->appendChild(workflow_node);
+	
+	DOMElement *parameters_node = xmldoc->createElement(X("parameters"));
+	workflow_node->appendChild(parameters_node);
+	
+	DOMElement *subjobs_node = xmldoc->createElement(X("subjobs"));
+	workflow_node->appendChild(subjobs_node);
+	
+	DOMElement *job_node = xmldoc->createElement(X("job"));
+	subjobs_node->appendChild(job_node);
+	
+	DOMElement *tasks_node = xmldoc->createElement(X("tasks"));
+	job_node->appendChild(tasks_node);
+	
+	DOMElement *task_node = xmldoc->createElement(X("task"));
+	task_node->setAttribute(X("name"),X(task_name.c_str()));
+	task_node->setAttribute(X("queue"),X("default"));
+	tasks_node->appendChild(task_node);
+	
+	for(int i = 0;i<inputs.size();i++)
+	{
+		DOMElement *input_node = xmldoc->createElement(X("input"));
+		input_node->setAttribute(X("name"),X((string("argument_")+to_string(i)).c_str()));
+		input_node->appendChild(xmldoc->createTextNode(X(inputs.at(i).c_str())));
+		task_node->appendChild(input_node);
+	}
+	
+	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
+	XMLCh *workflow_xml = serializer->writeToString(workflow_node);
+	char *workflow_xml_c = XMLString::transcode(workflow_xml);
+	
+	string workflow_xml_str = workflow_xml_c;
+	
+	XMLString::release(&workflow_xml);
+	XMLString::release(&workflow_xml_c);
+	serializer->release();
+	
+	xmldoc->release();
+	
+	return workflow_xml_str;
 }

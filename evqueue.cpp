@@ -58,6 +58,7 @@
 #include <ProcessManager.h>
 #include <DB.h>
 #include <Statistics.h>
+#include <Task.h>
 #include <Tasks.h>
 #include <RetrySchedules.h>
 #include <GarbageCollector.h>
@@ -402,6 +403,8 @@ int main(int argc,const char **argv)
 		QueryHandlers *qh = new QueryHandlers();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
+		qh->RegisterHandler("task",Task::HandleQuery);
+		qh->RegisterHandler("tasks",Tasks::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		

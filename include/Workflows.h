@@ -47,6 +47,8 @@ class Workflows
 		static Workflows *GetInstance() { return instance; }
 		
 		void Reload(void);
+
+		bool Exists(unsigned int id);
 		Workflow GetWorkflow(unsigned int id);
 		Workflow GetWorkflow(const std::string &name);
 		

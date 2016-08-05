@@ -21,6 +21,8 @@
 
 #include <string.h>
 
+#include <sstream>
+
 using namespace std;
 
 static const char b64_table[64] = {
@@ -132,6 +134,41 @@ void base64_encode_file(FILE *f,string &base64_str)
 	char block_str[3];
 	
 	while(block_size = fread(block_str,1,3,f))
+	{
+		block = block_str[0] << 16;
+		if(block_size>=1)
+			block = block | (block_str[1] << 8);
+		if(block_size>=2)
+			block = block | block_str[2];
+		
+		base64_str.append(1,b64_table[(block & 0xFC0000) >> 18]);
+		base64_str.append(1,b64_table[(block & 0x03F000) >> 12]);
+		
+		if(block_size==1)
+			base64_str.append(2,'=');
+		
+		if(block_size==2)
+		{
+			base64_str.append(1,b64_table[(block & 0x000FC0) >> 6]);
+			base64_str.append(1,'=');
+		}
+		
+		if(block_size==3)
+		{
+			base64_str.append(1,b64_table[(block & 0x000FC0) >> 6]);
+			base64_str.append(1,b64_table[(block & 0x00003F)]);
+		}
+	}
+}
+
+void base64_encode_string(const string &str,string &base64_str)
+{
+	unsigned int block = 0, block_size = 0;
+	char block_str[3];
+	
+	istringstream input_stream(str);
+	
+	while(block_size = input_stream.readsome(block_str,3))
 	{
 		block = block_str[0] << 16;
 		if(block_size>=1)

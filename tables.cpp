@@ -83,9 +83,11 @@ std::map<std::string,std::string> evqueue_tables = {
   `task_output_method` enum('XML','TEXT') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'XML', \
   `task_merge_stderr` tinyint NOT NULL DEFAULT 0, \
   `task_xsd` longtext COLLATE utf8_unicode_ci, \
-  `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
+  `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '', \
+  `task_comment` text COLLATE utf8_unicode_ci NOT NULL DEFAULT '', \
   `workflow_id` int(10) DEFAULT NULL, \
   UNIQUE KEY `taskdesc_id` (`task_id`) \
+  UNIQUE KEY `task_name` (`task_name`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \
 "},
 {"t_user",

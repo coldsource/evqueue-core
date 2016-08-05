@@ -4,8 +4,10 @@ ALTER TABLE t_workflow_schedule ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_
 
 ALTER TABLE t_log ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER log_id;
 
+ALTER TABLE t_task ADD COLUMN task_comment TEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER task_group;
 ALTER TABLE t_task ADD COLUMN task_use_agent TINYINT NOT NULL DEFAULT 0 AFTER task_host;
 ALTER TABLE t_task ADD COLUMN task_merge_stderr TINYINT NOT NULL DEFAULT 0 AFTER task_output_method;
+ALTER TABLE t_task ADD UNIQUE KEY `task_name` (`task_name`);
 
 ALTER TABLE t_notification_type ADD COLUMN notification_type_binary_content LONGBLOB NULL DEFAULT NULL AFTER notification_type_binary;
 

@@ -53,11 +53,13 @@ class Workflow
 		
 		static bool CheckWorkflowName(const std::string &workflow_name);
 		static void Get(unsigned int id, QueryResponse *response);
-		static void Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
+		static unsigned int Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
 		static void Edit(unsigned int id, const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
-		static void Delete(unsigned int id);
+		static void Delete(unsigned int id, bool *task_deleted);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		
+		static std::string CreateSimpleWorkflow(const std::string &task_name, const std::vector<std::string> &inputs);
 	
 	private:
 		static std::string create_edit_check(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);

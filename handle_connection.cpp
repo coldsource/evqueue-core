@@ -323,24 +323,6 @@ void *handle_connection(void *sp)
 			Notification::RemoveFileConf(saxh->GetFileName());
 			send_success_status(s);
 		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_PUT)
-		{
-			Task::PutFile(saxh->GetFileName(),saxh->GetFileData());
-			send_success_status(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_GET)
-		{
-			string file_content;
-			Task::GetFile(saxh->GetFileName(),file_content);
-			send(s,"<return status='OK' data='",26,0);
-			send(s,file_content.c_str(),file_content.length(),0);
-			send(s,"' />",4,0);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_TASK_REM)
-		{
-			Task::RemoveFile(saxh->GetFileName());
-			send_success_status(s);
-		}
 		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_WORKFLOWS)
 		{
 			stats->IncStatisticsQueries();

@@ -133,40 +133,6 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 					}
 				}
 			}
-			else if(strcmp(node_name_c,"task")==0)
-			{
-				if(action_attr==0)
-					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node task");
-				
-				if(XMLString::compareString(action_attr,X("get"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_TASK_GET;
-				else if(XMLString::compareString(action_attr,X("put"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_TASK_PUT;
-				else if(XMLString::compareString(action_attr,X("remove"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_TASK_REM;
-				else
-					throw Exception("SocketQuerySAX2Handler","Unknown task action");
-				
-				if(query_type==QUERY_TASK_GET || query_type==QUERY_TASK_PUT || query_type==QUERY_TASK_REM)
-				{
-					const XMLCh *filename_attr = attrs.getValue(X("filename"));
-					
-					if(filename_attr==0)
-						throw Exception("SocketQuerySAX2Handler","Missing filename attribute on node task");
-					
-					file_name = XMLString::transcode(filename_attr);
-					
-					if(query_type==QUERY_TASK_PUT)
-					{
-						const XMLCh *data_attr = attrs.getValue(X("data"));
-						
-						if(data_attr==0)
-							throw Exception("SocketQuerySAX2Handler","Missing data attribute on node task");
-						
-						file_data = XMLString::transcode(data_attr);
-					}
-				}
-			}
 			else if(strcmp(node_name_c,"status")==0)
 			{
 				const XMLCh *type_attr = attrs.getValue(X("type"));
@@ -287,10 +253,24 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				throw Exception("SocketQuerySAX2Handler","Duplicate parameter name");
 		}
 		
+		if(group=="task" && level==2)
+		{
+			if(strcmp(node_name_c,"input")!=0)
+				throw Exception("SocketQuerySAX2Handler","Expecting input node");
+			
+			const XMLCh *value = attrs.getValue(X("value"));
+			value_c = XMLString::transcode(value);
+			
+			inputs.push_back(value_c);
+		}
+		
 		if(query_type==QUERY_WORKFLOW_LAUNCH && level>2)
 			throw Exception("SocketQuerySAX2Handler","parameter node does not accept subnodes");
 		
-		if(query_type!=QUERY_WORKFLOW_LAUNCH && level>1)
+		if(group=="task" && level>2)
+			throw Exception("SocketQuerySAX2Handler","input node does not accept subnodes");
+		
+		if(query_type!=QUERY_WORKFLOW_LAUNCH && group!="task" && level>1)
 			throw Exception("SocketQuerySAX2Handler","Unexpected subnode");
 	}
 	catch(Exception e)

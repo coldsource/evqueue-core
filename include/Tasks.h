@@ -25,6 +25,8 @@
 #include <pthread.h>
 
 class Task;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
 class Tasks
 {
@@ -33,7 +35,8 @@ class Tasks
 		
 		pthread_mutex_t lock;
 		
-		std::map<std::string,Task *> tasks;
+		std::map<std::string,Task *> tasks_name;
+		std::map<unsigned int,Task *> tasks_id;
 	
 	public:
 		
@@ -44,7 +47,10 @@ class Tasks
 		
 		void Reload(void);
 		void SyncBinaries(void);
+		Task GetTask(unsigned int id);
 		Task GetTask(const std::string &name);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

@@ -22,13 +22,18 @@
 #include <DB.h>
 #include <Exception.h>
 #include <Logger.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 #include <sha1.h>
 
 #include <string.h>
 
+#include <xqilla/xqilla-dom3.hpp>
+
 Tasks *Tasks::instance = 0;
 
 using namespace std;
+using namespace xercesc;
 
 Tasks::Tasks()
 {
@@ -42,11 +47,11 @@ Tasks::Tasks()
 Tasks::~Tasks()
 {
 	// Clean current tasks
-	std::map<std::string,Task *>::iterator it;
-	for(it=tasks.begin();it!=tasks.end();++it)
+	for(auto it=tasks_name.begin();it!=tasks_name.end();++it)
 		delete it->second;
 	
-	tasks.clear();
+	tasks_id.clear();
+	tasks_name.clear();
 }
 
 void Tasks::Reload(void)
@@ -56,21 +61,24 @@ void Tasks::Reload(void)
 	pthread_mutex_lock(&lock);
 	
 	// Clean current tasks
-	std::map<std::string,Task *>::iterator it;
-	for(it=tasks.begin();it!=tasks.end();++it)
+	for(auto it=tasks_name.begin();it!=tasks_name.end();++it)
 		delete it->second;
 	
-	tasks.clear();
+	tasks_id.clear();
+	tasks_name.clear();
 	
 	// Update
 	DB db;
 	DB db2(&db);
-	db.Query("SELECT task_name FROM t_task");
+	db.Query("SELECT task_id,task_name FROM t_task");
 	
 	while(db.FetchRow())
 	{
-		std::string task_name(db.GetField(0));
-		tasks[task_name] = new Task(&db2,db.GetField(0));
+		std::string task_name(db.GetField(1));
+		Task * task = new Task(&db2,db.GetField(1));
+		
+		tasks_id[db.GetFieldInt(0)] = task;
+		tasks_name[task_name] = task;
 	}
 	
 	pthread_mutex_unlock(&lock);
@@ -126,13 +134,12 @@ void Tasks::SyncBinaries(void)
 	pthread_mutex_unlock(&lock);
 }
 
-Task Tasks::GetTask(const string &name)
+Task Tasks::GetTask(unsigned int id)
 {
 	pthread_mutex_lock(&lock);
 	
-	std::map<std::string,Task *>::iterator it;
-	it = tasks.find(name);
-	if(it==tasks.end())
+	auto it = tasks_id.find(id);
+	if(it==tasks_id.end())
 	{
 		pthread_mutex_unlock(&lock);
 		
@@ -144,4 +151,59 @@ Task Tasks::GetTask(const string &name)
 	pthread_mutex_unlock(&lock);
 	
 	return task;
+}
+
+Task Tasks::GetTask(const string &name)
+{
+	pthread_mutex_lock(&lock);
+	
+	auto it = tasks_name.find(name);
+	if(it==tasks_name.end())
+	{
+		pthread_mutex_unlock(&lock);
+		
+		throw Exception("Tasks","Unable to find task");
+	}
+	
+	Task task = *it->second;
+	
+	pthread_mutex_unlock(&lock);
+	
+	return task;
+}
+
+bool Tasks::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	Tasks *tasks = Tasks::GetInstance();
+	
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="list")
+	{
+		pthread_mutex_lock(&tasks->lock);
+		
+		for(auto it = tasks->tasks_name.begin(); it!=tasks->tasks_name.end(); it++)
+		{
+			Task task = *it->second;
+			DOMElement *node = (DOMElement *)response->AppendXML("<task />");
+			node->setAttribute(X("id"),X(std::to_string(task.GetID()).c_str()));
+			node->setAttribute(X("name"),X(task.GetName().c_str()));
+			node->setAttribute(X("user"),X(task.GetUser().c_str()));
+			node->setAttribute(X("host"),X(task.GetHost().c_str()));
+			node->setAttribute(X("binary"),X(task.GetBinary().c_str()));
+			node->setAttribute(X("parameters_mode"),task.GetParametersMode()==task_parameters_mode::ENV?X("ENV"):X("CMDLINE"));
+			node->setAttribute(X("group"),X(task.GetGroup().c_str()));
+			node->setAttribute(X("comment"),X(task.GetComment().c_str()));
+		}
+		
+		pthread_mutex_unlock(&tasks->lock);
+		
+		return true;
+	}
+	
+	return false;
 }

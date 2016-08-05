@@ -84,6 +84,23 @@ void Workflows::Reload(void)
 	pthread_mutex_unlock(&lock);
 }
 
+bool Workflows::Exists(unsigned int id)
+{
+	pthread_mutex_lock(&lock);
+	
+	auto it = workflows_id.find(id);
+	if(it==workflows_id.end())
+	{
+		pthread_mutex_unlock(&lock);
+		
+		return false;
+	}
+	
+	pthread_mutex_unlock(&lock);
+	
+	return true;
+}
+
 Workflow Workflows::GetWorkflow(unsigned int id)
 {
 	pthread_mutex_lock(&lock);

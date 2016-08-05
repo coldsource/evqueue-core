@@ -29,5 +29,6 @@
 bool base64_decode_file(FILE *f,const std::string &base64_str);
 bool base64_decode_string(std::string &str,const std::string &base64_str);
 void base64_encode_file(FILE *f,std::string &base64_str);
+void base64_encode_string(const std::string &str,std::string &base64_str);
 
 #endif

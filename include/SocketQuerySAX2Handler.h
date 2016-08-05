@@ -25,12 +25,12 @@ using namespace xercesc;
 
 #include <string>
 #include <map>
+#include <vector>
 
 class SocketQuerySAX2Handler : public DefaultHandler {
 	
 	private:
 		std::string group;
-		std::string action;
 		std::map<std::string,std::string> root_attributes;
 		
 		int query_type;
@@ -48,6 +48,7 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		int level;
 		
 		WorkflowParameters params;
+		std::vector<std::string> inputs;
 		
 	public:
 		static const int QUERY_WORKFLOW_LAUNCH = 1;
@@ -101,4 +102,5 @@ class SocketQuerySAX2Handler : public DefaultHandler {
 		int GetTaskPID() { return task_pid; }
 		int GetWaitTimeout() { return wait_timeout; }
 		WorkflowParameters *GetWorkflowParameters() {return &params;};
+		const std::vector<std::string> &GetInputs() { return inputs; }
 };
