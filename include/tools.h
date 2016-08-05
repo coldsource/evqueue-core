@@ -20,13 +20,15 @@
 #ifndef _TOOLS_H_
 #define _TOOLS_H_
 
+#include <string>
+
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
 int tools_queue_destroy();
 int tools_queue_stats();
 void tools_print_usage();
-void tools_config_reload(void);
+void tools_config_reload(const std::string &module="all");
 void tools_sync_tasks(void);
 void tools_sync_notifications(void);
 void tools_flush_retrier(void);

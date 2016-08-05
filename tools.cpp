@@ -90,27 +90,45 @@ void tools_print_usage()
 	fprintf(stderr,"  Show version        : evqueue --version\n");
 }
 
-void tools_config_reload(void)
+void tools_config_reload(const std::string &module)
 {
-	Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading scheduler configuration");
+	Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading configuration");
 	
-	WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
-	scheduler->Reload();
+	if(module=="all" || module=="scheduler")
+	{
+		WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
+		scheduler->Reload();
+	}
 	
-	Tasks *tasks = Tasks::GetInstance();
-	tasks->Reload();
+	if(module=="all" || module=="tasks")
+	{
+		Tasks *tasks = Tasks::GetInstance();
+		tasks->Reload();
+	}
 	
-	RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
-	retry_schedules->Reload();
+	if(module=="all" || module=="retry_schedules")
+	{
+		RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
+		retry_schedules->Reload();
+	}
 	
-	Workflows *workflows = Workflows::GetInstance();
-	workflows->Reload();
+	if(module=="all" || module=="workflows")
+	{
+		Workflows *workflows = Workflows::GetInstance();
+		workflows->Reload();
+	}
 	
-	Notifications *notifications = Notifications::GetInstance();
-	notifications->Reload();
+	if(module=="all" || module=="notifications")
+	{
+		Notifications *notifications = Notifications::GetInstance();
+		notifications->Reload();
+	}
 	
-	QueuePool *qp = QueuePool::GetInstance();
-	qp->Reload();
+	if(module=="all" || module=="queuepool")
+	{
+		QueuePool *qp = QueuePool::GetInstance();
+		qp->Reload();
+	}
 }
 
 void tools_sync_tasks(void)
@@ -157,7 +175,12 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	
 	if(it_action->second=="reload")
 	{
-		tools_config_reload();
+		auto it_module = attrs.find("module");
+		if(it_module==attrs.end())
+			tools_config_reload();
+		else
+			tools_config_reload(it_module->second);
+		
 		return true;
 	}
 	else if(it_action->second=="retry")
