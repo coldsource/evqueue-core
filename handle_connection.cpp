@@ -166,10 +166,6 @@ void *handle_connection(void *sp)
 			// Handled by external handler
 			response.SendResponse(s);
 		}
-		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::PING)
-		{
-			send(s,"<pong />",8,0);
-		}
 		else if (saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH)
 		{
 			const char *workflow_name = saxh->GetWorkflowName();

@@ -69,6 +69,7 @@
 #include <handle_connection.h>
 #include <tools.h>
 #include <tools_db.h>
+#include <ping.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -407,6 +408,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("tasks",Tasks::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
+		qh->RegisterHandler("ping",ping_handle_query);
 		
 		// Create sockets set
 		Sockets *sockets = new Sockets();
