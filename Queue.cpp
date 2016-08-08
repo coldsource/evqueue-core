@@ -228,7 +228,7 @@ void Queue::Get(unsigned int id, QueryResponse *response)
 	QueuePool::GetInstance()->GetQueue(id,response);
 }
 
-void Queue::Create(const string name, int concurrency, const string &scheduler)
+void Queue::Create(const string &name, int concurrency, const string &scheduler)
 {
 	create_edit_check(name,concurrency,scheduler);
 	
@@ -236,7 +236,7 @@ void Queue::Create(const string name, int concurrency, const string &scheduler)
 	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler) VALUES(%s,%i,%s)",name.c_str(),&concurrency,scheduler.c_str());
 }
 
-void Queue::Edit(unsigned int id,const string name, int concurrency, const string &scheduler)
+void Queue::Edit(unsigned int id,const string &name, int concurrency, const string &scheduler)
 {
 	create_edit_check(name,concurrency,scheduler);
 	
@@ -250,7 +250,7 @@ void Queue::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_queue WHERE queue_id=%i",&id);
 }
 
-void Queue::create_edit_check(const std::string name, int concurrency, const std::string &scheduler)
+void Queue::create_edit_check(const std::string &name, int concurrency, const std::string &scheduler)
 {
 	if(!CheckQueueName(name))
 		throw Exception("Queue","Invalid queue name");
