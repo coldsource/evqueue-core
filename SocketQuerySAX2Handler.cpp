@@ -91,11 +91,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			// Specific cases
 			const XMLCh *action_attr = attrs.getValue(X("action"));
 			
-			if(strcmp(node_name_c,"ping")==0)
-			{
-				query_type = SocketQuerySAX2Handler::PING;
-			}
-			else if(strcmp(node_name_c,"notification")==0)
+			if(strcmp(node_name_c,"notification")==0)
 			{
 				if(action_attr==0)
 					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node notification");
