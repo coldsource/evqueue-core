@@ -414,6 +414,23 @@ void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
 	pthread_mutex_unlock(&qp->mutex);
 }
 
+bool QueuePool::Exists(unsigned int id)
+{
+	pthread_mutex_lock(&mutex);
+	
+	Queue *q = get_queue(id);
+	if(!q)
+	{
+		pthread_mutex_unlock(&mutex);
+		
+		return false;
+	}
+	
+	pthread_mutex_unlock(&mutex);
+	
+	return true;
+}
+
 bool QueuePool::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	QueuePool *qp = QueuePool::GetInstance();

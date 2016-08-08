@@ -79,6 +79,7 @@ class QueuePool
 		void SendStatistics(QueryResponse *response);
 		
 		static void GetQueue(unsigned int id, QueryResponse *response);
+		bool Exists(unsigned int id);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		

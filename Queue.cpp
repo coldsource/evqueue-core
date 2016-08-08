@@ -238,6 +238,9 @@ void Queue::Create(const string &name, int concurrency, const string &scheduler)
 
 void Queue::Edit(unsigned int id,const string &name, int concurrency, const string &scheduler)
 {
+	if(!QueuePool::GetInstance()->Exists(id))
+		throw Exception("Queue","Unable to find queue");
+	
 	create_edit_check(name,concurrency,scheduler);
 	
 	DB db;
