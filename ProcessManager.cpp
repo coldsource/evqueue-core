@@ -210,6 +210,15 @@ void *ProcessManager::Gather(void *process_manager)
 			// Get task informations
 			if(!QueuePool::GetInstance()->TerminateTask(tid,&workflow_instance,&task))
 			{
+				if(stdout_output)
+				delete[] stdout_output;
+			
+				if(stderr_output)
+					delete[] stderr_output;
+				
+				if(log_output)
+					delete[] log_output;
+				
 				Logger::Log(LOG_WARNING,"[ ProcessManager ] Got exit message from pid %d (tid %d) but could not get corresponding workflow instance",pid,tid);
 				continue; // Oops task was not found, this can happen on resume when tables have been cleaned
 			}
