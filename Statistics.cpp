@@ -207,14 +207,17 @@ bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respon
 	
 	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
 	
-	auto it_type = attrs.find("type");
-	if(it_type==attrs.end())
-		throw Exception("Statistics","Missing type attribute on node statistics");
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		throw Exception("Statistics","Missing action attribute on node statistics");
 	
-	if(it_type->second=="global")
+	if(it_action->second=="query")
 	{
-		auto it_action = attrs.find("action");
-		if(it_action==attrs.end() || it_action->second=="query")
+		auto it_type = attrs.find("type");
+		if(it_type==attrs.end())
+			throw Exception("Statistics","Missing type attribute on node statistics");
+		
+		if(it_type->second=="global")
 		{
 			stats->IncStatisticsQueries();
 			
@@ -222,26 +225,33 @@ bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respon
 			
 			return true;
 		}
-		else if(it_action->second=="reset")
+		else if(it_type->second=="queue")
+		{
+			stats->IncStatisticsQueries();
+				
+			QueuePool *qp = QueuePool::GetInstance();
+			qp->SendStatistics(response);
+			
+			return true;
+		}
+		else
+			throw Exception("Statistics","Unknown statistics type");
+	}
+	else if(it_action->second=="reset")
+	{
+		auto it_type = attrs.find("type");
+		if(it_type==attrs.end())
+			throw Exception("Statistics","Missing type attribute on node statistics");
+		
+		if(it_type->second=="global")
 		{
 			stats->ResetGlobalStatistics();
 			
 			return true;
 		}
 		else
-			throw Exception("Statistics","Unknown statistics action");
+			throw Exception("Statistics","Unknown statistics type for this action");
 	}
-	else if(it_type->second=="queue")
-	{
-		stats->IncStatisticsQueries();
-			
-		QueuePool *qp = QueuePool::GetInstance();
-		qp->SendStatistics(response);
-		
-		return true;
-	}
-	else
-		throw Exception("Statistics","Unknown statistics type");
 	
 	return false;
 }
