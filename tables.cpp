@@ -145,7 +145,7 @@ std::map<std::string,std::string> evqueue_tables = {
 {"t_workflow_instance_parameters",
 "CREATE TABLE `t_workflow_instance_parameters` ( \
   `workflow_instance_id` int(10) unsigned NOT NULL, \
-  `workflow_instance_parameter` varchar(35) COLLATE utf8_unicode_ci NOT NULL, \
+  `workflow_instance_parameter` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_instance_parameter_value` text COLLATE utf8_unicode_ci NOT NULL, \
   KEY `param_and_value` (`workflow_instance_parameter`,`workflow_instance_parameter_value`(255)) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \
@@ -174,7 +174,7 @@ std::map<std::string,std::string> evqueue_tables = {
 {"t_workflow_schedule_parameters",
 "CREATE TABLE `t_workflow_schedule_parameters` ( \
   `workflow_schedule_id` int(10) unsigned NOT NULL, \
-  `workflow_schedule_parameter` varchar(35) COLLATE utf8_unicode_ci NOT NULL, \
+  `workflow_schedule_parameter` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_schedule_parameter_value` text COLLATE utf8_unicode_ci NOT NULL, \
   KEY `workflow_schedule_id` (`workflow_schedule_id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \
