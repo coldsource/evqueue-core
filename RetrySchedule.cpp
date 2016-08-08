@@ -18,19 +18,185 @@
  */
 
 #include <RetrySchedule.h>
+#include <RetrySchedules.h>
 #include <Exception.h>
 #include <DB.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
+#include <XMLUtils.h>
+#include <base64.h>
+#include <global.h>
 
 #include <string.h>
 
-using namespace std;
+#include <xqilla/xqilla-dom3.hpp>
 
-RetrySchedule::RetrySchedule(DB *db,const char *schedule_name)
+using namespace std;
+using namespace xercesc;
+
+extern string retry_schedule_xsd_str;
+
+RetrySchedule::RetrySchedule(DB *db,const string &schedule_name)
 {
-	db->QueryPrintf("SELECT schedule_xml FROM t_schedule WHERE schedule_name=%s",schedule_name);
+	this->name = schedule_name;
+	
+	db->QueryPrintf("SELECT schedule_id, schedule_xml FROM t_schedule WHERE schedule_name=%s",schedule_name.c_str());
 	
 	if(!db->FetchRow())
 		throw Exception("RetrySchedule","Unknown retry schedule");
 	
-	schedule_xml = db->GetField(0);
+	id = db->GetFieldInt(0);
+	schedule_xml = db->GetField(1);
+}
+
+bool RetrySchedule::CheckRetryScheduleName(const string &retry_schedule_name)
+{
+	int i,len;
+	
+	len = retry_schedule_name.length();
+	if(len==0 || len>RETRY_SCHEDULE_NAME_MAX_LEN)
+		return false;
+	
+	for(i=0;i<len;i++)
+		if(!isalnum(retry_schedule_name[i]) && retry_schedule_name[i]!='_' && retry_schedule_name[i]!='-')
+			return false;
+	
+	return true;
+}
+
+void RetrySchedule::Get(unsigned int id, QueryResponse *response)
+{
+	RetrySchedule retry_schedule = RetrySchedules::GetInstance()->GetRetrySchedule(id);
+	
+	DOMElement *node = (DOMElement *)response->AppendXML(retry_schedule.GetXML());
+	node->setAttribute(X("id"),X(to_string(retry_schedule.GetID()).c_str()));
+	node->setAttribute(X("name"),X(retry_schedule.GetName().c_str()));
+}
+
+void RetrySchedule::Create(const std::string &name, const std::string &base64)
+{
+	string xml = create_edit_check(name,base64);
+	
+	DB db;
+	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",name.c_str(),xml.c_str());
+}
+
+void RetrySchedule::Edit(unsigned int id,const std::string &name, const std::string &base64)
+{
+	if(!RetrySchedules::GetInstance()->Exists(id))
+		throw Exception("RetrySchedule","Retry schedule not found");
+	
+	string xml = create_edit_check(name,base64);
+	
+	DB db;
+	db.QueryPrintf("UPDATE t_schedule SET schedule_name=%s, schedule_xml=%s WHERE schedule_id=%i",name.c_str(),xml.c_str(),&id);
+}
+
+void RetrySchedule::Delete(unsigned int id)
+{
+	DB db;
+	db.QueryPrintf("DELETE FROM t_schedule WHERE schedule_id=%i",&id);
+}
+
+std::string RetrySchedule::create_edit_check(const std::string &name, const std::string &base64)
+{
+	if(!CheckRetryScheduleName(name))
+		throw Exception("RetrySchedule","Invalid retry schedule name");
+	
+	string retry_schedule_xml;
+	if(!base64_decode_string(retry_schedule_xml,base64))
+		throw Exception("RetrySchedule","Invalid base64 sequence");
+	
+	XMLUtils::ValidateXML(retry_schedule_xml,retry_schedule_xsd_str);
+	
+	return retry_schedule_xml;
+}
+
+bool RetrySchedule::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="get")
+	{
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("RetrySchedule","Missing 'id' attribute");
+		
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("RetrySchedule","Invalid ID");
+		}
+		
+		Get(id,response);
+		
+		return true;
+	}
+	else if(it_action->second=="create" || it_action->second=="edit")
+	{
+		auto it_name = attrs.find("name");
+		if(it_name==attrs.end())
+			throw Exception("RetrySchedule","Missing 'name' attribute");
+		
+		auto it_content = attrs.find("content");
+		if(it_content==attrs.end())
+			throw Exception("RetrySchedule","Missing 'content' attribute");
+		
+		if(it_action->second=="create")
+			Create(it_name->second, it_content->second);
+		else
+		{
+			auto it_id = attrs.find("id");
+			if(it_id==attrs.end())
+				throw Exception("RetrySchedule","Missing 'id' attribute");
+			
+			unsigned int id;
+			try
+			{
+				id = std::stoi(it_id->second);
+			}
+			catch(...)
+			{
+				throw Exception("RetrySchedule","Invalid ID");
+			}
+			
+			Edit(id,it_name->second, it_content->second);
+		}
+		
+		RetrySchedules::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(it_action->second=="delete")
+	{
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("RetrySchedule","Missing 'id' attribute");
+		
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("RetrySchedule","Invalid ID");
+		}
+		
+		Delete(id);
+		
+		RetrySchedules::GetInstance()->Reload();
+		
+		return true;
+	}
+	
+	return false;
 }

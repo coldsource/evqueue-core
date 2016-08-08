@@ -230,7 +230,7 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 			
 			// Load schedule XML data
 			XMLCh *schedule_xml;
-			schedule_xml = XMLString::transcode(retry_schedule.GetXML());
+			schedule_xml = XMLString::transcode(retry_schedule.GetXML().c_str());
 			schedule_input->setStringData(schedule_xml);
 			
 			DOMDocument *schedule_xmldoc = schedule_parser->parse(schedule_input);

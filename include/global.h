@@ -22,6 +22,7 @@
 
 #define WORKFLOW_NAME_MAX_LEN           64
 #define QUEUE_NAME_MAX_LEN              64
+#define RETRY_SCHEDULE_NAME_MAX_LEN     64
 #define TASK_NAME_MAX_LEN               64
 #define TASK_BINARY_MAX_LEN            128
 #define PARAMETERS_MAX_LEN     (1024*1024)

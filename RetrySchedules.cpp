@@ -20,14 +20,19 @@
 #include <RetrySchedules.h>
 #include <RetrySchedule.h>
 #include <Exception.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 #include <Logger.h>
 #include <DB.h>
 
 #include <string.h>
 
+#include <xqilla/xqilla-dom3.hpp>
+
 RetrySchedules *RetrySchedules::instance = 0;
 
 using namespace std;
+using namespace xercesc;
 
 RetrySchedules::RetrySchedules()
 {
@@ -42,10 +47,11 @@ RetrySchedules::~RetrySchedules()
 {
 	// Clean current tasks
 	map<string,RetrySchedule *>::iterator it;
-	for(it=schedules.begin();it!=schedules.end();++it)
+	for(it=schedules_name.begin();it!=schedules_name.end();++it)
 		delete it->second;
 	
-	schedules.clear();
+	schedules_id.clear();
+	schedules_name.clear();
 }
 
 void RetrySchedules::Reload(void)
@@ -56,32 +62,34 @@ void RetrySchedules::Reload(void)
 	
 	// Clean current tasks
 	map<string,RetrySchedule *>::iterator it;
-	for(it=schedules.begin();it!=schedules.end();++it)
+	for(it=schedules_name.begin();it!=schedules_name.end();++it)
 		delete it->second;
 	
-	schedules.clear();
+	schedules_name.clear();
+	schedules_id.clear();
 	
 	// Update
 	DB db;
 	DB db2(&db);
-	db.Query("SELECT schedule_name FROM t_schedule");
+	db.Query("SELECT schedule_id,schedule_name FROM t_schedule");
 	
 	while(db.FetchRow())
 	{
-		string schedule_name(db.GetField(0));
-		schedules[schedule_name] = new RetrySchedule(&db2,db.GetField(0));
+		string schedule_name(db.GetField(1));
+		RetrySchedule *retry_schedule = new RetrySchedule(&db2,db.GetField(1));
+		schedules_id[db.GetFieldInt(0)] = retry_schedule;
+		schedules_name[schedule_name] = retry_schedule;
 	}
 	
 	pthread_mutex_unlock(&lock);
 }
 
-RetrySchedule RetrySchedules::GetRetrySchedule(const string &name)
+RetrySchedule RetrySchedules::GetRetrySchedule(unsigned int id)
 {
 	pthread_mutex_lock(&lock);
 	
-	map<string,RetrySchedule *>::iterator it;
-	it = schedules.find(name);
-	if(it==schedules.end())
+	auto it = schedules_id.find(id);
+	if(it==schedules_id.end())
 	{
 		pthread_mutex_unlock(&lock);
 		
@@ -93,4 +101,70 @@ RetrySchedule RetrySchedules::GetRetrySchedule(const string &name)
 	pthread_mutex_unlock(&lock);
 	
 	return schedule;
+}
+
+RetrySchedule RetrySchedules::GetRetrySchedule(const string &name)
+{
+	pthread_mutex_lock(&lock);
+	
+	auto it = schedules_name.find(name);
+	if(it==schedules_name.end())
+	{
+		pthread_mutex_unlock(&lock);
+		
+		throw Exception("RetrySchedules","Unable to find schedule");
+	}
+	
+	RetrySchedule schedule = *it->second;
+	
+	pthread_mutex_unlock(&lock);
+	
+	return schedule;
+}
+
+bool RetrySchedules::Exists(unsigned int id)
+{
+	pthread_mutex_lock(&lock);
+	
+	auto it = schedules_id.find(id);
+	if(it==schedules_id.end())
+	{
+		pthread_mutex_unlock(&lock);
+		
+		return false;
+	}
+	
+	pthread_mutex_unlock(&lock);
+	
+	return true;
+}
+
+bool RetrySchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
+	
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="list")
+	{
+		pthread_mutex_lock(&retry_schedules->lock);
+		
+		for(auto it = retry_schedules->schedules_name.begin(); it!=retry_schedules->schedules_name.end(); it++)
+		{
+			RetrySchedule retry_schedule = *it->second;
+			DOMElement *node = (DOMElement *)response->AppendXML(retry_schedule.GetXML());
+			node->setAttribute(X("id"),X(std::to_string(retry_schedule.GetID()).c_str()));
+			node->setAttribute(X("name"),X(retry_schedule.GetName().c_str()));
+		}
+		
+		pthread_mutex_unlock(&retry_schedules->lock);
+		
+		return true;
+	}
+	
+	return false;
 }

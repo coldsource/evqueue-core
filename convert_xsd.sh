@@ -7,7 +7,7 @@ do
 	echo "#include <string>" >>$i.cpp
 	echo >>$i.cpp
 	echo -n "std::string ${CONST_NAME}_str = \"" >>$i.cpp;
-	cat workflow.xsd | sed 's/$/ \\/g' | sed 's/"/\\"/g' >>$i.cpp
+	cat $i | sed 's/$/ \\/g' | sed 's/"/\\"/g' >>$i.cpp
 	echo >>$i.cpp
 	echo -n '";' >>$i.cpp
 	echo >>$i.cpp

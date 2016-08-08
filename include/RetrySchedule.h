@@ -23,16 +23,34 @@
 #include <string>
 
 class DB;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
 class RetrySchedule
 {
+	unsigned int id;
+	std::string name;
 	std::string schedule_xml;
 		
 	public:
 		RetrySchedule() {}
-		RetrySchedule(DB *db,const char *schedule_name);
+		RetrySchedule(DB *db,const std::string &name);
 		
-		const char *GetXML() { return schedule_xml.c_str(); }
+		inline unsigned int GetID() { return id; }
+		inline std::string &GetName() { return name; }
+		inline std::string &GetXML() { return schedule_xml; }
+		
+		static bool CheckRetryScheduleName(const std::string &retry_schedule_name);
+		
+		static void Get(unsigned int id, QueryResponse *response);
+		static void Create(const std::string &name, const std::string &base64);
+		static void Edit(unsigned int id,const std::string &name, const std::string &base64);
+		static void Delete(unsigned int id);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+	
+	private:
+		static std::string create_edit_check(const std::string &name, const std::string &base64);
 };
 
 #endif

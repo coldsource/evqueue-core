@@ -60,6 +60,7 @@
 #include <Statistics.h>
 #include <Task.h>
 #include <Tasks.h>
+#include <RetrySchedule.h>
 #include <RetrySchedules.h>
 #include <GarbageCollector.h>
 #include <SequenceGenerator.h>
@@ -409,6 +410,8 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("tasks",Tasks::HandleQuery);
 		qh->RegisterHandler("queue",Queue::HandleQuery);
 		qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
+		qh->RegisterHandler("retry_schedule",RetrySchedule::HandleQuery);
+		qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		qh->RegisterHandler("ping",ping_handle_query);
