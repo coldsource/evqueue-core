@@ -211,7 +211,7 @@ void *ProcessManager::Gather(void *process_manager)
 			if(!QueuePool::GetInstance()->TerminateTask(tid,&workflow_instance,&task))
 			{
 				if(stdout_output)
-				delete[] stdout_output;
+					delete[] stdout_output;
 			
 				if(stderr_output)
 					delete[] stderr_output;
