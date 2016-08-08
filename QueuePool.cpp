@@ -24,6 +24,7 @@
 #include <WorkflowInstance.h>
 #include <Logger.h>
 #include <Configuration.h>
+#include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 
 #include <xqilla/xqilla-dom3.hpp>
@@ -90,29 +91,22 @@ QueuePool::QueuePool(void)
 
 QueuePool::~QueuePool(void)
 {
-	for(auto it=queues.begin();it!=queues.end();++it)
+	for(auto it=queues_name.begin();it!=queues_name.end();++it)
 		delete it->second;
 	
-	queues.clear();
+	queues_name.clear();
+	queues_id.clear();
 	
 	delete[] tid_queue;
 	delete[] tid_task;
 	delete[] tid_workflow_instance;
 }
 
-Queue *QueuePool::GetQueue(const string &name)
-{
-	map<string,Queue *>::const_iterator it = queues.find(name);
-	if(it==queues.end())
-		return 0;
-	return it->second;
-}
-
 bool QueuePool::EnqueueTask(const string &queue_name,WorkflowInstance *workflow_instance,DOMNode *task)
 {
 	pthread_mutex_lock(&mutex);
 	
-	Queue *q = GetQueue(queue_name);
+	Queue *q = get_queue(queue_name);
 	
 	if(!q)
 	{
@@ -158,7 +152,7 @@ bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_ins
 	fork_locked = false;
 	
 	map<string,Queue *>::iterator it;
-	for(it=queues.begin();it!=queues.end();++it)
+	for(it=queues_name.begin();it!=queues_name.end();++it)
 	{
 		if(it->second->DequeueTask(p_workflow_instance,p_task))
 		{
@@ -179,7 +173,7 @@ bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_ins
 
 pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const string &queue_name,pid_t task_id)
 {
-	Queue *q = GetQueue(queue_name);
+	Queue *q = get_queue(queue_name);
 	
 	if(!q)
 		return 0;
@@ -242,9 +236,9 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	// Check if queue has been marked as 'to be removed'
 	if(q->IsRemoved() && q->GetSize()==0 && q->GetRunningTasks()==0)
 	{
-		Logger::Log(LOG_NOTICE,"[ QueuePool ] Removed queue %s",q->GetName());
+		Logger::Log(LOG_NOTICE,"[ QueuePool ] Removed queue %s",q->GetName().c_str());
 		
-		queues.erase(q->GetName());
+		queues_name.erase(q->GetName());
 		delete q;
 	}
 	
@@ -281,7 +275,7 @@ bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 	pthread_mutex_lock(&mutex);
 	
 	map<string,Queue *>::iterator it;
-	for(it=queues.begin();it!=queues.end();++it)
+	for(it=queues_name.begin();it!=queues_name.end();++it)
 		it->second->CancelTasks(workflow_instance_id);
 	
 	fork_possible = !IsLocked();
@@ -302,12 +296,13 @@ void QueuePool::Reload(void)
 	pthread_mutex_lock(&mutex);
 	
 	// First, remove empty queues and mark others as to be removed
-	for(auto it=queues.cbegin();it!=queues.cend();)
+	for(auto it=queues_name.cbegin();it!=queues_name.cend();)
 	{
 		if(it->second->GetSize()==0 && it->second->GetRunningTasks()==0)
 		{
+			queues_id.erase(it->second->GetID());
 			delete it->second;
-			queues.erase(it++);
+			queues_name.erase(it++);
 		}
 		else
 		{
@@ -317,17 +312,21 @@ void QueuePool::Reload(void)
 	}
 	
 	// Reload new parameters or re-create removed queues
-	db.Query("SELECT queue_name,queue_concurrency,queue_scheduler FROM t_queue ORDER BY queue_name ASC");
+	db.Query("SELECT queue_id,queue_name,queue_concurrency,queue_scheduler FROM t_queue");
 	
 	while(db.FetchRow())
 	{
-		Queue *q = GetQueue(db.GetField(0));
+		Queue *q = get_queue(db.GetField(1));
 		if(!q)
-			queues[db.GetField(0)] = new Queue(db.GetField(0),db.GetFieldInt(1),get_scheduler_from_string(db.GetField(2)));
+		{
+			q = new Queue(db.GetFieldInt(0),db.GetField(1),db.GetFieldInt(2),get_scheduler_from_string(db.GetField(3)),db.GetField(3));
+			queues_id[db.GetFieldInt(0)] = q;
+			queues_name[db.GetField(1)] = q;
+		}
 		else
 		{
-			q->SetConcurrency(db.GetFieldInt(1));
-			q->SetScheduler(get_scheduler_from_string(db.GetField(2)));
+			q->SetConcurrency(db.GetFieldInt(2));
+			q->SetScheduler(get_scheduler_from_string(db.GetField(3)));
 		}
 	}
 	
@@ -342,7 +341,7 @@ void QueuePool::Reload(void)
 bool QueuePool::IsLocked(void)
 {
 	int i;
-	for(auto it=queues.begin();it!=queues.end();++it)
+	for(auto it=queues_name.begin();it!=queues_name.end();++it)
 		if(!it->second->IsLocked())
 			return false;
 	return true;
@@ -364,12 +363,14 @@ void QueuePool::SendStatistics(QueryResponse *response)
 {
 	char buf[16];
 	
+	pthread_mutex_lock(&mutex);
+	
 	DOMDocument *xmldoc = response->GetDOM();
 	
 	DOMElement *statistics_node = xmldoc->createElement(X("statistics"));
 	xmldoc->getDocumentElement()->appendChild(statistics_node);
 	
-	for(auto it=queues.begin();it!=queues.end();++it)
+	for(auto it=queues_name.begin();it!=queues_name.end();++it)
 	{
 		DOMElement *queue_node = xmldoc->createElement(X("queue"));
 		queue_node->setAttribute(X("name"),X(it->first.c_str()));
@@ -387,6 +388,77 @@ void QueuePool::SendStatistics(QueryResponse *response)
 		
 		statistics_node->appendChild(queue_node);
 	}
+	
+	pthread_mutex_unlock(&mutex);
+}
+
+void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
+{
+	QueuePool *qp = QueuePool::GetInstance();
+	
+	pthread_mutex_lock(&qp->mutex);
+	
+	Queue *q = qp->get_queue(id);
+	if(!q)
+	{
+		pthread_mutex_unlock(&qp->mutex);
+		
+		throw Exception("QueuePool","Unable to find queue");
+	}
+	
+	DOMElement *node = (DOMElement *)response->AppendXML("<queue />");
+	node->setAttribute(X("name"),X(q->GetName().c_str()));
+	node->setAttribute(X("concurrency"),X(to_string(q->GetConcurrency()).c_str()));
+	node->setAttribute(X("scheduler"),X(q->GetWantedScheduler().c_str()));
+	
+	pthread_mutex_unlock(&qp->mutex);
+}
+
+bool QueuePool::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	QueuePool *qp = QueuePool::GetInstance();
+	
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="list")
+	{
+		pthread_mutex_lock(&qp->mutex);
+		
+		for(auto it = qp->queues_name.begin(); it!=qp->queues_name.end(); it++)
+		{
+			DOMElement *node = (DOMElement *)response->AppendXML("<queue />");
+			node->setAttribute(X("id"),X(std::to_string(it->second->GetID()).c_str()));
+			node->setAttribute(X("name"),X(it->second->GetName().c_str()));
+			node->setAttribute(X("concurrency"),X(to_string(it->second->GetConcurrency()).c_str()));
+			node->setAttribute(X("scheduler"),X(it->second->GetWantedScheduler().c_str()));
+		}
+		
+		pthread_mutex_unlock(&qp->mutex);
+		
+		return true;
+	}
+	
+	return false;
+}
+
+Queue *QueuePool::get_queue(unsigned int id)
+{
+	auto it = queues_id.find(id);
+	if(it==queues_id.end())
+		return 0;
+	return it->second;
+}
+
+Queue *QueuePool::get_queue(const string &name)
+{
+	auto it = queues_name.find(name);
+	if(it==queues_name.end())
+		return 0;
+	return it->second;
 }
 
 int QueuePool::get_scheduler_from_string(std::string scheduler_str)

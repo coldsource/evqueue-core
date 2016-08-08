@@ -21,21 +21,28 @@
 #include <QueuePool.h>
 #include <Logger.h>
 #include <WorkflowInstance.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 #include <Exception.h>
+#include <DB.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <xqilla/framework/XPath2MemoryManager.hpp>
 
-Queue::Queue(const char *name, int concurrency, int scheduler)
+using namespace std;
+
+Queue::Queue(unsigned int id,const string &name, int concurrency, int scheduler, const string &wanted_scheduler)
 {
 	if(!CheckQueueName(name))
 		throw Exception("Queue","Invalid queue name");
 	
-	strcpy(this->name,name);
-	
+	this->id = id;
+	this->name =name;
 	this->concurrency = concurrency;
 	this->scheduler = scheduler;
+	this->wanted_scheduler = wanted_scheduler;
 	
 	size = 0;
 	running_tasks = 0;
@@ -57,11 +64,11 @@ Queue::~Queue()
 	}
 }
 
-bool Queue::CheckQueueName(const char *queue_name)
+bool Queue::CheckQueueName(const string &queue_name)
 {
 	int i,len;
 	
-	len = strlen(queue_name);
+	len = queue_name.length();
 	if(len==0 || len>QUEUE_NAME_MAX_LEN)
 		return false;
 	
@@ -188,7 +195,7 @@ void Queue::SetScheduler(unsigned int new_scheduler)
 	if(new_scheduler==scheduler)
 		return;
 	
-	Logger::Log(LOG_NOTICE,"[ Queue ] %s : migrating scheduler to %s",name,QueuePool::get_scheduler_from_int(new_scheduler).c_str());
+	Logger::Log(LOG_NOTICE,"[ Queue ] %s : migrating scheduler to %s",name.c_str(),QueuePool::get_scheduler_from_int(new_scheduler).c_str());
 	
 	if(new_scheduler==QUEUE_SCHEDULER_FIFO)
 	{
@@ -214,4 +221,147 @@ bool Queue::IsLocked(void)
 	if(size>0 && running_tasks<concurrency)
 		return false; // Return new tasks only if concurrency is not reached
 	return true;
+}
+
+void Queue::Get(unsigned int id, QueryResponse *response)
+{
+	QueuePool::GetInstance()->GetQueue(id,response);
+}
+
+void Queue::Create(const string name, int concurrency, const string &scheduler)
+{
+	create_edit_check(name,concurrency,scheduler);
+	
+	DB db;
+	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler) VALUES(%s,%i,%s)",name.c_str(),&concurrency,scheduler.c_str());
+}
+
+void Queue::Edit(unsigned int id,const string name, int concurrency, const string &scheduler)
+{
+	create_edit_check(name,concurrency,scheduler);
+	
+	DB db;
+	db.QueryPrintf("UPDATE t_queue SET queue_name=%s, queue_concurrency=%i, queue_scheduler=%s WHERE queue_id=%i",name.c_str(),&concurrency,scheduler.c_str(),&id);
+}
+
+void Queue::Delete(unsigned int id)
+{
+	DB db;
+	db.QueryPrintf("DELETE FROM t_queue WHERE queue_id=%i",&id);
+}
+
+void Queue::create_edit_check(const std::string name, int concurrency, const std::string &scheduler)
+{
+	if(!CheckQueueName(name))
+		throw Exception("Queue","Invalid queue name");
+	
+	if(concurrency<=0)
+		throw Exception("Queue","Invalid concurrency, must be greater than 0");
+	
+	if(scheduler!="prio" && scheduler!="fifo" && scheduler!="default")
+		throw Exception("Queue","Invalid scheduler name, must be 'prio', 'fifo' or 'default'");
+}
+
+bool Queue::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="get")
+	{
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("Queue","Missing 'id' attribute");
+		
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Queue","Invalid ID");
+		}
+		
+		Get(id,response);
+		
+		return true;
+	}
+	else if(it_action->second=="create" || it_action->second=="edit")
+	{
+		auto it_name = attrs.find("name");
+		if(it_name==attrs.end())
+			throw Exception("Queue","Missing 'name' attribute");
+		
+		auto it_concurrency = attrs.find("concurrency");
+		if(it_concurrency==attrs.end())
+			throw Exception("Queue","Missing 'concurrency' attribute");
+		
+		int iconcurrency;
+		try
+		{
+			iconcurrency = std::stoi(it_concurrency->second);
+		}
+		catch(...)
+		{
+			throw Exception("Queue","Invalid concurrency");
+		}
+		
+		auto it_scheduler = attrs.find("scheduler");
+		if(it_scheduler==attrs.end())
+			throw Exception("Queue","Missing 'scheduler' attribute");
+		
+		if(it_action->second=="create")
+			Create(it_name->second, iconcurrency, it_scheduler->second);
+		else
+		{
+			auto it_id = attrs.find("id");
+			if(it_id==attrs.end())
+				throw Exception("Queue","Missing 'id' attribute");
+			
+			unsigned int id;
+			try
+			{
+				id = std::stoi(it_id->second);
+			}
+			catch(...)
+			{
+				throw Exception("Queue","Invalid ID");
+			}
+			
+			Edit(id,it_name->second, iconcurrency, it_scheduler->second);
+		}
+		
+		QueuePool::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(it_action->second=="delete")
+	{
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("Queue","Missing 'id' attribute");
+		
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Queue","Invalid ID");
+		}
+		
+		bool task_deleted;
+		Delete(id);
+		
+		QueuePool::GetInstance()->Reload();
+		
+		return true;
+	}
+	
+	return false;
 }

@@ -407,6 +407,8 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
 		qh->RegisterHandler("task",Task::HandleQuery);
 		qh->RegisterHandler("tasks",Tasks::HandleQuery);
+		qh->RegisterHandler("queue",Queue::HandleQuery);
+		qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		qh->RegisterHandler("ping",ping_handle_query);

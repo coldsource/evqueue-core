@@ -25,6 +25,7 @@ using namespace xercesc;
 
 #include <global.h>
 
+#include <string>
 #include <deque>
 #include <queue>
 #include <map>
@@ -33,6 +34,8 @@ using namespace xercesc;
 #define QUEUE_SCHEDULER_PRIO 2
 
 class WorkflowInstance;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
 class Queue
 {
@@ -43,7 +46,8 @@ class Queue
 			DOMNode *task;
 		};
 		
-		char name[QUEUE_NAME_MAX_LEN+1];
+		unsigned int id;
+		std::string name;
 		
 		unsigned int concurrency;
 		unsigned int size;
@@ -54,16 +58,19 @@ class Queue
 		
 		std::queue<Task *>cancelled_tasks;
 		
+		std::string wanted_scheduler;
 		int scheduler;
 		
 		bool removed;
 		
 	public:
-		Queue(const char *name, int concurrency, int scheduler);
+		Queue(unsigned int id,const std::string &name, int concurrency, int scheduler, const std::string &wanted_scheduler);
 		~Queue();
 		
-		bool CheckQueueName(const char *queue_name);
-		inline const char *GetName(void) { return name; }
+		inline unsigned int GetID() { return id; }
+		
+		static bool CheckQueueName(const std::string &queue_name);
+		inline const std::string &GetName(void) { return name; }
 		
 		void EnqueueTask(WorkflowInstance *workflow_instance,DOMNode *task);
 		bool DequeueTask(WorkflowInstance **p_workflow_instance,DOMNode **p_task);
@@ -79,15 +86,25 @@ class Queue
 		
 		void SetScheduler(unsigned int new_scheduler);
 		inline unsigned int GetScheduler(void) { return scheduler; }
+		const std::string &GetWantedScheduler(void) { return wanted_scheduler; }
 		
 		inline void Remove() { removed = true; }
 		inline bool IsRemoved() { return removed; }
 		
 		bool IsLocked(void);
+		
+		static void Get(unsigned int id, QueryResponse *response);
+		static void Create(const std::string name, int concurrency, const std::string &scheduler);
+		static void Edit(unsigned int id,const std::string name, int concurrency, const std::string &scheduler);
+		static void Delete(unsigned int id);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		void enqueue_task(WorkflowInstance *workflow_instance,DOMNode *task);
 		void dequeue_task(WorkflowInstance **p_workflow_instance,DOMNode **p_task);
+		
+		static void create_edit_check(const std::string name, int concurrency, const std::string &scheduler);
 };
 
 #endif

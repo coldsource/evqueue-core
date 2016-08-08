@@ -31,6 +31,7 @@ using namespace xercesc;
 
 class Queue;
 class WorkflowInstance;
+class SocketQuerySAX2Handler;
 class QueryResponse;
 
 class QueuePool
@@ -39,7 +40,8 @@ class QueuePool
 		static QueuePool *instance;
 		
 		int default_scheduler;
-		std::map<std::string,Queue *> queues;
+		std::map<std::string,Queue *> queues_name;
+		std::map<unsigned int,Queue *> queues_id;
 		
 		Queue **tid_queue;
 		DOMNode **tid_task;
@@ -58,8 +60,6 @@ class QueuePool
 		
 		static QueuePool *GetInstance() { return instance; }
 		
-		Queue *GetQueue(const std::string &name);
-		
 		bool EnqueueTask(const std::string &queue_name,WorkflowInstance *workflow_instance,DOMNode *task);
 		bool DequeueTask(std::string &queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
 		pid_t ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const std::string &queue_name,pid_t task_id);
@@ -68,7 +68,7 @@ class QueuePool
 		
 		bool CancelTasks(unsigned int workflow_instance_id);
 		
-		inline unsigned int GetPoolSize(void) { return queues.size(); }
+		inline unsigned int GetPoolSize(void) { return queues_name.size(); }
 		
 		void Reload(void);
 		
@@ -77,7 +77,16 @@ class QueuePool
 		void Shutdown(void);
 		
 		void SendStatistics(QueryResponse *response);
-	
+		
+		static void GetQueue(unsigned int id, QueryResponse *response);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		
+	private:
+		Queue *get_queue(unsigned int id);
+		Queue *get_queue(const std::string &name);
+		
+	public:
 		int get_scheduler_from_string(std::string scheduler_str);
 		static std::string get_scheduler_from_int(int scheduler);
 };
