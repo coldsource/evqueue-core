@@ -94,8 +94,8 @@ class Queue
 		bool IsLocked(void);
 		
 		static void Get(unsigned int id, QueryResponse *response);
-		static void Create(const std::string name, int concurrency, const std::string &scheduler);
-		static void Edit(unsigned int id,const std::string name, int concurrency, const std::string &scheduler);
+		static void Create(const std::string &name, int concurrency, const std::string &scheduler);
+		static void Edit(unsigned int id,const std::string &name, int concurrency, const std::string &scheduler);
 		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
@@ -104,7 +104,7 @@ class Queue
 		void enqueue_task(WorkflowInstance *workflow_instance,DOMNode *task);
 		void dequeue_task(WorkflowInstance **p_workflow_instance,DOMNode **p_task);
 		
-		static void create_edit_check(const std::string name, int concurrency, const std::string &scheduler);
+		static void create_edit_check(const std::string &name, int concurrency, const std::string &scheduler);
 };
 
 #endif
