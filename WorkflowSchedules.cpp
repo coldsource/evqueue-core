@@ -39,7 +39,7 @@ WorkflowSchedules::WorkflowSchedules()
 	
 	pthread_mutex_init(&lock, NULL);
 	
-	// Reload is not called here as it will be done by WorkflowScheduler;
+	Reload();
 }
 
 WorkflowSchedules::~WorkflowSchedules()
