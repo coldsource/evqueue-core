@@ -19,6 +19,7 @@
 
 #include <WorkflowScheduler.h>
 #include <WorkflowSchedule.h>
+#include <WorkflowSchedules.h>
 #include <WorkflowInstance.h>
 #include <WorkflowParameters.h>
 #include <Workflows.h>
@@ -36,6 +37,8 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#include <vector>
 
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
@@ -95,7 +98,7 @@ void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, un
 		struct tm time_t;
 		localtime_r(&new_scheduled_wf->scheduled_at,&time_t);
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
-		Logger::Log(LOG_NOTICE,"[WSID %d] Scheduled workflow %s at %s",workflow_schedule->GetID(),workflow_schedule->GetWorkflowName(),buf);
+		Logger::Log(LOG_NOTICE,"[WSID %d] Scheduled workflow %s at %s",workflow_schedule->GetID(),workflow_schedule->GetWorkflowName().c_str(),buf);
 		
 		InsertEvent(new_scheduled_wf);
 	}
@@ -150,7 +153,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 	{
 		Statistics *stats = Statistics::GetInstance();
 		
-		const char *workflow_name = scheduled_wf->workflow_schedule->GetWorkflowName();
+		const char *workflow_name = scheduled_wf->workflow_schedule->GetWorkflowName().c_str();
 		bool workflow_terminated;
 		
 		WorkflowInstance *wi = 0;
@@ -167,7 +170,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			if(i!=-1)
 				wfs_executing_instances[i] = workflow_schedule;
 			
-			wi = new WorkflowInstance(workflow_name,workflow_schedule->GetParameters(),workflow_schedule->GetID(),workflow_schedule->GetHost(),workflow_schedule->GetUser());
+			wi = new WorkflowInstance(workflow_name,workflow_schedule->GetParameters(),workflow_schedule->GetID(),workflow_schedule->GetHost().c_str(),workflow_schedule->GetUser().c_str());
 			
 			// Put instance in executing list
 			pthread_mutex_lock(&wfs_mutex);
@@ -211,6 +214,9 @@ void WorkflowScheduler::Reload()
 	
 	pthread_mutex_lock(&wfs_mutex);
 	
+	// Reload schedules while locked to ensure consistency
+	WorkflowSchedules::GetInstance()->Reload();
+	
 	Flush();
 	
 	// Backup running instances for later
@@ -219,20 +225,19 @@ void WorkflowScheduler::Reload()
 	WorkflowSchedule **backup_wfs_executing_instances = wfs_executing_instances;
 	int backup_num_wfs = num_wfs;
 	
-	// Reinit from database since there can be created or deleted schedules
+	// Reinit from WorkflowSchedules since there can be created or deleted schedules
 	init();
 	
-	DB db;
-	
-	db.QueryPrintf("SELECT workflow_schedule_id FROM t_workflow_schedule WHERE node_name=%s AND workflow_schedule_active = 1",Configuration::GetInstance()->Get("network.node.name").c_str());
-	while(db.FetchRow())
+	const vector<WorkflowSchedule *> workflow_schedules= WorkflowSchedules::GetInstance()->GetActiveWorkflowSchedules();
+	for(int i=0;i<workflow_schedules.size();i++)
 	{
 		WorkflowSchedule *workflow_schedule = 0;
 		try
 		{
-			workflow_schedule = new WorkflowSchedule(db.GetFieldInt(0));
+			workflow_schedule = new WorkflowSchedule();
+			*workflow_schedule = *workflow_schedules.at(i);
 			
-			int i = lookup(backup_wfs_ids,backup_num_wfs,db.GetFieldInt(0));
+			int i = lookup(backup_wfs_ids,backup_num_wfs,workflow_schedule->GetID());
 			if(i==-1 || backup_wfs_executing_instances[i]==0)
 				ScheduleWorkflow(workflow_schedule);
 			else
@@ -240,7 +245,7 @@ void WorkflowScheduler::Reload()
 		}
 		catch(Exception &e)
 		{
-			Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",db.GetFieldInt(0),e.context,e.error);
+			Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",workflow_schedule->GetID(),e.context,e.error);
 			
 			if(workflow_schedule)
 				delete workflow_schedule;
@@ -282,7 +287,7 @@ void WorkflowScheduler::SendStatus(int s)
 		sprintf(buf,"%d",event->workflow_schedule->GetID());
 		workflow_node->setAttribute(X("workflow_schedule_id"),X(buf));
 		
-		workflow_node->setAttribute(X("name"),X(event->workflow_schedule->GetWorkflowName()));
+		workflow_node->setAttribute(X("name"),X(event->workflow_schedule->GetWorkflowName().c_str()));
 		
 		struct tm time_t;
 		localtime_r(&event->scheduled_at,&time_t);
@@ -303,7 +308,7 @@ void WorkflowScheduler::SendStatus(int s)
 			sprintf(buf,"%d",wfs_executing_instances[i]->GetID());
 			workflow_node->setAttribute(X("workflow_schedule_id"),X(buf));
 			
-			workflow_node->setAttribute(X("name"),X(wfs_executing_instances[i]->GetWorkflowName()));
+			workflow_node->setAttribute(X("name"),X(wfs_executing_instances[i]->GetWorkflowName().c_str()));
 			
 			sprintf(buf,"%d",wfs_wi_ids[i]);
 			workflow_node->setAttribute(X("workflow_instance_id"),X(buf));
@@ -331,11 +336,9 @@ void WorkflowScheduler::SendStatus(int s)
 
 void WorkflowScheduler::init(void)
 {
-	DB db;
+	const vector<WorkflowSchedule *> workflow_schedules= WorkflowSchedules::GetInstance()->GetActiveWorkflowSchedules();
 	
-	db.Query("SELECT workflow_schedule_id FROM t_workflow_schedule WHERE workflow_schedule_active=1 ORDER BY workflow_schedule_id");
-	
-	num_wfs = db.NumRows();
+	num_wfs = workflow_schedules.size();
 	if(num_wfs==0)
 	{
 		wfs_ids = 0;
@@ -345,9 +348,8 @@ void WorkflowScheduler::init(void)
 	}
 	
 	wfs_ids = new unsigned int[num_wfs];
-	int i=0;
-	while(db.FetchRow())
-		wfs_ids[i++] = db.GetFieldInt(0);
+	for(int i=0;i<num_wfs;i++)
+		wfs_ids[i] = workflow_schedules.at(i)->GetID();
 	
 	wfs_wi_ids = new unsigned int[num_wfs];
 	memset(wfs_wi_ids,0,sizeof(unsigned int)*num_wfs);

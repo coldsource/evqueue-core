@@ -26,6 +26,7 @@
 class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class WorkflowParameters;
 
 class Workflow
 {
@@ -40,7 +41,7 @@ class Workflow
 		
 	public:
 		Workflow();
-		Workflow(DB *db,const char *workflow_name);
+		Workflow(DB *db,const std::string &workflow_name);
 		
 		unsigned int GetID() const { return workflow_id; }
 		const std::string GetName() const { return workflow_name; }
@@ -50,6 +51,8 @@ class Workflow
 		bool GetIsBoundSchedule() const { return bound_schedule; }
 		bool GetIsBoundTask() const { return bound_task; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
+		
+		void CheckInputParameters(WorkflowParameters *parameters);
 		
 		static bool CheckWorkflowName(const std::string &workflow_name);
 		static void Get(unsigned int id, QueryResponse *response);

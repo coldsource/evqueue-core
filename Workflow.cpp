@@ -19,6 +19,7 @@
 
 #include <Workflow.h>
 #include <Workflows.h>
+#include <WorkflowParameters.h>
 #include <DB.h>
 #include <Exception.h>
 #include <XMLUtils.h>
@@ -42,9 +43,9 @@ Workflow::Workflow()
 	workflow_id = -1;
 }
 
-Workflow::Workflow(DB *db,const char *workflow_name)
+Workflow::Workflow(DB *db,const string &workflow_name)
 {
-	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_bound FROM t_workflow WHERE workflow_name=%s",workflow_name);
+	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_bound FROM t_workflow WHERE workflow_name=%s",workflow_name.c_str());
 	
 	if(!db->FetchRow())
 		throw Exception("Workflow","Unknown Workflow");
@@ -64,6 +65,74 @@ Workflow::Workflow(DB *db,const char *workflow_name)
 	db->QueryPrintf("SELECT notification_id FROM t_workflow_notification WHERE workflow_id=%i",&workflow_id);
 	while(db->FetchRow())
 		notifications.push_back(db->GetFieldInt(0));
+}
+
+void Workflow::CheckInputParameters(WorkflowParameters *parameters)
+{
+	// Load workflow XML
+	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+	DOMLSParser *parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
+	
+	DOMLSInput *input = xqillaImplementation->createLSInput();
+	
+	// Set XML content and parse document
+	XMLCh *xml;
+	xml = XMLString::transcode(workflow_xml.c_str());
+	input->setStringData(xml);
+	DOMDocument *xmldoc = parser->parse(input);
+	
+	input->release();
+	
+	XMLString::release(&xml);
+	
+	DOMXPathNSResolver *resolver = xmldoc->createNSResolver(xmldoc->getDocumentElement());
+	resolver->addNamespaceBinding(X("xs"), X("http://www.w3.org/2001/XMLSchema"));
+	
+	try
+	{
+		const char *parameter_name;
+		const char *parameter_value;
+		int passed_parameters = 0;
+		char buf2[256+PARAMETER_NAME_MAX_LEN];
+		
+		parameters->SeekStart();
+		while(parameters->Get(&parameter_name,&parameter_value))
+		{
+			sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name);
+			DOMXPathResult *res = xmldoc->evaluate(X(buf2),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+			if(!res->isNode())
+			{
+				res->release();
+				sprintf(buf2,"Unknown parameter : %s",parameter_name);
+				throw Exception("Workflow",buf2);
+			}
+			
+			res->release();
+			passed_parameters++;
+		}
+		
+		DOMXPathResult *res = xmldoc->evaluate(X("count(parameters/parameter)"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+		int workflow_template_parameters = res->getIntegerValue();
+		res->release();
+		
+		if(workflow_template_parameters!=passed_parameters)
+		{
+			char e[256];
+			sprintf(e, "Invalid number of parameters. Workflow expects %d, but %d are given.",workflow_template_parameters,passed_parameters);
+			throw Exception("Workflow",e);
+		}
+	}
+	catch(Exception &e)
+	{
+		parser->release();
+		serializer->release();
+		
+		throw e;
+	}
+	
+	parser->release();
+	serializer->release();
 }
 
 bool Workflow::CheckWorkflowName(const string &workflow_name)

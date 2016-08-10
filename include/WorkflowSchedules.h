@@ -17,34 +17,36 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _SCHEDULE_H_
-#define _SCHEDULE_H_
+#include <map>
+#include <vector>
 
-#define SCHEDULE_LEVEL_SEC         0
-#define SCHEDULE_LEVEL_MIN         1
-#define SCHEDULE_LEVEL_HOUR        2
-#define SCHEDULE_LEVEL_DAY         3
-#define SCHEDULE_LEVEL_MONTH       4
-#define SCHEDULE_LEVEL_WDAY        5
-#define SCHEDULE_LENGTH            194
+#include <pthread.h>
 
-#include <time.h>
+class WorkflowSchedule;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
-class Schedule
+class WorkflowSchedules
 {
-	bool schedule[SCHEDULE_LENGTH];
+	static WorkflowSchedules *instance;
+		
+	pthread_mutex_t lock;
+	
+	std::map<unsigned int,WorkflowSchedule *> schedules_id;
+	std::vector<WorkflowSchedule *> active_schedules;
 	
 	public:
-		Schedule() {}
-		Schedule(const char *schedule_description);
+		WorkflowSchedules();
+		~WorkflowSchedules();
 		
-		static int GetScheduleLength(int level);
-		static int GetScheduleOffset(int level);
+		static WorkflowSchedules *GetInstance() { return instance; }
 		
-		time_t GetNextTime(void);
-	
-	private:
-		time_t get_next_time(time_t now);
+		void Reload(void);
+		
+		WorkflowSchedule GetWorkflowSchedule(unsigned int id);
+		bool Exists(unsigned int id);
+		
+		const std::vector<WorkflowSchedule *> &GetActiveWorkflowSchedules();
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
-
-#endif

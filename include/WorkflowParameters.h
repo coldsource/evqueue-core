@@ -20,18 +20,20 @@
 #ifndef _WORKFLOWPARAMETERS_H_
 #define _WORKFLOWPARAMETERS_H_
 
+#include <string>
+#include <vector>
+
 class WorkflowParameters
 {
 	private:
 		struct Parameter
 		{
-			char *name;
-			char *value;
-			Parameter *next_parameter;
+			std::string name;
+			std::string value;
 		};
 		
-		Parameter *first_parameter;
-		Parameter *current_parameter; // For iteration
+		std::vector<Parameter> parameters;
+		int current_parameter; // For iteration
 	
 	public:
 		WorkflowParameters();

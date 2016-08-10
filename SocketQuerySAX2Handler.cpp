@@ -221,7 +221,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			}
 		}
 		
-		if(query_type==QUERY_WORKFLOW_LAUNCH && level==2)
+		if((group=="workflow" || group=="workflow_schedule") && level==2)
 		{
 			if(strcmp(node_name_c,"parameter")!=0)
 				throw Exception("SocketQuerySAX2Handler","Expecting parameter node");
@@ -266,7 +266,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 		if(group=="task" && level>2)
 			throw Exception("SocketQuerySAX2Handler","input node does not accept subnodes");
 		
-		if(query_type!=QUERY_WORKFLOW_LAUNCH && group!="task" && level>1)
+		if(group!="workflow" && group!="workflow_schedule" && group!="task" && level>1)
 			throw Exception("SocketQuerySAX2Handler","Unexpected subnode");
 	}
 	catch(Exception e)

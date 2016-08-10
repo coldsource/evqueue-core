@@ -23,63 +23,45 @@
 
 WorkflowParameters::WorkflowParameters()
 {
-	first_parameter = 0;
 	current_parameter = 0;
 }
 
 WorkflowParameters::~WorkflowParameters()
 {
-	Parameter *cur = first_parameter, *old;
-	while(cur)
-	{
-		delete[] cur->name;
-		delete[] cur->value;
-		
-		old = cur;
-		cur = cur->next_parameter;
-		delete old;
-	}
+
 }
 
 bool WorkflowParameters::Add(const char *name,const char *value)
 {
 	// Check for duplicate parameter
-	Parameter *cur = first_parameter;
-	while(cur)
+	for(int i=0;i<parameters.size();i++)
 	{
-		if(strcmp(cur->name,name)==0)
+		if(parameters.at(i).name==name)
 			return false;
-		
-		cur = cur->next_parameter;
 	}
 	
-	Parameter *param = new Parameter;
+	Parameter param;
+	param.name = name;
+	param.value = value;
 	
-	param->name = new char[strlen(name)+1];
-	strcpy(param->name,name);
-	
-	param->value = new char[strlen(value)+1];
-	strcpy(param->value,value);
-	
-	param->next_parameter = first_parameter;
-	first_parameter = param;
+	parameters.push_back(param);
 	
 	return true;
 }
 
 void WorkflowParameters::SeekStart()
 {
-	current_parameter = first_parameter;
+	current_parameter = 0;
 }
 
 bool WorkflowParameters::Get(const char **name,const char **value)
 {
-	if(current_parameter==0)
+	if(current_parameter>=parameters.size())
 		return false;
 	
-	*name = current_parameter->name;
-	*value = current_parameter->value;
+	*name = parameters.at(current_parameter).name.c_str();
+	*value = parameters.at(current_parameter).value.c_str();
 	
-	current_parameter = current_parameter->next_parameter;
+	current_parameter++;;
 	return true;
 }

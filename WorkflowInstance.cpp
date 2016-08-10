@@ -234,6 +234,7 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 			schedule_input->setStringData(schedule_xml);
 			
 			DOMDocument *schedule_xmldoc = schedule_parser->parse(schedule_input);
+			schedule_xmldoc->getDocumentElement()->setAttribute(X("name"),X(retry_schedule.GetName().c_str()));
 			
 			// Add schedule to current workflow
 			DOMNode * schedule_node = xmldoc->importNode(schedule_xmldoc->getDocumentElement(),true);

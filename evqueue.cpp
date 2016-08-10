@@ -54,6 +54,7 @@
 #include <Retrier.h>
 #include <WorkflowScheduler.h>
 #include <WorkflowSchedule.h>
+#include <WorkflowSchedules.h>
 #include <global.h>
 #include <ProcessManager.h>
 #include <DB.h>
@@ -323,6 +324,7 @@ int main(int argc,const char **argv)
 		Retrier *retrier = new Retrier();
 		
 		// Start scheduler
+		WorkflowSchedules *workflow_schedules = new WorkflowSchedules();
 		WorkflowScheduler *scheduler = new WorkflowScheduler();
 		
 		// Create queue pool
@@ -412,6 +414,8 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
 		qh->RegisterHandler("retry_schedule",RetrySchedule::HandleQuery);
 		qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
+		qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
+		qh->RegisterHandler("workflow_schedules",WorkflowSchedules::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		qh->RegisterHandler("ping",ping_handle_query);
@@ -540,6 +544,7 @@ int main(int argc,const char **argv)
 				delete stats;
 				delete retrier;
 				delete scheduler;
+				delete workflow_schedules;
 				delete pool;
 				delete workflow_instances;
 				delete workflows;

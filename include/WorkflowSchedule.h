@@ -25,34 +25,88 @@
 
 #include <time.h>
 
+#include <string>
+
+class SocketQuerySAX2Handler;
+class QueryResponse;
+
 enum onfailure_behavior {CONTINUE, SUSPEND};
 
 class WorkflowSchedule
 {
 	private:
 		unsigned int workflow_schedule_id;
-		char * workflow_name;
+		unsigned int workflow_id;
+		std::string schedule_description;
 		onfailure_behavior onfailure;
-		char *workflow_schedule_host;
-		char *workflow_schedule_user;
+		std::string workflow_schedule_host;
+		std::string workflow_schedule_user;
+		bool active;
+		std::string comment;
 		
 		WorkflowParameters parameters;
 		
-		Schedule *schedule;
+		Schedule schedule;
 
 	public:
+		WorkflowSchedule() {}
 		WorkflowSchedule(unsigned int workflow_schedule_id);
 		~WorkflowSchedule();
 		
-		const char *GetWorkflowName(void) { return workflow_name; }
 		unsigned int GetID() { return workflow_schedule_id; }
+		const std::string GetWorkflowName();
+		unsigned int GetWorkflowID() { return workflow_id; }
+		const std::string &GetScheduleDescription() { return schedule_description; }
 		unsigned int GetOnFailureBehavior() { return onfailure; }
-		const char *GetHost(void) { return workflow_schedule_host; }
-		const char *GetUser(void) { return workflow_schedule_user; }
+		const std::string &GetHost() { return workflow_schedule_host; }
+		const std::string &GetUser() { return workflow_schedule_user; }
+		bool GetIsActive() { return active; }
+		const std::string &GetComment() { return comment; }
 		WorkflowParameters *GetParameters() { return &parameters; }
-		time_t GetNextTime(void) { return schedule->GetNextTime(); }
+		time_t GetNextTime() { return schedule.GetNextTime(); }
+		
+		static void Get(unsigned int id, QueryResponse *response);
+		
+		static void Create(
+			unsigned int workflow_id,
+			const std::string &schedule_description,
+			bool onfailure_continue,
+			const std::string &user,
+			const std::string &host,
+			bool active,
+			const std::string &comment,
+			WorkflowParameters *parameters
+		);
+		
+		static void Edit(
+			unsigned int id,
+			unsigned int workflow_id,
+			const std::string &schedule_description,
+			bool onfailure_continue,
+			const std::string &user,
+			const std::string &host,
+			bool active,
+			const std::string &comment,
+			WorkflowParameters *parameters
+		);
+		
+		static void Delete(unsigned int id);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
 		void SetStatus(bool active);
+	
+	private:
+		static void create_edit_check(
+			unsigned int workflow_id,
+			const std::string &schedule_description,
+			bool onfailure_continue,
+			const std::string &user,
+			const std::string &host,
+			bool active,
+			const std::string &comment,
+			WorkflowParameters *parameters
+		);
 };
 
 #endif
