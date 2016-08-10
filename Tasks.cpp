@@ -172,6 +172,23 @@ Task Tasks::GetTask(const string &name)
 	return task;
 }
 
+bool Tasks::Exists(unsigned int id)
+{
+	pthread_mutex_lock(&lock);
+	
+	auto it = tasks_id.find(id);
+	if(it==tasks_id.end())
+	{
+		pthread_mutex_unlock(&lock);
+		
+		return false;
+	}
+	
+	pthread_mutex_unlock(&lock);
+	
+	return true;
+}
+
 bool Tasks::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	Tasks *tasks = Tasks::GetInstance();

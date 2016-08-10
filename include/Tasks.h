@@ -50,6 +50,8 @@ class Tasks
 		Task GetTask(unsigned int id);
 		Task GetTask(const std::string &name);
 		
+		bool Exists(unsigned int id);
+		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 

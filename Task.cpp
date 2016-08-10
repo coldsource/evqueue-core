@@ -227,6 +227,9 @@ void Task::Edit(
 {
 	create_edit_check(name,binary,binary_content,wd,user,host,use_agent,parameters_mode,output_method,merge_stderr,group,comment);
 	
+	if(!Tasks::GetInstance()->Exists(id))
+		throw Exception("Task","Task not found");
+	
 	string real_name;
 	
 	int imerge_stderr = merge_stderr;
