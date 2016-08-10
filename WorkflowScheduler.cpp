@@ -21,10 +21,13 @@
 #include <WorkflowSchedule.h>
 #include <WorkflowInstance.h>
 #include <WorkflowParameters.h>
+#include <Workflows.h>
 #include <Statistics.h>
 #include <Exception.h>
 #include <DB.h>
 #include <Logger.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 #include <Configuration.h>
 
 #include <stdio.h>
@@ -37,9 +40,16 @@
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
 
+using namespace std;
 using namespace xercesc;
 
 WorkflowScheduler *WorkflowScheduler::instance = 0;
+
+WorkflowScheduler::ScheduledWorkflow::~ScheduledWorkflow(void)
+{
+	if(workflow_schedule)
+		delete workflow_schedule;
+}
 
 WorkflowScheduler::WorkflowScheduler(): Scheduler()
 {
@@ -62,20 +72,12 @@ WorkflowScheduler::~WorkflowScheduler()
 	if(wfs_wi_ids)
 		delete[] wfs_wi_ids;
 	
+	for(int i=0;i<num_wfs;i++)
+		if(wfs_executing_instances[i])
+			delete wfs_executing_instances[i];
+	
 	if(wfs_executing_instances)
 		delete[] wfs_executing_instances;
-	
-	// Delete workflows schedules
-	Event *tmp;
-	Event *event = first_event;
-	while(event)
-	{
-		tmp = event;
-		event = event->next_event;
-		
-		ScheduledWorkflow *scheduled_wf = (ScheduledWorkflow *)tmp;
-		delete scheduled_wf->workflow_schedule;
-	}
 }
 
 void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, unsigned int workflow_instance_id)
@@ -157,11 +159,15 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		
 		try
 		{
+			// Prevent destructor from deleting workflow_schedule
+			WorkflowSchedule *workflow_schedule = scheduled_wf->workflow_schedule;
+			scheduled_wf->workflow_schedule = 0;
+			
 			// We have to fill this first because WorkflowInstance() can throw an exception and call ScheduledWorkflowInstanceStop() in it's destructor
 			if(i!=-1)
-				wfs_executing_instances[i] = scheduled_wf->workflow_schedule;
+				wfs_executing_instances[i] = workflow_schedule;
 			
-			wi = new WorkflowInstance(workflow_name,scheduled_wf->workflow_schedule->GetParameters(),scheduled_wf->workflow_schedule->GetID(),scheduled_wf->workflow_schedule->GetHost(),scheduled_wf->workflow_schedule->GetUser());
+			wi = new WorkflowInstance(workflow_name,workflow_schedule->GetParameters(),workflow_schedule->GetID(),workflow_schedule->GetHost(),workflow_schedule->GetUser());
 			
 			// Put instance in executing list
 			pthread_mutex_lock(&wfs_mutex);
@@ -192,7 +198,9 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		}
 	}
 	else if(reason==FLUSH)
-		delete scheduled_wf->workflow_schedule;
+	{
+		// Workflow schedule will be deleted by WorkflowScheduler::~WorkflowScheduler()
+	}
 	
 	delete scheduled_wf;
 }

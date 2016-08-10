@@ -30,6 +30,8 @@ class Scheduler
 		{
 			time_t scheduled_at;
 			Event *next_event;
+			
+			virtual ~Event() {};
 		};
 		
 		enum event_reasons {ALARM, FLUSH};

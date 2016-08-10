@@ -22,14 +22,21 @@
 
 #include <Scheduler.h>
 
+#include <string>
+
 class WorkflowSchedule;
+class WorkflowParameters;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
 class WorkflowScheduler:public Scheduler
 {
 	private:
 		struct ScheduledWorkflow:Event
 		{
-			WorkflowSchedule *workflow_schedule;
+			WorkflowSchedule *workflow_schedule = 0;
+			
+			virtual ~ScheduledWorkflow();
 		};
 		
 		static WorkflowScheduler *instance;
@@ -43,7 +50,7 @@ class WorkflowScheduler:public Scheduler
 		
 	public:
 		WorkflowScheduler();
-		~WorkflowScheduler();
+		virtual ~WorkflowScheduler();
 		
 		static WorkflowScheduler *GetInstance() { return instance; }
 		
