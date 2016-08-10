@@ -34,6 +34,8 @@ class Retrier:public Scheduler
 		{
 			WorkflowInstance *workflow_instance;
 			DOMNode *task;
+			
+			virtual ~TimedTask() {}
 		};
 		
 		static Retrier *instance;
