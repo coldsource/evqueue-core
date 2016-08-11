@@ -140,6 +140,7 @@ bool WorkflowSchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 		{
 			WorkflowSchedule workflow_schedule = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML("<workflow_schedule />");
+			node->setAttribute(X("id"),X(to_string(workflow_schedule.GetID()).c_str()));
 			node->setAttribute(X("workflow_id"),X(to_string(workflow_schedule.GetWorkflowID()).c_str()));
 			node->setAttribute(X("workflow_name"),X(workflow_schedule.GetWorkflowName().c_str()));
 			node->setAttribute(X("schedule"),X(workflow_schedule.GetScheduleDescription().c_str()));
