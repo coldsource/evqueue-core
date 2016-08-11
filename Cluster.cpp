@@ -17,15 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <xercesc/sax2/SAX2XMLReader.hpp>
-#include <xercesc/sax2/XMLReaderFactory.hpp>
-#include <xercesc/sax2/DefaultHandler.hpp>
-#include <xercesc/framework/MemBufInputSource.hpp>
-#include <xercesc/framework/Wrapper4InputSource.hpp>
-
 #include <Cluster.h>
 #include <Exception.h>
 #include <SocketResponseSAX2Handler.h>
+#include <SocketSAX2Handler.h>
 #include <NetworkInputSource.h>
 #include <Sockets.h>
 #include <Logger.h>
@@ -75,83 +70,21 @@ void Cluster::execute_command(const string &cnx_str, const string &command)
 	send(s,command.c_str(),command.length(),0);
 	
 	// Parse response
-	SAX2XMLReader *parser = 0;
-	SocketResponseSAX2Handler* saxh = 0;
-	NetworkInputSource *source = 0;
-	
 	try
 	{
-		parser = XMLReaderFactory::createXMLReader();
-		parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-		parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
+		SocketResponseSAX2Handler saxh;
 		
-		XMLSize_t lowWaterMark = 0;
-		parser->setProperty(XMLUni::fgXercesLowWaterMark, &lowWaterMark);
-		
-		saxh = new SocketResponseSAX2Handler();
-		parser->setContentHandler(saxh);
-		parser->setErrorHandler(saxh);
-		
-		// Create a progressive scan token
-		XMLPScanToken token;
-		NetworkInputSource source(s);
-		
-		try
-		{
-			if (!parser->parseFirst(source, token))
-			{
-				Logger::Log(LOG_WARNING,"Cluster : parseFirst failed");
-				throw Exception("Response XML parsing","parseFirst failed");
-			}
-			
-			bool gotMore = true;
-			while (gotMore && !saxh->IsReady()) {
-				gotMore = parser->parseNext(token);
-			}
-		}
-		catch (const SAXParseException& toCatch)
-		{
-			char *message = XMLString::transcode(toCatch.getMessage());
-			Logger::Log(LOG_WARNING,"Cluster : Invalid query XML structure : %s",message);
-			XMLString::release(&message);
-			
-			throw Exception("Response XML parsing","Invalid query XML structure");
-		}
-		catch(Exception &e)
-		{
-			throw e;
-		}
-		catch(int e)  // int exception thrown to indicate that we have received a complete XML (usual case)
-		{
-			; // nothing to do, just let the code roll
-		}
-		catch (...)
-		{
-			throw Exception("Response XML parsing","Unexpected error trying to parse workflow XML");
-		}
+		SocketSAX2Handler socket_sax2_handler(s);
+		socket_sax2_handler.HandleQuery(&saxh);
 	}
 	catch(Exception &e)
 	{
 		Logger::Log(LOG_WARNING,"Cluster encountered unexpected exception in context %s : %s\n",e.context,e.error);
 		
-		if (parser!=0)
-			delete parser;
-		if (saxh!=0)
-			delete saxh;
-		if (source)
-			delete source;
-		
 		Sockets::GetInstance()->UnregisterSocket(s);
 		
 		throw e;
 	}
-	
-	if (parser!=0)
-		delete parser;
-	if (saxh!=0)
-		delete saxh;
-	if (source)
-		delete source;
 	
 	Sockets::GetInstance()->UnregisterSocket(s);
 }

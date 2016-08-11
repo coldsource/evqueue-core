@@ -81,10 +81,6 @@ void *handle_connection(void *sp)
 	Statistics *stats = Statistics::GetInstance();
 	stats->IncAcceptedConnections();
 	
-	SAX2XMLReader *parser = 0;
-	SocketQuerySAX2Handler* saxh = 0;
-	NetworkInputSource *source = 0;
-	
 	// Init mysql library
 	mysql_thread_init();
 	
@@ -92,58 +88,12 @@ void *handle_connection(void *sp)
 	
 	try
 	{
-		parser = XMLReaderFactory::createXMLReader();
-		parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-		parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
+		SocketQuerySAX2Handler saxh;
 		
-		XMLSize_t lowWaterMark = 0;
-		parser->setProperty(XMLUni::fgXercesLowWaterMark, &lowWaterMark);
+		SocketSAX2Handler socket_sax2_handler(s);
+		socket_sax2_handler.HandleQuery(&saxh);
 		
-		saxh = new SocketQuerySAX2Handler();
-		parser->setContentHandler(saxh);
-		parser->setErrorHandler(saxh);
-		
-		// Create a progressive scan token
-		XMLPScanToken token;
-		NetworkInputSource source(s);
-		
-		try
-		{
-			if (!parser->parseFirst(source, token))
-			{
-				Logger::Log(LOG_ERR,"parseFirst failed");
-				throw Exception("core","parseFirst failed");
-			}
-			
-			bool gotMore = true;
-			while (gotMore && !saxh->IsReady()) {
-				gotMore = parser->parseNext(token);
-			}
-		}
-		catch (const SAXParseException& toCatch)
-		{
-			char *message = XMLString::transcode(toCatch.getMessage());
-			Logger::Log(LOG_WARNING,"Invalid query XML structure : %s",message);
-			XMLString::release(&message);
-			
-			throw Exception("Query XML parsing","Invalid query XML structure");
-		}
-		catch(Exception &e)
-		{
-			stats->IncInputErrors();
-			throw e;
-		}
-		catch(int e)  // int exception thrown to indicate that we have received a complete XML (usual case)
-		{
-			; // nothing to do, just let the code roll
-		}
-		catch (...)
-		{
-			stats->IncInputErrors();
-			throw Exception("Workflow XML parsing","Unexpected error trying to parse workflow XML");
-		}
-		
-		if(!QueryHandlers::GetInstance()->HandleQuery(saxh->GetQueryGroup(),saxh, &response))
+		if(!QueryHandlers::GetInstance()->HandleQuery(saxh.GetQueryGroup(),&saxh, &response))
 			response.SetError("Unknown command or action");
 		
 		response.SendResponse();
@@ -155,13 +105,6 @@ void *handle_connection(void *sp)
 		response.SetError(e.error);
 		response.SendResponse();
 		
-		if (parser!=0)
-			delete parser;
-		if (saxh!=0)
-			delete saxh;
-		if (source)
-			delete source;
-		
 		Sockets::GetInstance()->UnregisterSocket(s);
 		
 		mysql_thread_end();
@@ -169,13 +112,6 @@ void *handle_connection(void *sp)
 		return 0;
 		
 	}
-	
-	if (parser!=0)
-		delete parser;
-	if (saxh!=0)
-		delete saxh;
-	if (source)
-		delete source;
 	
 	Sockets::GetInstance()->UnregisterSocket(s);
 	mysql_thread_end();

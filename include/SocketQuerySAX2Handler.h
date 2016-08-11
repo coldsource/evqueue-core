@@ -19,7 +19,7 @@
 
 #include <global.h>
 #include <WorkflowParameters.h>
-#include <xercesc/sax2/DefaultHandler.hpp>
+#include <SocketSAX2Handler.h>
 
 using namespace xercesc;
 
@@ -27,7 +27,7 @@ using namespace xercesc;
 #include <map>
 #include <vector>
 
-class SocketQuerySAX2Handler : public DefaultHandler {
+class SocketQuerySAX2Handler : public SocketSAX2HandlerInterface {
 	
 	private:
 		std::string group;
