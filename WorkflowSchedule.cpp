@@ -138,6 +138,9 @@ void WorkflowSchedule::Create(
 	int iactive = active;
 	
 	DB db;
+	
+	db.StartTransaction();
+	
 	db.QueryPrintf(
 		"INSERT INTO t_workflow_schedule(node_name,workflow_id,workflow_schedule,workflow_schedule_onfailure,workflow_schedule_user,workflow_schedule_host,workflow_schedule_active,workflow_schedule_comment) VALUES(%s,%i,%s,%s,%s,%s,%i,%s)",
 		Configuration::GetInstance()->Get("network.node.name").c_str(),
@@ -163,6 +166,8 @@ void WorkflowSchedule::Create(
 			parameter_name,
 			parameter_value
 		);
+	
+	db.CommitTransaction();
 }
 
 void WorkflowSchedule::Edit(
@@ -185,6 +190,9 @@ void WorkflowSchedule::Edit(
 	int iactive = active;
 	
 	DB db;
+	
+	db.StartTransaction();
+	
 	db.QueryPrintf(
 		"UPDATE t_workflow_schedule SET node_name=%s,workflow_id=%i,workflow_schedule=%s,workflow_schedule_onfailure=%s,workflow_schedule_user=%s,workflow_schedule_host=%s,workflow_schedule_active=%i,workflow_schedule_comment=%s WHERE workflow_schedule_id=%i",
 		Configuration::GetInstance()->Get("network.node.name").c_str(),
@@ -213,17 +221,24 @@ void WorkflowSchedule::Edit(
 			parameter_name,
 			parameter_value
 		);
+	
+	db.CommitTransaction();
 }
 
 void WorkflowSchedule::Delete(unsigned int id)
 {
 	DB db;
+	
+	db.StartTransaction();
+	
 	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&id);
 	
 	if(db.AffectedRows()==0)
 		throw Exception("WorkflowSchedule","Workflow schedule not found");
 	
 	db.QueryPrintf("DELETE FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",&id);
+	
+	db.CommitTransaction();
 }
 
 void WorkflowSchedule::create_edit_check(
@@ -297,6 +312,8 @@ bool WorkflowSchedule::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *
 		
 		bool onfailure_continue;
 		auto it_onfailure = attrs.find("onfailure");
+		if(it_onfailure==attrs.end())
+			throw Exception("WorkflowSchedule","Missing 'onfailure' attribute");
 		if(it_onfailure->second=="CONTINUE")
 			onfailure_continue = true;
 		else if(it_onfailure->second=="SUSPEND")

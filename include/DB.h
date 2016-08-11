@@ -29,6 +29,8 @@ class DB
 	MYSQL_ROW row;
 	unsigned long *row_field_length;
 	
+	bool transaction_started;
+	
 	bool is_connected;
 	bool is_copy;
 	
@@ -50,6 +52,10 @@ public:
 	void Free(void);
 	int NumRows(void);
 	int AffectedRows(void);
+	
+	void StartTransaction();
+	void CommitTransaction();
+	void RollbackTransaction();
 	
 	char *GetField(int n);
 	int GetFieldInt(int n);

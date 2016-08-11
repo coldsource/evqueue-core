@@ -33,6 +33,7 @@ DB::DB(DB *db)
 	
 	mysql = db->mysql;
 	res = 0;
+	transaction_started = 0;
 	is_connected = db->is_connected;
 	is_copy = true;
 }
@@ -44,6 +45,7 @@ DB::DB(void)
 	mysql_options(mysql, MYSQL_SET_CHARSET_NAME, "UTF8");
 	
 	res=0;
+	transaction_started = 0;
 	is_connected = false;
 	is_copy = false;
 }
@@ -81,7 +83,12 @@ void DB::Query(const char *query)
 	}
 
 	if(mysql_query(mysql,query)!=0)
+	{
+		if(transaction_started)
+			RollbackTransaction();
+		
 		throw Exception("DB",mysql_error(mysql));
+	}
 
 	res=mysql_store_result(mysql);
 	if(res==0)
@@ -251,6 +258,24 @@ int DB::NumRows(void)
 int DB::AffectedRows(void)
 {
 	return mysql_affected_rows(mysql);
+}
+
+void DB::StartTransaction()
+{
+	Query("START TRANSACTION");
+	transaction_started = true;
+}
+
+void DB::CommitTransaction()
+{
+	Query("COMMIT");
+	transaction_started = false;
+}
+
+void DB::RollbackTransaction()
+{
+	Query("ROLLBACK");
+	transaction_started = false;
 }
 
 char *DB::GetField(int n)
