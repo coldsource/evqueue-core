@@ -16,7 +16,8 @@ add_executable(evqueue
 	RetrySchedules.cpp SequenceGenerator.cpp tools.cpp tools_ipc.cpp Notification.cpp
 	Notifications.cpp Sockets.cpp FileManager.cpp base64.cpp sha1.c tables.cpp tools_db.cpp
 	workflow.xsd.cpp XMLUtils.cpp QueryHandlers.cpp QueryResponse.cpp Cluster.cpp ping.cpp
-	SocketResponseSAX2Handler.cpp retry_schedule.xsd.cpp WorkflowSchedules.cpp)
+	SocketResponseSAX2Handler.cpp retry_schedule.xsd.cpp WorkflowSchedules.cpp
+	NotificationType.cpp NotificationTypes.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)

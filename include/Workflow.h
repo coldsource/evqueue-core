@@ -60,6 +60,10 @@ class Workflow
 		static void Edit(unsigned int id, const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
 		static void Delete(unsigned int id, bool *task_deleted);
 		
+		static void SubscribeNotification(unsigned int id, unsigned int notification_id);
+		static void UnsubscribeNotification(unsigned int id, unsigned int notification_id);
+		static void ClearNotifications(unsigned int id);
+		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
 		static std::string CreateSimpleWorkflow(const std::string &task_name, const std::vector<std::string> &inputs);

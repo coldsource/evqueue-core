@@ -65,6 +65,9 @@
 #include <RetrySchedules.h>
 #include <GarbageCollector.h>
 #include <SequenceGenerator.h>
+#include <NotificationType.h>
+#include <NotificationTypes.h>
+#include <Notification.h>
 #include <Notifications.h>
 #include <Sockets.h>
 #include <QueryHandlers.h>
@@ -337,6 +340,7 @@ int main(int argc,const char **argv)
 		Workflows *workflows = new Workflows();
 		
 		// Instanciate notifications map
+		NotificationTypes *notification_types = new NotificationTypes();
 		Notifications *notifications = new Notifications();
 		
 		// Instanciate tasks list
@@ -416,6 +420,10 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
 		qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
 		qh->RegisterHandler("workflow_schedules",WorkflowSchedules::HandleQuery);
+		qh->RegisterHandler("notification_type",NotificationType::HandleQuery);
+		qh->RegisterHandler("notification_types",NotificationTypes::HandleQuery);
+		qh->RegisterHandler("notification",Notification::HandleQuery);
+		qh->RegisterHandler("notifications",Notifications::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		qh->RegisterHandler("ping",ping_handle_query);
@@ -549,6 +557,7 @@ int main(int argc,const char **argv)
 				delete workflow_instances;
 				delete workflows;
 				delete notifications;
+				delete notification_types;
 				delete tasks;
 				delete retry_schedules;
 				delete pm;

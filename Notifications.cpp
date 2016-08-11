@@ -24,13 +24,17 @@
 #include <Logger.h>
 #include <Configuration.h>
 #include <WorkflowInstance.h>
-#include <sha1.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 
 #include <string.h>
+
+#include <xqilla/xqilla-dom3.hpp>
 
 Notifications *Notifications::instance = 0;
 
 using namespace std;
+using namespace xercesc;
 
 Notifications::Notifications()
 {
@@ -79,62 +83,11 @@ void Notifications::Reload(void)
 	pthread_mutex_unlock(&lock);
 }
 
-void Notifications::SyncBinaries(void)
-{
-	Logger::Log(LOG_NOTICE,"[ Notifications ] Syncing binaries");
-	
-	pthread_mutex_lock(&lock);
-	
-	DB db;
-	
-	// Load tasks from database
-	db.Query("SELECT notification_type_binary, notification_type_binary_content FROM t_notification_type WHERE notification_type_binary_content IS NOT NULL");
-	
-	struct sha1_ctx ctx;
-	char db_hash[20];
-	string file_hash;
-	
-	while(db.FetchRow())
-	{
-		// Compute database SHA1 hash
-		sha1_init_ctx(&ctx);
-		sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
-		sha1_finish_ctx(&ctx,db_hash);
-		
-		// Compute file SHA1 hash
-		try
-		{
-			Notification::GetFileHash(db.GetField(0),file_hash);
-		}
-		catch(Exception &e)
-		{
-			Logger::Log(LOG_NOTICE,"[ Notifications ] Task %s was not found creating it",db.GetField(0));
-			
-			Notification::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
-			continue;
-		}
-		
-		if(memcmp(file_hash.c_str(),db_hash,20)==0)
-		{
-			Logger::Log(LOG_NOTICE,"[ Notifications ] Task %s hash matches DB, skipping",db.GetField(0));
-			continue;
-		}
-		
-		Logger::Log(LOG_NOTICE,"[ Notifications ] Task %s hash does not match DB, replacing",db.GetField(0));
-		
-		Notification::RemoveFile(db.GetField(0));
-		Notification::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
-	}
-	
-	pthread_mutex_unlock(&lock);
-}
-
 Notification Notifications::GetNotification(unsigned int id)
 {
 	pthread_mutex_lock(&lock);
 	
-	map<unsigned int,Notification *>::iterator it;
-	it = notifications.find(id);
+	auto it = notifications.find(id);
 	if(it==notifications.end())
 	{
 		pthread_mutex_unlock(&lock);
@@ -147,6 +100,23 @@ Notification Notifications::GetNotification(unsigned int id)
 	pthread_mutex_unlock(&lock);
 	
 	return notification;
+}
+
+bool Notifications::Exists(unsigned int id)
+{
+	pthread_mutex_lock(&lock);
+	
+	auto it = notifications.find(id);
+	if(it==notifications.end())
+	{
+		pthread_mutex_unlock(&lock);
+		
+		return false;
+	}
+	
+	pthread_mutex_unlock(&lock);
+	
+	return true;
 }
 
 void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflow_instance)
@@ -208,4 +178,34 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 	notification_instances.erase(pid);
 	
 	pthread_mutex_unlock(&lock);
+}
+
+bool Notifications::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	Notifications *notifications = Notifications::GetInstance();
+	
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="list")
+	{
+		pthread_mutex_lock(&notifications->lock);
+		
+		for(auto it = notifications->notifications.begin(); it!=notifications->notifications.end(); it++)
+		{
+			DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
+			node->setAttribute(X("id"),X(std::to_string(it->second->GetID()).c_str()));
+			node->setAttribute(X("type_id"),X(std::to_string(it->second->GetTypeID()).c_str()));
+			node->setAttribute(X("name"),X(it->second->GetName().c_str()));
+		}
+		
+		pthread_mutex_unlock(&notifications->lock);
+		
+		return true;
+	}
+	
+	return false;
 }

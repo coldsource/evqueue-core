@@ -18,13 +18,18 @@
  */
 
 #include <Notification.h>
+#include <Notifications.h>
+#include <NotificationType.h>
+#include <NotificationTypes.h>
+#include <Workflows.h>
 #include <Exception.h>
 #include <DB.h>
 #include <Configuration.h>
 #include <Logger.h>
 #include <WorkflowInstance.h>
 #include <Sockets.h>
-#include <FileManager.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 #include <tools.h>
 #include <global.h>
 
@@ -38,11 +43,16 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
+#include <xqilla/xqilla-dom3.hpp>
+
 using namespace std;
+using namespace xercesc;
 
 Notification::Notification(DB *db,unsigned int notification_id)
 {
-	db->QueryPrintf("SELECT nt.notification_type_binary, nt.notification_type_name, n.notification_parameters FROM t_notification n, t_notification_type nt WHERE nt.notification_type_id=n.notification_type_id AND n.notification_id=%i",&notification_id);
+	id = notification_id;
+	
+	db->QueryPrintf("SELECT notification_type_id,notification_name,notification_parameters FROM t_notification WHERE notification_id=%i",&notification_id);
 	
 	if(!db->FetchRow())
 		throw Exception("Notification","Unknown notification");
@@ -51,11 +61,14 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	
 	notification_monitor_path = Configuration::GetInstance()->Get("notifications.monitor.path");
 	
-	const char *ptr = db->GetField(0);
-	if(ptr[0]=='/')
-		notification_binary = ptr;
+	type_id = db->GetFieldInt(0);
+	
+	NotificationType notification_type = NotificationTypes::GetInstance()->GetNotificationType(type_id);
+	
+	if(notification_type.GetName().at(0)=='/')
+		notification_binary = notification_type.GetName();
 	else
-		notification_binary = Configuration::GetInstance()->Get("notifications.tasks.directory")+"/"+ptr;
+		notification_binary = Configuration::GetInstance()->Get("notifications.tasks.directory")+"/"+notification_type.GetName();
 	
 	notification_name = db->GetField(1);
 	notification_configuration = db->GetField(2);
@@ -108,40 +121,155 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 	return pid;
 }
 
-void Notification::PutFile(const string &filename,const string &data,bool base64_encoded)
+void Notification::Get(unsigned int id,QueryResponse *response)
 {
-	if(base64_encoded)
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BASE64);
-	else
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BINARY);
+	Notification notification = Notifications::GetInstance()->GetNotification(id);
+	
+	DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
+	node->setAttribute(X("type_id"),X(to_string(notification.GetTypeID()).c_str()));
+	node->setAttribute(X("name"),X(notification.GetName().c_str()));
+	node->setAttribute(X("parameters"),X(notification.GetConfiguration().c_str()));
 }
 
-void Notification::PutFileConf(const string &filename,const string &data)
+void Notification::Create(unsigned int type_id,const std::string &name, const std::string parameters)
 {
-	FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data,FileManager::FILETYPE_CONF);
+	create_edit_check(type_id,name,parameters);
+	
+	DB db;
+	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_parameters) VALUES(%i,%s,%s)",&type_id,name.c_str(),parameters.c_str());
 }
 
-void Notification::GetFile(const string &filename,string &data)
+void Notification::Edit(unsigned int id,unsigned int type_id,const std::string &name, const std::string parameters)
 {
-	FileManager::GetFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data);
+	create_edit_check(type_id,name,parameters);
+	
+	if(!Notifications::GetInstance()->Exists(id))
+		throw Exception("Notification","Unable to find notification");
+	
+	DB db;
+	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_parameters=%s WHERE notification_id=%i",type_id,name.c_str(),parameters.c_str(),&id);
 }
 
-void Notification::GetFileHash(const string &filename,string &hash)
+void Notification::Delete(unsigned int id)
 {
-	FileManager::GetFileHash(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,hash);
+	DB db;
+	db.QueryPrintf("DELETE FROM t_notification WHERE notification_id=%i",&id);
+	
+	if(db.AffectedRows()==0)
+		throw Exception("Notification","Unable to find notification");
 }
 
-void Notification::GetFileConf(const string &filename,string &data)
+void Notification::create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters)
 {
-	FileManager::GetFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data);
+	if(name.length()==0)
+		throw Exception("Notification","Name cannot be empty");
+	
+	if(!NotificationTypes::GetInstance()->Exists(type_id))
+		throw Exception("Notification","Unknown notification type ID");
 }
 
-void Notification::RemoveFile(const string &filename)
+bool Notification::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename);
-}
-
-void Notification::RemoveFileConf(const string &filename)
-{
-	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename);
+	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	
+	auto it_action = attrs.find("action");
+	if(it_action==attrs.end())
+		return false;
+	
+	if(it_action->second=="get")
+	{
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("Notification","Missing 'id' attribute");
+		
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Notification","Invalid ID");
+		}
+		
+		Get(id,response);
+		
+		return true;
+	}
+	else if(it_action->second=="create" || it_action->second=="edit")
+	{
+		auto it_type_id = attrs.find("type_id");
+		if(it_type_id==attrs.end())
+			throw Exception("Notification","Missing 'type_id' attribute");
+		
+		unsigned int type_id;
+		try
+		{
+			type_id = std::stoi(it_type_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Notification","Invalid type ID");
+		}
+		
+		auto it_name = attrs.find("name");
+		if(it_name==attrs.end())
+			throw Exception("Notification","Missing 'name' attribute");
+		
+		auto it_parameters = attrs.find("parameters");
+		if(it_parameters==attrs.end())
+			throw Exception("Notification","Missing 'parameters' attribute");
+		
+		if(it_action->second=="create")
+			Create(type_id, it_name->second, it_parameters->second);
+		else
+		{
+			auto it_id = attrs.find("id");
+			if(it_id==attrs.end())
+				throw Exception("Notification","Missing 'id' attribute");
+			
+			unsigned int id;
+			try
+			{
+				id = std::stoi(it_id->second);
+			}
+			catch(...)
+			{
+				throw Exception("Notification","Invalid ID");
+			}
+			
+			Edit(id, type_id, it_name->second, it_parameters->second);
+		}
+		
+		Notifications::GetInstance()->Reload();
+		Workflows::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(it_action->second=="delete")
+	{
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("Notification","Missing 'id' attribute");
+		
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Notification","Invalid ID");
+		}
+		
+		bool workflow_deleted;
+		Delete(id);
+		
+		Notifications::GetInstance()->Reload();
+		Workflows::GetInstance()->Reload();
+		
+		return true;
+	}
+	
+	return false;
 }

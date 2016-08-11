@@ -20,6 +20,7 @@
 #include <Workflow.h>
 #include <Workflows.h>
 #include <WorkflowParameters.h>
+#include <Notifications.h>
 #include <DB.h>
 #include <Exception.h>
 #include <XMLUtils.h>
@@ -208,6 +209,30 @@ void Workflow::Delete(unsigned int id, bool *task_deleted)
 		*task_deleted = true;
 }
 
+void Workflow::SubscribeNotification(unsigned int id, unsigned int notification_id)
+{
+	if(!Notifications::GetInstance()->Exists(notification_id))
+		throw Exception("Workflow","Notification ID not found");
+	
+	DB db;
+	db.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&id,&notification_id);
+}
+
+void Workflow::UnsubscribeNotification(unsigned int id, unsigned int notification_id)
+{
+	DB db;
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i AND notification_id=%i",&id,&notification_id);
+	
+	if(db.AffectedRows()==0)
+		throw Exception("Workflow","Workflow was not subscribed to this notification");
+}
+
+void Workflow::ClearNotifications(unsigned int id)
+{
+	DB db;
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
+}
+
 string Workflow::create_edit_check(const string &name, const string &base64, const string &group, const string &comment)
 {
 	if(!CheckWorkflowName(name))
@@ -318,6 +343,56 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 			Tasks::GetInstance()->Reload();
 		
 		return true;
+	}
+	else if(it_action->second=="subscribe_notification" || it_action->second=="unsubscribe_notification" || it_action->second=="clear_notifications")
+	{
+		auto it_id = attrs.find("id");
+		if(it_id==attrs.end())
+			throw Exception("Workflow","Missing 'id' attribute");
+		
+		unsigned int id;
+		try
+		{
+			id = std::stoi(it_id->second);
+		}
+		catch(...)
+		{
+			throw Exception("Workflow","Invalid ID");
+		}
+		
+		if(it_action->second=="clear_notifications")
+		{
+			ClearNotifications(id);
+			
+			Workflows::GetInstance()->Reload();
+			
+			return true;
+		}
+		else if(it_action->second=="subscribe_notification" || it_action->second=="unsubscribe_notification")
+		{
+			auto it_notification_id = attrs.find("notification_id");
+			if(it_id==attrs.end())
+				throw Exception("Workflow","Missing 'notification_id' attribute");
+			
+			unsigned int notification_id;
+			try
+			{
+				notification_id = std::stoi(it_notification_id->second);
+			}
+			catch(...)
+			{
+				throw Exception("Workflow","Invalid notification ID");
+			}
+			
+			if(it_action->second=="subscribe_notification")
+				SubscribeNotification(id,notification_id);
+			else
+				UnsubscribeNotification(id,notification_id);
+			
+			Workflows::GetInstance()->Reload();
+			
+			return true;
+		}
 	}
 	
 	return false;

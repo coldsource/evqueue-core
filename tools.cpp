@@ -26,6 +26,7 @@
 #include <RetrySchedules.h>
 #include <Workflows.h>
 #include <Notifications.h>
+#include <NotificationTypes.h>
 #include <Retrier.h>
 #include <QueuePool.h>
 #include <Configuration.h>
@@ -120,8 +121,8 @@ void tools_config_reload(const std::string &module)
 	
 	if(module=="all" || module=="notifications")
 	{
-		Notifications *notifications = Notifications::GetInstance();
-		notifications->Reload();
+		NotificationTypes::GetInstance()->Reload();
+		Notifications::GetInstance()->Reload();
 	}
 	
 	if(module=="all" || module=="queuepool")
@@ -139,8 +140,7 @@ void tools_sync_tasks(void)
 
 void tools_sync_notifications(void)
 {
-	Notifications *notifications= Notifications::GetInstance();
-	notifications->SyncBinaries();
+	NotificationTypes::GetInstance()->SyncBinaries();
 }
 
 void tools_flush_retrier(void)

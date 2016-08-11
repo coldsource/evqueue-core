@@ -17,51 +17,41 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _NOTIFICATIONS_H_
-#define _NOTIFICATIONS_H_
+#ifndef _NOTIFICATIONTYPES_H_
+#define _NOTIFICATIONTYPES_H_
+
+#include <pthread.h>
 
 #include <map>
 #include <string>
-#include <pthread.h>
 
-class Notification;
-class WorkflowInstance;
+class NotificationType;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
-class Notifications
+class NotificationTypes
 {
 	private:
-		struct st_notification_instance
-		{
-			unsigned int workflow_instance_id;
-			std::string notification_type;
-		};
-		
-		static Notifications *instance;
+		static NotificationTypes *instance;
 		
 		pthread_mutex_t lock;
 		
-		int max_concurrency;
-		
-		std::map<unsigned int,Notification *> notifications;
-		std::map<pid_t,st_notification_instance> notification_instances;
+		std::map<std::string,NotificationType *> notifications_name;
+		std::map<unsigned int,NotificationType *> notifications_id;
 	
 	public:
 		
-		Notifications();
-		~Notifications();
+		NotificationTypes();
+		~NotificationTypes();
 		
-		static Notifications *GetInstance() { return instance; }
+		static NotificationTypes *GetInstance() { return instance; }
 		
 		void Reload(void);
-		
-		Notification GetNotification(unsigned int id);
-		
+		void SyncBinaries(void);
+
 		bool Exists(unsigned int id);
-		
-		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
-		void Exit(pid_t pid, int status, char retcode);
+		NotificationType GetNotificationType(unsigned int id);
+		NotificationType GetNotificationType(const std::string &name);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

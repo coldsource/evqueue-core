@@ -91,45 +91,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			// Specific cases
 			const XMLCh *action_attr = attrs.getValue(X("action"));
 			
-			if(strcmp(node_name_c,"notification")==0)
-			{
-				if(action_attr==0)
-					throw Exception("SocketQuerySAX2Handler","Missing action attribute on node notification");
-				
-				if(XMLString::compareString(action_attr,X("put"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUT;
-				else if(XMLString::compareString(action_attr,X("remove"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_REM;
-				else if(XMLString::compareString(action_attr,X("putconf"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_PUTCONF;
-				else if(XMLString::compareString(action_attr,X("removeconf"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_REMCONF;
-				else if(XMLString::compareString(action_attr,X("getconf"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_NOTIFICATION_GETCONF;
-				else
-					throw Exception("SocketQuerySAX2Handler","Unknown notification action");
-				
-				if(query_type==QUERY_NOTIFICATION_PUT || query_type==QUERY_NOTIFICATION_REM || query_type==QUERY_NOTIFICATION_PUTCONF || query_type==QUERY_NOTIFICATION_REMCONF || query_type==QUERY_NOTIFICATION_GETCONF)
-				{
-					const XMLCh *filename_attr = attrs.getValue(X("filename"));
-					
-					if(filename_attr==0)
-						throw Exception("SocketQuerySAX2Handler","Missing filename attribute on node notification");
-					
-					file_name = XMLString::transcode(filename_attr);
-					
-					if(query_type==QUERY_NOTIFICATION_PUT || query_type==QUERY_NOTIFICATION_PUTCONF)
-					{
-						const XMLCh *data_attr = attrs.getValue(X("data"));
-						
-						if(data_attr==0)
-							throw Exception("SocketQuerySAX2Handler","Missing data attribute on node notification");
-						
-						file_data = XMLString::transcode(data_attr);
-					}
-				}
-			}
-			else if(strcmp(node_name_c,"status")==0)
+			if(strcmp(node_name_c,"status")==0)
 			{
 				const XMLCh *type_attr = attrs.getValue(X("type"));
 				
