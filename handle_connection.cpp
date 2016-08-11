@@ -53,18 +53,6 @@
 
 using namespace std;
 
-static void send_success_status(int s)
-{
-	send(s,"<return status='OK' />",22,0);
-}
-
-static void send_error_status(int s, const char *error)
-{
-	send(s,"<return status='KO' error=\"",27,0);
-	send(s,error,strlen(error),0);
-	send(s,"\" />",4,0);
-}
-
 void *handle_connection(void *sp)
 {
 	int s  = *((int *)sp);
@@ -106,6 +94,8 @@ void *handle_connection(void *sp)
 	
 	// Init mysql library
 	mysql_thread_init();
+	
+	QueryResponse response(s);
 	
 	try
 	{
@@ -160,166 +150,17 @@ void *handle_connection(void *sp)
 			throw Exception("Workflow XML parsing","Unexpected error trying to parse workflow XML");
 		}
 		
-		QueryResponse response;
-		if(QueryHandlers::GetInstance()->HandleQuery(saxh->GetQueryGroup(),saxh, &response))
-		{
-			// Handled by external handler
-			response.SendResponse(s);
-		}
-		else if (saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH)
-		{
-			const char *workflow_name = saxh->GetWorkflowName();
-			WorkflowInstance *wi;
-			bool workflow_terminated;
-			
-			stats->IncWorkflowQueries();
-			
-			try
-			{
-				wi = new WorkflowInstance(workflow_name,saxh->GetWorkflowParameters(),0,saxh->GetWorkflowHost(),saxh->GetWorkflowUser());
-			}
-			catch(Exception &e)
-			{
-				stats->IncWorkflowExceptions();
-				throw e;
-			}
-			
-			unsigned int instance_id = wi->GetInstanceID();
-			
-			wi->Start(&workflow_terminated);
-			
-			Logger::Log(LOG_NOTICE,"[WID %d] Instanciated from %s:%d",wi->GetInstanceID(),remote_addr_str,remote_port);
-			
-			int wait_re = true;
-			if(saxh->GetQueryOptions()==SocketQuerySAX2Handler::QUERY_OPTION_MODE_SYNCHRONOUS)
-				wait_re = WorkflowInstances::GetInstance()->Wait(s,instance_id,saxh->GetWaitTimeout());
-			
-			if(wait_re)
-				sprintf(buf,"<return status='OK' workflow-instance-id='%d' />",instance_id);
-			else
-				sprintf(buf,"<return status='OK' workflow-instance-id='%d' wait='timedout' />",instance_id);
-			
-			send(s,buf,strlen(buf),0);
-			
-			if(workflow_terminated)
-				delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
-		}
-		else if(saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_MIGRATE)
-		{
-			int workflow_instance_id = saxh->GetWorkflowId();
-			DB db;
-			
-			// Check if workflow instance exists and is eligible to migration
-			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,config->Get("network.node.name").c_str());
-			if(!db.FetchRow())
-				throw Exception("Workflow Migration","Workflow ID not found or already belongs to this node");
-			
-			Logger::Log(LOG_NOTICE,"[WID %d] Migrating",db.GetFieldInt(0));
-			
-			WorkflowInstance *workflow_instance = 0;
-			bool workflow_terminated;
-			try
-			{
-				workflow_instance = new WorkflowInstance(db.GetFieldInt(0));
-				workflow_instance->Migrate(&workflow_terminated);
-				if(workflow_terminated)
-					delete workflow_instance;
-			}
-			catch(Exception &e)
-			{
-				if(workflow_instance)
-					delete workflow_instance;
-				throw e;
-			}
-			
-			send_success_status(s);
-		}
-		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_INFO)
-		{
-			int workflow_instance_id = saxh->GetWorkflowId();
-			DB db;
-			
-			stats->IncWorkflowStatusQueries();
-			
-			WorkflowInstances *wfi = WorkflowInstances::GetInstance();
-			if(!wfi->SendStatus(s,workflow_instance_id))
-			{
-				// Workflow is not executing, lookup in database
-				db.QueryPrintf("SELECT workflow_instance_savepoint FROM t_workflow_instance WHERE workflow_instance_id=%i",&workflow_instance_id);
-				if(db.FetchRow())
-					send(s,db.GetField(0),strlen(db.GetField(0)),0);
-				else
-					send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
-			}
-		}
-		else if ( saxh->GetQueryType() == SocketQuerySAX2Handler::QUERY_WORKFLOW_CANCEL)
-		{
-			unsigned int workflow_instance_id = saxh->GetWorkflowId();
-			
-			stats->IncWorkflowCancelQueries();
-			
-			// Prevent workflow instance from instanciating new tasks
-			if(!WorkflowInstances::GetInstance()->Cancel(workflow_instance_id))
-				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
-			else
-			{
-				// Flush retrier
-				Retrier::GetInstance()->FlushWorkflowInstance(workflow_instance_id);
-				
-				// Cancel currently queued tasks
-				QueuePool::GetInstance()->CancelTasks(workflow_instance_id);
-				
-				send_success_status(s);
-			}
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_WORKFLOW_WAIT)
-		{
-			unsigned int workflow_instance_id = saxh->GetWorkflowId();
-			
-			if(!WorkflowInstances::GetInstance()->Wait(s,workflow_instance_id,saxh->GetWaitTimeout()))
-				send_error_status(s,"TIMEDOUT");
-			else
-				send_success_status(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_WORKFLOW_KILLTASK)
-		{
-			unsigned int workflow_instance_id = saxh->GetWorkflowId();
-			int task_pid = saxh->GetTaskPID();
-			
-			if(!WorkflowInstances::GetInstance()->KillTask(workflow_instance_id,task_pid))
-				send_error_status(s,"UNKNOWN-WORKFLOW-INSTANCE");
-			else
-				send_success_status(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_WORKFLOWS)
-		{
-			stats->IncStatisticsQueries();
-			
-			WorkflowInstances *workflow_instances = WorkflowInstances::GetInstance();
-			workflow_instances->SendStatus(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_SCHEDULER)
-		{
-			stats->IncStatisticsQueries();
-			
-			WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
-			scheduler->SendStatus(s);
-		}
-		else if(saxh->GetQueryType()==SocketQuerySAX2Handler::QUERY_STATUS_CONFIGURATION)
-		{
-			stats->IncStatisticsQueries();
-			
-			Configuration *config = Configuration::GetInstance();
-			config->SendConfiguration(s);
-		}
-		else
-			send_error_status(s,"Unknown command or action");
+		if(!QueryHandlers::GetInstance()->HandleQuery(saxh->GetQueryGroup(),saxh, &response))
+			response.SetError("Unknown command or action");
+		
+		response.SendResponse();
 	}
 	catch (Exception &e)
 	{
 		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context,e.error);
 		
-		send_error_status(s,e.error);
+		response.SetError(e.error);
+		response.SendResponse();
 		
 		if (parser!=0)
 			delete parser;

@@ -32,6 +32,9 @@
 #include <Configuration.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Statistics.h>
+#include <WorkflowInstances.h>
+#include <Exception.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -173,30 +176,72 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	if(it_action==attrs.end())
 		return false;
 	
-	if(it_action->second=="reload")
+	if(saxh->GetQueryGroup()=="control")
 	{
-		auto it_module = attrs.find("module");
-		if(it_module==attrs.end())
-			tools_config_reload();
-		else
-			tools_config_reload(it_module->second);
-		
-		return true;
+		if(it_action->second=="reload")
+		{
+			auto it_module = attrs.find("module");
+			if(it_module==attrs.end())
+				tools_config_reload();
+			else
+				tools_config_reload(it_module->second);
+			
+			return true;
+		}
+		else if(it_action->second=="retry")
+		{
+			tools_flush_retrier();
+			return true;
+		}
+		else if(it_action->second=="synctasks")
+		{
+			tools_sync_tasks();
+			return true;
+		}
+		else if(it_action->second=="syncnotifications")
+		{
+			tools_sync_notifications();
+			return true;
+		}
 	}
-	else if(it_action->second=="retry")
+	else if(saxh->GetQueryGroup()=="status")
 	{
-		tools_flush_retrier();
-		return true;
-	}
-	else if(it_action->second=="synctasks")
-	{
-		tools_sync_tasks();
-		return true;
-	}
-	else if(it_action->second=="syncnotifications")
-	{
-		tools_sync_notifications();
-		return true;
+		if(it_action->second=="query")
+		{
+			auto it_type = attrs.find("type");
+			if(it_type==attrs.end())
+				throw Exception("Core","Missing type attribute on node status");
+			
+			Statistics *stats = Statistics::GetInstance();
+			
+			if(it_type->second=="workflows")
+			{
+				stats->IncStatisticsQueries();
+				
+				WorkflowInstances *workflow_instances = WorkflowInstances::GetInstance();
+				workflow_instances->SendStatus(response);
+				
+				return true;
+			}
+			else if(it_type->second=="scheduler")
+			{
+				stats->IncStatisticsQueries();
+				
+				WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
+				scheduler->SendStatus(response);
+				
+				return true;
+			}
+			else if(it_type->second=="configuration")
+			{
+				stats->IncStatisticsQueries();
+				
+				Configuration *config = Configuration::GetInstance();
+				config->SendConfiguration(response);
+				
+				return true;
+			}
+		}
 	}
 	
 	return false;

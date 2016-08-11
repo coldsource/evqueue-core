@@ -59,7 +59,7 @@ class WorkflowScheduler:public Scheduler
 		
 		void Reload();
 		
-		void SendStatus(int s);
+		void SendStatus(QueryResponse *response);
 		
 	protected:
 		void event_removed(Event *e, event_reasons reason);

@@ -30,6 +30,7 @@ using namespace xercesc;
 
 class WorkflowParameters;
 class WorkflowSchedule;
+class QueryResponse;
 
 class WorkflowInstance
 {
@@ -89,7 +90,7 @@ class WorkflowInstance
 		bool CheckTaskName(const char *task_name);
 		void TaskUpdateProgression(DOMNode *task, int prct);
 		
-		void SendStatus(int s, bool full_status);
+		void SendStatus(QueryResponse *response, bool full_status);
 		void RecordSavepoint();
 		
 		bool KillTask(pid_t pid);

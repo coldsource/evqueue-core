@@ -38,6 +38,7 @@
 #include <SequenceGenerator.h>
 #include <Notifications.h>
 #include <Sockets.h>
+#include <QueryResponse.h>
 #include <tools.h>
 #include <global.h>
 
@@ -52,7 +53,6 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
-#include <sys/socket.h>
 
 extern pthread_mutex_t main_mutex;
 extern pthread_cond_t fork_lock;
@@ -1027,34 +1027,22 @@ void WorkflowInstance::TaskUpdateProgression(DOMNode *task, int prct)
 	((DOMElement *)task)->setAttribute(X("progression"),X(buf));
 }
 
-void WorkflowInstance::SendStatus(int s, bool full_status)
+void WorkflowInstance::SendStatus(QueryResponse *response, bool full_status)
 {
 	pthread_mutex_lock(&lock);
 	
-	DOMDocument *status_doc;
+	DOMDocument *status_doc = response->GetDOM();
 	
 	if(!full_status)
 	{
-		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-		status_doc = xqillaImplementation->createDocument();
-		
 		DOMNode *workflow_node = status_doc->importNode(xmldoc->getDocumentElement(),false);
-		status_doc->appendChild(workflow_node);
+		status_doc->getDocumentElement()->appendChild(workflow_node);
 	}
 	else
-		status_doc = xmldoc;
-	
-	XMLCh *status = serializer->writeToString(status_doc->getDocumentElement());
-	char *status_c = XMLString::transcode(status);
-	
-	send(s,status_c,strlen(status_c),0);
-	
-	XMLString::release(&status);
-	XMLString::release(&status_c);
-	
-	
-	if(!full_status)
-		status_doc->release();
+	{
+		DOMNode *workflow_node = status_doc->importNode(xmldoc->getDocumentElement(),true);
+		status_doc->getDocumentElement()->appendChild(workflow_node);
+	}
 	
 	pthread_mutex_unlock(&lock);
 }

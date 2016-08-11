@@ -19,11 +19,10 @@
 
 #include <Configuration.h>
 #include <Exception.h>
+#include <QueryResponse.h>
 
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <stdlib.h>
 #include <pcrecpp.h>
 
@@ -154,15 +153,14 @@ void Configuration::Substitute(void)
 	}
 }
 
-void Configuration::SendConfiguration(int s)
+void Configuration::SendConfiguration(QueryResponse *response)
 {
 	char buf[16];
 	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	DOMDocument *xmldoc = response->GetDOM();
 	
 	DOMElement *configuration_node = xmldoc->createElement(X("configuration"));
-	xmldoc->appendChild(configuration_node);
+	xmldoc->getDocumentElement()->appendChild(configuration_node);
 	
 	
 	map<string,string>::iterator it;
@@ -173,15 +171,4 @@ void Configuration::SendConfiguration(int s)
 		entry_node->setAttribute(X("value"),X(it->second.c_str()));
 		configuration_node->appendChild(entry_node);
 	}
-	
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *configuration_xml = serializer->writeToString(configuration_node);
-	char *configuration_xml_c = XMLString::transcode(configuration_xml);
-	
-	send(s,configuration_xml_c,strlen(configuration_xml_c),0);
-	
-	XMLString::release(&configuration_xml);
-	XMLString::release(&configuration_xml_c);
-	serializer->release();
-	xmldoc->release();
 }

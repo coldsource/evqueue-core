@@ -22,6 +22,7 @@
 #include <Statistics.h>
 #include <Logger.h>
 #include <Configuration.h>
+#include <QueryResponse.h>
 #include <Exception.h>
 
 #include <pthread.h>
@@ -83,7 +84,7 @@ bool WorkflowInstances::Cancel(unsigned int workflow_instance_id)
 	return found;
 }
 
-bool WorkflowInstances::Wait(int socket, unsigned int workflow_instance_id, int timeout)
+bool WorkflowInstances::Wait(QueryResponse *response, unsigned int workflow_instance_id, int timeout)
 {
 	if(timeout<0)
 		return false;
@@ -172,8 +173,7 @@ bool WorkflowInstances::Wait(int socket, unsigned int workflow_instance_id, int 
 			}
 			
 			// Check if remote client is still alive
-			re = send(socket,"<ping/>",7,0);
-			if(re!=7)
+			if(!response->Ping())
 			{
 				Logger::Log(LOG_NOTICE,"Remote host is gone, terminating wait thread...");
 				break;
@@ -209,21 +209,17 @@ bool WorkflowInstances::KillTask(unsigned int workflow_instance_id, pid_t pid)
 	return found;
 }
 
-void WorkflowInstances::SendStatus(int s)
+void WorkflowInstances::SendStatus(QueryResponse *response)
 {
 	pthread_mutex_lock(&lock);
 	
-	send(s,"<workflows>",11,0);
-	
 	for(std::map<unsigned int,WorkflowInstance *>::iterator i = wi.begin();i!=wi.end();++i)
-		i->second->SendStatus(s,false);
-	
-	send(s,"</workflows>",12,0);
+		i->second->SendStatus(response,false);
 	
 	pthread_mutex_unlock(&lock);
 }
 
-bool WorkflowInstances::SendStatus(int s,unsigned int workflow_instance_id)
+bool WorkflowInstances::SendStatus(QueryResponse *response,unsigned int workflow_instance_id)
 {
 	bool found = false;
 	
@@ -233,7 +229,7 @@ bool WorkflowInstances::SendStatus(int s,unsigned int workflow_instance_id)
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
-		i->second->SendStatus(s,true);
+		i->second->SendStatus(response,true);
 		found = true;
 	}
 	

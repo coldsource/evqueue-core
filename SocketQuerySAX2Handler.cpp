@@ -28,32 +28,12 @@
 
 SocketQuerySAX2Handler::SocketQuerySAX2Handler()
 {
-	query_type = 0;
-	workflow_name = 0;
-	workflow_host = 0;
-	workflow_user = 0;
-	file_name = 0;
-	file_data = 0;
 	level = 0;
 	ready = false;
 }
 
 SocketQuerySAX2Handler::~SocketQuerySAX2Handler()
 {
-	if(workflow_name)
-		XMLString::release(&workflow_name);
-	
-	if(workflow_host)
-		XMLString::release(&workflow_host);
-	
-	if(workflow_user)
-		XMLString::release(&workflow_user);
-	
-	if(file_name)
-		XMLString::release(&file_name);
-	
-	if(file_data)
-		XMLString::release(&file_data);
 }
 
 
@@ -87,103 +67,9 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				XMLString::release(&attr_name_c);
 				XMLString::release(&attr_value_c);
 			}
-			
-			// Specific cases
-			const XMLCh *action_attr = attrs.getValue(X("action"));
-			
-			if(strcmp(node_name_c,"status")==0)
-			{
-				const XMLCh *type_attr = attrs.getValue(X("type"));
-				
-				if(type_attr==0)
-					throw Exception("SocketQuerySAX2Handler","Missing type attribute on node statistics");
-				
-				if(XMLString::compareString(type_attr,X("scheduler"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_STATUS_SCHEDULER;
-				else if(XMLString::compareString(type_attr,X("workflows"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_STATUS_WORKFLOWS;
-				else if(XMLString::compareString(type_attr,X("configuration"))==0)
-					query_type = SocketQuerySAX2Handler::QUERY_STATUS_CONFIGURATION;
-				else
-					throw Exception("SocketQuerySAX2Handler","Unknown statistics type");
-			}
-			else if(strcmp(node_name_c,"workflow")==0 && !action_attr)
-			{
-				const XMLCh *name_attr = attrs.getValue(X("name"));
-				const XMLCh *id_attr = attrs.getValue(X("id"));
-				
-				if (name_attr==0 && id_attr==0)
-					throw Exception("SocketQuerySAX2Handler","Missing name or id attribute on node workflow");
-					
-				if(name_attr!=0)
-				{
-					query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_LAUNCH;
-					workflow_name = XMLString::transcode(name_attr);
-					
-					int len = strlen(workflow_name);
-					for(int i=0;i<len;i++)
-						if(!isalnum(workflow_name[i]) && workflow_name[i]!='_')
-							throw Exception("SocketQuerySAX2Handler","Invalid workflow name");
-					
-					const XMLCh *mode_attr = attrs.getValue(X("mode"));
-					if(mode_attr==0 || XMLString::compareString(mode_attr,X("asynchronous"))==0)
-						query_options = SocketQuerySAX2Handler::QUERY_OPTION_MODE_ASYNCHRONOUS;
-					else if(XMLString::compareString(mode_attr,X("synchronous"))==0)
-						query_options = SocketQuerySAX2Handler::QUERY_OPTION_MODE_SYNCHRONOUS;
-					
-					if(query_options == SocketQuerySAX2Handler::QUERY_OPTION_MODE_SYNCHRONOUS)
-					{
-						wait_timeout = 0;
-						
-						const XMLCh *timeout_attr = attrs.getValue(X("timeout"));
-						if(timeout_attr)
-							wait_timeout = XMLString::parseInt(timeout_attr);
-					}
-					
-					const XMLCh *host_attr = attrs.getValue(X("host"));
-					if(host_attr!=0)
-						workflow_host = XMLString::transcode(host_attr);
-					
-					const XMLCh *user_attr = attrs.getValue(X("user"));
-					if(user_attr!=0)
-						workflow_user = XMLString::transcode(user_attr);
-					
-				}
-				else
-				{
-					workflow_id = XMLString::parseInt(id_attr);
-					
-					if(action_attr==0 || XMLString::compareString(action_attr,X("info"))==0)
-						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_INFO;
-					else if(XMLString::compareString(action_attr,X("migrate"))==0)
-						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_MIGRATE;
-					else if(XMLString::compareString(action_attr,X("cancel"))==0)
-						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_CANCEL;
-					else if(XMLString::compareString(action_attr,X("wait"))==0)
-					{
-						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_WAIT;
-						
-						wait_timeout = 0;
-						
-						const XMLCh *timeout_attr = attrs.getValue(X("timeout"));
-						if(timeout_attr)
-							wait_timeout = XMLString::parseInt(timeout_attr);
-					}
-					else if(XMLString::compareString(action_attr,X("killtask"))==0)
-					{
-						query_type = SocketQuerySAX2Handler::QUERY_WORKFLOW_KILLTASK;
-						
-						const XMLCh *pid_attr = attrs.getValue(X("pid"));
-						if(pid_attr==0)
-							throw Exception("SocketQuerySAX2Handler","Action killtask requires a PID");
-						
-						task_pid = XMLString::parseInt(pid_attr);
-					}
-				}
-			}
 		}
-		
-		if((group=="workflow" || group=="workflow_schedule") && level==2)
+			
+		if((group=="instance" || group=="workflow_schedule") && level==2)
 		{
 			if(strcmp(node_name_c,"parameter")!=0)
 				throw Exception("SocketQuerySAX2Handler","Expecting parameter node");
@@ -222,13 +108,10 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			inputs.push_back(value_c);
 		}
 		
-		if(query_type==QUERY_WORKFLOW_LAUNCH && level>2)
-			throw Exception("SocketQuerySAX2Handler","parameter node does not accept subnodes");
-		
 		if(group=="task" && level>2)
 			throw Exception("SocketQuerySAX2Handler","input node does not accept subnodes");
 		
-		if(group!="workflow" && group!="workflow_schedule" && group!="task" && level>1)
+		if(group!="instance" && group!="workflow_schedule" && group!="task" && level>1)
 			throw Exception("SocketQuerySAX2Handler","Unexpected subnode");
 	}
 	catch(Exception e)

@@ -49,6 +49,7 @@
 #include <Workflows.h>
 #include <WorkflowInstance.h>
 #include <WorkflowInstances.h>
+#include <WorkflowInstanceAPI.h>
 #include <ConfigurationReader.h>
 #include <Exception.h>
 #include <Retrier.h>
@@ -412,6 +413,7 @@ int main(int argc,const char **argv)
 		QueryHandlers *qh = new QueryHandlers();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
+		qh->RegisterHandler("instance",WorkflowInstanceAPI::HandleQuery);
 		qh->RegisterHandler("task",Task::HandleQuery);
 		qh->RegisterHandler("tasks",Tasks::HandleQuery);
 		qh->RegisterHandler("queue",Queue::HandleQuery);
@@ -425,6 +427,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("notification",Notification::HandleQuery);
 		qh->RegisterHandler("notifications",Notifications::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
+		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		qh->RegisterHandler("ping",ping_handle_query);
 		

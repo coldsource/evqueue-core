@@ -23,6 +23,8 @@
 #include <string>
 #include <map>
 
+class QueryResponse;
+
 class Configuration
 {
 	std::map<std::string,std::string> entries;
@@ -40,7 +42,7 @@ class Configuration
 		
 		void Substitute(void);
 		
-		void SendConfiguration(int s);
+		void SendConfiguration(QueryResponse *response);
 		
 		static inline Configuration *GetInstance(void) { return instance; }
 };

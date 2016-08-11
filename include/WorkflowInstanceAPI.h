@@ -17,35 +17,16 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _QUERYRESPONSE_H_
-#define _QUERYRESPONSE_H_
+#ifndef _WORKFLOWINSTANCEAPI_H_
+#define _WORKFLOWINSTANCEAPI_H_
 
-#include <xercesc/dom/DOM.hpp>
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
-#include <string>
-
-using namespace xercesc;
-
-class QueryResponse
+class WorkflowInstanceAPI
 {
-	int socket;
-	
-	DOMDocument *xmldoc;
-	
-	bool status_ok;
-	std::string error;
-	
 	public:
-		QueryResponse(int socket);
-		~QueryResponse();
-		
-		DOMDocument *GetDOM() { return xmldoc; }
-		void SetError(const std::string &error);
-		
-		DOMNode *AppendXML(const std::string &xml);
-		
-		void SendResponse();
-		bool Ping();
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

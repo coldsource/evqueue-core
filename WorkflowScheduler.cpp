@@ -35,8 +35,6 @@
 #include <unistd.h>
 #include <time.h>
 #include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 
 #include <vector>
 
@@ -265,15 +263,14 @@ void WorkflowScheduler::Reload()
 	pthread_mutex_unlock(&wfs_mutex);
 }
 
-void WorkflowScheduler::SendStatus(int s)
+void WorkflowScheduler::SendStatus(QueryResponse *response)
 {
 	char buf[32];
 	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	DOMDocument *xmldoc = response->GetDOM();
 	
 	DOMElement *status_node = xmldoc->createElement(X("status"));
-	xmldoc->appendChild(status_node);
+	xmldoc->getDocumentElement()->appendChild(status_node);
 	
 	// We need to get all mutexes to guarantee that status dump is fully coherent
 	pthread_mutex_lock(&wfs_mutex);
@@ -321,17 +318,6 @@ void WorkflowScheduler::SendStatus(int s)
 	
 	pthread_mutex_unlock(&mutex);
 	pthread_mutex_unlock(&wfs_mutex);
-	
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *status_xml = serializer->writeToString(status_node);
-	char *status_xml_c = XMLString::transcode(status_xml);
-	
-	send(s,status_xml_c,strlen(status_xml_c),0);
-	
-	XMLString::release(&status_xml);
-	XMLString::release(&status_xml_c);
-	serializer->release();
-	xmldoc->release();
 }
 
 void WorkflowScheduler::init(void)

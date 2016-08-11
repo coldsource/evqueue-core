@@ -26,8 +26,10 @@
 
 using namespace std;
 
-QueryResponse::QueryResponse()
+QueryResponse::QueryResponse(int socket)
 {
+	this->socket = socket;
+	
 	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 	xmldoc = xqillaImplementation->createDocument();
 	
@@ -45,6 +47,7 @@ QueryResponse::~QueryResponse()
 void QueryResponse::SetError(const string &error)
 {
 	this->error = error;
+	status_ok = false;
 }
 
 DOMNode *QueryResponse::AppendXML(const string &xml)
@@ -70,7 +73,7 @@ DOMNode *QueryResponse::AppendXML(const string &xml)
 	return node;
 }
 
-void QueryResponse::SendResponse(int s)
+void QueryResponse::SendResponse()
 {
 	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 	
@@ -88,9 +91,17 @@ void QueryResponse::SendResponse(int s)
 	XMLCh *response = serializer->writeToString(response_node);
 	char *response_c = XMLString::transcode(response);
 	
-	send(s,response_c,strlen(response_c),0);
+	send(socket,response_c,strlen(response_c),0);
 	
 	XMLString::release(&response);
 	XMLString::release(&response_c);
 	serializer->release();
+}
+
+bool QueryResponse::Ping()
+{
+	int re = send(socket,"<ping/>",7,0);
+	if(re!=7)
+		return false;
+	return true;
 }
