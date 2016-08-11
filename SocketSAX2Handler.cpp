@@ -28,7 +28,105 @@
 #include <xercesc/framework/MemBufInputSource.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 
+using namespace std;
 using namespace xercesc;
+
+SocketSAX2HandlerInterface::SocketSAX2HandlerInterface(const string &context)
+{
+	this->context = context;
+}
+
+const std::string &SocketSAX2HandlerInterface::GetRootAttribute(const std::string &name)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		throw Exception(context,"Missing '"+name+"' attribute");
+	
+	return it->second;
+}
+
+const std::string &SocketSAX2HandlerInterface::GetRootAttribute(const std::string &name, const std::string &default_value)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		return default_value;
+	
+	return it->second;
+}
+
+int SocketSAX2HandlerInterface::GetRootAttributeInt(const std::string &name)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		throw Exception(context,"Missing '"+name+"' attribute");
+	
+	try
+	{
+		return std::stoi(it->second);
+	}
+	catch(...)
+	{
+		throw Exception(context,"Attribute '"+name+"' has invalid integer value");
+	}
+}
+
+int SocketSAX2HandlerInterface::GetRootAttributeInt(const std::string &name, int default_value)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		return default_value;
+
+	try
+	{
+		return std::stoi(it->second);
+	}
+	catch(...)
+	{
+		throw Exception(context,"Attribute '"+name+"' has invalid integer value");
+	}
+}
+
+bool SocketSAX2HandlerInterface::GetRootAttributeBool(const std::string &name)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		throw Exception(context,"Missing '"+name+"' attribute");
+	
+	if(it->second=="yes")
+		return true;
+	else if(it->second=="no")
+		return false;
+	
+	try
+	{
+		return std::stoi(it->second)?true:false;
+	}
+	catch(...)
+	{
+		throw Exception(context,"Attribute '"+name+"' has invalid boolean value");
+	}
+}
+
+bool SocketSAX2HandlerInterface::GetRootAttributeBool(const std::string &name, bool default_value)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		return default_value;
+	
+	if(it->second=="yes")
+		return true;
+	else if(it->second=="no")
+		return false;
+
+	try
+	{
+		return std::stoi(it->second)?true:false;
+	}
+	catch(...)
+	{
+		throw Exception(context,"Attribute '"+name+"' has invalid boolean value");
+	}
+}
 
 SocketSAX2Handler::SocketSAX2Handler(int socket)
 {
@@ -91,7 +189,7 @@ void SocketSAX2Handler::HandleQuery(SocketSAX2HandlerInterface *handler)
 	}
 	catch (Exception &e)
 	{
-		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context,e.error);
+		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
 		
 		if (parser!=0)
 			delete parser;

@@ -264,129 +264,51 @@ void WorkflowSchedule::create_edit_check(
 
 bool WorkflowSchedule::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="get")
+	if(action=="get")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("WorkflowSchedule","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("WorkflowSchedule","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
 		return true;
 	}
-	else if(it_action->second=="create" || it_action->second=="edit")
+	else if(action=="create" || action=="edit")
 	{
-		auto it_workflow_id = attrs.find("workflow_id");
-		if(it_workflow_id==attrs.end())
-			throw Exception("WorkflowSchedule","Missing 'workflow_id' attribute");
+		unsigned int workflow_id = saxh->GetRootAttributeInt("workflow_id");
+		string schedule = saxh->GetRootAttribute("schedule");
 		
-		unsigned int workflow_id;
-		try
-		{
-			workflow_id = std::stoi(it_workflow_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("WorkflowSchedule","Invalid workflow ID");
-		}
-		
-		auto it_schedule = attrs.find("schedule");
-		if(it_schedule==attrs.end())
-			throw Exception("WorkflowSchedule","Missing 'schedule' attribute");
-		
+		string onfailure = saxh->GetRootAttribute("onfailure");
 		bool onfailure_continue;
-		auto it_onfailure = attrs.find("onfailure");
-		if(it_onfailure==attrs.end())
-			throw Exception("WorkflowSchedule","Missing 'onfailure' attribute");
-		if(it_onfailure->second=="CONTINUE")
+		if(onfailure=="CONTINUE")
 			onfailure_continue = true;
-		else if(it_onfailure->second=="SUSPEND")
+		else if(onfailure=="SUSPEND")
 			onfailure_continue = false;
 		else
 			throw Exception("WorkflowSchedule","onfailure must be 'CONTINUE' or 'SUSPEND'");
 		
-		string user;
-		auto it_user = attrs.find("user");
-		it_user==attrs.end()?user="":user=it_user->second;
+		string user = saxh->GetRootAttribute("user","");
+		string host = saxh->GetRootAttribute("host","");
+		bool active = saxh->GetRootAttributeBool("active",true);
+		string comment =  saxh->GetRootAttribute("comment","");
 		
-		string host;
-		auto it_host = attrs.find("host");
-		it_host==attrs.end()?host="":host=it_host->second;
-		
-		bool active;
-		auto it_active = attrs.find("active");
-		if(it_active==attrs.end())
-			active=true;
+		if(action=="create")
+			Create(workflow_id,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
 		else
 		{
-			if(it_active->second=="1")
-				active = true;
-			else if(it_active->second=="0")
-				active = false;
-			else
-				throw Exception("WorkflowSchedule","active must be '0' or '1'");
-		}
-		
-		string comment;
-		auto it_comment = attrs.find("comment");
-		it_comment==attrs.end()?comment="":comment=it_comment->second;
-		
-		if(it_action->second=="create")
-			Create(workflow_id,it_schedule->second,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
-		else
-		{
-			auto it_id = attrs.find("id");
-			if(it_id==attrs.end())
-				throw Exception("WorkflowSchedule","Missing 'id' attribute");
+			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			unsigned int id;
-			try
-			{
-				id = std::stoi(it_id->second);
-			}
-			catch(...)
-			{
-				throw Exception("WorkflowSchedule","Invalid ID");
-			}
-			
-			Edit(id, workflow_id,it_schedule->second,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
+			Edit(id, workflow_id,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
 		}
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		
 		return true;
 	}
-	else if(it_action->second=="delete")
+	else if(action=="delete")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Workflow","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Task","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Delete(id);
 		

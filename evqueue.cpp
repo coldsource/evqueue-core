@@ -367,7 +367,7 @@ int main(int argc,const char **argv)
 			}
 			catch(Exception &e)
 			{
-				Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to resume : [ %s ] %s\n",db.GetFieldInt(0),e.context,e.error);
+				Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to resume : [ %s ] %s\n",db.GetFieldInt(0),e.context.c_str(),e.error.c_str());
 				
 				if(workflow_instance)
 					delete workflow_instance;
@@ -393,7 +393,7 @@ int main(int argc,const char **argv)
 			}
 			catch(Exception &e)
 			{
-				Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",db.GetFieldInt(0),e.context,e.error);
+				Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",db.GetFieldInt(0),e.context.c_str(),e.error.c_str());
 				
 				if(workflow_schedule)
 					delete workflow_schedule;
@@ -624,10 +624,10 @@ int main(int argc,const char **argv)
 	catch(Exception &e)
 	{
 		// We have to use only syslog here because the logger might not be instanciated yet
-		syslog(LOG_CRIT,"Unexpected exception : [ %s ] %s\n",e.context,e.error);
+		syslog(LOG_CRIT,"Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
 		
 		if(!daemonized)
-			fprintf(stderr,"Unexpected exception : [ %s ] %s\n",e.context,e.error);
+			fprintf(stderr,"Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
 		
 		if(Configuration::GetInstance())
 			unlink(Configuration::GetInstance()->Get("core.pidfile").c_str());

@@ -142,7 +142,7 @@ void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflo
 	}
 	catch(Exception &e)
 	{
-		Logger::Log(LOG_ERR,"Exception during notifications processing : %s",e.error);
+		Logger::Log(LOG_ERR,"Exception during notifications processing : %s",e.error.c_str());
 	}
 }
 

@@ -20,50 +20,10 @@
 #include <Exception.h>
 #include <string.h>
 
-Exception::Exception(const char *context,const char *error)
-{
-	int len;
-	
-	len=strlen(context);
-	this->context=new char[len+1];
-	memcpy(this->context,context,len+1);
-	
-	len=strlen(error);
-	this->error=new char[len+1];
-	memcpy(this->error,error,len+1);
-}
+using namespace std;
 
-Exception::Exception(const Exception &e)
+Exception::Exception(const string &context, const string &error)
 {
-	int len;
-	
-	len=strlen(e.context);
-	this->context=new char[len+1];
-	memcpy(this->context,e.context,len+1);
-	
-	len=strlen(e.error);
-	this->error=new char[len+1];
-	memcpy(this->error,e.error,len+1);
-}
-
-Exception::~Exception(void)
-{
-	delete[] context;
-	delete[] error;
-}
-
-Exception & Exception::operator=(const Exception &e)
-{
-	delete[] context;
-	delete[] error;
-	
-	int len;
-	
-	len=strlen(e.context);
-	this->context=new char[len+1];
-	memcpy(this->context,e.context,len+1);
-	
-	len=strlen(e.error);
-	this->error=new char[len+1];
-	memcpy(this->error,e.error,len+1);
+	this->context = context;
+	this->error = error;
 }

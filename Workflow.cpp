@@ -249,90 +249,39 @@ string Workflow::create_edit_check(const string &name, const string &base64, con
 
 bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="get")
+	if(action=="get")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Workflow","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Workflow","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
 		return true;
 	}
-	else if(it_action->second=="create" || it_action->second=="edit")
+	else if(action=="create" || action=="edit")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("Workflow","Missing 'name' attribute");
+		string name = saxh->GetRootAttribute("name");
+		string content = saxh->GetRootAttribute("content");
+		string group = saxh->GetRootAttribute("group","");
+		string comment = saxh->GetRootAttribute("comment","");
 		
-		auto it_content = attrs.find("content");
-		if(it_content==attrs.end())
-			throw Exception("Workflow","Missing 'content' attribute");
-		
-		auto it_group = attrs.find("group");
-		if(it_group==attrs.end())
-			throw Exception("Workflow","Missing 'group' attribute");
-		
-		auto it_comment = attrs.find("comment");
-		if(it_comment==attrs.end())
-			throw Exception("Workflow","Missing 'comment' attribute");
-		
-		if(it_action->second=="create")
-			Create(it_name->second, it_content->second, it_group->second, it_comment->second);
+		if(action=="create")
+			Create(name, content, group, comment);
 		else
 		{
-			auto it_id = attrs.find("id");
-			if(it_id==attrs.end())
-				throw Exception("Workflow","Missing 'id' attribute");
+			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			unsigned int id;
-			try
-			{
-				id = std::stoi(it_id->second);
-			}
-			catch(...)
-			{
-				throw Exception("Workflow","Invalid ID");
-			}
-			
-			Edit(id,it_name->second, it_content->second, it_group->second, it_comment->second);
+			Edit(id, name, content, group, comment);
 		}
 		
 		Workflows::GetInstance()->Reload();
 		
 		return true;
 	}
-	else if(it_action->second=="delete")
+	else if(action=="delete")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Workflow","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Workflow","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		bool task_deleted;
 		Delete(id,&task_deleted);
@@ -344,23 +293,11 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 		
 		return true;
 	}
-	else if(it_action->second=="subscribe_notification" || it_action->second=="unsubscribe_notification" || it_action->second=="clear_notifications")
+	else if(action=="subscribe_notification" || action=="unsubscribe_notification" || action=="clear_notifications")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Workflow","Missing 'id' attribute");
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Workflow","Invalid ID");
-		}
-		
-		if(it_action->second=="clear_notifications")
+		if(action=="clear_notifications")
 		{
 			ClearNotifications(id);
 			
@@ -368,23 +305,11 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 			
 			return true;
 		}
-		else if(it_action->second=="subscribe_notification" || it_action->second=="unsubscribe_notification")
+		else if(action=="subscribe_notification" || action=="unsubscribe_notification")
 		{
-			auto it_notification_id = attrs.find("notification_id");
-			if(it_id==attrs.end())
-				throw Exception("Workflow","Missing 'notification_id' attribute");
-			
-			unsigned int notification_id;
-			try
-			{
-				notification_id = std::stoi(it_notification_id->second);
-			}
-			catch(...)
-			{
-				throw Exception("Workflow","Invalid notification ID");
-			}
-			
-			if(it_action->second=="subscribe_notification")
+			unsigned int notification_id = saxh->GetRootAttributeInt("notification_id");
+						
+			if(action=="subscribe_notification")
 				SubscribeNotification(id,notification_id);
 			else
 				UnsubscribeNotification(id,notification_id);

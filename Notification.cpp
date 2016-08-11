@@ -170,75 +170,29 @@ void Notification::create_edit_check(unsigned int type_id,const std::string &nam
 
 bool Notification::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="get")
+	if(action=="get")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Notification","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Notification","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
 		return true;
 	}
-	else if(it_action->second=="create" || it_action->second=="edit")
+	else if(action=="create" || action=="edit")
 	{
-		auto it_type_id = attrs.find("type_id");
-		if(it_type_id==attrs.end())
-			throw Exception("Notification","Missing 'type_id' attribute");
+		unsigned int type_id = saxh->GetRootAttributeInt("type_id");
+		string name = saxh->GetRootAttribute("name");
+		string parameters = saxh->GetRootAttribute("parameters");
 		
-		unsigned int type_id;
-		try
-		{
-			type_id = std::stoi(it_type_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Notification","Invalid type ID");
-		}
-		
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("Notification","Missing 'name' attribute");
-		
-		auto it_parameters = attrs.find("parameters");
-		if(it_parameters==attrs.end())
-			throw Exception("Notification","Missing 'parameters' attribute");
-		
-		if(it_action->second=="create")
-			Create(type_id, it_name->second, it_parameters->second);
+		if(action=="create")
+			Create(type_id, name, parameters);
 		else
 		{
-			auto it_id = attrs.find("id");
-			if(it_id==attrs.end())
-				throw Exception("Notification","Missing 'id' attribute");
+			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			unsigned int id;
-			try
-			{
-				id = std::stoi(it_id->second);
-			}
-			catch(...)
-			{
-				throw Exception("Notification","Invalid ID");
-			}
-			
-			Edit(id, type_id, it_name->second, it_parameters->second);
+			Edit(id, type_id, name, parameters);
 		}
 		
 		Notifications::GetInstance()->Reload();
@@ -246,23 +200,10 @@ bool Notification::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *resp
 		
 		return true;
 	}
-	else if(it_action->second=="delete")
+	else if(action=="delete")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Notification","Missing 'id' attribute");
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Notification","Invalid ID");
-		}
-		
-		bool workflow_deleted;
 		Delete(id);
 		
 		Notifications::GetInstance()->Reload();

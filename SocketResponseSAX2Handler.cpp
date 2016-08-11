@@ -26,7 +26,9 @@
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/sax2/Attributes.hpp>
 
-SocketResponseSAX2Handler::SocketResponseSAX2Handler()
+using namespace std;
+
+SocketResponseSAX2Handler::SocketResponseSAX2Handler(const string &context):SocketSAX2HandlerInterface(context)
 {
 	level = 0;
 	ready = false;
@@ -48,12 +50,7 @@ void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh
 	{
 		if(level==1)
 		{
-			if(strcmp(node_name_c,"response")!=0)
-				throw Exception("SocketResponseSAX2Handler","Expected 'response' node");
-			
-			const XMLCh *status_attr = attrs.getValue(X("status"));
-			if(XMLString::compareString(status_attr,X("OK"))!=0)
-				throw Exception("SocketResponseSAX2Handler","Command returned bad status code");
+			group = node_name_c;
 			
 			for(int i=0;i<attrs.getLength();i++)
 			{

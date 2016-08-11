@@ -189,7 +189,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		{
 			stats->IncWorkflowExceptions();
 			
-			Logger::Log(LOG_WARNING,"[ WorkflowScheduler ] Unexpected exception trying to instanciate workflow '%s': [ %s ] %s",workflow_name,e.context,e.error);
+			Logger::Log(LOG_WARNING,"[ WorkflowScheduler ] Unexpected exception trying to instanciate workflow '%s': [ %s ] %s",workflow_name,e.context.c_str(),e.error.c_str());
 			delete scheduled_wf;
 			
 			if(wi)
@@ -243,7 +243,7 @@ void WorkflowScheduler::Reload()
 		}
 		catch(Exception &e)
 		{
-			Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",workflow_schedule->GetID(),e.context,e.error);
+			Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",workflow_schedule->GetID(),e.context.c_str(),e.error.c_str());
 			
 			if(workflow_schedule)
 				delete workflow_schedule;

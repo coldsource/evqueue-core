@@ -40,52 +40,22 @@ using namespace xercesc;
 
 bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
-	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
+	const string action = saxh->GetRootAttribute("action");
 	
 	Statistics *stats = Statistics::GetInstance();
 	Configuration *config = Configuration::GetInstance();
 	
-	if(it_action->second=="launch")
+	if(action=="launch")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("WorkflowInstance","Missing 'name' attribute");
-		
-		auto it_user = attrs.find("user");
-		string user;
-		if(it_user!=attrs.end())
-			user = it_user->second;
-		
-		auto it_host = attrs.find("host");
-		string host;
-		if(it_host!=attrs.end())
-			host = it_host->second;
-		
-		auto it_mode = attrs.find("mode");
-		string mode="asynchronous";
-		if(it_mode!=attrs.end())
-			mode = it_mode->second;
+		string name = saxh->GetRootAttribute("name");
+		string user = saxh->GetRootAttribute("user","");
+		string host = saxh->GetRootAttribute("host","");
+		string mode = saxh->GetRootAttribute("mode","asynchronous");
 		
 		if(mode!="synchronous" && mode!="asynchronous")
 			throw Exception("WorkflowInstance","mode must be 'synchronous' or 'asynchronous'");
 		
-		auto it_timeout = attrs.find("timeout");
-		int timeout = 0;
-		if(it_timeout!=attrs.end())
-		{
-			try
-			{
-				timeout = std::stoi(it_timeout->second);
-			}
-			catch(...)
-			{
-				throw Exception("WorkflowInstance","Invalid timeout");
-			}
-		}
+		int timeout = saxh->GetRootAttributeInt("timeout",0);
 		
 		WorkflowInstance *wi;
 		bool workflow_terminated;
@@ -94,7 +64,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 		
 		try
 		{
-			wi = new WorkflowInstance(it_name->second.c_str(),saxh->GetWorkflowParameters(),0,host.length()?host.c_str():0,user.length()?user.c_str():0);
+			wi = new WorkflowInstance(name.c_str(),saxh->GetWorkflowParameters(),0,host.length()?host.c_str():0,user.length()?user.c_str():0);
 		}
 		catch(Exception &e)
 		{
@@ -123,21 +93,9 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 	}
 	else
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("WorkflowInstance","Missing 'id' attribute");
+		unsigned int workflow_instance_id = saxh->GetRootAttributeInt("id");
 		
-		unsigned int workflow_instance_id;
-		try
-		{
-			workflow_instance_id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("WorkflowInstance","Invalid ID");
-		}
-		
-		if(it_action->second=="migrate")
+		if(action=="migrate")
 		{
 			DB db;
 			
@@ -166,7 +124,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 			
 			return true;
 		}
-		else if(it_action->second=="query")
+		else if(action=="query")
 		{
 			DB db;
 			
@@ -185,7 +143,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 			
 			return true;
 		}
-		else if(it_action->second=="cancel")
+		else if(action=="cancel")
 		{
 			stats->IncWorkflowCancelQueries();
 			
@@ -203,42 +161,18 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 			
 			return true;
 		}
-		else if(it_action->second=="wait")
+		else if(action=="wait")
 		{
-			auto it_timeout = attrs.find("timeout");
-			int timeout = 0;
-			if(it_timeout!=attrs.end())
-			{
-				try
-				{
-					timeout = std::stoi(it_timeout->second);
-				}
-				catch(...)
-				{
-					throw Exception("WorkflowInstance","Invalid timeout");
-				}
-			}
+			int timeout = saxh->GetRootAttributeInt("timeout",0);
 			
 			if(!WorkflowInstances::GetInstance()->Wait(response,workflow_instance_id,timeout))
 				throw Exception("WorkflowInstance","Wait timed out");
 			
 			return true;
 		}
-		else if(it_action->second=="killtask")
+		else if(action=="killtask")
 		{
-			auto it_pid = attrs.find("pid");
-			if(it_pid==attrs.end())
-				throw Exception("WorkflowInstance","Missing 'pid' attribute");
-			
-			unsigned int task_pid;
-			try
-			{
-				task_pid = std::stoi(it_pid->second);
-			}
-			catch(...)
-			{
-				throw Exception("WorkflowInstance","Invalid ID");
-			}
+			unsigned int task_pid = saxh->GetRootAttributeInt("pid");
 			
 			if(!WorkflowInstances::GetInstance()->KillTask(workflow_instance_id,task_pid))
 				throw Exception("WorkflowInstance","Unknown workflow instance");

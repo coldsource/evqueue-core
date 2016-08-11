@@ -22,10 +22,29 @@
 
 #include <xercesc/sax2/DefaultHandler.hpp>
 
+#include <map>
+#include <string>
+
 class SocketSAX2HandlerInterface : public xercesc::DefaultHandler
 {
+	protected:
+		std::string context;
+		
+		std::map<std::string,std::string> root_attributes;
+	
 	public:
+		SocketSAX2HandlerInterface(const std::string &context);
+		
 		virtual bool IsReady() = 0;
+		
+		const std::map<std::string,std::string> &GetRootAttributes() { return root_attributes; }
+		
+		const std::string &GetRootAttribute(const std::string &name);
+		const std::string &GetRootAttribute(const std::string &name, const std::string &default_value);
+		int GetRootAttributeInt(const std::string &name);
+		int GetRootAttributeInt(const std::string &name, int default_value);
+		bool GetRootAttributeBool(const std::string &name);
+		bool GetRootAttributeBool(const std::string &name, bool default_value);
 };
 
 class SocketSAX2Handler

@@ -170,35 +170,31 @@ int tools_send_exit_msg(int type,int tid,char retcode)
 
 bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
-	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
+	const string action = saxh->GetRootAttribute("action");
 	
 	if(saxh->GetQueryGroup()=="control")
 	{
-		if(it_action->second=="reload")
+		if(action=="reload")
 		{
-			auto it_module = attrs.find("module");
-			if(it_module==attrs.end())
+			string module = saxh->GetRootAttribute("module","");
+			if(module.length()==0)
 				tools_config_reload();
 			else
-				tools_config_reload(it_module->second);
+				tools_config_reload(module);
 			
 			return true;
 		}
-		else if(it_action->second=="retry")
+		else if(action=="retry")
 		{
 			tools_flush_retrier();
 			return true;
 		}
-		else if(it_action->second=="synctasks")
+		else if(action=="synctasks")
 		{
 			tools_sync_tasks();
 			return true;
 		}
-		else if(it_action->second=="syncnotifications")
+		else if(action=="syncnotifications")
 		{
 			tools_sync_notifications();
 			return true;
@@ -206,15 +202,13 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	}
 	else if(saxh->GetQueryGroup()=="status")
 	{
-		if(it_action->second=="query")
+		if(action=="query")
 		{
-			auto it_type = attrs.find("type");
-			if(it_type==attrs.end())
-				throw Exception("Core","Missing type attribute on node status");
+			string type = saxh->GetRootAttribute("type");
 			
 			Statistics *stats = Statistics::GetInstance();
 			
-			if(it_type->second=="workflows")
+			if(type=="workflows")
 			{
 				stats->IncStatisticsQueries();
 				
@@ -223,7 +217,7 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 				
 				return true;
 			}
-			else if(it_type->second=="scheduler")
+			else if(type=="scheduler")
 			{
 				stats->IncStatisticsQueries();
 				
@@ -232,7 +226,7 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 				
 				return true;
 			}
-			else if(it_type->second=="configuration")
+			else if(type=="configuration")
 			{
 				stats->IncStatisticsQueries();
 				

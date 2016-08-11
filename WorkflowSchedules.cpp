@@ -126,13 +126,9 @@ bool WorkflowSchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 {
 	WorkflowSchedules *workflow_schedules = WorkflowSchedules::GetInstance();
 	
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	string action = saxh->GetRootAttribute("name");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="list")
+	if(action=="list")
 	{
 		pthread_mutex_lock(&workflow_schedules->lock);
 		

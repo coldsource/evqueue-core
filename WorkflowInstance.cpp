@@ -1383,7 +1383,7 @@ void WorkflowInstance::run_subjobs(DOMNode *job)
 	{
 		// Set error on job
 		((DOMElement *)subjob)->setAttribute(X("status"),X("ABORTED"));
-		((DOMElement *)subjob)->setAttribute(X("details"),X(e.error));
+		((DOMElement *)subjob)->setAttribute(X("details"),X(e.error.c_str()));
 		
 		subjobs->release();
 		
@@ -1697,7 +1697,7 @@ void WorkflowInstance::record_savepoint(bool force)
 		}
 		catch(Exception &e)
 		{
-			Logger::Log(LOG_WARNING,"[ WorkflowInstance::record_savepoint() ] Unexpected exception : [ %s ] %s\n",e.context,e.error);
+			Logger::Log(LOG_WARNING,"[ WorkflowInstance::record_savepoint() ] Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
 		}
 		
 		tries++;

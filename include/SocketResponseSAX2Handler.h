@@ -30,21 +30,21 @@ using namespace xercesc;
 class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 	
 	private:
-		std::map<std::string,std::string> root_attributes;
+		std::string group;
 		
 		bool ready;
 		
 		int level;
 	
 	public:
-		SocketResponseSAX2Handler();
+		SocketResponseSAX2Handler(const std::string &context);
 		~SocketResponseSAX2Handler();
+		
+		const std::string &GetGroup() { return group; }
 		
 		void startElement( const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const Attributes&  attrs );
 		void endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname);
 		void endDocument();
-		
-		const std::map<std::string,std::string> &GetRootAttributes() { return root_attributes; }
 		
 		bool IsReady() { return ready; }
 };

@@ -26,7 +26,9 @@
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/sax2/Attributes.hpp>
 
-SocketQuerySAX2Handler::SocketQuerySAX2Handler()
+using namespace std;
+
+SocketQuerySAX2Handler::SocketQuerySAX2Handler(const string &context):SocketSAX2HandlerInterface(context)
 {
 	level = 0;
 	ready = false;

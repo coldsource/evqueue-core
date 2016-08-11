@@ -20,17 +20,15 @@
 #ifndef _EXCEPTION_H_
 #define _EXCEPTION_H_
 
+#include <string>
+
 class Exception
 {
 	public:
-		char *context;
-		char *error;
+		std::string context;
+		std::string error;
 		
-		Exception(const char *context,const char *error);
-		Exception(const Exception &e);
-		~Exception(void);
-		
-		Exception &operator=(const Exception &task);
+		Exception(const std::string &context,const std::string &error);
 };
 
 

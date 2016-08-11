@@ -31,7 +31,6 @@ class SocketQuerySAX2Handler : public SocketSAX2HandlerInterface {
 	
 	private:
 		std::string group;
-		std::map<std::string,std::string> root_attributes;
 		
 		bool ready;
 		
@@ -41,7 +40,7 @@ class SocketQuerySAX2Handler : public SocketSAX2HandlerInterface {
 		std::vector<std::string> inputs;
 		
 	public:
-		SocketQuerySAX2Handler();
+		SocketQuerySAX2Handler(const std::string &context);
 		~SocketQuerySAX2Handler();
 		
 		void startElement( const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const Attributes&  attrs );
@@ -50,7 +49,6 @@ class SocketQuerySAX2Handler : public SocketSAX2HandlerInterface {
 		
 		bool IsReady() { return ready; }
 		const std::string &GetQueryGroup() { return group; }
-		const std::map<std::string,std::string> &GetRootAttributes() { return root_attributes; }
 		
 		WorkflowParameters *GetWorkflowParameters() {return &params;};
 		const std::vector<std::string> &GetInputs() { return inputs; }

@@ -27,6 +27,7 @@
 #include <Sockets.h>
 #include <QueryResponse.h>
 #include <QueryHandlers.h>
+#include <AuthHandler.h>
 #include <DB.h>
 #include <tools.h>
 
@@ -88,7 +89,7 @@ void *handle_connection(void *sp)
 	
 	try
 	{
-		SocketQuerySAX2Handler saxh;
+		SocketQuerySAX2Handler saxh("API");
 		
 		SocketSAX2Handler socket_sax2_handler(s);
 		socket_sax2_handler.HandleQuery(&saxh);
@@ -100,7 +101,7 @@ void *handle_connection(void *sp)
 	}
 	catch (Exception &e)
 	{
-		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context,e.error);
+		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
 		
 		response.SetError(e.error);
 		response.SendResponse();

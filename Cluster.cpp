@@ -60,7 +60,7 @@ void Cluster::execute_command(const string &cnx_str, const string &command)
 	}
 	catch(Exception &e)
 	{
-		Logger::Log(LOG_WARNING,"Cluster encountered unexpected exception in context %s : %s\n",e.context,e.error);
+		Logger::Log(LOG_WARNING,"Cluster encountered unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
 		
 		return;
 	}
@@ -72,14 +72,14 @@ void Cluster::execute_command(const string &cnx_str, const string &command)
 	// Parse response
 	try
 	{
-		SocketResponseSAX2Handler saxh;
+		SocketResponseSAX2Handler saxh("Cluster");
 		
 		SocketSAX2Handler socket_sax2_handler(s);
 		socket_sax2_handler.HandleQuery(&saxh);
 	}
 	catch(Exception &e)
 	{
-		Logger::Log(LOG_WARNING,"Cluster encountered unexpected exception in context %s : %s\n",e.context,e.error);
+		Logger::Log(LOG_WARNING,"Cluster encountered unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
 		
 		Sockets::GetInstance()->UnregisterSocket(s);
 		

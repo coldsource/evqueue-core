@@ -327,140 +327,40 @@ void Task::create_edit_check(
 
 bool Task::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("name");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="get")
+	if(action=="get")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Task","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Task","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
 		return true;
 	}
-	else if(it_action->second=="create" || it_action->second=="edit")
+	else if(action=="create" || action=="edit")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("Task","Missing 'name' attribute");
-		string name = it_name->second;
-		
-		auto it_binary = attrs.find("binary");
-		if(it_binary==attrs.end())
-			throw Exception("Task","Missing 'binary' attribute");
-		string binary = it_binary->second;
-		
+		string name = saxh->GetRootAttribute("name");
+		string binary = saxh->GetRootAttribute("binary");
+		string binary_content_base64 = saxh->GetRootAttribute("binary_content","");
 		string binary_content;
-		auto it_binary_content = attrs.find("binary_content");
-		if(it_binary_content==attrs.end())
-			binary_content="";
-		else
-			base64_decode_string(binary_content,it_binary_content->second);
+		if(binary_content_base64.length())
+			base64_decode_string(binary_content,binary_content_base64);
+		string wd = saxh->GetRootAttribute("wd","");
+		string user = saxh->GetRootAttribute("user","");
+		string host = saxh->GetRootAttribute("host","");
+		bool use_agent = saxh->GetRootAttributeBool("use_agent",false);
+		string parameters_mode = saxh->GetRootAttribute("parameters_mode");
+		string output_method = saxh->GetRootAttribute("output_method");
+		bool merge_stderr = saxh->GetRootAttributeBool("merge_stderr",false);
+		string group = saxh->GetRootAttribute("group","");
+		string comment = saxh->GetRootAttribute("comment","");
+		bool create_workflow = saxh->GetRootAttributeBool("create_workflow",false);
 		
-		string wd;
-		auto it_wd = attrs.find("wd");
-		it_wd==attrs.end()?wd="":wd=it_wd->second;
-		
-		string user;
-		auto it_user = attrs.find("user");
-		it_user==attrs.end()?user="":user=it_user->second;
-		
-		string host;
-		auto it_host = attrs.find("host");
-		it_host==attrs.end()?host="":host=it_host->second;
-		
-		bool use_agent;
-		auto it_use_agent = attrs.find("use_agent");
-		if(it_use_agent==attrs.end())
-			use_agent=false;
-		else
-		{
-			if(it_use_agent->second=="1")
-				use_agent = true;
-			else if(it_use_agent->second=="0")
-				use_agent = false;
-			else
-				throw Exception("Task","use_agent must be '0' or '1'");
-		}
-		
-		auto it_parameters_mode = attrs.find("parameters_mode");
-		if(it_parameters_mode==attrs.end())
-			throw Exception("Task","Missing 'parameters_mode' attribute");
-		string parameters_mode = it_parameters_mode->second;
-		
-		auto it_output_method = attrs.find("output_method");
-		if(it_output_method==attrs.end())
-			throw Exception("Task","Missing 'output_method' attribute");
-		string output_method = it_output_method->second;
-		
-		bool merge_stderr;
-		auto it_merge_stderr = attrs.find("merge_stderr");
-		if(it_merge_stderr==attrs.end())
-			merge_stderr=false;
-		else
-		{
-			if(it_merge_stderr->second=="1")
-				merge_stderr = true;
-			else if(it_merge_stderr->second=="0")
-				merge_stderr = false;
-			else
-				throw Exception("Task","merge_stderr must be '0' or '1'");
-		}
-		
-		string group;
-		auto it_group = attrs.find("group");
-		it_group==attrs.end()?group="":group=it_group->second;
-		
-		string comment;
-		auto it_comment = attrs.find("comment");
-		it_comment==attrs.end()?comment="":comment=it_comment->second;
-		
-		bool create_workflow;
-		auto it_create_workflow = attrs.find("create_workflow");
-		if(it_create_workflow==attrs.end())
-			create_workflow=false;
-		else
-		{
-			if(it_create_workflow->second=="1")
-				create_workflow = true;
-			else if(it_create_workflow->second=="0")
-				create_workflow = false;
-			else
-				throw Exception("Task","create_workflow must be '0' or '1'");
-		}
-		
-		if(it_action->second=="create")
+		if(action=="create")
 			Create(name,binary,binary_content,wd,user,host,use_agent,parameters_mode,output_method,merge_stderr,group,comment,create_workflow,saxh->GetInputs());
 		else
 		{
-			auto it_id = attrs.find("id");
-			if(it_id==attrs.end())
-				throw Exception("Task","Missing 'id' attribute");
-			
-			unsigned int id;
-			try
-			{
-				id = std::stoi(it_id->second);
-			}
-			catch(...)
-			{
-				throw Exception("Task","Invalid ID");
-			}
+			unsigned int id = saxh->GetRootAttributeInt("id");
 			
 			Edit(id,name,binary,binary_content,wd,user,host,use_agent,parameters_mode,output_method,merge_stderr,group,comment,&create_workflow,saxh->GetInputs());
 		}
@@ -473,21 +373,9 @@ bool Task::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		
 		return true;
 	}
-	else if(it_action->second=="delete")
+	else if(action=="delete")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Workflow","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Task","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		bool workflow_deleted;
 		Delete(id,&workflow_deleted);

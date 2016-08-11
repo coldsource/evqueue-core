@@ -96,34 +96,19 @@ void NotificationType::Unregister(unsigned int id)
 
 bool NotificationType::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	else if(it_action->second=="register")
+	if(action=="register")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("NotificationType","Missing 'name' attribute");
-		
-		auto it_description = attrs.find("description");
-		if(it_description==attrs.end())
-			throw Exception("NotificationType","Missing 'description' attribute");
-		
-		auto it_binary = attrs.find("binary");
-		if(it_binary==attrs.end())
-			throw Exception("NotificationType","Missing 'binary' attribute");
-		
+		string name = saxh->GetRootAttribute("name");
+		string description = saxh->GetRootAttribute("description");
+		string binary = saxh->GetRootAttribute("binary");
+		string binary_content_base64 = saxh->GetRootAttribute("binary_content","");
 		string binary_content;
-		auto it_binary_content = attrs.find("binary_content");
-		if(it_binary_content==attrs.end())
-			binary_content="";
-		else
-			base64_decode_string(binary_content,it_binary_content->second);
+		if(binary_content_base64.length())
+			base64_decode_string(binary_content,binary_content_base64);
 		
-		Register(it_name->second,it_description->second,it_binary->second,binary_content);
+		Register(name,description,binary,binary_content);
 		
 		NotificationTypes::GetInstance()->Reload();
 		NotificationTypes::GetInstance()->SyncBinaries();
@@ -132,23 +117,10 @@ bool NotificationType::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *
 		
 		return true;
 	}
-	else if(it_action->second=="unregister")
+	else if(action=="unregister")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("NotificationType","Missing 'id' attribute");
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("NotificationType","Invalid ID");
-		}
-		
-		bool workflow_deleted;
 		Unregister(id);
 		
 		NotificationTypes::GetInstance()->Reload();

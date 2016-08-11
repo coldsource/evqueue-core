@@ -267,98 +267,39 @@ void Queue::create_edit_check(const std::string &name, int concurrency, const st
 
 bool Queue::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="get")
+	if(action=="get")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Queue","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Queue","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
 		return true;
 	}
-	else if(it_action->second=="create" || it_action->second=="edit")
+	else if(action=="create" || action=="edit")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("Queue","Missing 'name' attribute");
+		string name = saxh->GetRootAttribute("name");
+		int iconcurrency = saxh->GetRootAttributeInt("concurrency");
+		string scheduler = saxh->GetRootAttribute("scheduler");
 		
-		auto it_concurrency = attrs.find("concurrency");
-		if(it_concurrency==attrs.end())
-			throw Exception("Queue","Missing 'concurrency' attribute");
-		
-		int iconcurrency;
-		try
-		{
-			iconcurrency = std::stoi(it_concurrency->second);
-		}
-		catch(...)
-		{
-			throw Exception("Queue","Invalid concurrency");
-		}
-		
-		auto it_scheduler = attrs.find("scheduler");
-		if(it_scheduler==attrs.end())
-			throw Exception("Queue","Missing 'scheduler' attribute");
-		
-		if(it_action->second=="create")
-			Create(it_name->second, iconcurrency, it_scheduler->second);
+		if(action=="create")
+			Create(name, iconcurrency, scheduler);
 		else
 		{
-			auto it_id = attrs.find("id");
-			if(it_id==attrs.end())
-				throw Exception("Queue","Missing 'id' attribute");
+			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			unsigned int id;
-			try
-			{
-				id = std::stoi(it_id->second);
-			}
-			catch(...)
-			{
-				throw Exception("Queue","Invalid ID");
-			}
-			
-			Edit(id,it_name->second, iconcurrency, it_scheduler->second);
+			Edit(id,name, iconcurrency, scheduler);
 		}
 		
 		QueuePool::GetInstance()->Reload();
 		
 		return true;
 	}
-	else if(it_action->second=="delete")
+	else if(action=="delete")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("Queue","Missing 'id' attribute");
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("Queue","Invalid ID");
-		}
-		
-		bool task_deleted;
 		Delete(id);
 		
 		QueuePool::GetInstance()->Reload();
