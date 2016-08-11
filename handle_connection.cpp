@@ -19,22 +19,15 @@
 
 #include <handle_connection.h>
 #include <SocketQuerySAX2Handler.h>
-#include <DB.h>
 #include <Exception.h>
-#include <WorkflowInstance.h>
-#include <QueuePool.h>
-#include <Retrier.h>
-#include <Statistics.h>
-#include <WorkflowScheduler.h>
 #include <NetworkInputSource.h>
-#include <WorkflowInstances.h>
 #include <Logger.h>
 #include <Configuration.h>
+#include <Statistics.h>
 #include <Sockets.h>
-#include <Notification.h>
 #include <QueryResponse.h>
 #include <QueryHandlers.h>
-#include <Task.h>
+#include <DB.h>
 #include <tools.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
