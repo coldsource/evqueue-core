@@ -45,7 +45,7 @@ Task::Task()
 
 Task::Task(DB *db,const string &task_name)
 {
-	db->QueryPrintf("SELECT task_id,task_name,task_binary,task_binary_content,task_wd,task_user,task_host,task_use_agent,task_parameters_mode,task_output_method,task_merge_stderr,task_group,task_comment FROM t_task WHERE task_name=%s",task_name.c_str());
+	db->QueryPrintf("SELECT task_id,task_name,task_binary,task_wd,task_user,task_host,task_use_agent,task_parameters_mode,task_output_method,task_merge_stderr,task_group,task_comment FROM t_task WHERE task_name=%s",task_name.c_str());
 	
 	if(!db->FetchRow())
 		throw Exception("Task","Unknown task");
@@ -58,34 +58,31 @@ Task::Task(DB *db,const string &task_name)
 		task_binary = db->GetField(2);
 	
 	if(db->GetField(3))
-		task_binary_content = db->GetField(3);
-		
+		task_wd = db->GetField(3);
+	
 	if(db->GetField(4))
-		task_wd = db->GetField(4);
-	
-	if(db->GetField(5))
-		task_user = db->GetField(5);
+		task_user = db->GetField(4);
 
-	if(db->GetField(6))
-		task_host = db->GetField(6);
+	if(db->GetField(5))
+		task_host = db->GetField(5);
 	
-	task_use_agent = db->GetFieldInt(7);
+	task_use_agent = db->GetFieldInt(6);
 	
-	if(strcmp(db->GetField(8),"ENV")==0)
+	if(strcmp(db->GetField(7),"ENV")==0)
 		parameters_mode = task_parameters_mode::ENV;
 	else
 		parameters_mode = task_parameters_mode::CMDLINE;
 	
-	if(strcmp(db->GetField(9),"XML")==0)
+	if(strcmp(db->GetField(8),"XML")==0)
 		output_method = task_output_method::XML;
 	else
 		output_method = task_output_method::TEXT;
 	
-	task_merge_stderr = db->GetFieldInt(10);
+	task_merge_stderr = db->GetFieldInt(9);
 	
-	task_group = db->GetFieldInt(11);
+	task_group = db->GetFieldInt(10);
 	
-	task_comment = db->GetFieldInt(12);
+	task_comment = db->GetFieldInt(11);
 }
 
 void Task::PutFile(const string &filename,const string &data,bool base64_encoded)
@@ -135,9 +132,6 @@ void Task::Get(unsigned int id, QueryResponse *response)
 	node->setAttribute(X("binary"),X(task.GetBinary().c_str()));
 	
 	string base64_binary_content;
-	base64_encode_string(task.GetBinaryContent(),base64_binary_content);
-	node->setAttribute(X("binary_content"),X(base64_binary_content.c_str()));
-	
 	node->setAttribute(X("wd"),X(task.GetWorkingDirectory().c_str()));
 	node->setAttribute(X("user"),X(task.GetUser().c_str()));
 	node->setAttribute(X("host"),X(task.GetHost().c_str()));
@@ -321,8 +315,8 @@ void Task::create_edit_check(
 	if(!CheckTaskName(name))
 		throw Exception("Task","Invalid task name");
 	
-	if(binary.length()==0 && binary_content.length()==0)
-		throw Exception("Task","binary and binary_content cannot be both empty");
+	if(binary.length()==0)
+		throw Exception("Task","binary path is invalid");
 	
 	if(parameters_mode!="CMDLINE" && parameters_mode!="ENV")
 		throw Exception("Task","parameters_mode must be 'CMDLINE' or 'ENV'");
@@ -366,9 +360,10 @@ bool Task::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 			throw Exception("Task","Missing 'name' attribute");
 		string name = it_name->second;
 		
-		string binary;
 		auto it_binary = attrs.find("binary");
-		it_binary==attrs.end()?binary="":binary=it_binary->second;
+		if(it_binary==attrs.end())
+			throw Exception("Task","Missing 'binary' attribute");
+		string binary = it_binary->second;
 		
 		string binary_content;
 		auto it_binary_content = attrs.find("binary_content");

@@ -35,7 +35,6 @@ class Task
 	unsigned int task_id;
 	std::string task_name;
 	std::string task_binary;
-	std::string task_binary_content;
 	std::string task_wd;
 	std::string task_user;
 	std::string task_host;
@@ -53,7 +52,6 @@ class Task
 		unsigned int GetID() const { return task_id; }
 		const std::string &GetName() const { return task_name; }
 		const std::string &GetBinary() const { return task_binary; }
-		const std::string &GetBinaryContent() const { return task_binary_content; }
 		const std::string &GetWorkingDirectory() const { return task_wd; }
 		const std::string &GetUser() const { return task_user; }
 		const std::string &GetHost() const { return task_host; }
