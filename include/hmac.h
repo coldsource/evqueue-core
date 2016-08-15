@@ -17,23 +17,6 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _AUTHHANDLER_H_
-#define _AUTHHANDLER_H_
-
 #include <string>
 
-class AuthHandler
-{
-	int socket;
-	
-	public:
-		AuthHandler(int socket);
-		
-		void HandleAuth();
-	
-	private:
-		std::string generate_challenge();
-		int time_constant_strcmp(const std::string &str1, const std::string &str2);
-};
-
-#endif
+std::string hash_hmac(const std::string &key, const std::string &data);

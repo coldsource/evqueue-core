@@ -49,6 +49,7 @@ class Statistics
 		
 		static Statistics *GetInstance(void) { return instance; }
 		
+		unsigned int GetAcceptedConnections(void);
 		void IncAcceptedConnections(void);
 		void IncInputErrors(void);
 		void IncWorkflowQueries(void);

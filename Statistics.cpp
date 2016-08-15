@@ -55,6 +55,15 @@ Statistics::Statistics(void)
 	waiting_threads = 0;
 }
 
+unsigned int Statistics::GetAcceptedConnections(void)
+{
+	pthread_mutex_lock(&lock);
+	unsigned int n = accepted_connections;
+	pthread_mutex_unlock(&lock);
+	
+	return n;
+}
+
 void Statistics::IncAcceptedConnections(void)
 {
 	pthread_mutex_lock(&lock);

@@ -89,8 +89,12 @@ void *handle_connection(void *sp)
 	
 	try
 	{
-		SocketQuerySAX2Handler saxh("API");
+		AuthHandler auth_handler(s);
+		auth_handler.HandleAuth();
 		
+		send(s,"<ready />\n",10,0);
+		
+		SocketQuerySAX2Handler saxh("API");
 		SocketSAX2Handler socket_sax2_handler(s);
 		socket_sax2_handler.HandleQuery(&saxh);
 		
