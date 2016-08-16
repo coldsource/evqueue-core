@@ -125,7 +125,7 @@ bool Task::CheckTaskName(const string &task_name)
 
 void Task::Get(unsigned int id, QueryResponse *response)
 {
-	Task task = Tasks::GetInstance()->GetTask(id);
+	Task task = Tasks::GetInstance()->Get(id);
 	
 	DOMElement *node = (DOMElement *)response->AppendXML("<task />");
 	node->setAttribute(X("name"),X(task.GetName().c_str()));

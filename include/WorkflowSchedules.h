@@ -20,19 +20,16 @@
 #include <map>
 #include <vector>
 
-#include <pthread.h>
+#include <APIObjectList.h>
 
 class WorkflowSchedule;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
-class WorkflowSchedules
+class WorkflowSchedules:public APIObjectList<WorkflowSchedule>
 {
 	static WorkflowSchedules *instance;
 		
-	pthread_mutex_t lock;
-	
-	std::map<unsigned int,WorkflowSchedule *> schedules_id;
 	std::vector<WorkflowSchedule *> active_schedules;
 	
 	public:
@@ -42,9 +39,6 @@ class WorkflowSchedules
 		static WorkflowSchedules *GetInstance() { return instance; }
 		
 		void Reload(void);
-		
-		WorkflowSchedule GetWorkflowSchedule(unsigned int id);
-		bool Exists(unsigned int id);
 		
 		const std::vector<WorkflowSchedule *> &GetActiveWorkflowSchedules();
 		

@@ -32,22 +32,15 @@ Users *Users::instance = 0;
 using namespace std;
 using namespace xercesc;
 
-Users::Users()
+Users::Users():APIObjectList()
 {
 	instance = this;
-	
-	pthread_mutex_init(&lock, NULL);
 	
 	Reload();
 }
 
 Users::~Users()
 {
-	// Clean current tasks
-	for(auto it=users_name.begin();it!=users_name.end();++it)
-		delete it->second;
-	
-	users_name.clear();
 }
 
 void Users::Reload(void)
@@ -56,11 +49,7 @@ void Users::Reload(void)
 	
 	pthread_mutex_lock(&lock);
 	
-	// Clean current tasks
-	for(auto it=users_name.begin();it!=users_name.end();++it)
-		delete it->second;
-	
-	users_name.clear();
+	clear();
 	
 	// Update
 	DB db;
@@ -68,49 +57,9 @@ void Users::Reload(void)
 	db.Query("SELECT user_login FROM t_user");
 	
 	while(db.FetchRow())
-	{
-		User *user = new User(&db2,db.GetField(0));
-		string user_name(db.GetField(0));
-		users_name[user_name] = user;
-	}
+		add(0,db.GetField(0),new User(&db2,db.GetField(0)));
 	
 	pthread_mutex_unlock(&lock);
-}
-
-bool Users::Exists(const string &name)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = users_name.find(name);
-	if(it==users_name.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return false;
-	}
-	
-	pthread_mutex_unlock(&lock);
-	
-	return true;
-}
-
-User Users::GetUser(const string &name)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = users_name.find(name);
-	if(it==users_name.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("Users","Unable to find user");
-	}
-	
-	User user = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return user;
 }
 
 bool Users::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -123,7 +72,7 @@ bool Users::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	{
 		pthread_mutex_lock(&users->lock);
 		
-		for(auto it = users->users_name.begin(); it!=users->users_name.end(); it++)
+		for(auto it = users->objects_name.begin(); it!=users->objects_name.end(); it++)
 		{
 			User user = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML("<user />");

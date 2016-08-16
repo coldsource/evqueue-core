@@ -63,7 +63,7 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	
 	type_id = db->GetFieldInt(0);
 	
-	NotificationType notification_type = NotificationTypes::GetInstance()->GetNotificationType(type_id);
+	NotificationType notification_type = NotificationTypes::GetInstance()->Get(type_id);
 	
 	if(notification_type.GetName().at(0)=='/')
 		notification_binary = notification_type.GetName();
@@ -123,7 +123,7 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 
 void Notification::Get(unsigned int id,QueryResponse *response)
 {
-	Notification notification = Notifications::GetInstance()->GetNotification(id);
+	Notification notification = Notifications::GetInstance()->Get(id);
 	
 	DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
 	node->setAttribute(X("type_id"),X(to_string(notification.GetTypeID()).c_str()));

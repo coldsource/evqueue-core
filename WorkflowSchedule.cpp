@@ -80,7 +80,7 @@ WorkflowSchedule::~WorkflowSchedule()
 
 const string WorkflowSchedule::GetWorkflowName(void)
 {
-	Workflow workflow = Workflows::GetInstance()->GetWorkflow(workflow_id);
+	Workflow workflow = Workflows::GetInstance()->Get(workflow_id);
 	return workflow.GetName();
 }
 
@@ -96,7 +96,7 @@ void WorkflowSchedule::SetStatus(bool active)
 
 void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
 {
-	WorkflowSchedule workflow_schedule = WorkflowSchedules::GetInstance()->GetWorkflowSchedule(id);
+	WorkflowSchedule workflow_schedule = WorkflowSchedules::GetInstance()->Get(id);
 	
 	DOMElement *node = (DOMElement *)response->AppendXML("<workflow_schedule />");
 	node->setAttribute(X("workflow_id"),X(to_string(workflow_schedule.GetWorkflowID()).c_str()));
@@ -256,7 +256,7 @@ void WorkflowSchedule::create_edit_check(
 	Schedule schedule(schedule_description.c_str());
 	
 	// Check workflow ID exists
-	Workflow workflow = Workflows::GetInstance()->GetWorkflow(workflow_id);
+	Workflow workflow = Workflows::GetInstance()->Get(workflow_id);
 	
 	// Check corectness of input parameters
 	workflow.CheckInputParameters(parameters);

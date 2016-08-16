@@ -153,7 +153,7 @@ bool Workflow::CheckWorkflowName(const string &workflow_name)
 
 void Workflow::Get(unsigned int id, QueryResponse *response)
 {
-	Workflow workflow = Workflows::GetInstance()->GetWorkflow(id);
+	Workflow workflow = Workflows::GetInstance()->Get(id);
 	
 	DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
 	node->setAttribute(X("name"),X(workflow.GetName().c_str()));

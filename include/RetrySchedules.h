@@ -20,24 +20,20 @@
 #ifndef _RETRYSCHEDULES_H_
 #define _RETRYSCHEDULES_H_
 
+#include <APIObjectList.h>
+
 #include <map>
 #include <string>
-#include <pthread.h>
 
 class RetrySchedule;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
-class RetrySchedules
+class RetrySchedules:public APIObjectList<RetrySchedule>
 {
 	private:
 		static RetrySchedules *instance;
 		
-		pthread_mutex_t lock;
-		
-		std::map<unsigned int,RetrySchedule *> schedules_id;
-		std::map<std::string,RetrySchedule *> schedules_name;
-	
 	public:
 		
 		RetrySchedules();
@@ -46,11 +42,6 @@ class RetrySchedules
 		static RetrySchedules *GetInstance() { return instance; }
 		
 		void Reload(void);
-		
-		RetrySchedule GetRetrySchedule(unsigned int id);
-		RetrySchedule GetRetrySchedule(const std::string &name);
-		
-		bool Exists(unsigned int id);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

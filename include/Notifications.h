@@ -20,16 +20,17 @@
 #ifndef _NOTIFICATIONS_H_
 #define _NOTIFICATIONS_H_
 
+#include <APIObjectList.h>
+
 #include <map>
 #include <string>
-#include <pthread.h>
 
 class Notification;
 class WorkflowInstance;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
-class Notifications
+class Notifications:public APIObjectList<Notification>
 {
 	private:
 		struct st_notification_instance
@@ -40,11 +41,8 @@ class Notifications
 		
 		static Notifications *instance;
 		
-		pthread_mutex_t lock;
-		
 		int max_concurrency;
 		
-		std::map<unsigned int,Notification *> notifications;
 		std::map<pid_t,st_notification_instance> notification_instances;
 	
 	public:
@@ -55,10 +53,6 @@ class Notifications
 		static Notifications *GetInstance() { return instance; }
 		
 		void Reload(void);
-		
-		Notification GetNotification(unsigned int id);
-		
-		bool Exists(unsigned int id);
 		
 		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
 		void Exit(pid_t pid, int status, char retcode);

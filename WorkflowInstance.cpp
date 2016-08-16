@@ -114,7 +114,7 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 		throw Exception("WorkflowInstance","Workflow name is too long");
 
 	// Get workflow. This will throw an exception if workflow doesn't exist
-	Workflow workflow = Workflows::GetInstance()->GetWorkflow(workflow_name);
+	Workflow workflow = Workflows::GetInstance()->Get(workflow_name);
 
 	workflow_id = workflow.GetID();
 	notifications = workflow.GetNotifications();
@@ -213,7 +213,7 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 			RetrySchedule retry_schedule;
 			try
 			{
-				retry_schedule = RetrySchedules::GetInstance()->GetRetrySchedule(schedule_name_c);
+				retry_schedule = RetrySchedules::GetInstance()->Get(schedule_name_c);
 			}
 			catch(Exception &e)
 			{
@@ -562,7 +562,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *stdout
 		
 		try
 		{
-			task = Tasks::GetInstance()->GetTask(task_name_c);
+			task = Tasks::GetInstance()->Get(task_name_c);
 		}
 		catch(Exception e)
 		{
@@ -739,7 +739,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 	
 	try
 	{
-		task = Tasks::GetInstance()->GetTask(task_name_c);
+		task = Tasks::GetInstance()->Get(task_name_c);
 	}
 	catch(Exception e)
 	{

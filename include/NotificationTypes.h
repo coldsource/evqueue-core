@@ -20,7 +20,7 @@
 #ifndef _NOTIFICATIONTYPES_H_
 #define _NOTIFICATIONTYPES_H_
 
-#include <pthread.h>
+#include <APIObjectList.h>
 
 #include <map>
 #include <string>
@@ -29,15 +29,11 @@ class NotificationType;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
-class NotificationTypes
+class NotificationTypes:public APIObjectList<NotificationType>
 {
 	private:
 		static NotificationTypes *instance;
 		
-		pthread_mutex_t lock;
-		
-		std::map<std::string,NotificationType *> notifications_name;
-		std::map<unsigned int,NotificationType *> notifications_id;
 	
 	public:
 		
@@ -49,10 +45,6 @@ class NotificationTypes
 		void Reload(void);
 		void SyncBinaries(void);
 
-		bool Exists(unsigned int id);
-		NotificationType GetNotificationType(unsigned int id);
-		NotificationType GetNotificationType(const std::string &name);
-		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 

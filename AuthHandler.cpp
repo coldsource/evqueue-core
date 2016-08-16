@@ -74,7 +74,7 @@ void AuthHandler::HandleAuth()
 		User user;
 		try
 		{
-			user = Users::GetInstance()->GetUser(user_name);
+			user = Users::GetInstance()->Get(user_name);
 		}
 		catch(Exception &e)
 		{

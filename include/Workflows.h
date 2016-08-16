@@ -20,7 +20,7 @@
 #ifndef _WORKFLOWS_H_
 #define _WORKFLOWS_H_
 
-#include <pthread.h>
+#include <APIObjectList.h>
 
 #include <map>
 #include <string>
@@ -29,16 +29,11 @@ class Workflow;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
-class Workflows
+class Workflows:public APIObjectList<Workflow>
 {
 	private:
 		static Workflows *instance;
 		
-		pthread_mutex_t lock;
-		
-		std::map<std::string,Workflow *> workflows_name;
-		std::map<unsigned int,Workflow *> workflows_id;
-	
 	public:
 		
 		Workflows();
@@ -47,10 +42,6 @@ class Workflows
 		static Workflows *GetInstance() { return instance; }
 		
 		void Reload(void);
-
-		bool Exists(unsigned int id);
-		Workflow GetWorkflow(unsigned int id);
-		Workflow GetWorkflow(const std::string &name);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

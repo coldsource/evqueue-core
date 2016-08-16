@@ -35,7 +35,7 @@ Tasks *Tasks::instance = 0;
 using namespace std;
 using namespace xercesc;
 
-Tasks::Tasks()
+Tasks::Tasks():APIObjectList()
 {
 	instance = this;
 	
@@ -46,12 +46,6 @@ Tasks::Tasks()
 
 Tasks::~Tasks()
 {
-	// Clean current tasks
-	for(auto it=tasks_name.begin();it!=tasks_name.end();++it)
-		delete it->second;
-	
-	tasks_id.clear();
-	tasks_name.clear();
 }
 
 void Tasks::Reload(void)
@@ -61,11 +55,7 @@ void Tasks::Reload(void)
 	pthread_mutex_lock(&lock);
 	
 	// Clean current tasks
-	for(auto it=tasks_name.begin();it!=tasks_name.end();++it)
-		delete it->second;
-	
-	tasks_id.clear();
-	tasks_name.clear();
+	clear();
 	
 	// Update
 	DB db;
@@ -73,13 +63,7 @@ void Tasks::Reload(void)
 	db.Query("SELECT task_id,task_name FROM t_task");
 	
 	while(db.FetchRow())
-	{
-		std::string task_name(db.GetField(1));
-		Task * task = new Task(&db2,db.GetField(1));
-		
-		tasks_id[db.GetFieldInt(0)] = task;
-		tasks_name[task_name] = task;
-	}
+		add(db.GetFieldInt(0),db.GetField(1),new Task(&db2,db.GetField(1)));
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -134,61 +118,6 @@ void Tasks::SyncBinaries(void)
 	pthread_mutex_unlock(&lock);
 }
 
-Task Tasks::GetTask(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = tasks_id.find(id);
-	if(it==tasks_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("Tasks","Unable to find task");
-	}
-	
-	Task task = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return task;
-}
-
-Task Tasks::GetTask(const string &name)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = tasks_name.find(name);
-	if(it==tasks_name.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("Tasks","Unable to find task");
-	}
-	
-	Task task = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return task;
-}
-
-bool Tasks::Exists(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = tasks_id.find(id);
-	if(it==tasks_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return false;
-	}
-	
-	pthread_mutex_unlock(&lock);
-	
-	return true;
-}
-
 bool Tasks::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	Tasks *tasks = Tasks::GetInstance();
@@ -199,7 +128,7 @@ bool Tasks::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	{
 		pthread_mutex_lock(&tasks->lock);
 		
-		for(auto it = tasks->tasks_name.begin(); it!=tasks->tasks_name.end(); it++)
+		for(auto it = tasks->objects_name.begin(); it!=tasks->objects_name.end(); it++)
 		{
 			Task task = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML("<task />");

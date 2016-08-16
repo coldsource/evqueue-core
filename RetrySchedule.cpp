@@ -66,7 +66,7 @@ bool RetrySchedule::CheckRetryScheduleName(const string &retry_schedule_name)
 
 void RetrySchedule::Get(unsigned int id, QueryResponse *response)
 {
-	RetrySchedule retry_schedule = RetrySchedules::GetInstance()->GetRetrySchedule(id);
+	RetrySchedule retry_schedule = RetrySchedules::GetInstance()->Get(id);
 	
 	DOMElement *node = (DOMElement *)response->AppendXML(retry_schedule.GetXML());
 	node->setAttribute(X("id"),X(to_string(retry_schedule.GetID()).c_str()));

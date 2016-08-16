@@ -20,7 +20,7 @@
 #ifndef _USERS_H_
 #define _USERS_H_
 
-#include <pthread.h>
+#include <APIObjectList.h>
 
 #include <map>
 #include <string>
@@ -29,13 +29,9 @@ class User;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 
-class Users
+class Users:public APIObjectList<User>
 {
 	static Users *instance;
-	
-	pthread_mutex_t lock;
-	
-	std::map<std::string,User *> users_name;
 	
 	public:
 		
@@ -45,9 +41,6 @@ class Users
 		static Users *GetInstance() { return instance; }
 		
 		void Reload(void);
-
-		bool Exists(const std::string &name);
-		User GetUser(const std::string &name);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

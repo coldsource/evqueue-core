@@ -33,23 +33,15 @@ using namespace xercesc;
 
 WorkflowSchedules *WorkflowSchedules::instance = 0;
 
-WorkflowSchedules::WorkflowSchedules()
+WorkflowSchedules::WorkflowSchedules():APIObjectList()
 {
 	instance = this;
-	
-	pthread_mutex_init(&lock, NULL);
 	
 	Reload();
 }
 
 WorkflowSchedules::~WorkflowSchedules()
 {
-	// Clean current tasks
-	for(auto it=schedules_id.begin();it!=schedules_id.end();++it)
-		delete it->second;
-	
-	schedules_id.clear();
-	active_schedules.clear();
 }
 
 void WorkflowSchedules::Reload(void)
@@ -58,11 +50,7 @@ void WorkflowSchedules::Reload(void)
 	
 	pthread_mutex_lock(&lock);
 	
-	// Clean current tasks
-	for(auto it=schedules_id.begin();it!=schedules_id.end();++it)
-		delete it->second;
-	
-	schedules_id.clear();
+	clear();
 	active_schedules.clear();
 	
 	DB db;
@@ -72,49 +60,13 @@ void WorkflowSchedules::Reload(void)
 	{
 		WorkflowSchedule *workflow_schedule = new WorkflowSchedule(db.GetFieldInt(0));
 		
-		schedules_id[db.GetFieldInt(0)] = workflow_schedule;
+		add(db.GetFieldInt(0),"",workflow_schedule);
 		
 		if(workflow_schedule->GetIsActive())
 			active_schedules.push_back(workflow_schedule);
 	}
 	
 	pthread_mutex_unlock(&lock);
-}
-
-WorkflowSchedule WorkflowSchedules::GetWorkflowSchedule(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = schedules_id.find(id);
-	if(it==schedules_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("WorkflowSchedules","Unable to find workflow schedule");
-	}
-	
-	WorkflowSchedule workflow_schedule = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return workflow_schedule;
-}
-
-bool WorkflowSchedules::Exists(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = schedules_id.find(id);
-	if(it==schedules_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return false;
-	}
-	
-	pthread_mutex_unlock(&lock);
-	
-	return true;
 }
 
 const vector<WorkflowSchedule *> &WorkflowSchedules::GetActiveWorkflowSchedules()
@@ -132,7 +84,7 @@ bool WorkflowSchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 	{
 		pthread_mutex_lock(&workflow_schedules->lock);
 		
-		for(auto it = workflow_schedules->schedules_id.begin(); it!=workflow_schedules->schedules_id.end(); it++)
+		for(auto it = workflow_schedules->objects_id.begin(); it!=workflow_schedules->objects_id.end(); it++)
 		{
 			WorkflowSchedule workflow_schedule = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML("<workflow_schedule />");

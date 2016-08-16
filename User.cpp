@@ -63,7 +63,7 @@ bool User::CheckUserName(const string &user_name)
 
 void User::Get(const string &name, QueryResponse *response)
 {
-	User user = Users::GetInstance()->GetUser(name);
+	User user = Users::GetInstance()->Get(name);
 	
 	DOMElement *node = (DOMElement *)response->AppendXML("<user />");
 	node->setAttribute(X("name"),X(user.GetName().c_str()));

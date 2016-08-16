@@ -35,23 +35,15 @@ NotificationTypes *NotificationTypes::instance = 0;
 using namespace std;
 using namespace xercesc;
 
-NotificationTypes::NotificationTypes()
+NotificationTypes::NotificationTypes():APIObjectList()
 {
 	instance = this;
-	
-	pthread_mutex_init(&lock, NULL);
 	
 	Reload();
 }
 
 NotificationTypes::~NotificationTypes()
 {
-	// Clean current tasks
-	for(auto it=notifications_name.begin();it!=notifications_name.end();++it)
-		delete it->second;
-	
-	notifications_name.clear();
-	notifications_id.clear();
 }
 
 void NotificationTypes::Reload(void)
@@ -60,12 +52,7 @@ void NotificationTypes::Reload(void)
 	
 	pthread_mutex_lock(&lock);
 	
-	// Clean current tasks
-	for(auto it=notifications_name.begin();it!=notifications_name.end();++it)
-		delete it->second;
-	
-	notifications_name.clear();
-	notifications_id.clear();
+	clear();
 	
 	// Update
 	DB db;
@@ -73,32 +60,9 @@ void NotificationTypes::Reload(void)
 	db.Query("SELECT notification_type_id,notification_type_name FROM t_notification_type");
 	
 	while(db.FetchRow())
-	{
-		NotificationType *notification_type = new NotificationType(&db2,db.GetFieldInt(0));
-		std::string notification_type_name(db.GetField(1));
-		
-		notifications_name[notification_type_name] = notification_type;
-		notifications_id[db.GetFieldInt(0)] = notification_type;
-	}
+		add(db.GetFieldInt(0),db.GetField(1),new NotificationType(&db2,db.GetFieldInt(0)));
 	
 	pthread_mutex_unlock(&lock);
-}
-
-bool NotificationTypes::Exists(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = notifications_id.find(id);
-	if(it==notifications_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return false;
-	}
-	
-	pthread_mutex_unlock(&lock);
-	
-	return true;
 }
 
 void NotificationTypes::SyncBinaries(void)
@@ -151,44 +115,6 @@ void NotificationTypes::SyncBinaries(void)
 	pthread_mutex_unlock(&lock);
 }
 
-NotificationType NotificationTypes::GetNotificationType(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = notifications_id.find(id);
-	if(it==notifications_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("NotificationTypes","Unable to find notification type");
-	}
-	
-	NotificationType notification_type = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return notification_type;
-}
-
-NotificationType NotificationTypes::GetNotificationType(const string &name)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = notifications_name.find(name);
-	if(it==notifications_name.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("NotificationTypes","Unable to find notification type");
-	}
-	
-	NotificationType notification_type = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return notification_type;
-}
-
 bool NotificationTypes::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	NotificationTypes *notification_types = NotificationTypes::GetInstance();
@@ -199,7 +125,7 @@ bool NotificationTypes::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 	{
 		pthread_mutex_lock(&notification_types->lock);
 		
-		for(auto it = notification_types->notifications_name.begin(); it!=notification_types->notifications_name.end(); it++)
+		for(auto it = notification_types->objects_name.begin(); it!=notification_types->objects_name.end(); it++)
 		{
 			NotificationType notification_type = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML("<notification_type />");

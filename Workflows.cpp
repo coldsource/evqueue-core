@@ -34,24 +34,15 @@ Workflows *Workflows::instance = 0;
 using namespace std;
 using namespace xercesc;
 
-Workflows::Workflows()
+Workflows::Workflows():APIObjectList()
 {
 	instance = this;
-	
-	pthread_mutex_init(&lock, NULL);
 	
 	Reload();
 }
 
 Workflows::~Workflows()
 {
-	// Clean current tasks
-	std::map<std::string,Workflow *>::iterator it;
-	for(it=workflows_name.begin();it!=workflows_name.end();++it)
-		delete it->second;
-	
-	workflows_name.clear();
-	workflows_id.clear();
 }
 
 void Workflows::Reload(void)
@@ -60,13 +51,7 @@ void Workflows::Reload(void)
 	
 	pthread_mutex_lock(&lock);
 	
-	// Clean current tasks
-	std::map<std::string,Workflow *>::iterator it;
-	for(it=workflows_name.begin();it!=workflows_name.end();++it)
-		delete it->second;
-	
-	workflows_name.clear();
-	workflows_id.clear();
+	clear();
 	
 	// Update
 	DB db;
@@ -74,69 +59,8 @@ void Workflows::Reload(void)
 	db.Query("SELECT workflow_id,workflow_name FROM t_workflow");
 	
 	while(db.FetchRow())
-	{
-		Workflow *workflow = new Workflow(&db2,db.GetField(1));
-		std::string Workflow_name(db.GetField(1));
-		workflows_name[Workflow_name] = workflow;
-		workflows_id[db.GetFieldInt(0)] = workflow;
-	}
-	
+		add(db.GetFieldInt(0),db.GetField(1),new Workflow(&db2,db.GetField(1)));
 	pthread_mutex_unlock(&lock);
-}
-
-bool Workflows::Exists(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = workflows_id.find(id);
-	if(it==workflows_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return false;
-	}
-	
-	pthread_mutex_unlock(&lock);
-	
-	return true;
-}
-
-Workflow Workflows::GetWorkflow(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = workflows_id.find(id);
-	if(it==workflows_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("Workflows","Unable to find workflow");
-	}
-	
-	Workflow workflow = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return workflow;
-}
-
-Workflow Workflows::GetWorkflow(const string &name)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = workflows_name.find(name);
-	if(it==workflows_name.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("Workflows","Unable to find workflow");
-	}
-	
-	Workflow workflow = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return workflow;
 }
 
 bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -149,7 +73,7 @@ bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respons
 	{
 		pthread_mutex_lock(&workflows->lock);
 		
-		for(auto it = workflows->workflows_name.begin(); it!=workflows->workflows_name.end(); it++)
+		for(auto it = workflows->objects_name.begin(); it!=workflows->objects_name.end(); it++)
 		{
 			Workflow workflow = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());

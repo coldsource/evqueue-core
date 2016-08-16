@@ -34,24 +34,15 @@ RetrySchedules *RetrySchedules::instance = 0;
 using namespace std;
 using namespace xercesc;
 
-RetrySchedules::RetrySchedules()
+RetrySchedules::RetrySchedules():APIObjectList()
 {
 	instance = this;
-	
-	pthread_mutex_init(&lock, NULL);
 	
 	Reload();
 }
 
 RetrySchedules::~RetrySchedules()
 {
-	// Clean current tasks
-	map<string,RetrySchedule *>::iterator it;
-	for(it=schedules_name.begin();it!=schedules_name.end();++it)
-		delete it->second;
-	
-	schedules_id.clear();
-	schedules_name.clear();
 }
 
 void RetrySchedules::Reload(void)
@@ -61,12 +52,7 @@ void RetrySchedules::Reload(void)
 	pthread_mutex_lock(&lock);
 	
 	// Clean current tasks
-	map<string,RetrySchedule *>::iterator it;
-	for(it=schedules_name.begin();it!=schedules_name.end();++it)
-		delete it->second;
-	
-	schedules_name.clear();
-	schedules_id.clear();
+	clear();
 	
 	// Update
 	DB db;
@@ -74,69 +60,9 @@ void RetrySchedules::Reload(void)
 	db.Query("SELECT schedule_id,schedule_name FROM t_schedule");
 	
 	while(db.FetchRow())
-	{
-		string schedule_name(db.GetField(1));
-		RetrySchedule *retry_schedule = new RetrySchedule(&db2,db.GetField(1));
-		schedules_id[db.GetFieldInt(0)] = retry_schedule;
-		schedules_name[schedule_name] = retry_schedule;
-	}
+		add(db.GetFieldInt(0),db.GetField(1),new RetrySchedule(&db2,db.GetField(1)));
 	
 	pthread_mutex_unlock(&lock);
-}
-
-RetrySchedule RetrySchedules::GetRetrySchedule(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = schedules_id.find(id);
-	if(it==schedules_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("RetrySchedules","Unable to find schedule");
-	}
-	
-	RetrySchedule schedule = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return schedule;
-}
-
-RetrySchedule RetrySchedules::GetRetrySchedule(const string &name)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = schedules_name.find(name);
-	if(it==schedules_name.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("RetrySchedules","Unable to find schedule");
-	}
-	
-	RetrySchedule schedule = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return schedule;
-}
-
-bool RetrySchedules::Exists(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = schedules_id.find(id);
-	if(it==schedules_id.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return false;
-	}
-	
-	pthread_mutex_unlock(&lock);
-	
-	return true;
 }
 
 bool RetrySchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -149,7 +75,7 @@ bool RetrySchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *re
 	{
 		pthread_mutex_lock(&retry_schedules->lock);
 		
-		for(auto it = retry_schedules->schedules_name.begin(); it!=retry_schedules->schedules_name.end(); it++)
+		for(auto it = retry_schedules->objects_name.begin(); it!=retry_schedules->objects_name.end(); it++)
 		{
 			RetrySchedule retry_schedule = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML(retry_schedule.GetXML());

@@ -36,11 +36,9 @@ Notifications *Notifications::instance = 0;
 using namespace std;
 using namespace xercesc;
 
-Notifications::Notifications()
+Notifications::Notifications():APIObjectList()
 {
 	instance = this;
-	
-	pthread_mutex_init(&lock, NULL);
 	
 	max_concurrency = Configuration::GetInstance()->GetInt("notifications.tasks.concurrency");
 	
@@ -49,12 +47,6 @@ Notifications::Notifications()
 
 Notifications::~Notifications()
 {
-	// Clean current notifications
-	map<unsigned int,Notification *>::iterator it;
-	for(it=notifications.begin();it!=notifications.end();++it)
-		delete it->second;
-	
-	notifications.clear();
 }
 
 void Notifications::Reload(void)
@@ -63,12 +55,7 @@ void Notifications::Reload(void)
 	
 	pthread_mutex_lock(&lock);
 	
-	// Clean current notifications
-	map<unsigned int,Notification *>::iterator it;
-	for(it=notifications.begin();it!=notifications.end();++it)
-		delete it->second;
-	
-	notifications.clear();
+	clear();
 	
 	// Update
 	DB db;
@@ -76,54 +63,16 @@ void Notifications::Reload(void)
 	db.Query("SELECT notification_id FROM t_notification");
 	
 	while(db.FetchRow())
-	{
-		notifications[db.GetFieldInt(0)] = new Notification(&db2,db.GetFieldInt(0));
-	}
+		add(db.GetFieldInt(0),"",new Notification(&db2,db.GetFieldInt(0)));
 	
 	pthread_mutex_unlock(&lock);
-}
-
-Notification Notifications::GetNotification(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = notifications.find(id);
-	if(it==notifications.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw Exception("Notifications","Unable to find notification");
-	}
-	
-	Notification notification = *it->second;
-	
-	pthread_mutex_unlock(&lock);
-	
-	return notification;
-}
-
-bool Notifications::Exists(unsigned int id)
-{
-	pthread_mutex_lock(&lock);
-	
-	auto it = notifications.find(id);
-	if(it==notifications.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
-		return false;
-	}
-	
-	pthread_mutex_unlock(&lock);
-	
-	return true;
 }
 
 void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflow_instance)
 {	
 	try
 	{
-		Notification notification = GetNotification(notification_id);
+		Notification notification = Get(notification_id);
 		
 		pthread_mutex_lock(&lock);
 		
@@ -190,7 +139,7 @@ bool Notifications::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *res
 	{
 		pthread_mutex_lock(&notifications->lock);
 		
-		for(auto it = notifications->notifications.begin(); it!=notifications->notifications.end(); it++)
+		for(auto it = notifications->objects_id.begin(); it!=notifications->objects_id.end(); it++)
 		{
 			DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
 			node->setAttribute(X("id"),X(std::to_string(it->second->GetID()).c_str()));
