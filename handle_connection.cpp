@@ -85,8 +85,6 @@ void *handle_connection(void *sp)
 	// Init mysql library
 	mysql_thread_init();
 	
-	QueryResponse response(s);
-	
 	try
 	{
 		AuthHandler auth_handler(s);
@@ -94,19 +92,31 @@ void *handle_connection(void *sp)
 		
 		send(s,"<ready />\n",10,0);
 		
-		SocketQuerySAX2Handler saxh("API");
-		SocketSAX2Handler socket_sax2_handler(s);
-		socket_sax2_handler.HandleQuery(&saxh);
-		
-		if(!QueryHandlers::GetInstance()->HandleQuery(saxh.GetQueryGroup(),&saxh, &response))
-			response.SetError("Unknown command or action");
-		
-		response.SendResponse();
+		while(true)
+		{
+			{
+				QueryResponse response(s);
+				
+				SocketQuerySAX2Handler saxh("API");
+				SocketSAX2Handler socket_sax2_handler(s);
+				
+				socket_sax2_handler.HandleQuery(&saxh);
+				
+				if(saxh.GetQueryGroup()=="quit")
+					break;
+				
+				if(!QueryHandlers::GetInstance()->HandleQuery(saxh.GetQueryGroup(),&saxh, &response))
+					response.SetError("Unknown command or action");
+				
+				response.SendResponse();
+			}
+		}
 	}
 	catch (Exception &e)
 	{
 		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
 		
+		QueryResponse response(s);
 		response.SetError(e.error);
 		response.SendResponse();
 		
