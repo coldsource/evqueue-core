@@ -106,7 +106,7 @@ void *handle_connection(void *sp)
 					break;
 				
 				if(!QueryHandlers::GetInstance()->HandleQuery(saxh.GetQueryGroup(),&saxh, &response))
-					response.SetError("Unknown command or action");
+					throw Exception("API","Unknown command or action");
 				
 				response.SendResponse();
 			}

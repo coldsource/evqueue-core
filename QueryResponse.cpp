@@ -92,6 +92,7 @@ void QueryResponse::SendResponse()
 	char *response_c = XMLString::transcode(response);
 	
 	send(socket,response_c,strlen(response_c),0);
+	send(socket,"\n",1,0);
 	
 	XMLString::release(&response);
 	XMLString::release(&response_c);
