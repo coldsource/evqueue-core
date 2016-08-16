@@ -214,19 +214,13 @@ bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respon
 {
 	Statistics *stats = Statistics::GetInstance();
 	
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		throw Exception("Statistics","Missing action attribute on node statistics");
-	
-	if(it_action->second=="query")
+	if(action=="query")
 	{
-		auto it_type = attrs.find("type");
-		if(it_type==attrs.end())
-			throw Exception("Statistics","Missing type attribute on node statistics");
+		const string type = saxh->GetRootAttribute("type");
 		
-		if(it_type->second=="global")
+		if(type=="global")
 		{
 			stats->IncStatisticsQueries();
 			
@@ -234,7 +228,7 @@ bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respon
 			
 			return true;
 		}
-		else if(it_type->second=="queue")
+		else if(type=="queue")
 		{
 			stats->IncStatisticsQueries();
 				
@@ -246,13 +240,11 @@ bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respon
 		else
 			throw Exception("Statistics","Unknown statistics type");
 	}
-	else if(it_action->second=="reset")
+	else if(action=="reset")
 	{
-		auto it_type = attrs.find("type");
-		if(it_type==attrs.end())
-			throw Exception("Statistics","Missing type attribute on node statistics");
+		const string type = saxh->GetRootAttribute("type");
 		
-		if(it_type->second=="global")
+		if(type=="global")
 		{
 			stats->ResetGlobalStatistics();
 			

@@ -114,82 +114,37 @@ std::string RetrySchedule::create_edit_check(const std::string &name, const std:
 
 bool RetrySchedule::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="get")
+	if(action=="get")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("RetrySchedule","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("RetrySchedule","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
 		return true;
 	}
-	else if(it_action->second=="create" || it_action->second=="edit")
+	else if(action=="create" || action=="edit")
 	{
-		auto it_name = attrs.find("name");
-		if(it_name==attrs.end())
-			throw Exception("RetrySchedule","Missing 'name' attribute");
+		string name = saxh->GetRootAttribute("name");
+		string content = saxh->GetRootAttribute("content");
 		
-		auto it_content = attrs.find("content");
-		if(it_content==attrs.end())
-			throw Exception("RetrySchedule","Missing 'content' attribute");
-		
-		if(it_action->second=="create")
-			Create(it_name->second, it_content->second);
+		if(action=="create")
+			Create(name, content);
 		else
 		{
-			auto it_id = attrs.find("id");
-			if(it_id==attrs.end())
-				throw Exception("RetrySchedule","Missing 'id' attribute");
+			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			unsigned int id;
-			try
-			{
-				id = std::stoi(it_id->second);
-			}
-			catch(...)
-			{
-				throw Exception("RetrySchedule","Invalid ID");
-			}
-			
-			Edit(id,it_name->second, it_content->second);
+			Edit(id,name, content);
 		}
 		
 		RetrySchedules::GetInstance()->Reload();
 		
 		return true;
 	}
-	else if(it_action->second=="delete")
+	else if(action=="delete")
 	{
-		auto it_id = attrs.find("id");
-		if(it_id==attrs.end())
-			throw Exception("RetrySchedule","Missing 'id' attribute");
-		
-		unsigned int id;
-		try
-		{
-			id = std::stoi(it_id->second);
-		}
-		catch(...)
-		{
-			throw Exception("RetrySchedule","Invalid ID");
-		}
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Delete(id);
 		

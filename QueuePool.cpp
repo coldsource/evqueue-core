@@ -435,13 +435,9 @@ bool QueuePool::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respons
 {
 	QueuePool *qp = QueuePool::GetInstance();
 	
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const string action = saxh->GetRootAttribute("action");
 	
-	auto it_action = attrs.find("action");
-	if(it_action==attrs.end())
-		return false;
-	
-	if(it_action->second=="list")
+	if(action=="list")
 	{
 		pthread_mutex_lock(&qp->mutex);
 		

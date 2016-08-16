@@ -327,7 +327,7 @@ void Task::create_edit_check(
 
 bool Task::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
-	const string action = saxh->GetRootAttribute("name");
+	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")
 	{

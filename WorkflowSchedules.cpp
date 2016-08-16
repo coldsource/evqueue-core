@@ -126,7 +126,7 @@ bool WorkflowSchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 {
 	WorkflowSchedules *workflow_schedules = WorkflowSchedules::GetInstance();
 	
-	string action = saxh->GetRootAttribute("name");
+	string action = saxh->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
