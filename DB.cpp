@@ -26,6 +26,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <vector>
+#include <string>
+
+using namespace std;
+
 DB::DB(DB *db)
 {
 	// We share the same MySQL handle but is_connected is split. We must be connected before cloning or the connection will be made twice
@@ -193,6 +198,111 @@ void DB::QueryPrintf(const char *query,...)
 	}
 
 	va_end(ap);
+
+	escaped_query[j] = '\0';
+
+	try
+	{
+		Query(escaped_query);
+	}
+	catch(Exception &e)
+	{
+		delete[] escaped_query;
+		throw e;
+	}
+	
+	delete[] escaped_query;
+}
+
+void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
+{
+	int len,escaped_len;
+	const string *arg_str;
+	const int *arg_int;
+	
+	int cur = 0;
+
+	len = query.length();
+	escaped_len = 0;
+	for(int i=0;i<len;i++)
+	{
+		if(query[i]=='%')
+		{
+			switch(query[i+1])
+			{
+				case 's':
+					arg_str = (string *)args.at(cur++);
+					if(arg_str)
+						escaped_len += 2+2*arg_str->length(); // 2 Quotes + Escaped string
+					else
+						escaped_len += 4; // NULL
+					i++;
+					break;
+				
+				case 'i':
+					arg_int = (int *)args.at(cur++);
+					if(arg_int)
+						escaped_len += 16; // Integer
+					else
+						escaped_len += 4; // NULL
+					i++;
+					break;
+
+				default:
+					escaped_len++;
+					break;
+			}
+		}
+		else
+			escaped_len++;
+	}
+
+	cur = 0;
+
+	char *escaped_query = new char[escaped_len+1];
+	int j = 0;
+	for(int i=0;i<len;i++)
+	{
+		if(query[i]=='%')
+		{
+			switch(query[i+1])
+			{
+				case 's':
+					arg_str = (string *)args.at(cur++);
+					if(arg_str)
+					{
+						escaped_query[j++] = '\'';
+						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str->c_str(), arg_str->length());
+						escaped_query[j++] = '\'';
+					}
+					else
+					{
+						strcpy(escaped_query+j,"NULL");
+						j += 4;
+					}
+					i++;
+					break;
+				
+				case 'i':
+					arg_int = (int *)args.at(cur++);
+					if(arg_int)
+						j += sprintf(escaped_query+j,"%d",*arg_int);
+					else
+					{
+						strcpy(escaped_query+j,"NULL");
+						j += 4;
+					}
+					i++;
+					break;
+
+				default:
+					escaped_query[j++] = query[i];
+					break;
+			}
+		}
+		else
+			escaped_query[j++] = query[i];
+	}
 
 	escaped_query[j] = '\0';
 

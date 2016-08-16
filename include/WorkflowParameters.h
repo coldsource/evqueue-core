@@ -42,6 +42,7 @@ class WorkflowParameters
 		bool Add(const char *name,const char *value);
 		void SeekStart();
 		bool Get(const char **name,const char **value);
+		bool Get(std::string **name,std::string **value);
 };
 
 #endif

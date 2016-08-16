@@ -21,6 +21,8 @@
 
 #include <string.h>
 
+using namespace std;
+
 WorkflowParameters::WorkflowParameters()
 {
 	current_parameter = 0;
@@ -61,6 +63,18 @@ bool WorkflowParameters::Get(const char **name,const char **value)
 	
 	*name = parameters.at(current_parameter).name.c_str();
 	*value = parameters.at(current_parameter).value.c_str();
+	
+	current_parameter++;;
+	return true;
+}
+
+bool WorkflowParameters::Get(string **name,string **value)
+{
+	if(current_parameter>=parameters.size())
+		return false;
+	
+	*name = &(parameters.at(current_parameter).name);
+	*value = &(parameters.at(current_parameter).value);
 	
 	current_parameter++;;
 	return true;

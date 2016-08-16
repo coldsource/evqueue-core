@@ -25,6 +25,7 @@
 
 class WorkflowInstance;
 class QueryResponse;
+class SocketQuerySAX2Handler;
 
 class WorkflowInstances
 {
@@ -54,6 +55,8 @@ class WorkflowInstances
 		void SendStatus(QueryResponse *response);
 		bool SendStatus(QueryResponse *response,unsigned int workflow_instance_id);
 		void RecordSavepoint();
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		void release_waiters(unsigned int workflow_instance_id);

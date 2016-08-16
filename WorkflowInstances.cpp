@@ -19,17 +19,28 @@
 
 #include <WorkflowInstances.h>
 #include <WorkflowInstance.h>
+#include <WorkflowParameters.h>
 #include <Statistics.h>
 #include <Logger.h>
 #include <Configuration.h>
 #include <QueryResponse.h>
+#include <SocketQuerySAX2Handler.h>
 #include <Exception.h>
+#include <DB.h>
 
 #include <pthread.h>
 #include <sys/socket.h>
 #include <poll.h>
 
+#include <xqilla/xqilla-dom3.hpp>
+
+#include <string>
+#include <vector>
+
 WorkflowInstances *WorkflowInstances::instance = 0;
+
+using namespace std;
+using namespace xercesc;
 
 WorkflowInstances::WorkflowInstances()
 {
@@ -255,6 +266,82 @@ void WorkflowInstances::RecordSavepoint()
 	}
 	
 	pthread_mutex_unlock(&lock);
+}
+
+bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	const string action = saxh->GetRootAttribute("action");
+	
+	if(action=="list")
+	{
+		string filter_node = saxh->GetRootAttribute("filter_node","");
+		string filter_workflow = saxh->GetRootAttribute("filter_workflow","");
+		string filter_launched_from = saxh->GetRootAttribute("filter_launched_from","");
+		string filter_launched_until = saxh->GetRootAttribute("filter_launched_until","");
+		unsigned int limit = saxh->GetRootAttributeInt("limit",30);
+		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
+		
+		// Build query parts
+		string query_select = "SELECT wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status";
+		string query_from = "FROM t_workflow_instance wi, t_workflow w";
+		
+		string query_where = "WHERE true";
+		vector<void *> query_where_values;
+		
+		if(filter_node.length())
+		{
+			query_where += " AND wi.node_name=%s";
+			query_where_values.push_back(&filter_node);
+		}
+		
+		if(filter_workflow.length())
+		{
+			query_where += " AND w.workflow_name=%s";
+			query_where_values.push_back(&filter_workflow);
+		}
+		
+		if(filter_launched_from.length())
+		{
+			query_where += " AND wi.workflow_instance_start>=%s";
+			query_where_values.push_back(&filter_launched_from);
+		}
+		
+		if(filter_launched_until.length())
+		{
+			query_where += " AND wi.workflow_instance_start<=%s";
+			query_where_values.push_back(&filter_launched_until);
+		}
+		
+		WorkflowParameters *parameters = saxh->GetWorkflowParameters();
+		string *name, *value;
+		
+		parameters->SeekStart();
+		while(parameters->Get(&name,&value))
+		{
+			query_where += " AND EXISTS(SELECT * FROM t_workflow_instance_parameters wip WHERE wip.workflow_instance_id=wi.workflow_instance_id AND workflow_instance_parameter=%s AND workflow_instance_parameter_value=%s)";
+			query_where_values.push_back(name);
+			query_where_values.push_back(value);
+		}
+		
+		string query_limit = "limit "+to_string(offset)+","+to_string(limit);
+		
+		string query = query_select+" "+query_from+" "+query_where+" "+query_limit;
+		
+		DB db;
+		db.QueryVsPrintf(query,query_where_values);
+		while(db.FetchRow())
+		{
+			DOMElement *node = (DOMElement *)response->AppendXML("<instance />");
+			node->setAttribute(X("id"),X(std::to_string(db.GetFieldInt(0)).c_str()));
+			node->setAttribute(X("name"),X(db.GetField(1)));
+			node->setAttribute(X("node_name"),X(db.GetField(2)));
+			node->setAttribute(X("host"),X(db.GetField(3)));
+			node->setAttribute(X("start_time"),X(db.GetField(4)));
+			node->setAttribute(X("end_time"),X(db.GetField(5)));
+			node->setAttribute(X("errors"),X(db.GetField(6)));
+			node->setAttribute(X("status"),X(db.GetField(7)));
+		}
+	}
 }
 
 void WorkflowInstances::release_waiters(unsigned int workflow_instance_id)

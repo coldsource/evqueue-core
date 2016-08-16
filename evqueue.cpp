@@ -420,6 +420,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
 		qh->RegisterHandler("instance",WorkflowInstanceAPI::HandleQuery);
+		qh->RegisterHandler("instances",WorkflowInstances::HandleQuery);
 		qh->RegisterHandler("task",Task::HandleQuery);
 		qh->RegisterHandler("tasks",Tasks::HandleQuery);
 		qh->RegisterHandler("queue",Queue::HandleQuery);

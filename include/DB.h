@@ -22,6 +22,9 @@
 
 #include <mysql/mysql.h>
 
+#include <string>
+#include <vector>
+
 class DB
 {
 	MYSQL *mysql;
@@ -44,6 +47,7 @@ public:
 	void Ping(void);
 	void Query(const char *query);
 	void QueryPrintf(const char *query,...);
+	void QueryVsPrintf(const std::string &query,const std::vector<void *> &args);
 	void EscapeString(const char *string, char *escaped_string);
 	int InsertID(void);
 	
