@@ -26,8 +26,6 @@
 #include <sha1.h>
 #include <hmac.h>
 
-#include <linux/random.h>
-#include <syscall.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -82,8 +80,13 @@ string AuthHandler::generate_challenge()
 	sha1_process_bytes((void *)&tv.tv_usec,sizeof(timeval::tv_usec),&ctx);
 	
 	char devrandom[6];
-	syscall(SYS_getrandom, devrandom, 6, 0);
-	sha1_process_bytes(devrandom,6,&ctx);
+	FILE *f = fopen("/dev/urandom","r");
+	if(!f || fread(devrandom,1,6,f)!=6)
+	{
+		Logger::Log(LOG_ERR,"Unable to read /dev/urandom while trying to generate challenge");
+		throw Exception("Authentication Handler","Internal error");
+	}
+	fclose(f);
 	
 	static clock_t base_time = clock();
 	clock_t t = clock()-base_time;
