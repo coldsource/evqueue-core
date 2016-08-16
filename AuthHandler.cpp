@@ -23,6 +23,8 @@
 #include <SocketResponseSAX2Handler.h>
 #include <Exception.h>
 #include <Statistics.h>
+#include <User.h>
+#include <Users.h>
 #include <sha1.h>
 #include <hmac.h>
 
@@ -58,9 +60,21 @@ void AuthHandler::HandleAuth()
 			throw Exception("Authentication Handler","Expected 'auth' node");
 		
 		const string response = saxh.GetRootAttribute("response");
+		const string user_name = saxh.GetRootAttribute("user");
 		
-		string hmac = hash_hmac("",challenge);
-		if(time_constant_strcmp("hmac",response)!=0)
+		User user;
+		try
+		{
+			user = Users::GetInstance()->GetUser(user_name);
+		}
+		catch(Exception &e)
+		{
+			// Cach exceptions to hide real error
+			throw Exception("Authentication Handler","Invalid authentication");
+		}
+		
+		string hmac = hash_hmac(user.GetPassword(),challenge);
+		if(time_constant_strcmp("hmac",response)!=0 && time_constant_strcmp(hmac,response)!=0)
 			throw Exception("Authentication Handler","Invalid authentication");
 	}
 	catch(Exception &e)
