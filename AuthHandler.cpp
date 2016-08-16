@@ -23,6 +23,7 @@
 #include <SocketResponseSAX2Handler.h>
 #include <Exception.h>
 #include <Statistics.h>
+#include <Configuration.h>
 #include <User.h>
 #include <Users.h>
 #include <sha1.h>
@@ -46,22 +47,30 @@ AuthHandler::AuthHandler(int socket)
 
 void AuthHandler::HandleAuth()
 {
+	// Check if authentication is required
+	if(!Configuration::GetInstance()->GetBool("core.auth.enable"))
+		return;
+	
+	// Generate and send challenge
 	string challenge = generate_challenge();
 	string challenge_xml = "<auth challenge='"+challenge+"' />\n";
 	send(socket,challenge_xml.c_str(),challenge_xml.length(),0);
 	
 	try
 	{
+		// Read client response
 		SocketResponseSAX2Handler saxh("Authentication Handler");
 		SocketSAX2Handler socket_sax2_handler(socket);
 		socket_sax2_handler.HandleQuery(&saxh);
 		
+		// Check response
 		if(saxh.GetGroup()!="auth")
 			throw Exception("Authentication Handler","Expected 'auth' node");
 		
 		const string response = saxh.GetRootAttribute("response");
 		const string user_name = saxh.GetRootAttribute("user");
 		
+		// Check identification
 		User user;
 		try
 		{
@@ -69,7 +78,7 @@ void AuthHandler::HandleAuth()
 		}
 		catch(Exception &e)
 		{
-			// Cach exceptions to hide real error
+			// Cach exceptions to hide real error for security reasons
 			throw Exception("Authentication Handler","Invalid authentication");
 		}
 		

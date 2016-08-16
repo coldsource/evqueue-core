@@ -44,6 +44,7 @@ Configuration::Configuration(void)
 	entries["core.uid"] = "0";
 	entries["core.wd"] = "";
 	entries["core.locale"] = "C.UTF-8";
+	entries["core.auth.enable"] = "yes";
 	entries["dpd.interval"] = "10";
 	entries["queuepool.scheduler"] = "fifo";
 	entries["gc.delay"] = "2";
