@@ -76,6 +76,8 @@ void *handle_connection(void *sp)
 		remote_port = ntohs(remote_addr.sin_port);
 	}
 	
+	Logger::Log(LOG_NOTICE,"Accepted connection from %s:%d",remote_addr_str,remote_port);
+	
 	char buf[4096];
 	int read_size;
 	
