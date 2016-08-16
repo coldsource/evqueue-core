@@ -354,7 +354,7 @@ int main(int argc,const char **argv)
 		RetrySchedules *retry_schedules = new RetrySchedules();
 		
 		// Check if workflows are to resume (we have to resume them before starting ProcessManager)
-		db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",config->Get("network.node.name").c_str());
+		db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",&config->Get("network.node.name"));
 		while(db.FetchRow())
 		{
 			Logger::Log(LOG_NOTICE,"[WID %d] Resuming",db.GetFieldInt(0));
@@ -383,8 +383,8 @@ int main(int argc,const char **argv)
 		
 		// Load workflow schedules
 		db.QueryPrintf("SELECT ws.workflow_schedule_id, w.workflow_name, wi.workflow_instance_id FROM t_workflow_schedule ws LEFT JOIN t_workflow_instance wi ON(wi.workflow_schedule_id=ws.workflow_schedule_id AND wi.workflow_instance_status='EXECUTING' AND wi.node_name=%s) INNER JOIN t_workflow w ON(ws.workflow_id=w.workflow_id) WHERE ws.node_name=%s AND ws.workflow_schedule_active=1",
-				config->Get("network.node.name").c_str(),
-				config->Get("network.node.name").c_str()
+				&config->Get("network.node.name"),
+				&config->Get("network.node.name")
 			);
 		while(db.FetchRow())
 		{

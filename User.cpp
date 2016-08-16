@@ -36,7 +36,7 @@ User::User()
 
 User::User(DB *db,const string &user_name)
 {
-	db->QueryPrintf("SELECT user_login,user_password,user_profile FROM t_user WHERE user_login=%s",user_name.c_str());
+	db->QueryPrintf("SELECT user_login,user_password,user_profile FROM t_user WHERE user_login=%s",&user_name);
 	
 	if(!db->FetchRow())
 		throw Exception("User","Unknown User");
@@ -76,9 +76,9 @@ unsigned int User::Create(const string &name, const string &password, const stri
 	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_user(user_login,user_password,user_profile) VALUES(%s,%s,%s)",
-		name.c_str(),
-		password.c_str(),
-		profile.c_str()
+		&name,
+		&password,
+		&profile
 	);
 	
 	return db.InsertID();
@@ -93,9 +93,9 @@ void User::Edit(const string &name,const string &password, const string &profile
 	
 	DB db;
 	db.QueryPrintf("UPDATE t_user SET user_password=%s,user_profile=%s WHERE user_login=%s",
-		password.c_str(),
-		profile.c_str(),
-		name.c_str()
+		&password,
+		&profile,
+		&name
 	);
 }
 

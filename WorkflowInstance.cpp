@@ -104,13 +104,13 @@ WorkflowInstance::WorkflowInstance(void):
 	pthread_mutex_init(&lock, &lock_attr);
 }
 
-WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const char *workflow_host, const char *workflow_user):
+WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const string &workflow_host, const string &workflow_user):
 	WorkflowInstance()
 {
 	DB db;
 	char buf[256+WORKFLOW_NAME_MAX_LEN];
 	
-	if(strlen(workflow_name)>WORKFLOW_NAME_MAX_LEN)
+	if(workflow_name.length()>WORKFLOW_NAME_MAX_LEN)
 		throw Exception("WorkflowInstance","Workflow name is too long");
 
 	// Get workflow. This will throw an exception if workflow doesn't exist
@@ -143,38 +143,37 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 	resolver->addNamespaceBinding(X("xs"), X("http://www.w3.org/2001/XMLSchema"));
 	
 	// Set workflow name for front-office display
-	xmldoc->getDocumentElement()->setAttribute(X("name"),X(workflow_name));
+	xmldoc->getDocumentElement()->setAttribute(X("name"),X(workflow_name.c_str()));
 	
 	// Set workflow user and host
-	if(workflow_host)
+	if(workflow_host.length())
 	{
-		xmldoc->getDocumentElement()->setAttribute(X("host"),X(workflow_host));
+		xmldoc->getDocumentElement()->setAttribute(X("host"),X(workflow_host.c_str()));
 		
-		if(workflow_user)
-			xmldoc->getDocumentElement()->setAttribute(X("user"),X(workflow_user));
+		if(workflow_user.length())
+			xmldoc->getDocumentElement()->setAttribute(X("user"),X(workflow_user.c_str()));
 	}
 	
 	// Set input parameters
-	const char *parameter_name;
-	const char *parameter_value;
+	string parameter_name;
+	string parameter_value;
 	int passed_parameters = 0;
 	char buf2[256+PARAMETER_NAME_MAX_LEN];
 	
 	parameters->SeekStart();
-	while(parameters->Get(&parameter_name,&parameter_value))
+	while(parameters->Get(parameter_name,parameter_value))
 	{
-		sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name);
+		sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name.c_str());
 		DOMXPathResult *res = xmldoc->evaluate(X(buf2),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
 		if(res->isNode())
 		{
 			DOMNode *parameter_node = res->getNodeValue();
-			parameter_node->setTextContent(X(parameter_value));
+			parameter_node->setTextContent(X(parameter_value.c_str()));
 		}
 		else
 		{
 			res->release();
-			sprintf(buf2,"Unknown parameter : %s",parameter_name);
-			throw Exception("WorkflowInstance",buf2);
+			throw Exception("WorkflowInstance","Unknown parameter : "+parameter_name);
 		}
 		
 		res->release();
@@ -268,15 +267,15 @@ WorkflowInstance::WorkflowInstance(const char *workflow_name,WorkflowParameters 
 	if(savepoint_level>=2)
 	{
 		// Insert workflow instance in DB
-		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start) VALUES(%s,%i,%i,%s,'EXECUTING',NOW())",Configuration::GetInstance()->Get("network.node.name").c_str(),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,workflow_host);
+		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start) VALUES(%s,%i,%i,%s,'EXECUTING',NOW())",&Configuration::GetInstance()->Get("network.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host);
 		this->workflow_instance_id = db.InsertID();
 		
 		// Save workflow parameters
 		if(saveparameters)
 		{
 			parameters->SeekStart();
-			while(parameters->Get(&parameter_name,&parameter_value))
-				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",&this->workflow_instance_id,parameter_name,parameter_value);
+			while(parameters->Get(parameter_name,parameter_value))
+				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",&this->workflow_instance_id,&parameter_name,&parameter_value);
 		}
 	}
 	else
@@ -496,7 +495,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 	Configuration *config = Configuration::GetInstance();
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",config->Get("network.node.name").c_str(),&workflow_instance_id);
+	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",&config->Get("network.node.name"),&workflow_instance_id);
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -1676,18 +1675,18 @@ void WorkflowInstance::record_savepoint(bool force)
 				if(XMLString::compareString(X("TERMINATED"),xmldoc->getDocumentElement()->getAttribute(X("status")))!=0)
 				{
 					// Only update savepoint if workflow is still running
-					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",savepoint_c,&workflow_instance_id);
+					db.QueryPrintfC("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",savepoint_c,&workflow_instance_id);
 				}
 				else
 				{
 					// Update savepoint and status if workflow is terminated
-					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",savepoint_c,&error_tasks,&workflow_instance_id);
+					db.QueryPrintfC("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",savepoint_c,&error_tasks,&workflow_instance_id);
 				}
 			}
 			else
 			{
 				// Always insert full informations as we are called at workflow end or when engine restarts
-				db.QueryPrintf("\
+				db.QueryPrintfC("\
 					INSERT INTO t_workflow_instance(workflow_instance_id,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_start,workflow_instance_end,workflow_instance_status,workflow_instance_errors,workflow_instance_savepoint)\
 					VALUES(%i,%i,%i,%s,%s,%s,%s,%i,%s)",
 					&workflow_instance_id,&workflow_id,&workflow_schedule_id,workflow_instance_host_c,workflow_instance_start_c,workflow_instance_end_c?workflow_instance_end_c:"0000-00-00 00:00:00",workflow_instance_status_c,&error_tasks,savepoint_c);

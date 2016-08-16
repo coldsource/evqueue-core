@@ -233,7 +233,7 @@ void Queue::Create(const string &name, int concurrency, const string &scheduler)
 	create_edit_check(name,concurrency,scheduler);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler) VALUES(%s,%i,%s)",name.c_str(),&concurrency,scheduler.c_str());
+	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler) VALUES(%s,%i,%s)",&name,&concurrency,&scheduler);
 }
 
 void Queue::Edit(unsigned int id,const string &name, int concurrency, const string &scheduler)
@@ -244,7 +244,7 @@ void Queue::Edit(unsigned int id,const string &name, int concurrency, const stri
 	create_edit_check(name,concurrency,scheduler);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_queue SET queue_name=%s, queue_concurrency=%i, queue_scheduler=%s WHERE queue_id=%i",name.c_str(),&concurrency,scheduler.c_str(),&id);
+	db.QueryPrintf("UPDATE t_queue SET queue_name=%s, queue_concurrency=%i, queue_scheduler=%s WHERE queue_id=%i",&name,&concurrency,&scheduler,&id);
 }
 
 void Queue::Delete(unsigned int id)

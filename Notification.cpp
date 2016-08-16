@@ -136,7 +136,7 @@ void Notification::Create(unsigned int type_id,const std::string &name, const st
 	create_edit_check(type_id,name,parameters);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_parameters) VALUES(%i,%s,%s)",&type_id,name.c_str(),parameters.c_str());
+	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_parameters) VALUES(%i,%s,%s)",&type_id,&name,&parameters);
 }
 
 void Notification::Edit(unsigned int id,unsigned int type_id,const std::string &name, const std::string parameters)
@@ -147,7 +147,7 @@ void Notification::Edit(unsigned int id,unsigned int type_id,const std::string &
 		throw Exception("Notification","Unable to find notification");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_parameters=%s WHERE notification_id=%i",type_id,name.c_str(),parameters.c_str(),&id);
+	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_parameters=%s WHERE notification_id=%i",type_id,&name,&parameters,&id);
 }
 
 void Notification::Delete(unsigned int id)

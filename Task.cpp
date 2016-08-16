@@ -45,7 +45,7 @@ Task::Task()
 
 Task::Task(DB *db,const string &task_name)
 {
-	db->QueryPrintf("SELECT task_id,task_name,task_binary,task_wd,task_user,task_host,task_use_agent,task_parameters_mode,task_output_method,task_merge_stderr,task_group,task_comment FROM t_task WHERE task_name=%s",task_name.c_str());
+	db->QueryPrintf("SELECT task_id,task_name,task_binary,task_wd,task_user,task_host,task_use_agent,task_parameters_mode,task_output_method,task_merge_stderr,task_group,task_comment FROM t_task WHERE task_name=%s",&task_name);
 	
 	if(!db->FetchRow())
 		throw Exception("Task","Unknown task");
@@ -185,16 +185,16 @@ void Task::Create(
 	DB db;
 	db.QueryPrintf(
 		"INSERT INTO t_task(task_name, task_binary, task_binary_content, task_user, task_host, task_parameters_mode, task_output_method, task_wd, task_group, task_comment,workflow_id, task_use_agent, task_merge_stderr) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%i,%i,%i)",
-		real_name.c_str(),
-		binary.c_str(),
-		binary_content.length()?binary_content.c_str():0,
-		user.length()?user.c_str():0,
-		host.length()?host.c_str():0,
-		parameters_mode.c_str(),
-		output_method.c_str(),
-		wd.length()?wd.c_str():0,
-		group.c_str(),
-		comment.c_str(),
+		&real_name,
+		&binary,
+		binary_content.length()?&binary_content:0,
+		user.length()?&user:0,
+		host.length()?&host:0,
+		&parameters_mode,
+		&output_method,
+		wd.length()?&wd:0,
+		&group,
+		&comment,
 		create_workflow?&workflow_id:0,
 		&iuse_agent,
 		&imerge_stderr
@@ -258,16 +258,16 @@ void Task::Edit(
 	
 	db.QueryPrintf(
 		"UPDATE t_task SET task_name=%s, task_binary=%s, task_binary_content=%s, task_user=%s, task_host=%s, task_parameters_mode=%s, task_output_method=%s, task_wd=%s, task_group=%s, task_comment=%s, task_use_agent=%i, task_merge_stderr=%i WHERE task_id=%i",
-		real_name.c_str(),
-		binary.c_str(),
-		binary_content.length()?binary_content.c_str():0,
-		user.length()?user.c_str():0,
-		host.length()?host.c_str():0,
-		parameters_mode.c_str(),
-		output_method.c_str(),
-		wd.length()?wd.c_str():0,
-		group.c_str(),
-		comment.c_str(),
+		&real_name,
+		&binary,
+		binary_content.length()?&binary_content:0,
+		user.length()?&user:0,
+		host.length()?&host:0,
+		&parameters_mode,
+		&output_method,
+		wd.length()?&wd:0,
+		&group,
+		&comment,
 		&iuse_agent,
 		&imerge_stderr,
 		&id

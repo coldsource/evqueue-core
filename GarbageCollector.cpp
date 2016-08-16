@@ -151,13 +151,13 @@ int GarbageCollector::purge(void)
 		int deleted_rows = 0;
 		
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&wfi_t);
-		db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_status='TERMINATED' AND workflow_instance_end <= %s LIMIT %i",buf,&limit);
+		db.QueryPrintfC("DELETE FROM t_workflow_instance WHERE workflow_instance_status='TERMINATED' AND workflow_instance_end <= %s LIMIT %i",buf,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		db.QueryPrintf("DELETE wip FROM t_workflow_instance_parameters wip LEFT JOIN t_workflow_instance wi ON wip.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.QueryPrintfC("DELETE wip FROM t_workflow_instance_parameters wip LEFT JOIN t_workflow_instance wi ON wip.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logs_t);
-		db.QueryPrintf("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",buf,&limit);
+		db.QueryPrintfC("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",buf,&limit);
 		deleted_rows += db.AffectedRows();
 		
 		return deleted_rows;

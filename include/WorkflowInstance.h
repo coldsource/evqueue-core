@@ -71,7 +71,7 @@ class WorkflowInstance
 		pthread_mutex_t lock;
 	
 	public:
-		WorkflowInstance(const char *workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id = 0,const char *workflow_host=0, const char *workflow_user=0);
+		WorkflowInstance(const std::string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id = 0,const std::string &workflow_host=0, const std::string &workflow_user=0);
 		WorkflowInstance(unsigned int workflow_instance_id);
 		~WorkflowInstance();
 		

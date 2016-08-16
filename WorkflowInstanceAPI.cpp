@@ -64,7 +64,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 		
 		try
 		{
-			wi = new WorkflowInstance(name.c_str(),saxh->GetWorkflowParameters(),0,host.length()?host.c_str():0,user.length()?user.c_str():0);
+			wi = new WorkflowInstance(name,saxh->GetWorkflowParameters(),0,host,user);
 		}
 		catch(Exception &e)
 		{
@@ -100,7 +100,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 			DB db;
 			
 			// Check if workflow instance exists and is eligible to migration
-			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,config->Get("network.node.name").c_str());
+			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,&config->Get("network.node.name"));
 			if(!db.FetchRow())
 				throw Exception("Workflow Migration","Workflow ID not found or already belongs to this node");
 			

@@ -39,9 +39,9 @@ class WorkflowParameters
 		WorkflowParameters();
 		~WorkflowParameters();
 		
-		bool Add(const char *name,const char *value);
+		bool Add(const std::string &name,const std::string &value);
 		void SeekStart();
-		bool Get(const char **name,const char **value);
+		bool Get(std::string &name,std::string &value);
 		bool Get(std::string **name,std::string **value);
 };
 

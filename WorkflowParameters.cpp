@@ -33,7 +33,7 @@ WorkflowParameters::~WorkflowParameters()
 
 }
 
-bool WorkflowParameters::Add(const char *name,const char *value)
+bool WorkflowParameters::Add(const string &name,const string &value)
 {
 	// Check for duplicate parameter
 	for(int i=0;i<parameters.size();i++)
@@ -56,13 +56,13 @@ void WorkflowParameters::SeekStart()
 	current_parameter = 0;
 }
 
-bool WorkflowParameters::Get(const char **name,const char **value)
+bool WorkflowParameters::Get(string &name,string &value)
 {
 	if(current_parameter>=parameters.size())
 		return false;
 	
-	*name = parameters.at(current_parameter).name.c_str();
-	*value = parameters.at(current_parameter).value.c_str();
+	name = parameters.at(current_parameter).name;
+	value = parameters.at(current_parameter).value;
 	
 	current_parameter++;;
 	return true;

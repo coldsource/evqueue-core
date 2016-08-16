@@ -40,7 +40,7 @@ RetrySchedule::RetrySchedule(DB *db,const string &schedule_name)
 {
 	this->name = schedule_name;
 	
-	db->QueryPrintf("SELECT schedule_id, schedule_xml FROM t_schedule WHERE schedule_name=%s",schedule_name.c_str());
+	db->QueryPrintf("SELECT schedule_id, schedule_xml FROM t_schedule WHERE schedule_name=%s",&schedule_name);
 	
 	if(!db->FetchRow())
 		throw Exception("RetrySchedule","Unknown retry schedule");
@@ -78,7 +78,7 @@ void RetrySchedule::Create(const std::string &name, const std::string &base64)
 	string xml = create_edit_check(name,base64);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",name.c_str(),xml.c_str());
+	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",&name,&xml);
 }
 
 void RetrySchedule::Edit(unsigned int id,const std::string &name, const std::string &base64)
@@ -89,7 +89,7 @@ void RetrySchedule::Edit(unsigned int id,const std::string &name, const std::str
 	string xml = create_edit_check(name,base64);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_schedule SET schedule_name=%s, schedule_xml=%s WHERE schedule_id=%i",name.c_str(),xml.c_str(),&id);
+	db.QueryPrintf("UPDATE t_schedule SET schedule_name=%s, schedule_xml=%s WHERE schedule_id=%i",&name,&xml,&id);
 }
 
 void RetrySchedule::Delete(unsigned int id)

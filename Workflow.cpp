@@ -46,7 +46,7 @@ Workflow::Workflow()
 
 Workflow::Workflow(DB *db,const string &workflow_name)
 {
-	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_bound FROM t_workflow WHERE workflow_name=%s",workflow_name.c_str());
+	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_bound FROM t_workflow WHERE workflow_name=%s",&workflow_name);
 	
 	if(!db->FetchRow())
 		throw Exception("Workflow","Unknown Workflow");
@@ -92,21 +92,20 @@ void Workflow::CheckInputParameters(WorkflowParameters *parameters)
 	
 	try
 	{
-		const char *parameter_name;
-		const char *parameter_value;
+		string parameter_name;
+		string parameter_value;
 		int passed_parameters = 0;
 		char buf2[256+PARAMETER_NAME_MAX_LEN];
 		
 		parameters->SeekStart();
-		while(parameters->Get(&parameter_name,&parameter_value))
+		while(parameters->Get(parameter_name,parameter_value))
 		{
-			sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name);
+			sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name.c_str());
 			DOMXPathResult *res = xmldoc->evaluate(X(buf2),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
 			if(!res->isNode())
 			{
 				res->release();
-				sprintf(buf2,"Unknown parameter : %s",parameter_name);
-				throw Exception("Workflow",buf2);
+				throw Exception("Workflow","Unknown parameter : "+parameter_name);
 			}
 			
 			res->release();
@@ -167,10 +166,10 @@ unsigned int Workflow::Create(const string &name, const string &base64, const st
 	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_workflow(workflow_name,workflow_xml,workflow_group,workflow_comment) VALUES(%s,%s,%s,%s)",
-		name.c_str(),
-		xml.c_str(),
-		group.c_str(),
-		comment.c_str()
+		&name,
+		&xml,
+		&group,
+		&comment
 	);
 	
 	return db.InsertID();
@@ -185,10 +184,10 @@ void Workflow::Edit(unsigned int id,const string &name, const string &base64, co
 	
 	DB db;
 	db.QueryPrintf("UPDATE t_workflow SET workflow_name=%s,workflow_xml=%s,workflow_group=%s,workflow_comment=%s WHERE workflow_id=%i",
-		name.c_str(),
-		xml.c_str(),
-		group.c_str(),
-		comment.c_str(),
+		&name,
+		&xml,
+		&group,
+		&comment,
 		&id
 	);
 }

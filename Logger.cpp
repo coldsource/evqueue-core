@@ -67,7 +67,7 @@ void Logger::Log(int level,const char *msg,...)
 		try
 		{
 			DB db;
-			db.QueryPrintf("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,buf);
+			db.QueryPrintfC("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,buf);
 		}
 		catch(Exception &e) { }
 	}

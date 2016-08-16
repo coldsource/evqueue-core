@@ -78,10 +78,10 @@ void NotificationType::Register(const std::string &name, const std::string &desc
 	DB db;
 	db.QueryPrintf(
 		"INSERT INTO t_notification_type(notification_type_name,notification_type_description,notification_type_binary,notification_type_binary_content) VALUES(%s,%s,%s,%s)",
-		name.c_str(),
-		description.c_str(),
-		binary.c_str(),
-		binary_content.length()?binary_content.c_str():0
+		&name,
+		&description,
+		&binary,
+		binary_content.length()?&binary_content:0
 		);
 }
 

@@ -37,8 +37,8 @@ void tools_init_db(void)
 	{
 		db.QueryPrintf(
 			"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
-			config->Get("mysql.database").c_str(),
-			it->first.c_str()
+			&config->Get("mysql.database"),
+			&it->first
 		);
 		
 		if(!db.FetchRow())

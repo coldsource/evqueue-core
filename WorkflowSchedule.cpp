@@ -107,16 +107,16 @@ void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
 	node->setAttribute(X("active"),X(workflow_schedule.GetIsActive()?"1":"0"));
 	node->setAttribute(X("comment"),X(workflow_schedule.GetComment().c_str()));
 	
-	const char *parameter_name;
-	const char *parameter_value;
+	string parameter_name;
+	string parameter_value;
 	WorkflowParameters *parameters = workflow_schedule.GetParameters();
 	
 	parameters->SeekStart();
-	while(parameters->Get(&parameter_name,&parameter_value))
+	while(parameters->Get(parameter_name,parameter_value))
 	{
 		DOMElement *parameter_node = response->GetDOM()->createElement(X("parameter"));
-		parameter_node->setAttribute(X("name"),X(parameter_name));
-		parameter_node->setAttribute(X("value"),X(parameter_value));
+		parameter_node->setAttribute(X("name"),X(parameter_name.c_str()));
+		parameter_node->setAttribute(X("value"),X(parameter_value.c_str()));
 		
 		node->appendChild(parameter_node);
 	}
@@ -141,30 +141,32 @@ void WorkflowSchedule::Create(
 	
 	db.StartTransaction();
 	
+	string onfailure_continue_str = onfailure_continue?"CONTINUE":"SUSPEND";
+	
 	db.QueryPrintf(
 		"INSERT INTO t_workflow_schedule(node_name,workflow_id,workflow_schedule,workflow_schedule_onfailure,workflow_schedule_user,workflow_schedule_host,workflow_schedule_active,workflow_schedule_comment) VALUES(%s,%i,%s,%s,%s,%s,%i,%s)",
-		Configuration::GetInstance()->Get("network.node.name").c_str(),
+		&Configuration::GetInstance()->Get("network.node.name"),
 		&workflow_id,
-		schedule_description.c_str(),
-		onfailure_continue?"CONTINUE":"SUSPEND",
-		user.length()?user.c_str():0,
-		host.length()?host.c_str():0,
+		&schedule_description,
+		&onfailure_continue_str,
+		user.length()?&user:0,
+		host.length()?&host:0,
 		&iactive,
-		comment.c_str()
+		&comment
 		);
 	
 	unsigned int workflow_schedule_id = db.InsertID();
 	
-	const char *parameter_name;
-	const char *parameter_value;
+	string parameter_name;
+	string parameter_value;
 	
 	parameters->SeekStart();
-	while(parameters->Get(&parameter_name,&parameter_value))
+	while(parameters->Get(parameter_name,parameter_value))
 		db.QueryPrintf(
 			"INSERT INTO t_workflow_schedule_parameters(workflow_schedule_id,workflow_schedule_parameter,workflow_schedule_parameter_value) VALUES(%i,%s,%s)",
 			&workflow_schedule_id,
-			parameter_name,
-			parameter_value
+			&parameter_name,
+			&parameter_value
 		);
 	
 	db.CommitTransaction();
@@ -195,31 +197,31 @@ void WorkflowSchedule::Edit(
 	
 	db.QueryPrintf(
 		"UPDATE t_workflow_schedule SET node_name=%s,workflow_id=%i,workflow_schedule=%s,workflow_schedule_onfailure=%s,workflow_schedule_user=%s,workflow_schedule_host=%s,workflow_schedule_active=%i,workflow_schedule_comment=%s WHERE workflow_schedule_id=%i",
-		Configuration::GetInstance()->Get("network.node.name").c_str(),
+		&Configuration::GetInstance()->Get("network.node.name"),
 		&workflow_id,
-		schedule_description.c_str(),
+		&schedule_description,
 		onfailure_continue?"CONTINUE":"SUSPEND",
-		user.length()?user.c_str():0,
-		host.length()?host.c_str():0,
+		user.length()?&user:0,
+		host.length()?&host:0,
 		&iactive,
-		comment.c_str(),
+		&comment,
 		&id
 		);
 	
 	unsigned int workflow_schedule_id = db.InsertID();
 	
-	const char *parameter_name;
-	const char *parameter_value;
+	string parameter_name;
+	string parameter_value;
 	
 	db.QueryPrintf("DELETE FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",&id);
 	
 	parameters->SeekStart();
-	while(parameters->Get(&parameter_name,&parameter_value))
+	while(parameters->Get(parameter_name,parameter_value))
 		db.QueryPrintf(
 			"INSERT INTO t_workflow_schedule_parameters(workflow_schedule_id,workflow_schedule_parameter,workflow_schedule_parameter_value) VALUES(%i,%s,%s)",
 			&workflow_schedule_id,
-			parameter_name,
-			parameter_value
+			&parameter_name,
+			&parameter_value
 		);
 	
 	db.CommitTransaction();

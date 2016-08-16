@@ -103,7 +103,7 @@ void DB::Query(const char *query)
 	}
 }
 
-void DB::QueryPrintf(const char *query,...)
+void DB::QueryPrintfC(const char *query,...)
 {
 	int len,escaped_len;
 	const char *arg_str;
@@ -166,6 +166,117 @@ void DB::QueryPrintf(const char *query,...)
 					{
 						escaped_query[j++] = '\'';
 						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str, strlen(arg_str));
+						escaped_query[j++] = '\'';
+					}
+					else
+					{
+						strcpy(escaped_query+j,"NULL");
+						j += 4;
+					}
+					i++;
+					break;
+				
+				case 'i':
+					arg_int = va_arg(ap,const int *);
+					if(arg_int)
+						j += sprintf(escaped_query+j,"%d",*arg_int);
+					else
+					{
+						strcpy(escaped_query+j,"NULL");
+						j += 4;
+					}
+					i++;
+					break;
+
+				default:
+					escaped_query[j++] = query[i];
+					break;
+			}
+		}
+		else
+			escaped_query[j++] = query[i];
+	}
+
+	va_end(ap);
+
+	escaped_query[j] = '\0';
+
+	try
+	{
+		Query(escaped_query);
+	}
+	catch(Exception &e)
+	{
+		delete[] escaped_query;
+		throw e;
+	}
+	
+	delete[] escaped_query;
+}
+
+void DB::QueryPrintf(const string &query,...)
+{
+	int len,escaped_len;
+	const string *arg_str;
+	const int *arg_int;
+	va_list ap;
+
+	va_start(ap,query);
+
+	len = query.length();
+	escaped_len = 0;
+	for(int i=0;i<len;i++)
+	{
+		if(query[i]=='%')
+		{
+			switch(query[i+1])
+			{
+				case 's':
+					arg_str = va_arg(ap,const string *);
+					if(arg_str)
+						escaped_len += 2+2*arg_str->length(); // 2 Quotes + Escaped string
+					else
+						escaped_len += 4; // NULL
+					i++;
+					break;
+				
+				case 'i':
+					arg_int = va_arg(ap,const int *);
+					if(arg_int)
+						escaped_len += 16; // Integer
+					else
+						escaped_len += 4; // NULL
+					i++;
+					break;
+
+				default:
+					escaped_len++;
+					break;
+			}
+		}
+		else
+			escaped_len++;
+	}
+
+	va_end(ap);
+
+
+	va_start(ap,query);
+
+	char *escaped_query = new char[escaped_len+1];
+	int j = 0;
+	for(int i=0;i<len;i++)
+	{
+		if(query[i]=='%')
+		{
+			switch(query[i+1])
+			{
+				case 's':
+					arg_str = va_arg(ap,const string *);
+					if(arg_str)
+					{
+						escaped_query[j++] = '\'';
+						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str->c_str(), arg_str->length());
 						escaped_query[j++] = '\'';
 					}
 					else
