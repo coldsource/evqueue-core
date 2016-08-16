@@ -18,7 +18,7 @@ add_executable(evqueue
 	workflow.xsd.cpp XMLUtils.cpp QueryHandlers.cpp QueryResponse.cpp Cluster.cpp ping.cpp
 	SocketResponseSAX2Handler.cpp retry_schedule.xsd.cpp WorkflowSchedules.cpp
 	NotificationType.cpp NotificationTypes.cpp WorkflowInstanceAPI SocketSAX2Handler.cpp
-	hmac.cpp AuthHandler.cpp User.cpp Users.cpp)
+	hmac.cpp AuthHandler.cpp User.cpp Users.cpp Logs.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)

@@ -43,6 +43,7 @@
 #include <mysql/mysql.h>
 
 #include <Logger.h>
+#include <Logs.h>
 #include <Queue.h>
 #include <QueuePool.h>
 #include <Workflow.h>
@@ -433,6 +434,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("notifications",Notifications::HandleQuery);
 		qh->RegisterHandler("user",User::HandleQuery);
 		qh->RegisterHandler("users",Users::HandleQuery);
+		qh->RegisterHandler("logs",Logs::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
