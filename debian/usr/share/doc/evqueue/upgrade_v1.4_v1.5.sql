@@ -16,6 +16,9 @@ ALTER TABLE t_queue ADD COLUMN queue_scheduler VARCHAR(32) COLLATE 'ascii_genera
 ALTER TABLE t_workflow_schedule_parameters MODIFY workflow_schedule_parameter varchar(64) COLLATE utf8_unicode_ci NOT NULL;
 ALTER TABLE t_workflow_instance_parameters MODIFY workflow_instance_parameter varchar(64) COLLATE utf8_unicode_ci NOT NULL;
 
+ALTER TABLE t_user MODIFY user_profile ENUM('ADMIN','USER') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'USER';
+UPDATE t_user SET user_profile='USER' WHERE user_profile='';
+
 -- Alter version number --
 ALTER TABLE t_log COMMENT 'v1.5';
 ALTER TABLE t_notification COMMENT 'v1.5';

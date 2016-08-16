@@ -70,6 +70,8 @@
 #include <NotificationTypes.h>
 #include <Notification.h>
 #include <Notifications.h>
+#include <User.h>
+#include <Users.h>
 #include <Sockets.h>
 #include <QueryHandlers.h>
 #include <Cluster.h>
@@ -409,6 +411,9 @@ int main(int argc,const char **argv)
 		// Start garbage GarbageCollector
 		GarbageCollector *gc = new GarbageCollector();
 		
+		// Load users
+		Users *users = new Users();
+		
 		// Initialize query handlers
 		QueryHandlers *qh = new QueryHandlers();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
@@ -426,6 +431,8 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("notification_types",NotificationTypes::HandleQuery);
 		qh->RegisterHandler("notification",Notification::HandleQuery);
 		qh->RegisterHandler("notifications",Notifications::HandleQuery);
+		qh->RegisterHandler("user",User::HandleQuery);
+		qh->RegisterHandler("users",Users::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
@@ -569,6 +576,7 @@ int main(int argc,const char **argv)
 				delete qh;
 				delete sockets;
 				delete cluster;
+				delete users;
 				
 				XQillaPlatformUtils::terminate();
 				

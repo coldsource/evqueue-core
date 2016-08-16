@@ -17,38 +17,40 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _GLOBAL_H_
-#define _GLOBAL_H_
+#ifndef _USERS_H_
+#define _USERS_H_
 
-#define WORKFLOW_NAME_MAX_LEN           64
-#define QUEUE_NAME_MAX_LEN              64
-#define RETRY_SCHEDULE_NAME_MAX_LEN     64
-#define TASK_NAME_MAX_LEN               64
-#define TASK_BINARY_MAX_LEN            128
-#define PARAMETERS_MAX_LEN     (1024*1024)
-#define PARAMETER_NAME_MAX_LEN          64
-#define ERROR_MAX_LEN                  256
-#define USER_NAME_MAX_LEN               32
+#include <pthread.h>
 
-extern int listen_socket; // Global because we must close it in children
+#include <map>
+#include <string>
 
-#include <unistd.h>
+class User;
+class SocketQuerySAX2Handler;
+class QueryResponse;
 
-struct st_msgbuf
+class Users
 {
-	long type;
+	static Users *instance;
 	
-	struct {
-		pid_t pid;
-		pid_t tid;
-		char retcode;
-	} mtext;
+	pthread_mutex_t lock;
+	
+	std::map<std::string,User *> users_name;
+	
+	public:
+		
+		Users();
+		~Users();
+		
+		static Users *GetInstance() { return instance; }
+		
+		void Reload(void);
+
+		bool Exists(const std::string &name);
+		User GetUser(const std::string &name);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
-// Global MACROS
-#define MAX(a,b) ((a)>(b)?(a):(b))
-
-// Logs fileno
-#define LOG_FILENO 3
 
 #endif
