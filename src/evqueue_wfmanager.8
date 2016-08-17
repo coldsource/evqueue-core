@@ -1,0 +1,30 @@
+.TH "EVQUEUE_WFMANAGER" 8 "2016-07-11" "evQueue utilities" "evqueue"
+
+.SH NAME
+evqueue_wfmanager \- evQueue utilities
+.SH "SYNOPSIS"
+.PP
+\fBevqueue_wfmanager\fR [ OPTIONS ] --launch <wf name> --<parameter name> <parameter value>
+.SH "DESCRIPTION"
+.PP
+Utility to launch workflows from command line. Can be used to connect to the evQueue core through TCP or UNIX sockets.
+.PP
+Options MUST be passed before --launch argument. Arguments expected after are only workflow parameters.
+.SH "OPTIONS"
+.TP
+\fB--connect\fR \fIconnection_string\fR
+Connect to server identified by \fIconnection_string\fR. Two formats are accepted :
+
+tcp socket: tcp://<hostname>[:<port>]
+
+unix socket: unix://<path>
+.TP
+\fB----mode [synchronous|asynchronous]\fR
+Run in synchronous or asynchronous mode. In synchronous mode, the command will only return after the workflow is terminated. In asynchronous mode, the command returns immediately after the workflow is launched.
+.TP
+\fB--timeout <timeout>\fR
+When running in synchronous mode, do not wait worfklow termination for more than <timeout> seconds.
+.TP
+.SH SEE ALSO
+.BR http://www.evqueue.net/
+
