@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 set(EVQUEUE_VERSION "1.5")
 
-project(evqueue)
-
 set(CMAKE_BUILD_TYPE Release)
+
+project(evqueue)
 
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
