@@ -54,9 +54,11 @@ QueuePool::QueuePool(void)
 	
 	f = fopen("/proc/sys/kernel/pid_max","r");
 	if(!f)
+		throw Exception("QueuePool","Unable to open /proc/sys/kernel/pid_max");
+	
+	if(fread(buf,1,10,f)<=0)
 		throw Exception("QueuePool","Unable to read /proc/sys/kernel/pid_max");
 	
-	fread(buf,1,10,f);
 	fclose(f);
 	
 	maxpid = atoi(buf);

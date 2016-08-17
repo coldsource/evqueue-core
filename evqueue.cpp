@@ -285,10 +285,16 @@ int main(int argc,const char **argv)
 		mkdir(pid_directory,0755);
 		
 		if(uid!=0)
-			chown(pid_directory,uid,-1);
+		{
+			if(chown(pid_directory,uid,-1)!=0)
+				throw Exception("core","Unable to change pid file uid");
+		}
 		
 		if(gid!=0)
-			chown(pid_directory,-1,gid);
+		{
+			if(chown(pid_directory,-1,gid)!=0)
+				throw Exception("core","Unable to change pid file gid");
+		}
 		
 		free(pid_file2);
 		
@@ -313,7 +319,9 @@ int main(int argc,const char **argv)
 		
 		if(daemonize)
 		{
-			daemon(1,0);
+			if(daemon(1,0)!=0)
+				throw Exception("core","Error trying to daemonize process");
+			
 			daemonized = true;
 		}
 		

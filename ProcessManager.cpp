@@ -296,7 +296,8 @@ char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int f
 		// Read output log
 		fseek(f,0,SEEK_SET);
 		output = new char[log_size+1];
-		fread(output,1,log_size,f);
+		if(fread(output,1,log_size,f)!=log_size)
+			Logger::Log(LOG_WARNING,"[ ProcessManager ] Error reading output log for pid %d",pid);
 		output[log_size] = '\0';
 		
 		fclose(f);

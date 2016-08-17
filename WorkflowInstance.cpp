@@ -601,7 +601,9 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *stdout
 					sprintf(errlog_filename,"%s/%d-XXXXXX.log",errlogs_directory.c_str(),workflow_instance_id);
 					
 					int fno = mkstemps(errlog_filename,4);
-					write(fno,stdout_output,strlen(stdout_output));
+					int stdout_output_len = strlen(stdout_output);
+					if(write(fno,stdout_output,stdout_output_len)!=stdout_output_len)
+						Logger::Log(LOG_WARNING,"[WID %d] Error writing error log file %s",workflow_instance_id,errlog_filename);
 					close(fno);
 					
 					Logger::Log(LOG_WARNING,"[WID %d] Invalid XML returned, output has been saved as %s",workflow_instance_id,errlog_filename);
@@ -742,7 +744,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 	}
 	catch(Exception e)
 	{
-		// Task not fount, abort and set error message
+		// Task not found, abort and set error message
 		((DOMElement *)task_node)->setAttribute(X("status"),X("ABORTED"));
 		((DOMElement *)task_node)->setAttribute(X("error"),X("Unknown task name"));
 		
@@ -823,165 +825,185 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 	parameters->release();
 	
 	if(stdin_parameter_c)
-		pipe(parameters_pipe); // Prepare pipe before fork() since we have STDIN input
-	
-	// Fork child
-	pid_t pid = fork();
-	
-	if(pid==0)
 	{
-		setsid(); // This is used to avoid CTRL+C killing all child processes
-		
-		pid = getpid();
-		sprintf(tid_str,"%d",tid);
-		
-		// Send QID to monitor
-		Configuration *config = Configuration::GetInstance();
-		setenv("EVQUEUE_IPC_QID",config->Get("core.ipc.qid").c_str(),true);
-		
-		// Compute task filename
-		string task_filename;
-		if(task.IsAbsolutePath())
-			task_filename = task.GetBinary();
-		else
-			task_filename = tasks_directory+"/"+task.GetBinary();
-		
-		if(!task.GetWorkingDirectory().empty())
-			setenv("EVQUEUE_WORKING_DIRECTORY",task.GetWorkingDirectory().c_str(),true);
-		
-		// Set SSH variables for remote execution if needed by task
-		if(!task.GetHost().empty())
+		// Prepare pipe before fork() since we have STDIN input
+		parameters_pipe[0] = -1;
+		if(pipe(parameters_pipe)!=0)
 		{
-			setenv("EVQUEUE_SSH_HOST",task.GetHost().c_str(),true);
+			Logger::Log(LOG_WARNING,"[ WorkflowInstance ] Unable to execute task : could not create pipe");
 		
-			if(!task.GetUser().empty())
-				setenv("EVQUEUE_SSH_USER",task.GetUser().c_str(),true);
+			((DOMElement *)task_node)->setAttribute(X("status"),X("ABORTED"));
+			((DOMElement *)task_node)->setAttribute(X("error"),X("Unable to create pipe"));
+			
+			error_tasks++;
+			running_tasks--;
 		}
-		else if(xmldoc->getDocumentElement()->getAttributes()->getNamedItem(X("host")))
+	}
+	
+	pid_t pid;
+	if(!stdin_parameter_c || parameters_pipe[0]==-1)
+	{
+		// Fork child
+		pid = fork();
+		
+		if(pid==0)
 		{
-			// Set SSH variables for remote execution if needed by workflow instance
-			char *ssh_host;
-			ssh_host = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("host")));
-			setenv("EVQUEUE_SSH_HOST",ssh_host,true);
-			XMLString::release(&ssh_host);
+			setsid(); // This is used to avoid CTRL+C killing all child processes
 			
+			pid = getpid();
+			sprintf(tid_str,"%d",tid);
 			
-			if(xmldoc->getDocumentElement()->getAttributes()->getNamedItem(X("user")))
+			// Send QID to monitor
+			Configuration *config = Configuration::GetInstance();
+			setenv("EVQUEUE_IPC_QID",config->Get("core.ipc.qid").c_str(),true);
+			
+			// Compute task filename
+			string task_filename;
+			if(task.IsAbsolutePath())
+				task_filename = task.GetBinary();
+			else
+				task_filename = tasks_directory+"/"+task.GetBinary();
+			
+			if(!task.GetWorkingDirectory().empty())
+				setenv("EVQUEUE_WORKING_DIRECTORY",task.GetWorkingDirectory().c_str(),true);
+			
+			// Set SSH variables for remote execution if needed by task
+			if(!task.GetHost().empty())
 			{
-				char *ssh_user;
-				ssh_user = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("user")));
-				setenv("EVQUEUE_SSH_USER",ssh_user,true);
-				XMLString::release(&ssh_user);
+				setenv("EVQUEUE_SSH_HOST",task.GetHost().c_str(),true);
+			
+				if(!task.GetUser().empty())
+					setenv("EVQUEUE_SSH_USER",task.GetUser().c_str(),true);
 			}
-		}
-		
-		if(getenv("EVQUEUE_SSH_HOST"))
-		{
-			// Set SSH config variables if SSH execution is asked
-			setenv("EVQUEUE_SSH_PATH",config->Get("processmanager.monitor.ssh_path").c_str(),true);
+			else if(xmldoc->getDocumentElement()->getAttributes()->getNamedItem(X("host")))
+			{
+				// Set SSH variables for remote execution if needed by workflow instance
+				char *ssh_host;
+				ssh_host = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("host")));
+				setenv("EVQUEUE_SSH_HOST",ssh_host,true);
+				XMLString::release(&ssh_host);
+				
+				
+				if(xmldoc->getDocumentElement()->getAttributes()->getNamedItem(X("user")))
+				{
+					char *ssh_user;
+					ssh_user = XMLString::transcode(xmldoc->getDocumentElement()->getAttribute(X("user")));
+					setenv("EVQUEUE_SSH_USER",ssh_user,true);
+					XMLString::release(&ssh_user);
+				}
+			}
 			
-			if(config->Get("processmanager.monitor.ssh_key").length()>0)
-				setenv("EVQUEUE_SSH_KEY",config->Get("processmanager.monitor.ssh_key").c_str(),true);
+			if(getenv("EVQUEUE_SSH_HOST"))
+			{
+				// Set SSH config variables if SSH execution is asked
+				setenv("EVQUEUE_SSH_PATH",config->Get("processmanager.monitor.ssh_path").c_str(),true);
+				
+				if(config->Get("processmanager.monitor.ssh_key").length()>0)
+					setenv("EVQUEUE_SSH_KEY",config->Get("processmanager.monitor.ssh_key").c_str(),true);
+				
+				// Send agent path if needed
+				if(task.GetUseAgent())
+					setenv("EVQUEUE_SSH_AGENT",config->Get("processmanager.agent.path").c_str(),true);
+			}
 			
-			// Send agent path if needed
-			if(task.GetUseAgent())
-				setenv("EVQUEUE_SSH_AGENT",config->Get("processmanager.agent.path").c_str(),true);
-		}
-		
-		if(stdin_parameter_c)
-		{
-			dup2(parameters_pipe[0],STDIN_FILENO);
-			close(parameters_pipe[1]);
-		}
-		
-		// Redirect output to log files
-		int fno;
-		
-		fno = open_log_file(tid,LOG_FILENO);
-		dup2(fno,LOG_FILENO);
-		
-		fno = open_log_file(tid,STDOUT_FILENO);
-		dup2(fno,STDOUT_FILENO);
-		
-		if(!task.GetMergeStderr())
-			fno = open_log_file(tid,STDERR_FILENO);
-		
-		dup2(fno,STDERR_FILENO);
-		
-		if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
-		{
-			const char *args[parameters_count+4];
+			if(stdin_parameter_c)
+			{
+				dup2(parameters_pipe[0],STDIN_FILENO);
+				close(parameters_pipe[1]);
+			}
 			
-			args[0] = monitor_path.c_str();
-			args[1] = task_filename.c_str();
-			args[2] = tid_str;
+			// Redirect output to log files
+			int fno;
 			
-			for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
-				args[parameters_index+3] = parameters_value[parameters_index];
+			fno = open_log_file(tid,LOG_FILENO);
+			dup2(fno,LOG_FILENO);
 			
-			args[parameters_index+3] = (char *)0;
+			fno = open_log_file(tid,STDOUT_FILENO);
+			dup2(fno,STDOUT_FILENO);
 			
-			execv(monitor_path.c_str(),(char * const *)args);
+			if(!task.GetMergeStderr())
+				fno = open_log_file(tid,STDERR_FILENO);
 			
-			Logger::Log(LOG_ERR,"Could not execute task monitor");
+			dup2(fno,STDERR_FILENO);
+			
+			if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
+			{
+				const char *args[parameters_count+4];
+				
+				args[0] = monitor_path.c_str();
+				args[1] = task_filename.c_str();
+				args[2] = tid_str;
+				
+				for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
+					args[parameters_index+3] = parameters_value[parameters_index];
+				
+				args[parameters_index+3] = (char *)0;
+				
+				execv(monitor_path.c_str(),(char * const *)args);
+				
+				Logger::Log(LOG_ERR,"Could not execute task monitor");
+				tools_send_exit_msg(1,tid,-1);
+				exit(-1);
+			}
+			else if(task.GetParametersMode()==task_parameters_mode::ENV)
+			{
+				for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
+				{
+					if(parameters_name[parameters_index])
+						setenv(parameters_name[parameters_index],parameters_value[parameters_index],1);
+					else
+						setenv("DEFAULT_PARAMETER_NAME",parameters_value[parameters_index],1);
+				}
+				
+				execl(monitor_path.c_str(),monitor_path.c_str(),task_filename.c_str(),tid_str,(char *)0);
+				
+				Logger::Log(LOG_ERR,"Could not execute task monitor");
+				tools_send_exit_msg(1,tid,-1);
+				exit(-1);
+			}
+			
 			tools_send_exit_msg(1,tid,-1);
 			exit(-1);
 		}
-		else if(task.GetParametersMode()==task_parameters_mode::ENV)
+		
+		if(pid>0)
 		{
-			for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
+			if(stdin_parameter_c)
 			{
-				if(parameters_name[parameters_index])
-					setenv(parameters_name[parameters_index],parameters_value[parameters_index],1);
-				else
-					setenv("DEFAULT_PARAMETER_NAME",parameters_value[parameters_index],1);
+				// We have STDIN data
+				int stdin_parameter_c_len = strlen(stdin_parameter_c);
+				if(write(parameters_pipe[1],stdin_parameter_c,stdin_parameter_c_len)!=stdin_parameter_c_len)
+					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+				
+				close(parameters_pipe[0]);
+				close(parameters_pipe[1]);
+				XMLString::release(&stdin_parameter_c);
 			}
 			
-			execl(monitor_path.c_str(),monitor_path.c_str(),task_filename.c_str(),tid_str,(char *)0);
+			// Update task node
+			((DOMElement *)task_node)->setAttribute(X("status"),X("EXECUTING"));
 			
-			Logger::Log(LOG_ERR,"Could not execute task monitor");
-			tools_send_exit_msg(1,tid,-1);
-			exit(-1);
+			sprintf(buf,"%d",pid);
+			((DOMElement *)task_node)->setAttribute(X("pid"),X(buf));
+			
+			sprintf(buf,"%d",tid);
+			((DOMElement *)task_node)->setAttribute(X("tid"),X(buf));
+			
+			format_datetime(buf);
+			((DOMElement *)task_node)->setAttribute(X("execution_time"),X(buf));
 		}
 		
-		tools_send_exit_msg(1,tid,-1);
-		exit(-1);
-	}
-	
-	if(pid>0)
-	{
-		if(stdin_parameter_c)
+		
+		if(pid<0)
 		{
-			// We have STDIN data
-			write(parameters_pipe[1],stdin_parameter_c,strlen(stdin_parameter_c));
-			close(parameters_pipe[0]);
-			close(parameters_pipe[1]);
-			XMLString::release(&stdin_parameter_c);
+			Logger::Log(LOG_WARNING,"[ WorkflowInstance ] Unable to execute task : could not fork");
+			
+			((DOMElement *)task_node)->setAttribute(X("status"),X("ABORTED"));
+			((DOMElement *)task_node)->setAttribute(X("error"),X("Unable to fork"));
+			
+			error_tasks++;
+			running_tasks--;
 		}
-		
-		// Update task node
-		((DOMElement *)task_node)->setAttribute(X("status"),X("EXECUTING"));
-		
-		sprintf(buf,"%d",pid);
-		((DOMElement *)task_node)->setAttribute(X("pid"),X(buf));
-		
-		sprintf(buf,"%d",tid);
-		((DOMElement *)task_node)->setAttribute(X("tid"),X(buf));
-		
-		format_datetime(buf);
-		((DOMElement *)task_node)->setAttribute(X("execution_time"),X(buf));
-	}
-	
-	
-	if(pid<0)
-	{
-		Logger::Log(LOG_WARNING,"[ WorkflowInstance ] Unable to execute task : could not fork");
-		
-		((DOMElement *)task_node)->setAttribute(X("status"),X("ABORTED"));
-		((DOMElement *)task_node)->setAttribute(X("error"),X("Unable to fork"));
-		
-		error_tasks++;
-		running_tasks--;
 	}
 	
 	// Clean parameters names and values

@@ -73,9 +73,21 @@ int main(int argc,char ** argv)
 	int stdout_pipe[2];
 	
 	if(getenv("EVQUEUE_SSH_AGENT"))
-		pipe(stdout_pipe);
+	{
+		if(pipe(stdout_pipe)!=0)
+		{
+			fprintf(stderr,"evqueue_monitor : could not create stdout_pipe\n");
+			return -1;
+		}
+	}
 	else
-		pipe(log_pipe);
+	{
+		if(pipe(log_pipe)!=0)
+		{
+			fprintf(stderr,"evqueue_monitor : could not create log_pipe\n");
+			return -1;
+		}
+	}
 	
 	pid = fork();
 	
@@ -211,7 +223,13 @@ int main(int argc,char ** argv)
 		task_argv[current_arg] = 0;
 		
 		if(working_directory && ssh_nargs==0)
-			chdir(working_directory);
+		{
+			if(chdir(working_directory)!=0)
+			{
+				fprintf(stderr,"Unable to change working directory to '%s'\n",working_directory);
+				return -1;
+			}
+		}
 		
 		status = execv(task_argv[0],task_argv);
 		
@@ -255,7 +273,7 @@ int main(int argc,char ** argv)
 				
 				if(read_size!=2)
 				{
-					fprintf(stderr,"Corrupted data received from evqueue agent");
+					fprintf(stderr,"Corrupted data received from evqueue agent\n");
 					exit(-1);
 				}
 				
@@ -266,7 +284,7 @@ int main(int argc,char ** argv)
 				read_size = fread(buf,1,9,log_in);
 				if(read_size!=9)
 				{
-					fprintf(stderr,"Corrupted data received from evqueue agent");
+					fprintf(stderr,"Corrupted data received from evqueue agent\n");
 					exit(-1);
 				}
 				
@@ -275,14 +293,14 @@ int main(int argc,char ** argv)
 				
 				if(data_size>4096)
 				{
-					fprintf(stderr,"Corrupted data received from evqueue agent");
+					fprintf(stderr,"Corrupted data received from evqueue agent\n");
 					exit(-1);
 				}
 				
 				read_size = fread(buf,1,data_size,log_in);
 				if(read_size!=data_size)
 				{
-					fprintf(stderr,"Corrupted data received from evqueue agent");
+					fprintf(stderr,"Corrupted data received from evqueue agent\n");
 					exit(-1);
 				}
 				
@@ -299,9 +317,15 @@ int main(int argc,char ** argv)
 							if(!send_progress_message(msgqid,line_buf,tid))
 							{
 								if(line_buf[0]=='%')
-									write(LOG_FILENO,line_buf+1,line_buf_size-1);
+								{
+									if(write(LOG_FILENO,line_buf+1,line_buf_size-1)!=line_buf_size-1)
+										fprintf(stderr,"Error writing to log file\n");
+								}
 								else
-									write(LOG_FILENO,line_buf,line_buf_size);
+								{
+									if(write(LOG_FILENO,line_buf,line_buf_size)!=line_buf_size)
+										fprintf(stderr,"Error writing to log file\n");
+								}
 							}
 							
 							line_buf_size = 0;
@@ -309,7 +333,10 @@ int main(int argc,char ** argv)
 					}
 				}
 				else // Directly forward stdout and sterr
-					write(data_fd,buf,read_size);
+				{
+					if(write(data_fd,buf,read_size)!=read_size)
+						fprintf(stderr,"Error writing to fd %d\n",data_fd);
+				}
 			}
 		}
 		else

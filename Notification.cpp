@@ -78,7 +78,11 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 {
 	int pipe_fd[2];
 	
-	pipe(pipe_fd);
+	if(pipe(pipe_fd)!=0)
+	{
+		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to execute notification task '%s' : could not create pipe",workflow_instance->GetInstanceID(),notification_name.c_str());
+		return -1;
+	}
 	
 	pid_t pid = fork();
 	if(pid==0)
@@ -114,7 +118,9 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 	}
 	
 	// Pipe configuration data
-	write(pipe_fd[1],notification_configuration.c_str(),notification_configuration.length());
+	if(write(pipe_fd[1],notification_configuration.c_str(),notification_configuration.length())!=notification_configuration.length())
+		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to send configuration to notification task '%s' : error writing to pipe",workflow_instance->GetInstanceID(),notification_name.c_str());
+	
 	close(pipe_fd[1]);
 	close(pipe_fd[0]);
 	
