@@ -4,6 +4,8 @@ set(EVQUEUE_VERSION "1.5")
 
 project(evqueue)
 
+set(CMAKE_BUILD_TYPE Release)
+
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
 add_executable(evqueue
