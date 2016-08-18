@@ -22,26 +22,34 @@
 
 #include <ClientBase.h>
 #include <Exception.h>
+#include <sha1.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
 
 #include <map>
 #include <string>
+#include <iomanip>
+#include <sstream>
 
 using namespace std;
 using namespace xercesc;
 
 static void usage()
 {
-	fprintf(stderr,"Usage : evqueue_api [--connect <cnx string>] --group --action [--<parameter name> <parameter value>]*\n");
+	fprintf(stderr,"Usage : evqueue_api --group --action [--<parameter name> <parameter value>]*\n");
+	fprintf(stderr,"  --connect <cnx string>\n");
+	fprintf(stderr,"  --user <username>\n");
+	fprintf(stderr,"  --password <password>\n");
 	exit(-1);
 }
 
 int main(int argc, char  **argv)
 {
 	// Parse cmdline parameters
-	const char *connection_str = "tcp://localhost:5000";
+	string connection_str = "tcp://localhost:5000";
+	string user = "";
+	string password = "";
 	
 	int cur;
 	for(cur=1;cur<argc;cur++)
@@ -54,8 +62,42 @@ int main(int argc, char  **argv)
 			connection_str = argv[cur+1];
 			cur++;
 		}
+		else if(strcmp(argv[cur],"--user")==0)
+		{
+			if(cur+1>=argc)
+				usage();
+			
+			user = argv[cur+1];
+			cur++;
+		}
+		else if(strcmp(argv[cur],"--password")==0)
+		{
+			if(cur+1>=argc)
+				usage();
+			
+			password = argv[cur+1];
+			cur++;
+		}
 		else
 			break;
+	}
+	
+	// If we received a password, compute sha1 of it as a real password
+	if(password.length())
+	{
+		sha1_ctx ctx;
+		char c_hash[20];
+		
+		sha1_init_ctx(&ctx);
+		sha1_process_bytes(password.c_str(),password.length(),&ctx);
+		sha1_finish_ctx(&ctx,c_hash);
+		
+		// Format HEX result
+		stringstream sstream;
+		sstream << hex;
+		for(int i=0;i<20;i++)
+			sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
+		password = sstream.str();
 	}
 	
 	// Read group and action
@@ -116,7 +158,7 @@ int main(int argc, char  **argv)
 	
 	try
 	{
-		ClientBase client(connection_str,"","");
+		ClientBase client(connection_str,user,password);
 		client.Exec(query_xml_c,true);
 		
 		DOMDocument *xmldoc = client.GetResponseDOM();
