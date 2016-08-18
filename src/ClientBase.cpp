@@ -114,7 +114,11 @@ void ClientBase::Exec(const std::string &cmd, bool record)
 		connect();
 	
 	send(cmd);
-	recv(record);
+	
+	do
+	{
+		recv(record);
+	} while(saxh->GetGroup()=="ping"); // Skip DPD pings from engine
 	
 	if(saxh->GetGroup()!="response")
 		throw Exception("Client","Invalid response from server");
