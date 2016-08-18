@@ -92,6 +92,9 @@ Configuration::Configuration(void)
 	entries["cluster.notify.user"] = "";
 	entries["cluster.notify.password"] = "";
 	entries["cluster.nodes"] = "";
+	entries["cluster.cnx.timeout"] = "10";
+	entries["cluster.rcv.timeout"] = "5";
+	entries["cluster.snd.timeout"] = "5";
 	
 	instance=this;
 }

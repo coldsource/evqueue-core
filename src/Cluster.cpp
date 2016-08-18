@@ -44,8 +44,13 @@ void Cluster::ParseConfiguration(const string &conf)
 {
 	instance = this;
 	
+	notify = Configuration::GetInstance()->GetBool("cluster.notify");
+	
 	istringstream split(conf);
 	for (std::string each; std::getline(split, each, ','); nodes.push_back(each));
+	
+	if(notify && nodes.size())
+		Logger::Log(LOG_NOTICE,"Cluster notifications enabled");
 	
 	user = Configuration::GetInstance()->Get("cluster.notify.user");
 	password = Configuration::GetInstance()->Get("cluster.notify.password");
@@ -64,10 +69,17 @@ void Cluster::ParseConfiguration(const string &conf)
 	for(int i=0;i<20;i++)
 		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
 	password = sstream.str();
+	
+	cnx_timeout = Configuration::GetInstance()->GetInt("cluster.cnx.timeout");
+	snd_timeout = Configuration::GetInstance()->GetInt("cluster.snd.timeout");
+	rcv_timeout = Configuration::GetInstance()->GetInt("cluster.rcv.timeout");
 }
 
 void Cluster::ExecuteCommand(const string &command)
 {
+	if(!notify)
+		return; // Cluster notifications are disabled
+	
 	if(nodes.size()==0)
 		return; // Cluster is not configures
 	
@@ -78,6 +90,7 @@ void Cluster::ExecuteCommand(const string &command)
 		try
 		{
 			Client client(nodes.at(i),user,password);
+			client.SetTimeouts(cnx_timeout,snd_timeout,rcv_timeout);
 			client.Exec(command);
 		}
 		catch(Exception &e)

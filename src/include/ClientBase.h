@@ -40,6 +40,10 @@ class ClientBase
 	t_connection_type connection_type;
 	std::string host;
 	int port;
+	
+	int cnx_timeout = 0;
+	int snd_timeout = 0;
+	int rcv_timeout = 0;
 
 	protected:
 		int s = -1;
@@ -53,6 +57,8 @@ class ClientBase
 		void Exec(const std::string &cmd, bool record = false);
 		DOMDocument *GetResponseDOM();
 		SocketResponseSAX2Handler *GetResponseHandler() { return saxh; }
+		
+		void SetTimeouts(int cnx_timeout,int snd_timeout,int rcv_timeout);
 	
 	protected:
 		void connect();

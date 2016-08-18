@@ -27,9 +27,15 @@ class Cluster
 {
 	static Cluster *instance;
 	
+	bool  notify;
+	
 	std::vector<std::string> nodes;
 	std::string user;
 	std::string password;
+	
+	int cnx_timeout;
+	int snd_timeout;
+	int rcv_timeout;
 	
 	public:
 		void ParseConfiguration(const std::string &conf);

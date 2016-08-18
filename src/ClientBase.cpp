@@ -27,8 +27,10 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <netdb.h>
+#include <fcntl.h>
 
 #include <string.h>
+#include <errno.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -141,11 +143,25 @@ DOMDocument *ClientBase::GetResponseDOM()
 	return saxh->GetDOM();
 }
 
+void ClientBase::SetTimeouts(int cnx_timeout,int snd_timeout,int rcv_timeout)
+{
+	this->cnx_timeout = cnx_timeout;
+	this->snd_timeout = snd_timeout;
+	this->rcv_timeout = rcv_timeout;
+}
+
 void ClientBase::connect()
 {
 	// Nothing to do
 	if(connected)
 		return;
+	
+	// Enable non-blocking IO to manage connect timeout
+	if(cnx_timeout)
+	{
+		int flags = fcntl(s, F_GETFL, 0);
+		fcntl(s, F_SETFL, flags | O_NONBLOCK);
+	}
 	
 	// Connect to the server
 	if(connection_type==tcp)
@@ -160,7 +176,7 @@ void ClientBase::connect()
 		memcpy(&serv_addr.sin_addr, he->h_addr_list[0], he->h_length);
 		serv_addr.sin_port = htons(port);
 		
-		if(::connect(s, (struct sockaddr *)&serv_addr, sizeof(serv_addr))!=0)
+		if(::connect(s, (struct sockaddr *)&serv_addr, sizeof(serv_addr))!=0 && errno!=EINPROGRESS)
 			throw Exception("Client","Unable to connect");
 	}
 	else if(connection_type==unix)
@@ -169,8 +185,38 @@ void ClientBase::connect()
 		serv_addr.sun_family = AF_UNIX;
 		strcpy(serv_addr.sun_path,host.c_str());
 		
-		if(::connect(s, (struct sockaddr *)&serv_addr, sizeof(serv_addr))!=0)
+		if(::connect(s, (struct sockaddr *)&serv_addr, sizeof(serv_addr))!=0 && errno!=EINPROGRESS)
 			throw Exception("Client","Unable to connect");
+	}
+	
+	if(cnx_timeout)
+	{
+		// Handle timeout
+		struct timeval tv;
+		tv.tv_sec = cnx_timeout;
+		tv.tv_usec = 0;
+		
+		fd_set wfds;
+		FD_ZERO(&wfds);
+		FD_SET(s,&wfds);
+		if(select(s+1,0,&wfds,0,&tv)!=1)
+			throw Exception("Client","Unable to connect");
+	}
+	
+	// Set socket timeouts if requested
+	struct timeval tv;
+	if(rcv_timeout)
+	{
+		tv.tv_sec = rcv_timeout;
+		tv.tv_usec = 0;
+		setsockopt(s, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
+	}
+	
+	if(snd_timeout)
+	{
+		tv.tv_sec = snd_timeout;
+		tv.tv_usec = 0;
+		setsockopt(s, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	}
 	
 	connected = true;
