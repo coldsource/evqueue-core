@@ -34,7 +34,7 @@ class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 	private:
 		bool record;
 		xercesc::DOMDocument *xmldoc = 0;
-		xercesc::DOMElement *current_node = 0;
+		std::vector<xercesc::DOMElement *> current_node;
 		
 		
 		std::string group;

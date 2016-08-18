@@ -69,12 +69,12 @@ void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh
 			node->setAttribute(attr_name,attr_value);
 		}
 		
-		if(current_node==0)
+		if(level==1)
 			xmldoc->appendChild(node);
 		else
-			current_node->appendChild(node);
+			current_node.at(level-2)->appendChild(node);
 		
-		current_node = node;
+		current_node.push_back(node);
 	}
 	
 	try
@@ -113,6 +113,10 @@ void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh
 void SocketResponseSAX2Handler::endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname)
 {
 	level--;
+	
+	if(record)
+		current_node.pop_back();
+	
 	if (level==0) {
 		ready = true;
 		throw 0;  // get out of the parseNext loop
