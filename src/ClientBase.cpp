@@ -209,7 +209,7 @@ void ClientBase::authenticate()
 	send("<auth response='"+response+"' user='"+user+"' />");
 	recv();
 	
-	if(saxh->GetGroup()=="ready")
+	if(saxh->GetGroup()!="ready")
 		throw Exception("Client","Authentication error");
 	
 	authenticated = true;
