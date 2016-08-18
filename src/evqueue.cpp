@@ -282,21 +282,22 @@ int main(int argc,const char **argv)
 		// Create directory for PID (usually in /var/run)
 		char *pid_file2 = strdup(config->Get("core.pidfile").c_str());
 		char *pid_directory = dirname(pid_file2);
-		mkdir(pid_directory,0755);
-		
-		if(uid!=0)
+		if(mkdir(pid_directory,0755)==0)
 		{
-			if(chown(pid_directory,uid,-1)!=0)
-				throw Exception("core","Unable to change pid file uid");
+			if(uid!=0)
+			{
+				if(chown(pid_directory,uid,-1)!=0)
+					throw Exception("core","Unable to change pid file uid");
+			}
+			
+			if(gid!=0)
+			{
+				if(chown(pid_directory,-1,gid)!=0)
+					throw Exception("core","Unable to change pid file gid");
+			}
+			
+			free(pid_file2);
 		}
-		
-		if(gid!=0)
-		{
-			if(chown(pid_directory,-1,gid)!=0)
-				throw Exception("core","Unable to change pid file gid");
-		}
-		
-		free(pid_file2);
 		
 		// Set uid/gid if requested
 		if(gid!=0 && setregid(gid,gid)!=0)
