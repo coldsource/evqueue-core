@@ -21,6 +21,7 @@
 
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Configuration.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -32,6 +33,7 @@ bool ping_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
 	
 	response->GetDOM()->getDocumentElement()->setAttribute(X("version"),X(EVQUEUE_VERSION));
+	response->GetDOM()->getDocumentElement()->setAttribute(X("node"),X(Configuration::GetInstance()->Get("network.node.name").c_str()));
 	
 	return true;
 }
