@@ -152,8 +152,7 @@ int main(int argc, char  **argv)
 	XMLCh *query_xml = serializer->writeToString(root_node);
 	char *query_xml_c = XMLString::transcode(query_xml);
 	
-	// Send launch command to evQueue
-	
+	// Send API command to evQueue
 	int exit_status = 0;
 	
 	try
@@ -175,7 +174,7 @@ int main(int argc, char  **argv)
 	}
 	catch(Exception &e)
 	{
-		printf("Exception in client : %s\n",e.error.c_str());
+		fprintf(stderr,"Exception in client : %s\n",e.error.c_str());
 		exit_status = -1;
 	}
 	

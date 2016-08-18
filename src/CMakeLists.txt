@@ -62,7 +62,9 @@ include_directories(include /usr/include)
 
 project(evqueue_wfmanager)
 
-add_executable(evqueue_wfmanager evqueue_wfmanager.cpp)
+add_executable(evqueue_wfmanager
+	evqueue_wfmanager.cpp ClientBase.cpp Exception.cpp SocketResponseSAX2Handler.cpp SocketSAX2Handler.cpp
+	NetworkInputSource.cpp BinNetworkInputStream.cpp hmac.cpp sha1.c)
 
 include_directories(include /usr/include)
 
@@ -74,8 +76,8 @@ target_link_libraries(evqueue_wfmanager xqilla)
 project(evqueue_api)
 
 add_executable(evqueue_api
-	evqueue_api.cpp ClientBase.cpp Exception.cpp SocketResponseSAX2Handler.cpp SocketSAX2Handler.cpp NetworkInputSource.cpp BinNetworkInputStream.cpp
-	hmac.cpp sha1.c)
+	evqueue_api.cpp ClientBase.cpp Exception.cpp SocketResponseSAX2Handler.cpp SocketSAX2Handler.cpp
+	NetworkInputSource.cpp BinNetworkInputStream.cpp hmac.cpp sha1.c)
 
 include_directories(include /usr/include)
 
