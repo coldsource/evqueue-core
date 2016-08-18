@@ -26,8 +26,11 @@ class AuthHandler
 {
 	int socket;
 	
+	std::string remote_host;
+	int remote_port;
+	
 	public:
-		AuthHandler(int socket);
+		AuthHandler(int socket, const std::string &remote_host, int remote_port);
 		
 		void HandleAuth();
 	

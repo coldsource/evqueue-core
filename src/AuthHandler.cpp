@@ -40,9 +40,11 @@
 
 using namespace std;
 
-AuthHandler::AuthHandler(int socket)
+AuthHandler::AuthHandler(int socket, const string &remote_host, int remote_port)
 {
 	this->socket = socket;
+	this->remote_host = remote_host;
+	this->remote_port = remote_port;
 }
 
 void AuthHandler::HandleAuth()
@@ -118,6 +120,9 @@ string AuthHandler::generate_challenge()
 	Statistics *stats = Statistics::GetInstance();
 	unsigned int accepted_cnx = stats->GetAcceptedConnections();
 	sha1_process_bytes((void *)&accepted_cnx,sizeof(unsigned int),&ctx);
+	
+	sha1_process_bytes((void *)remote_host.c_str(),remote_host.length(),&ctx);
+	sha1_process_bytes((void *)&remote_port,sizeof(int),&ctx);
 	
 	char c_hash[20];
 	sha1_finish_ctx(&ctx,c_hash);

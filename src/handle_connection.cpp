@@ -89,7 +89,7 @@ void *handle_connection(void *sp)
 	
 	try
 	{
-		AuthHandler auth_handler(s);
+		AuthHandler auth_handler(s,remote_addr_str,remote_port);
 		auth_handler.HandleAuth();
 		
 		send(s,"<ready />\n",10,0);
