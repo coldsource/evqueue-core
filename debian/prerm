@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -e
+
 if [ -x "/etc/init.d/evqueue" ]; then
-	/etc/init.d/evqueue stop
+	service evqueue stop
 fi
+
+#DEBHELPER#

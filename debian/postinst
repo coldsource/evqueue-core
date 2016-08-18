@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ "$1" = "configure" ]; then
 	if ! getent group evqueue > /dev/null 2>&1 ; then
 		addgroup --system --quiet evqueue
@@ -11,7 +13,9 @@ if [ "$1" = "configure" ]; then
 	
 	chown -R evqueue:evqueue /usr/share/evqueue-core
 	
-	/etc/init.d/rsyslog restart
-	
+	service rsyslog restart
+
 	exit 0
 fi
+
+#DEBHELPER#

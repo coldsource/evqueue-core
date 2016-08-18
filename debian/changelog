@@ -1,0 +1,5 @@
+evqueue-core (1.5) UNRELEASED; urgency=medium
+
+  * Initial release.
+
+ -- Thibault KUMMER <bob@coldsource.net>  Wed, 17 Aug 2016 12:30:16 +0200
