@@ -24,10 +24,14 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <string>
+
+using namespace std;
+
 Configuration *ConfigurationReader::Read(const char *filename)
 {
 	FILE *f;
-	int i,len,entry_len,value_len;
+	int i,len,entry_len,value_len,lineno = 0;
 	int quoted;
 	char line[CONFIGURATION_LINE_MAXLEN];
 	char *entry,*value;
@@ -45,6 +49,8 @@ Configuration *ConfigurationReader::Read(const char *filename)
 		
 		while(fgets(line,CONFIGURATION_LINE_MAXLEN,f))
 		{
+			lineno++;
+			
 			len=strlen(line);
 			
 			// Trim line
@@ -78,10 +84,10 @@ Configuration *ConfigurationReader::Read(const char *filename)
 				i++;
 			
 			if(entry==line+i)
-				throw Exception("ConfigurationReader","Expected configuration entry");
+				throw Exception("ConfigurationReader","Expected configuration entry on line "+to_string(lineno));
 			
 			if(line[i]=='\0')
-				throw Exception("ConfigurationReader","Missing value");
+				throw Exception("ConfigurationReader","Missing value on line "+to_string(lineno));
 			
 			entry_len=(line+i)-entry;
 			
@@ -91,14 +97,14 @@ Configuration *ConfigurationReader::Read(const char *filename)
 			
 			// =
 			if(line[i++]!='=')
-				throw Exception("ConfigurationReader","Expecting '='");
+				throw Exception("ConfigurationReader","Expecting '=' on line "+to_string(lineno));
 			
 			// Skip spaces
 			while(line[i]==' ' || line[i]=='\t')
 				i++;
 			
 			if(line[i]=='\0')
-				throw Exception("ConfigurationReader","Missing value");
+				throw Exception("ConfigurationReader","Missing value on line "+to_string(lineno));
 			
 			// Check if value is quoted
 			quoted=0;
@@ -114,7 +120,7 @@ Configuration *ConfigurationReader::Read(const char *filename)
 			}
 			
 			if(line[i]=='\0')
-				throw Exception("ConfigurationReader","Empty value");
+				throw Exception("ConfigurationReader","Empty value on line "+to_string(lineno));
 			
 			// Read value
 			value=line+i;
@@ -133,7 +139,7 @@ Configuration *ConfigurationReader::Read(const char *filename)
 			value_len=(line+i)-value;
 			
 			if(quoted>0 && line[i]=='\0')
-				throw Exception("ConfigurationReader","Missing ending quote");
+				throw Exception("ConfigurationReader","Missing ending quote on line "+to_string(lineno));
 			
 			if(quoted>0)
 				i++;
@@ -142,14 +148,14 @@ Configuration *ConfigurationReader::Read(const char *filename)
 				i++;
 				
 			if(line[i]!='\0' && line[i]!='#')
-				throw Exception("ConfigurationReader","Garbage data after value");
+				throw Exception("ConfigurationReader","Garbage data after value on line "+to_string(lineno));
 			
 			entry[entry_len]='\0';
 			value[value_len]='\0';
 			
 			// Set configuration entry
 			if(!config->Set(entry,value))
-				throw Exception("ConfigurationReader","Unknown configuration entry");
+				throw Exception("ConfigurationReader","Unknown configuration entry : "+string(entry));
 		}
 	}
 	catch(Exception &e)
