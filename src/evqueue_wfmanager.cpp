@@ -217,7 +217,6 @@ int main(int argc, char  **argv)
 	try
 	{
 		ClientBase client(connection_str,user,password);
-		printf("%s\n",workflow_xml_c);
 		client.Exec(workflow_xml_c);
 		
 		SocketResponseSAX2Handler *saxh = client.GetResponseHandler();
