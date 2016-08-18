@@ -20,7 +20,7 @@ add_executable(evqueue
 	workflow.xsd.cpp XMLUtils.cpp QueryHandlers.cpp QueryResponse.cpp Cluster.cpp ping.cpp
 	SocketResponseSAX2Handler.cpp retry_schedule.xsd.cpp WorkflowSchedules.cpp
 	NotificationType.cpp NotificationTypes.cpp WorkflowInstanceAPI SocketSAX2Handler.cpp
-	hmac.cpp AuthHandler.cpp User.cpp Users.cpp Logs.cpp)
+	hmac.cpp AuthHandler.cpp User.cpp Users.cpp Logs.cpp ClientBase.cpp Client.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -71,9 +71,20 @@ target_link_libraries(evqueue_wfmanager xqilla)
 
 
 
+project(evqueue_api)
+
+add_executable(evqueue_api
+	evqueue_api.cpp ClientBase.cpp Exception.cpp SocketResponseSAX2Handler.cpp SocketSAX2Handler.cpp NetworkInputSource.cpp BinNetworkInputStream.cpp
+	hmac.cpp sha1.c)
+
+include_directories(include /usr/include)
+
+target_link_libraries(evqueue_api xerces-c)
+target_link_libraries(evqueue_api xqilla)
+
+
 
 ADD_CUSTOM_TARGET(man ALL)
-
 ADD_CUSTOM_COMMAND(
   TARGET man
   COMMAND gzip -9n ${CMAKE_CURRENT_SOURCE_DIR}/evqueue.8 --stdout >${CMAKE_CURRENT_BINARY_DIR}/evqueue.8.gz

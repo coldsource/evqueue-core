@@ -18,12 +18,15 @@
  */
 
 #include <BinNetworkInputStream.h>
-#include <Logger.h>
 #include <Exception.h>
 
 #include <sys/socket.h>
 #include <string.h>
 #include <errno.h>
+
+#include <string>
+
+using namespace std;
 
 BinNetworkInputStream::BinNetworkInputStream(int s)
 {
@@ -45,11 +48,8 @@ XMLSize_t BinNetworkInputStream::readBytes(XMLByte *const toFill, const XMLSize_
 {
 	int read_size = recv(socket,toFill,maxToRead,0);
 	if(read_size==-1)
-	{
-		Logger::Log(LOG_WARNING,"Error reading socket, recv() returned error %d",errno);
-		throw Exception("BinNetworkInputStream","Error reading socket");
-	}
-	
+		throw Exception("BinNetworkInputStream","Error reading socket, recv() returned error "+to_string(errno));
+
 	pos += read_size;
 	return (XMLSize_t) read_size;
 }

@@ -21,28 +21,35 @@
 #include <WorkflowParameters.h>
 #include <SocketSAX2Handler.h>
 
-using namespace xercesc;
-
 #include <string>
 #include <map>
 #include <vector>
 
+#include <xqilla/xqilla-dom3.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
+#include <xercesc/dom/DOMElement.hpp>
+
 class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 	
 	private:
+		bool record;
+		xercesc::DOMDocument *xmldoc = 0;
+		xercesc::DOMElement *current_node = 0;
+		
+		
 		std::string group;
 		
 		bool ready;
-		
 		int level;
 	
 	public:
-		SocketResponseSAX2Handler(const std::string &context);
+		SocketResponseSAX2Handler(const std::string &context, bool record = false);
 		~SocketResponseSAX2Handler();
 		
 		const std::string &GetGroup() { return group; }
+		xercesc::DOMDocument *GetDOM() { return xmldoc; }
 		
-		void startElement( const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const Attributes&  attrs );
+		void startElement( const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes&  attrs );
 		void endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname);
 		void endDocument();
 		

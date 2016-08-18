@@ -19,7 +19,6 @@
 
 #include <SocketSAX2Handler.h>
 #include <NetworkInputSource.h>
-#include <Logger.h>
 #include <Exception.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
@@ -156,10 +155,7 @@ void SocketSAX2Handler::HandleQuery(SocketSAX2HandlerInterface *handler)
 		try
 		{
 			if (!parser->parseFirst(source, token))
-			{
-				Logger::Log(LOG_ERR,"parseFirst failed");
 				throw Exception("core","parseFirst failed");
-			}
 			
 			bool gotMore = true;
 			while (gotMore && !handler->IsReady()) {
@@ -169,10 +165,11 @@ void SocketSAX2Handler::HandleQuery(SocketSAX2HandlerInterface *handler)
 		catch (const SAXParseException& toCatch)
 		{
 			char *message = XMLString::transcode(toCatch.getMessage());
-			Logger::Log(LOG_WARNING,"Invalid query XML structure : %s",message);
+			string excpt_msg = "Invalid query XML structure : ";
+			excpt_msg.append(message);
 			XMLString::release(&message);
 			
-			throw Exception("Query XML parsing","Invalid query XML structure");
+			throw Exception("Query XML parsing",excpt_msg);
 		}
 		catch(Exception &e)
 		{
@@ -189,8 +186,6 @@ void SocketSAX2Handler::HandleQuery(SocketSAX2HandlerInterface *handler)
 	}
 	catch (Exception &e)
 	{
-		Logger::Log(LOG_WARNING,"Unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
-		
 		if (parser!=0)
 			delete parser;
 		

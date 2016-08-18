@@ -25,26 +25,57 @@
 
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/sax2/Attributes.hpp>
+#include <xercesc/dom/DOM.hpp>
 
 using namespace std;
+using namespace xercesc;
 
-SocketResponseSAX2Handler::SocketResponseSAX2Handler(const string &context):SocketSAX2HandlerInterface(context)
+SocketResponseSAX2Handler::SocketResponseSAX2Handler(const string &context, bool record):SocketSAX2HandlerInterface(context)
 {
+	this->record = record;
+	if(record)
+	{
+		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+		xmldoc = xqillaImplementation->createDocument();
+	}
+	
 	level = 0;
 	ready = false;
 }
 
 SocketResponseSAX2Handler::~SocketResponseSAX2Handler()
 {
-	;
+	if(record)
+		xmldoc->release();
 }
-
 
 void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const Attributes& attrs)
 {
 	char *node_name_c = XMLString::transcode(localname);
 	
 	level++;
+	
+	if(record)
+	{
+		// Store XML in DOM document, recreating all elements
+		DOMElement *node = xmldoc->createElement(localname);
+		
+		for(int i=0;i<attrs.getLength();i++)
+		{
+			const XMLCh *attr_name, *attr_value;
+			attr_name = attrs.getLocalName(i);
+			attr_value = attrs.getValue(i);
+			
+			node->setAttribute(attr_name,attr_value);
+		}
+		
+		if(current_node==0)
+			xmldoc->appendChild(node);
+		else
+			current_node->appendChild(node);
+		
+		current_node = node;
+	}
 	
 	try
 	{

@@ -21,7 +21,6 @@
 #include <Exception.h>
 #include <SocketResponseSAX2Handler.h>
 #include <SocketSAX2Handler.h>
-#include <NetworkInputSource.h>
 #include <Sockets.h>
 #include <Logger.h>
 
