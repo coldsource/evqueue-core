@@ -21,6 +21,8 @@
 
 #include <unistd.h>
 
+using namespace std;
+
 Sockets *Sockets::instance = 0;
 
 Sockets::Sockets()
@@ -61,7 +63,13 @@ void Sockets::CloseSockets()
 
 unsigned int Sockets::GetNumber()
 {
-	return sockets.size();
+	pthread_mutex_lock(&lock);
+	
+	int n = sockets.size();
+	
+	pthread_mutex_unlock(&lock);
+	
+	return n;
 }
 
 void Sockets::Lock()

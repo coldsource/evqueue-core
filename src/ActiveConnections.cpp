@@ -20,31 +20,18 @@
 #include <ActiveConnections.h>
 #include <handle_connection.h>
 
+using namespace std;
+
+ActiveConnections *ActiveConnections::instance = 0;
+
 ActiveConnections::ActiveConnections()
 {
+	instance = this;
 	is_shutting_down = false;
 	pthread_mutex_init(&lock, NULL);
 }
 
-void ActiveConnections::RegisterConnection(int s)
-{
-	pthread_mutex_lock(&lock);
-	
-	int *sp = new int;
-	*sp = s;
-	
-	pthread_t thread;
-	pthread_attr_t thread_attr;
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&thread, &thread_attr, handle_connection, sp);
-	
-	active_threads.insert(thread);
-	
-	pthread_mutex_unlock(&lock);
-}
-
-void ActiveConnections::UnregisterConnection(pthread_t thread)
+void ActiveConnections::StartConnection(int s)
 {
 	pthread_mutex_lock(&lock);
 	
@@ -55,10 +42,45 @@ void ActiveConnections::UnregisterConnection(pthread_t thread)
 		return;
 	}
 	
+	int *sp = new int;
+	*sp = s;
+	
+	pthread_t thread;
+	pthread_attr_t thread_attr;
+	pthread_attr_init(&thread_attr);
+	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
+	pthread_create(&thread, &thread_attr, handle_connection, sp);
+	
+	active_threads.insert(thread);
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void ActiveConnections::EndConnection(pthread_t thread)
+{
+	pthread_mutex_lock(&lock);
+	
+	if(is_shutting_down)
+	{
+		pthread_mutex_unlock(&lock);
+		return;
+	}
+	
 	pthread_detach(thread);
 	active_threads.erase(thread);
 	
 	pthread_mutex_unlock(&lock);
+}
+
+unsigned int ActiveConnections::GetNumber()
+{
+	pthread_mutex_lock(&lock);
+	
+	int n = active_threads.size();
+	
+	pthread_mutex_unlock(&lock);
+	
+	return n;
 }
 
 void ActiveConnections::Shutdown(void)
@@ -72,7 +94,7 @@ void ActiveConnections::Shutdown(void)
 
 void ActiveConnections::WaitForShutdown()
 {
-	pthread_mutex_lock(&lock);
-	
-	pthread_mutex_unlock(&lock);
+	// Join all threads to ensure no more connections are active
+	for(auto it=active_threads.begin();it!=active_threads.end();it++)
+		pthread_join(*it,0);
 }

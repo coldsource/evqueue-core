@@ -76,6 +76,7 @@
 #include <Sockets.h>
 #include <QueryHandlers.h>
 #include <Cluster.h>
+#include <ActiveConnections.h>
 #include <handle_connection.h>
 #include <tools.h>
 #include <tools_db.h>
@@ -456,6 +457,9 @@ int main(int argc,const char **argv)
 		Sockets *sockets = new Sockets();
 		pthread_atfork(fork_parent_pre_handler,fork_parent_post_handler,fork_child_handler);
 		
+		// Create active connections set
+		ActiveConnections *active_connections = new ActiveConnections();
+		
 		// Initialize cluster
 		Cluster *cluster = new Cluster();
 		cluster->ParseConfiguration(config->Get("cluster.nodes"));
@@ -565,6 +569,11 @@ int main(int argc,const char **argv)
 				retrier->Shutdown();
 				retrier->WaitForShutdown();
 				
+				// Wait for active connections to end
+				Logger::Log(LOG_NOTICE,"Waiting for active connections to end...");
+				active_connections->Shutdown();
+				active_connections->WaitForShutdown();
+				
 				// Save current state in database
 				workflow_instances->RecordSavepoint();
 				
@@ -591,6 +600,7 @@ int main(int argc,const char **argv)
 				delete sockets;
 				delete cluster;
 				delete users;
+				delete active_connections;
 				
 				XQillaPlatformUtils::terminate();
 				
@@ -622,7 +632,7 @@ int main(int argc,const char **argv)
 				continue; // We were interrupted or sockets were closed due to shutdown request, loop as select will also return an error
 			
 			// Check for max connections
-			if(sockets->GetNumber()==max_conn)
+			if(active_connections->GetNumber()==max_conn)
 			{
 				close(s);
 				
@@ -634,13 +644,8 @@ int main(int argc,const char **argv)
 			// Register socket so it can be closed on fork
 			sockets->RegisterSocket(s);
 			
-			sp = new int;
-			*sp = s;
-			pthread_t thread;
-			pthread_attr_t thread_attr;
-			pthread_attr_init(&thread_attr);
-			pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-			pthread_create(&thread, &thread_attr, handle_connection, sp);
+			// Start thread
+			active_connections->StartConnection(s);
 		}
 	}
 	catch(Exception &e)

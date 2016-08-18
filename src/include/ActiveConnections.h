@@ -26,17 +26,23 @@
 
 class ActiveConnections
 {
+	static ActiveConnections *instance;
+	
 	bool is_shutting_down;
 	
-	set<pthread_t> active_threads;
+	std::set<pthread_t> active_threads;
 	
 	pthread_mutex_t lock;
 	
 	public:
 		ActiveConnections();
 		
-		void RegisterConnection(int s);
-		void UnregisterConnection(pthread_t thread);
+		static ActiveConnections *GetInstance() { return  instance; }
+		
+		void StartConnection(int s);
+		void EndConnection(pthread_t thread);
+		
+		unsigned int GetNumber();
 		
 		void Shutdown(void);
 		

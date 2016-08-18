@@ -29,6 +29,7 @@
 #include <QueryHandlers.h>
 #include <AuthHandler.h>
 #include <DB.h>
+#include <ActiveConnections.h>
 #include <tools.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
@@ -126,12 +127,18 @@ void *handle_connection(void *sp)
 		
 		mysql_thread_end();
 		
+		// Notify that we exit
+		ActiveConnections::GetInstance()->EndConnection(pthread_self());
+		
 		return 0;
 		
 	}
 	
 	Sockets::GetInstance()->UnregisterSocket(s);
 	mysql_thread_end();
+	
+	// Notify that we exit
+	ActiveConnections::GetInstance()->EndConnection(pthread_self());
 	
 	return 0;
 }

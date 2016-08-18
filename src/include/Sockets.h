@@ -24,11 +24,9 @@
 
 #include <set>
 
-using namespace std;
-
 class Sockets
 {
-	set<int> sockets;
+	std::set<int> sockets;
 	
 	static Sockets *instance;
 	

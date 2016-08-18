@@ -18,7 +18,7 @@
  */
 
 #include <Statistics.h>
-#include <Sockets.h>
+#include <ActiveConnections.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Exception.h>
@@ -35,6 +35,7 @@
 Statistics *Statistics::instance = 0;
 
 using namespace xercesc;
+using namespace std;
 
 Statistics::Statistics(void)
 {
@@ -162,7 +163,7 @@ void Statistics::SendGlobalStatistics(QueryResponse *response)
 	sprintf(buf,"%d",accepted_connections);
 	statistics_node->setAttribute(X("accepted_connections"),X(buf));
 	
-	sprintf(buf,"%d",Sockets::GetInstance()->GetNumber());
+	sprintf(buf,"%d",ActiveConnections::GetInstance()->GetNumber());
 	statistics_node->setAttribute(X("current_connections"),X(buf));
 	
 	sprintf(buf,"%d",input_errors);
