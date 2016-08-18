@@ -88,6 +88,8 @@ Configuration::Configuration(void)
 	entries["workflowinstance.savepoint.retry.times"] = "0";
 	entries["workflowinstance.savepoint.retry.wait"] = "2";
 	entries["cluster.notify"] = "yes";
+	entries["cluster.notify.user"] = "";
+	entries["cluster.notify.password"] = "";
 	entries["cluster.nodes"] = "";
 	
 	instance=this;
@@ -169,7 +171,10 @@ void Configuration::SendConfiguration(QueryResponse *response)
 	{
 		DOMElement *entry_node = xmldoc->createElement(X("entry"));
 		entry_node->setAttribute(X("name"),X(it->first.c_str()));
-		entry_node->setAttribute(X("value"),X(it->second.c_str()));
+		if(it->first=="mysql.password" || it->first=="cluster.notify.password")
+			entry_node->setAttribute(X("value"),X("****")); // Do not send password
+		else
+			entry_node->setAttribute(X("value"),X(it->second.c_str()));
 		configuration_node->appendChild(entry_node);
 	}
 }

@@ -38,7 +38,7 @@ class WorkflowSchedules:public APIObjectList<WorkflowSchedule>
 		
 		static WorkflowSchedules *GetInstance() { return instance; }
 		
-		void Reload(void);
+		void Reload(bool notify = true);
 		
 		const std::vector<WorkflowSchedule *> &GetActiveWorkflowSchedules();
 		

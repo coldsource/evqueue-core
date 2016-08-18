@@ -30,6 +30,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Configuration.h>
+#include <Cluster.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -206,14 +207,14 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 	delete scheduled_wf;
 }
 
-void WorkflowScheduler::Reload()
+void WorkflowScheduler::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ WorkflowScheduler ] Reloading configuration from database");
 	
 	pthread_mutex_lock(&wfs_mutex);
 	
 	// Reload schedules while locked to ensure consistency
-	WorkflowSchedules::GetInstance()->Reload();
+	WorkflowSchedules::GetInstance()->Reload(notify);
 	
 	Flush();
 	
@@ -261,6 +262,12 @@ void WorkflowScheduler::Reload()
 	delete[] backup_wfs_executing_instances;
 	
 	pthread_mutex_unlock(&wfs_mutex);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='scheduler' notify='no' />\n");
+	}
 }
 
 void WorkflowScheduler::SendStatus(QueryResponse *response)

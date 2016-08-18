@@ -18,13 +18,17 @@
  */
 
 #include <Cluster.h>
+#include <Configuration.h>
 #include <Exception.h>
 #include <SocketResponseSAX2Handler.h>
 #include <SocketSAX2Handler.h>
 #include <Sockets.h>
 #include <Logger.h>
+#include <Client.h>
+#include <sha1.h>
 
 #include <sstream>
+#include <iomanip>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -34,131 +38,51 @@
 
 using namespace std;
 
+Cluster *Cluster::instance = 0;
+
 void Cluster::ParseConfiguration(const string &conf)
 {
+	instance = this;
+	
 	istringstream split(conf);
 	for (std::string each; std::getline(split, each, ','); nodes.push_back(each));
+	
+	user = Configuration::GetInstance()->Get("cluster.notify.user");
+	password = Configuration::GetInstance()->Get("cluster.notify.password");
+	
+	// Prepare hashed password
+	sha1_ctx ctx;
+	char c_hash[20];
+	
+	sha1_init_ctx(&ctx);
+	sha1_process_bytes(password.c_str(),password.length(),&ctx);
+	sha1_finish_ctx(&ctx,c_hash);
+	
+	// Format HEX result
+	stringstream sstream;
+	sstream << hex;
+	for(int i=0;i<20;i++)
+		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
+	password = sstream.str();
 }
 
 void Cluster::ExecuteCommand(const string &command)
 {
+	if(nodes.size()==0)
+		return; // Cluster is not configures
+	
 	Logger::Log(LOG_NOTICE, "Executing cluster command %s",command.c_str());
 	
 	for(int i=0;i<nodes.size();i++)
-		execute_command(nodes.at(i),command);
-}
-
-void Cluster::execute_command(const string &cnx_str, const string &command)
-{
-	// Send command
-	int s;
-	
-	try
 	{
-		s = connect_socket(cnx_str);
-	}
-	catch(Exception &e)
-	{
-		Logger::Log(LOG_WARNING,"Cluster encountered unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
-		
-		return;
-	}
-	
-	Sockets::GetInstance()->RegisterSocket(s);
-	
-	send(s,command.c_str(),command.length(),0);
-	
-	// Parse response
-	try
-	{
-		SocketResponseSAX2Handler saxh("Cluster");
-		
-		SocketSAX2Handler socket_sax2_handler(s);
-		socket_sax2_handler.HandleQuery(&saxh);
-	}
-	catch(Exception &e)
-	{
-		Logger::Log(LOG_WARNING,"Cluster encountered unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
-		
-		Sockets::GetInstance()->UnregisterSocket(s);
-		
-		throw e;
-	}
-	
-	Sockets::GetInstance()->UnregisterSocket(s);
-}
-
-int Cluster::connect_socket(const string &connection_str_const)
-{
-	int s;
-	
-	string connection_str = connection_str_const;
-	
-	if(connection_str.substr(0,6)=="tcp://")
-	{
-		if(connection_str.length()==6)
-			throw Exception("connect_socket","Missing hostname, expected format : tcp://<hostname>[:<port>]");
-		
-		string hostname = connection_str.substr(6,string::npos);
-		
-		int port;
-		size_t port_pos = hostname.find(":");
-		if(port_pos==string::npos)
-			port = 5000;
-		else
+		try
 		{
-			string port_str = hostname.substr(port_pos+1,string::npos);
-			hostname = hostname.substr(0,port_pos);
-			
-			if(port_str.length()==0)
-				throw Exception("connect_socket","Missing hostname, expected format : tcp://<hostname>[:<port>]");
-			
-			try
-			{
-				port = std::stoi(port_str	);
-			}
-			catch(...)
-			{
-				throw Exception("connect_socket","Invalid port number");
-			}
+			Client client(nodes.at(i),user,password);
+			client.Exec(command);
 		}
-		
-		s =  socket(AF_INET, SOCK_STREAM, 0);
-		
-		struct hostent *he;
-		he = gethostbyname(hostname.c_str());
-		if(!he)
-			throw Exception("connect_socket","Unknown host");
-		
-		struct sockaddr_in serv_addr;
-		serv_addr.sin_family = AF_INET;
-		memcpy(&serv_addr.sin_addr, he->h_addr_list[0], he->h_length);
-		serv_addr.sin_port = htons(port);
-		
-		if(connect(s, (struct sockaddr *)&serv_addr, sizeof(serv_addr))!=0)
-			throw Exception("connect_socket","Unable to connect");
+		catch(Exception &e)
+		{
+			Logger::Log(LOG_ERR, "Error executing cluster command on node %s : %s",nodes.at(i).c_str(),e.error.c_str());
+		}
 	}
-	else if(connection_str.substr(0,7)=="unix://")
-	{
-		string path = connection_str.substr(7,string::npos);
-		if(path[0]=='\0')
-			throw Exception("connect_socket","Missing path, expected format : unix://<path>");
-		
-		int path_len = path.length();
-		if(path_len>=sizeof(sockaddr_un::sun_path))
-			throw Exception("connect_socket","Unix socket path is too long");
-		
-		s =  socket(AF_UNIX, SOCK_STREAM, 0);
-		
-		struct sockaddr_un serv_addr;
-		serv_addr.sun_family = AF_UNIX;
-		strcpy(serv_addr.sun_path,path.c_str());
-		
-		if(connect(s, (struct sockaddr *)&serv_addr, sizeof(serv_addr))!=0)
-			throw Exception("connect_socket","Unable to connect");
-	}
-	else
-		throw Exception("connect_socket","Invalid connection string format. Expected : tcp://<hostname>[:<port>] or unix://<path>");
-	
-	return s;
 }

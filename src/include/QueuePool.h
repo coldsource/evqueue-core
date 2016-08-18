@@ -70,7 +70,7 @@ class QueuePool
 		
 		inline unsigned int GetPoolSize(void) { return queues_name.size(); }
 		
-		void Reload(void);
+		void Reload(bool notify = true);
 		
 		bool IsLocked(void);
 		

@@ -34,6 +34,7 @@
 #include <QueryResponse.h>
 #include <Statistics.h>
 #include <WorkflowInstances.h>
+#include <Users.h>
 #include <Exception.h>
 
 #include <sys/types.h>
@@ -94,56 +95,60 @@ void tools_print_usage()
 	fprintf(stderr,"  Show version        : evqueue --version\n");
 }
 
-void tools_config_reload(const std::string &module)
+void tools_config_reload(const std::string &module,bool notify)
 {
-	Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading configuration");
-	
 	if(module=="all" || module=="scheduler")
 	{
 		WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
-		scheduler->Reload();
+		scheduler->Reload(notify);
 	}
 	
 	if(module=="all" || module=="tasks")
 	{
 		Tasks *tasks = Tasks::GetInstance();
-		tasks->Reload();
+		tasks->Reload(notify);
 	}
 	
 	if(module=="all" || module=="retry_schedules")
 	{
 		RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
-		retry_schedules->Reload();
+		retry_schedules->Reload(notify);
 	}
 	
 	if(module=="all" || module=="workflows")
 	{
 		Workflows *workflows = Workflows::GetInstance();
-		workflows->Reload();
+		workflows->Reload(notify);
 	}
 	
 	if(module=="all" || module=="notifications")
 	{
-		NotificationTypes::GetInstance()->Reload();
-		Notifications::GetInstance()->Reload();
+		NotificationTypes::GetInstance()->Reload(notify);
+		Notifications::GetInstance()->Reload(notify);
 	}
 	
 	if(module=="all" || module=="queuepool")
 	{
 		QueuePool *qp = QueuePool::GetInstance();
-		qp->Reload();
+		qp->Reload(notify);
+	}
+	
+	if(module=="all" || module=="users")
+	{
+		Users *users = Users::GetInstance();
+		users->Reload(notify);
 	}
 }
 
-void tools_sync_tasks(void)
+void tools_sync_tasks(bool notify)
 {
 	Tasks *tasks = Tasks::GetInstance();
-	tasks->SyncBinaries();
+	tasks->SyncBinaries(notify);
 }
 
-void tools_sync_notifications(void)
+void tools_sync_notifications(bool notify)
 {
-	NotificationTypes::GetInstance()->SyncBinaries();
+	NotificationTypes::GetInstance()->SyncBinaries(notify);
 }
 
 void tools_flush_retrier(void)
@@ -177,10 +182,11 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		if(action=="reload")
 		{
 			string module = saxh->GetRootAttribute("module","");
+			bool notify = saxh->GetRootAttributeBool("notify",true);
 			if(module.length()==0)
-				tools_config_reload();
+				tools_config_reload("all",notify);
 			else
-				tools_config_reload(module);
+				tools_config_reload(module,notify);
 			
 			return true;
 		}
@@ -191,12 +197,14 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		}
 		else if(action=="synctasks")
 		{
-			tools_sync_tasks();
+			bool notify = saxh->GetRootAttributeBool("notify",true);
+			tools_sync_tasks(notify);
 			return true;
 		}
 		else if(action=="syncnotifications")
 		{
-			tools_sync_notifications();
+			bool notify = saxh->GetRootAttributeBool("notify",true);
+			tools_sync_notifications(notify);
 			return true;
 		}
 	}

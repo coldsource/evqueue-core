@@ -26,6 +26,7 @@
 #include <WorkflowInstance.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Cluster.h>
 
 #include <string.h>
 
@@ -42,14 +43,14 @@ Notifications::Notifications():APIObjectList()
 	
 	max_concurrency = Configuration::GetInstance()->GetInt("notifications.tasks.concurrency");
 	
-	Reload();
+	Reload(false);
 }
 
 Notifications::~Notifications()
 {
 }
 
-void Notifications::Reload(void)
+void Notifications::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ Notifications ] Reloading notifications definitions");
 	
@@ -66,6 +67,12 @@ void Notifications::Reload(void)
 		add(db.GetFieldInt(0),"",new Notification(&db2,db.GetFieldInt(0)));
 	
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='notifications' notify='no' />\n");
+	}
 }
 
 void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflow_instance)

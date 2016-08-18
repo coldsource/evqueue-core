@@ -24,6 +24,7 @@
 #include <Logger.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Cluster.h>
 #include <sha1.h>
 
 #include <string.h>
@@ -41,14 +42,14 @@ Tasks::Tasks():APIObjectList()
 	
 	pthread_mutex_init(&lock, NULL);
 	
-	Reload();
+	Reload(false);
 }
 
 Tasks::~Tasks()
 {
 }
 
-void Tasks::Reload(void)
+void Tasks::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ Tasks ] Reloading tasks definitions");
 	
@@ -66,9 +67,15 @@ void Tasks::Reload(void)
 		add(db.GetFieldInt(0),db.GetField(1),new Task(&db2,db.GetField(1)));
 	
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='tasks' notify='no' />\n");
+	}
 }
 
-void Tasks::SyncBinaries(void)
+void Tasks::SyncBinaries(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ Tasks ] Syncing binaries");
 	
@@ -116,6 +123,12 @@ void Tasks::SyncBinaries(void)
 	}
 	
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='synctasks' notify='no' />\n");
+	}
 }
 
 bool Tasks::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)

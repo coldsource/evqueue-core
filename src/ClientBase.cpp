@@ -101,9 +101,6 @@ ClientBase::ClientBase(const string &connection_str, const string &user, const s
 
 ClientBase::~ClientBase()
 {
-	if(connected)
-		disconnect();
-	
 	if(s!=-1)
 		close(s);
 	
@@ -128,6 +125,8 @@ void ClientBase::Exec(const std::string &cmd, bool record)
 		
 		throw Exception("Client","Error executing command : "+error);
 	}
+	
+	disconnect();
 }
 
 DOMDocument *ClientBase::GetResponseDOM()
@@ -205,7 +204,7 @@ void ClientBase::authenticate()
 		return;
 	
 	if(user.length()==0 || password.length()==0)
-			throw Exception("Client","Authentication is required but no user/password has been provided");
+		throw Exception("Client","Authentication is required but no user/password has been provided");
 	
 	string response = hash_hmac(password, saxh->GetRootAttribute("challenge"));
 	
@@ -220,6 +219,9 @@ void ClientBase::authenticate()
 
 void ClientBase::disconnect()
 {
+	if(!connected)
+		return;
+	
 	send("<quit />\n");
 	
 	connected = false;

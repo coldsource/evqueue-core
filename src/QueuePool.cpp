@@ -26,6 +26,7 @@
 #include <Configuration.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Cluster.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -88,7 +89,7 @@ QueuePool::QueuePool(void)
 	
 	instance = this;
 	
-	Reload();
+	Reload(false);
 }
 
 QueuePool::~QueuePool(void)
@@ -289,7 +290,7 @@ bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 	return true;
 }
 
-void QueuePool::Reload(void)
+void QueuePool::Reload(bool notify)
 {
 	DB db;
 	
@@ -338,6 +339,12 @@ void QueuePool::Reload(void)
 		pthread_cond_signal(&fork_lock);
 	
 	pthread_mutex_unlock(&mutex);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='queuepool' notify='no' />\n");
+	}
 }
 
 bool QueuePool::IsLocked(void)

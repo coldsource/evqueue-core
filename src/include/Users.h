@@ -40,7 +40,7 @@ class Users:public APIObjectList<User>
 		
 		static Users *GetInstance() { return instance; }
 		
-		void Reload(void);
+		void Reload(bool notify = true);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

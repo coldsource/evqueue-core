@@ -41,7 +41,7 @@ class Workflows:public APIObjectList<Workflow>
 		
 		static Workflows *GetInstance() { return instance; }
 		
-		void Reload(void);
+		void Reload(bool notify = true);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

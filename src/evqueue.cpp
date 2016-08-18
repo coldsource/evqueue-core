@@ -100,7 +100,8 @@ void signal_callback_handler(int signum)
 	}
 	else if(signum==SIGHUP)
 	{
-		tools_config_reload();
+		Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading configuration");
+		tools_config_reload("all",false);
 	}
 	else if(signum==SIGUSR1)
 	{

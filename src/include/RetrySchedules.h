@@ -41,7 +41,7 @@ class RetrySchedules:public APIObjectList<RetrySchedule>
 		
 		static RetrySchedules *GetInstance() { return instance; }
 		
-		void Reload(void);
+		void Reload(bool notify = true);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

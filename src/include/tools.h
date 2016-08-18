@@ -28,9 +28,9 @@ class QueryResponse;
 int tools_queue_destroy();
 int tools_queue_stats();
 void tools_print_usage();
-void tools_config_reload(const std::string &module="all");
-void tools_sync_tasks(void);
-void tools_sync_notifications(void);
+void tools_config_reload(const std::string &module,bool notify);
+void tools_sync_tasks(bool notify);
+void tools_sync_notifications(bool notify);
 void tools_flush_retrier(void);
 int tools_send_exit_msg(int type,int tid,char retcode);
 

@@ -24,6 +24,7 @@
 #include <Logger.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Cluster.h>
 
 #include <string.h>
 
@@ -38,14 +39,14 @@ Workflows::Workflows():APIObjectList()
 {
 	instance = this;
 	
-	Reload();
+	Reload(false);
 }
 
 Workflows::~Workflows()
 {
 }
 
-void Workflows::Reload(void)
+void Workflows::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ Workflows ] Reloading workflows definitions");
 	
@@ -61,6 +62,12 @@ void Workflows::Reload(void)
 	while(db.FetchRow())
 		add(db.GetFieldInt(0),db.GetField(1),new Workflow(&db2,db.GetField(1)));
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='workflows' notify='no' />\n");
+	}
 }
 
 bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)

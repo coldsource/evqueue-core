@@ -52,7 +52,7 @@ class Notifications:public APIObjectList<Notification>
 		
 		static Notifications *GetInstance() { return instance; }
 		
-		void Reload(void);
+		void Reload(bool notify = true);
 		
 		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
 		void Exit(pid_t pid, int status, char retcode);

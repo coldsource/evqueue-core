@@ -54,7 +54,7 @@ class ClientBase
 		DOMDocument *GetResponseDOM();
 		SocketResponseSAX2Handler *GetResponseHandler() { return saxh; }
 	
-	private:
+	protected:
 		void connect();
 		void send(const std::string &cmd);
 		void recv(bool record = false);

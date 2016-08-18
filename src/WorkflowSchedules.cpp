@@ -37,14 +37,14 @@ WorkflowSchedules::WorkflowSchedules():APIObjectList()
 {
 	instance = this;
 	
-	Reload();
+	Reload(false);
 }
 
 WorkflowSchedules::~WorkflowSchedules()
 {
 }
 
-void WorkflowSchedules::Reload(void)
+void WorkflowSchedules::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ WorkflowSchedules ] Reloading workflow schedules definitions");
 	

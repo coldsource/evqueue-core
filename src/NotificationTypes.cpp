@@ -24,6 +24,7 @@
 #include <Logger.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Cluster.h>
 #include <sha1.h>
 
 #include <string.h>
@@ -39,14 +40,14 @@ NotificationTypes::NotificationTypes():APIObjectList()
 {
 	instance = this;
 	
-	Reload();
+	Reload(false);
 }
 
 NotificationTypes::~NotificationTypes()
 {
 }
 
-void NotificationTypes::Reload(void)
+void NotificationTypes::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Reloading configuration from database");
 	
@@ -63,9 +64,15 @@ void NotificationTypes::Reload(void)
 		add(db.GetFieldInt(0),db.GetField(1),new NotificationType(&db2,db.GetFieldInt(0)));
 	
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='notifications' notify='no' />\n");
+	}
 }
 
-void NotificationTypes::SyncBinaries(void)
+void NotificationTypes::SyncBinaries(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Syncing binaries");
 	
@@ -113,6 +120,12 @@ void NotificationTypes::SyncBinaries(void)
 	}
 	
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='syncnotifications' notify='no' />\n");
+	}
 }
 
 bool NotificationTypes::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)

@@ -24,6 +24,7 @@
 #include <QueryResponse.h>
 #include <Logger.h>
 #include <DB.h>
+#include <Cluster.h>
 
 #include <string.h>
 
@@ -38,14 +39,14 @@ RetrySchedules::RetrySchedules():APIObjectList()
 {
 	instance = this;
 	
-	Reload();
+	Reload(false);
 }
 
 RetrySchedules::~RetrySchedules()
 {
 }
 
-void RetrySchedules::Reload(void)
+void RetrySchedules::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ RetrySchedules ] Reloading schedules definitions");
 	
@@ -63,6 +64,12 @@ void RetrySchedules::Reload(void)
 		add(db.GetFieldInt(0),db.GetField(1),new RetrySchedule(&db2,db.GetField(1)));
 	
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='retry_schedules' notify='no' />\n");
+	}
 }
 
 bool RetrySchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)

@@ -24,6 +24,7 @@
 #include <Logger.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <Cluster.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -36,14 +37,14 @@ Users::Users():APIObjectList()
 {
 	instance = this;
 	
-	Reload();
+	Reload(false);
 }
 
 Users::~Users()
 {
 }
 
-void Users::Reload(void)
+void Users::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ Users ] Reloading users definitions");
 	
@@ -60,6 +61,12 @@ void Users::Reload(void)
 		add(0,db.GetField(0),new User(&db2,db.GetField(0)));
 	
 	pthread_mutex_unlock(&lock);
+	
+	if(notify)
+	{
+		// Notify cluster
+		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='users' notify='no' />\n");
+	}
 }
 
 bool Users::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)

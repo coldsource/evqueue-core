@@ -57,7 +57,7 @@ class WorkflowScheduler:public Scheduler
 		void ScheduleWorkflow(WorkflowSchedule *workflow_schedule, unsigned int workflow_instance_id = 0);
 		void ScheduledWorkflowInstanceStop(unsigned int workflow_schedule_id, bool success);
 		
-		void Reload();
+		void Reload(bool notify = true);
 		
 		void SendStatus(QueryResponse *response);
 		

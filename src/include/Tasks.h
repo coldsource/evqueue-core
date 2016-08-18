@@ -41,8 +41,8 @@ class Tasks:public APIObjectList<Task>
 		
 		static Tasks *GetInstance() { return instance; }
 		
-		void Reload(void);
-		void SyncBinaries(void);
+		void Reload(bool notify = true);
+		void SyncBinaries(bool notify = true);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

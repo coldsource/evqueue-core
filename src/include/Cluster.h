@@ -25,16 +25,18 @@
 
 class Cluster
 {
+	static Cluster *instance;
+	
 	std::vector<std::string> nodes;
+	std::string user;
+	std::string password;
 	
 	public:
 		void ParseConfiguration(const std::string &conf);
 		
+		static Cluster *GetInstance() { return instance; }
+		
 		void ExecuteCommand(const std::string &command);
-	
-	private:
-		void execute_command(const std::string &cnx_str, const std::string &command);
-		int connect_socket(const std::string &connection_str_const);
 };
 
 #endif
