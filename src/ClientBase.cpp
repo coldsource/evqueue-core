@@ -202,7 +202,7 @@ void ClientBase::authenticate()
 		return;
 	
 	if(user.length()==0 || password.length()==0)
-			throw Exception("Client","Authentication is required but not user/password has been provided");
+			throw Exception("Client","Authentication is required but no user/password has been provided");
 	
 	string response = hash_hmac(password, saxh->GetRootAttribute("challenge"));
 	
