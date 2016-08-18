@@ -341,7 +341,11 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 			node->setAttribute(X("errors"),X(db.GetField(6)));
 			node->setAttribute(X("status"),X(db.GetField(7)));
 		}
+		
+		return true;
 	}
+	
+	return false;
 }
 
 void WorkflowInstances::release_waiters(unsigned int workflow_instance_id)
