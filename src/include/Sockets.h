@@ -40,6 +40,7 @@ class Sockets
 		void RegisterSocket(int s);
 		void UnregisterSocket(int s);
 		void CloseSockets();
+		void ShutdownSockets();
 		
 		unsigned int GetNumber(); 
 		

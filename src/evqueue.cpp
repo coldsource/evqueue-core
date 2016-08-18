@@ -569,6 +569,10 @@ int main(int argc,const char **argv)
 				retrier->Shutdown();
 				retrier->WaitForShutdown();
 				
+				// Shutdown sockets to end active connections earlier
+				if(config->GetBool("core.fastshutdown"))
+					sockets->ShutdownSockets();
+				
 				// Wait for active connections to end
 				Logger::Log(LOG_NOTICE,"Waiting for active connections to end...");
 				active_connections->Shutdown();

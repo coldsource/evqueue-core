@@ -20,6 +20,7 @@
 #include <Sockets.h>
 
 #include <unistd.h>
+#include <sys/socket.h>
 
 using namespace std;
 
@@ -57,6 +58,16 @@ void Sockets::CloseSockets()
 	
 	for(set<int>::iterator it=sockets.begin();it!=sockets.end();it++)
 		close(*it);
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Sockets::ShutdownSockets()
+{
+	pthread_mutex_lock(&lock);
+	
+	for(set<int>::iterator it=sockets.begin();it!=sockets.end();it++)
+		shutdown(*it,SHUT_RDWR);
 	
 	pthread_mutex_unlock(&lock);
 }
