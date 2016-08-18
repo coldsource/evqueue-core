@@ -4,7 +4,7 @@
 evqueue_wfmanager \- evQueue utilities
 .SH "SYNOPSIS"
 .PP
-\fBevqueue_wfmanager\fR [ OPTIONS ] --launch <wf name> --<parameter name> <parameter value>
+\fBevqueue_wfmanager\fR [ OPTIONS ] --launch <wf name> [--<parameter name> <parameter value>]*
 .SH "DESCRIPTION"
 .PP
 Utility to launch workflows from command line. Can be used to connect to the evQueue core through TCP or UNIX sockets.
@@ -19,12 +19,21 @@ tcp socket: tcp://<hostname>[:<port>]
 
 unix socket: unix://<path>
 .TP
-\fB----mode [synchronous|asynchronous]\fR
+\fB--user <username>\fR
+Use this username if authentication is required by daemon.
+.TP
+\fB--password <password>\fR
+Use this password if authentication is required by daemon.
+.TP
+\fB--mode [synchronous|asynchronous]\fR
 Run in synchronous or asynchronous mode. In synchronous mode, the command will only return after the workflow is terminated. In asynchronous mode, the command returns immediately after the workflow is launched.
 .TP
 \fB--timeout <timeout>\fR
 When running in synchronous mode, do not wait worfklow termination for more than <timeout> seconds.
-.TP
+.SH EXAMPLES
+evqueue_wfmanager --connect tcp://localhost:5000 --user admin --password admin --launch sleep --time 1
+.br
+Connects to evQueue daemon using TCP on localhost (port 5000). Launches a workflow named "sleep" which takes on parameter "time" (whose value is "1").
 .SH SEE ALSO
 .BR http://www.evqueue.net/
 

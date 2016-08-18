@@ -97,6 +97,11 @@ ADD_CUSTOM_COMMAND(
   COMMAND gzip -9n ${CMAKE_CURRENT_SOURCE_DIR}/evqueue_wfmanager.8 --stdout >${CMAKE_CURRENT_BINARY_DIR}/evqueue_wfmanager.8.gz
 )
 
+ADD_CUSTOM_COMMAND(
+  TARGET man
+  COMMAND gzip -9n ${CMAKE_CURRENT_SOURCE_DIR}/evqueue_api.8 --stdout >${CMAKE_CURRENT_BINARY_DIR}/evqueue_api.8.gz
+)
+
 
 
 install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor DESTINATION bin COMPONENT core)
@@ -108,5 +113,6 @@ install(DIRECTORY DESTINATION /usr/share/evqueue-core/tasks COMPONENT core)
 install(DIRECTORY ../debian/usr/share/doc/evqueue DESTINATION /usr/share/doc DIRECTORY_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ COMPONENT core)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT core)
 
-install(TARGETS evqueue_wfmanager DESTINATION bin COMPONENT utils)
+install(TARGETS evqueue_wfmanager evqueue_api DESTINATION bin COMPONENT utils)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_wfmanager.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT utils)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_api.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT utils)

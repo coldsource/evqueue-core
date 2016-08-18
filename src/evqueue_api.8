@@ -1,0 +1,43 @@
+.TH "EVQUEUE_API" 8 "2016-07-11" "evQueue utilities" "evqueue"
+
+.SH NAME
+evqueue_api \- evQueue utilities
+.SH "SYNOPSIS"
+.PP
+\fBevqueue_api\fR [ OPTIONS ] --<group> --<action> [--<parameter name> <parameter value>]*
+.SH "DESCRIPTION"
+.PP
+Utility to query evQueue API from command line. Can be used to connect to the evQueue core through TCP or UNIX sockets.
+.PP
+Options, group and action MUST be passed before other arguments. Arguments expected after action are expected to be API command parameters only.
+.SH "OPTIONS"
+.TP
+\fB--connect\fR \fIconnection_string\fR
+Connect to server identified by \fIconnection_string\fR. Two formats are accepted :
+
+tcp socket: tcp://<hostname>[:<port>]
+
+unix socket: unix://<path>
+.TP
+\fB--user <username>\fR
+Use this username if authentication is required by daemon.
+.TP
+\fB--password <password>\fR
+Use this password if authentication is required by daemon.
+.TP
+\fB--<group>\fR
+The API command group, for example --tasks to query task API.
+.TP
+\fB--<action>\fR
+The action to request to API command group, for example --get to query an element.
+.SH EXAMPLES
+evqueue_api --task --get --id 1
+.br
+Retreive task information from API.
+
+evqueue_api --connect unix:///var/run/evqueue.socket --user admin --password admin --workflows --list
+.br
+Connect to evqueue engine using UNIX socket and authentication. Request the list of available workflows.
+.SH SEE ALSO
+.BR http://www.evqueue.net/
+
