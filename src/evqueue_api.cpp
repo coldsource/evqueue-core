@@ -37,7 +37,7 @@ using namespace xercesc;
 
 static void usage()
 {
-	fprintf(stderr,"Usage : evqueue_api --group --action [--<parameter name> <parameter value>]*\n");
+	fprintf(stderr,"Usage : evqueue_api --<group> --<action> [--<parameter name> <parameter value>]*\n");
 	fprintf(stderr,"  --connect <cnx string>\n");
 	fprintf(stderr,"  --user <username>\n");
 	fprintf(stderr,"  --password <password>\n");
