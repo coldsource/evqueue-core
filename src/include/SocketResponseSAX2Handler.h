@@ -28,6 +28,7 @@
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/dom/DOMElement.hpp>
+#include <xercesc/dom/DOMText.hpp>
 
 class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 	
@@ -35,6 +36,7 @@ class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 		bool record;
 		xercesc::DOMDocument *xmldoc = 0;
 		std::vector<xercesc::DOMElement *> current_node;
+		xercesc::DOMText *current_text_node = 0;
 		
 		
 		std::string group;
@@ -51,6 +53,7 @@ class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 		
 		void startElement( const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes&  attrs );
 		void endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname);
+		void characters(const XMLCh *const chars, const XMLSize_t length);
 		void endDocument();
 		
 		bool IsReady() { return ready; }

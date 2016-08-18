@@ -115,11 +115,34 @@ void SocketResponseSAX2Handler::endElement (const XMLCh *const uri, const XMLCh 
 	level--;
 	
 	if(record)
+	{
 		current_node.pop_back();
+		current_text_node = 0;
+	}
 	
 	if (level==0) {
 		ready = true;
 		throw 0;  // get out of the parseNext loop
+	}
+}
+
+void SocketResponseSAX2Handler::characters(const XMLCh *const chars, const XMLSize_t length)
+{
+	if(record)
+	{
+		XMLCh *chars_nt = new XMLCh[length+1];
+		memcpy(chars_nt,chars,length*sizeof(XMLCh));
+		chars_nt[length] = 0;
+		
+		if(!current_text_node)
+		{
+			current_text_node = xmldoc->createTextNode(chars_nt);
+			current_node.at(level-1)->appendChild(current_text_node);
+		}
+		else
+			current_text_node->appendData(chars_nt);
+		
+		delete[] chars_nt;
 	}
 }
 
