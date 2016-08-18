@@ -101,8 +101,8 @@ void QueryResponse::SendResponse()
 
 bool QueryResponse::Ping()
 {
-	int re = send(socket,"<ping/>",7,0);
-	if(re!=7)
+	int re = send(socket,"<ping />\n",9,0);
+	if(re!=9)
 		return false;
 	return true;
 }
