@@ -101,6 +101,9 @@ ClientBase::ClientBase(const string &connection_str, const string &user, const s
 
 ClientBase::~ClientBase()
 {
+	if(connected)
+		disconnect();
+	
 	if(s!=-1)
 		close(s);
 	
@@ -213,4 +216,11 @@ void ClientBase::authenticate()
 		throw Exception("Client","Authentication error");
 	
 	authenticated = true;
+}
+
+void ClientBase::disconnect()
+{
+	send("<quit />\n");
+	
+	connected = false;
 }

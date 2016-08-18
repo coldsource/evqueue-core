@@ -52,12 +52,14 @@ class ClientBase
 		
 		void Exec(const std::string &cmd, bool record = false);
 		DOMDocument *GetResponseDOM();
+		SocketResponseSAX2Handler *GetResponseHandler() { return saxh; }
 	
 	private:
 		void connect();
 		void send(const std::string &cmd);
 		void recv(bool record = false);
 		void authenticate();
+		void disconnect();
 };
 
 #endif
