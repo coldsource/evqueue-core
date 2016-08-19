@@ -3,13 +3,16 @@
 override_dh_installinit:
 	dh_installinit $@ --name=evqueue -- defaults
 
-override_dh_auto_install-arch: install-core install-utils
+override_dh_auto_install-arch: install-core install-utils install-agent
 
 install-core:
 	DESTDIR=$(CURDIR)/debian/evqueue-core cmake -DCOMPONENT=core -P build/cmake_install.cmake
 
 install-utils:
 	DESTDIR=$(CURDIR)/debian/evqueue-utils cmake -DCOMPONENT=utils -P build/cmake_install.cmake
+
+install-agent:
+	DESTDIR=$(CURDIR)/debian/evqueue-agent cmake -DCOMPONENT=agent -P build/cmake_install.cmake
 
 %:  
 	dh $@ --buildsystem=cmake --sourcedirectory=src --builddirectory=build

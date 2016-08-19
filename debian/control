@@ -20,3 +20,10 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: evQueue utilities to manage daemon
  evQueue is a fast event driven scheduler and queueing engine
+
+Package: evqueue-agent
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: evQueue agent for managing remote tasks execution
+ evQueue agent can be used when working with remote tasks over SSH to enable
+ additional features like dedicated logging and live tasks progression.

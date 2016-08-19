@@ -87,6 +87,14 @@ target_link_libraries(evqueue_api xqilla)
 
 
 
+project(evqueue_agent)
+
+add_executable(evqueue_agent evqueue_agent.cpp)
+
+include_directories(include /usr/include)
+
+
+
 ADD_CUSTOM_TARGET(man ALL)
 ADD_CUSTOM_COMMAND(
   TARGET man
@@ -103,6 +111,11 @@ ADD_CUSTOM_COMMAND(
   COMMAND gzip -9n ${CMAKE_CURRENT_SOURCE_DIR}/evqueue_api.8 --stdout >${CMAKE_CURRENT_BINARY_DIR}/evqueue_api.8.gz
 )
 
+ADD_CUSTOM_COMMAND(
+  TARGET man
+  COMMAND gzip -9n ${CMAKE_CURRENT_SOURCE_DIR}/evqueue_agent.8 --stdout >${CMAKE_CURRENT_BINARY_DIR}/evqueue_agent.8.gz
+)
+
 
 
 install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor DESTINATION bin COMPONENT core)
@@ -117,3 +130,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue.8.gz DESTINATION ${CMAKE_INSTA
 install(TARGETS evqueue_wfmanager evqueue_api DESTINATION bin COMPONENT utils)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_wfmanager.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT utils)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_api.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT utils)
+
+install(TARGETS evqueue_agent DESTINATION agent)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_agent.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT agent)
