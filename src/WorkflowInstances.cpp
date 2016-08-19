@@ -330,7 +330,7 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 			query_where_values.push_back(value);
 		}
 		
-		string query_order_by = "ORDER BY wi.workflow_instance_end";
+		string query_order_by = "ORDER BY wi.workflow_instance_end DESC";
 		
 		string query_limit = "LIMIT "+to_string(offset)+","+to_string(limit);
 		
