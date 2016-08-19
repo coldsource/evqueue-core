@@ -278,6 +278,7 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 		string filter_workflow = saxh->GetRootAttribute("filter_workflow","");
 		string filter_launched_from = saxh->GetRootAttribute("filter_launched_from","");
 		string filter_launched_until = saxh->GetRootAttribute("filter_launched_until","");
+		string filter_status = saxh->GetRootAttribute("filter_status","");
 		unsigned int limit = saxh->GetRootAttributeInt("limit",30);
 		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
 		
@@ -285,7 +286,7 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 		string query_select = "SELECT wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status";
 		string query_from = "FROM t_workflow_instance wi, t_workflow w";
 		
-		string query_where = "WHERE true";
+		string query_where = "WHERE wi.workflow_id=w.workflow_id";
 		vector<void *> query_where_values;
 		
 		if(filter_node.length())
@@ -312,6 +313,12 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 			query_where_values.push_back(&filter_launched_until);
 		}
 		
+		if(filter_status.length())
+		{
+			query_where += " AND wi.workflow_instance_status=%s";
+			query_where_values.push_back(&filter_status);
+		}
+		
 		WorkflowParameters *parameters = saxh->GetWorkflowParameters();
 		string *name, *value;
 		
@@ -323,9 +330,11 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 			query_where_values.push_back(value);
 		}
 		
-		string query_limit = "limit "+to_string(offset)+","+to_string(limit);
+		string query_order_by = "ORDER BY wi.workflow_instance_end";
 		
-		string query = query_select+" "+query_from+" "+query_where+" "+query_limit;
+		string query_limit = "LIMIT "+to_string(offset)+","+to_string(limit);
+		
+		string query = query_select+" "+query_from+" "+query_where+" "+query_order_by+" "+query_limit;
 		
 		DB db;
 		db.QueryVsPrintf(query,query_where_values);
