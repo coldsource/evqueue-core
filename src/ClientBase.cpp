@@ -201,6 +201,10 @@ void ClientBase::connect()
 		FD_SET(s,&wfds);
 		if(select(s+1,0,&wfds,0,&tv)!=1)
 			throw Exception("Client","Unable to connect");
+		
+		// Enable blocking mode again
+		int flags = fcntl(s, F_GETFL, 0);
+		fcntl(s, F_SETFL, flags & (~O_NONBLOCK));
 	}
 	
 	// Set socket timeouts if requested
