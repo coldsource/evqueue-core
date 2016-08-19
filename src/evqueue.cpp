@@ -571,7 +571,10 @@ int main(int argc,const char **argv)
 				
 				// Shutdown sockets to end active connections earlier
 				if(config->GetBool("core.fastshutdown"))
+				{
+					Logger::Log(LOG_NOTICE,"Fast shutdown is enabled, shutting down sockets");
 					sockets->ShutdownSockets();
+				}
 				
 				// Wait for active connections to end
 				Logger::Log(LOG_NOTICE,"Waiting for active connections to end...");
