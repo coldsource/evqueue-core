@@ -340,7 +340,7 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 		db.QueryVsPrintf(query,query_where_values);
 		while(db.FetchRow())
 		{
-			DOMElement *node = (DOMElement *)response->AppendXML("<instance />");
+			DOMElement *node = (DOMElement *)response->AppendXML("<workflow />");
 			node->setAttribute(X("id"),X(std::to_string(db.GetFieldInt(0)).c_str()));
 			node->setAttribute(X("name"),X(db.GetField(1)));
 			node->setAttribute(X("node_name"),X(db.GetField(2)));
