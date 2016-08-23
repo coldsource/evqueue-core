@@ -22,6 +22,8 @@
 
 #include <string>
 
+class User;
+
 class AuthHandler
 {
 	int socket;
@@ -32,7 +34,7 @@ class AuthHandler
 	public:
 		AuthHandler(int socket, const std::string &remote_host, int remote_port);
 		
-		void HandleAuth();
+		User HandleAuth();
 	
 	private:
 		std::string generate_challenge();

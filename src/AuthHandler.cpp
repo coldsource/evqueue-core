@@ -47,17 +47,18 @@ AuthHandler::AuthHandler(int socket, const string &remote_host, int remote_port)
 	this->remote_port = remote_port;
 }
 
-void AuthHandler::HandleAuth()
+User AuthHandler::HandleAuth()
 {
 	// Check if authentication is required
 	if(!Configuration::GetInstance()->GetBool("core.auth.enable"))
-		return;
+		return User::anonymous;
 	
 	// Generate and send challenge
 	string challenge = generate_challenge();
 	string challenge_xml = "<auth challenge='"+challenge+"' />\n";
 	send(socket,challenge_xml.c_str(),challenge_xml.length(),0);
 	
+	User user;
 	try
 	{
 		// Read client response
@@ -73,7 +74,6 @@ void AuthHandler::HandleAuth()
 		const string user_name = saxh.GetRootAttribute("user");
 		
 		// Check identification
-		User user;
 		try
 		{
 			user = Users::GetInstance()->Get(user_name);
@@ -92,6 +92,8 @@ void AuthHandler::HandleAuth()
 	{
 		throw e;
 	}
+	
+	return user;
 }
 
 string AuthHandler::generate_challenge()

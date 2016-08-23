@@ -22,6 +22,7 @@
 #include <Exception.h>
 #include <NetworkInputSource.h>
 #include <Logger.h>
+#include <User.h>
 #include <Configuration.h>
 #include <Statistics.h>
 #include <Sockets.h>
@@ -91,9 +92,10 @@ void *handle_connection(void *sp)
 	try
 	{
 		AuthHandler auth_handler(s,remote_addr_str,remote_port);
-		auth_handler.HandleAuth();
+		User user = auth_handler.HandleAuth();
 		
-		send(s,"<ready />\n",10,0);
+		string ready_string = "<ready profile='"+user.GetProfile()+"' />\n";
+		send(s,ready_string.c_str(),ready_string.length(),0);
 		
 		while(true)
 		{

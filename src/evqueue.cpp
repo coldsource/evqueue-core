@@ -426,6 +426,7 @@ int main(int argc,const char **argv)
 		
 		// Load users
 		Users *users = new Users();
+		User::InitAnonymous();
 		
 		// Initialize query handlers
 		QueryHandlers *qh = new QueryHandlers();

@@ -33,8 +33,12 @@ class User
 	std::string user_profile;
 	
 	public:
+		static User anonymous;
+		
 		User();
 		User(DB *db,const std::string &user_name);
+		
+		static void InitAnonymous();
 		
 		const std::string &GetName() const { return user_name; }
 		const std::string &GetPassword() const { return user_password; }

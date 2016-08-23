@@ -30,6 +30,8 @@
 using namespace std;
 using namespace xercesc;
 
+User User::anonymous;
+
 User::User()
 {
 }
@@ -44,6 +46,12 @@ User::User(DB *db,const string &user_name)
 	this->user_name = db->GetField(0);
 	user_password = db->GetField(1);
 	user_profile = db->GetField(2);
+}
+
+void User::InitAnonymous()
+{
+	anonymous.user_name = "anonymous";
+	anonymous.user_profile = "ADMIN";
 }
 
 bool User::CheckUserName(const string &user_name)
