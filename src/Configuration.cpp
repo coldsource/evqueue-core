@@ -95,6 +95,9 @@ Configuration::Configuration(void)
 	entries["cluster.cnx.timeout"] = "10";
 	entries["cluster.rcv.timeout"] = "5";
 	entries["cluster.snd.timeout"] = "5";
+	entries["git.repository"] = "";
+	entries["git.signature.name"] = "evQueue";
+	entries["git.signature.email"] = "evqueue@local";
 	
 	instance=this;
 }

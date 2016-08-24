@@ -1,4 +1,5 @@
 #include <LibGit2.h>
+#include <Configuration.h>
 
 #include <string.h>
 #include <time.h>
@@ -200,7 +201,9 @@ void LibGit2::Commit(std::string log)
 		localtime_r(&now, &now_tm);
 		time_t now2 = timegm(&now_tm);
 		
-		if(git_signature_new((git_signature **)&signature,"evQueue", "evQueue@quechoisir.org", now, (now2-now)/60)!=0)
+		const string signature_name = Configuration::GetInstance()->Get("git.signature.name");
+		const string signature_email = Configuration::GetInstance()->Get("git.signature.email");
+		if(git_signature_new((git_signature **)&signature, signature_name.c_str(), signature_email.c_str(), now, (now2-now)/60)!=0)
 			throw LigGit2Exception(giterr_last());
 		
 		// Commit changes to HEAD

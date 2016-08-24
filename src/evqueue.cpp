@@ -42,6 +42,8 @@
 
 #include <mysql/mysql.h>
 
+#include <git2.h>
+
 #include <Logger.h>
 #include <Logs.h>
 #include <Queue.h>
@@ -77,6 +79,7 @@
 #include <QueryHandlers.h>
 #include <Cluster.h>
 #include <ActiveConnections.h>
+#include <Git.h>
 #include <handle_connection.h>
 #include <tools.h>
 #include <tools_db.h>
@@ -187,6 +190,7 @@ int main(int argc,const char **argv)
 	// Initialize external libraries
 	mysql_library_init(0,0,0);
 	mysql_thread_init();
+	git_libgit2_init();
 	
 	openlog("evqueue",0,LOG_DAEMON);
 	
@@ -336,6 +340,9 @@ int main(int argc,const char **argv)
 		// Instanciate sequence generator, used for savepoint level 0 or 1
 		SequenceGenerator *seq = new SequenceGenerator();
 		
+		// Git repository
+		Git *git = new Git();
+		
 		// Create statistics counter
 		Statistics *stats = new Statistics();
 		
@@ -453,6 +460,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		qh->RegisterHandler("ping",ping_handle_query);
+		qh->RegisterHandler("git",Git::HandleQuery);
 		
 		// Create sockets set
 		Sockets *sockets = new Sockets();
@@ -591,6 +599,7 @@ int main(int argc,const char **argv)
 				
 				// All threads have exited, we can cleanly exit
 				delete stats;
+				delete git;
 				delete retrier;
 				delete scheduler;
 				delete workflow_schedules;
@@ -619,6 +628,7 @@ int main(int argc,const char **argv)
 				
 				mysql_thread_end();
 				mysql_library_end();
+				git_libgit2_shutdown();
 				
 				return 0;
 			}

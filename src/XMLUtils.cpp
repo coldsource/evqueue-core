@@ -90,3 +90,43 @@ void XMLUtils::ValidateXML(const std::string &xml, const std::string &xsd)
 	if(errors.length()!=0)
 		throw Exception("XMLValidator",errors.c_str());
 }
+
+DOMNode *XMLUtils::AppendXML(DOMDocument *xmldoc, DOMNode *parent_node, const string &xml)
+{
+	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+	DOMLSParser *parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	
+	DOMLSInput *input = xqillaImplementation->createLSInput();
+	
+	// Set XML content and parse document
+	XMLCh *xml_xmlch = XMLString::transcode(xml.c_str());
+	input->setStringData(xml_xmlch);
+	DOMDocument *fragment_doc = parser->parse(input);
+	
+	XMLString::release(&xml_xmlch);
+	input->release();
+	
+	DOMNode *node = xmldoc->importNode(fragment_doc->getDocumentElement(),true);
+	parent_node->appendChild(node);
+	
+	parser->release();
+	
+	return node;
+}
+
+string XMLUtils::GetAttribute(DOMElement *node, string name, bool remove_attribute)
+{
+	if(!node->hasAttribute(X(name.c_str())))
+		throw Exception("XMLUtils", "Attribute '"+name+"' does not exist");
+	
+	const XMLCh *value = node->getAttribute(X(name.c_str()));
+	
+	char *value_c = XMLString::transcode(value);
+	string value_str = value_c;
+	XMLString::release(&value_c);
+	
+	if(remove_attribute)
+		node->removeAttribute(X(name.c_str()));
+	
+	return value_str;
+}

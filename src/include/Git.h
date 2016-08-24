@@ -20,4 +20,33 @@
 #ifndef _GIT_H_
 #define _GIT_H_
 
+class SocketQuerySAX2Handler;
+class QueryResponse;
+class LibGit2;
+
+#include <pthread.h>
+
+#include <string>
+
+class Git
+{
+	static Git *instance;
+	
+	pthread_mutex_t lock;
+	
+	std::string repo_path;
+	LibGit2 *repo = 0;
+	
+	public:
+		Git();
+		~Git();
+		
+		static Git *GetInstance() { return  instance; }
+		
+		void SaveWorkflow(unsigned int id, const std::string &commit_log);
+		void LoadWorkflow(const std::string &name);
+		
+		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+};
+
 #endif

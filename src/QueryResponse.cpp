@@ -18,6 +18,7 @@
  */
 
 #include <QueryResponse.h>
+#include <XMLUtils.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -52,25 +53,7 @@ void QueryResponse::SetError(const string &error)
 
 DOMNode *QueryResponse::AppendXML(const string &xml)
 {
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMLSParser *parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
-	
-	DOMLSInput *input = xqillaImplementation->createLSInput();
-	
-	// Set XML content and parse document
-	XMLCh *xml_xmlch = XMLString::transcode(xml.c_str());
-	input->setStringData(xml_xmlch);
-	DOMDocument *fragment_doc = parser->parse(input);
-	
-	XMLString::release(&xml_xmlch);
-	input->release();
-	
-	DOMNode *node = xmldoc->importNode(fragment_doc->getDocumentElement(),true);
-	xmldoc->getDocumentElement()->appendChild(node);
-	
-	parser->release();
-	
-	return node;
+	return XMLUtils::AppendXML(xmldoc, xmldoc->getDocumentElement(), xml);
 }
 
 void QueryResponse::SendResponse()
