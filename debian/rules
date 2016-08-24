@@ -15,4 +15,4 @@ install-agent:
 	DESTDIR=$(CURDIR)/debian/evqueue-agent cmake -DCOMPONENT=agent -P build/cmake_install.cmake
 
 %:  
-	dh $@ --buildsystem=cmake --sourcedirectory=src --builddirectory=build
+	dh $@ --buildsystem=cmake --builddirectory=build
