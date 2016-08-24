@@ -21,7 +21,7 @@ add_executable(evqueue
 	SocketResponseSAX2Handler.cpp retry_schedule.xsd.cpp WorkflowSchedules.cpp
 	NotificationType.cpp NotificationTypes.cpp WorkflowInstanceAPI SocketSAX2Handler.cpp
 	hmac.cpp AuthHandler.cpp User.cpp Users.cpp Logs.cpp ClientBase.cpp Client.cpp
-	ActiveConnections.cpp)
+	ActiveConnections.cpp LibGit2.cpp Git.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -42,6 +42,11 @@ target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue xqilla)
 target_link_libraries(evqueue rt)
 target_link_libraries(evqueue pcrecpp)
+target_link_libraries(evqueue git2.a)
+target_link_libraries(evqueue z)
+target_link_libraries(evqueue curl)
+target_link_libraries(evqueue ssh2)
+target_link_libraries(evqueue http_parser)
 
 
 
