@@ -21,7 +21,7 @@ add_executable(evqueue
 	src/SocketResponseSAX2Handler.cpp src/retry_schedule.xsd.cpp src/WorkflowSchedules.cpp
 	src/NotificationType.cpp src/NotificationTypes.cpp src/sha1.c src/WorkflowInstanceAPI.cpp src/SocketSAX2Handler.cpp
 	src/hmac.cpp src/AuthHandler.cpp src/User.cpp src/Users.cpp src/Logs.cpp src/ClientBase.cpp src/Client.cpp
-	src/ActiveConnections.cpp src/LibGit2.cpp src/Git.cpp)
+	src/ActiveConnections.cpp src/LibGit2.cpp src/Git.cpp src/Sha1String.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -70,7 +70,7 @@ project(evqueue_wfmanager)
 
 add_executable(evqueue_wfmanager
 	src/evqueue_wfmanager.cpp src/ClientBase.cpp src/Exception.cpp src/SocketResponseSAX2Handler.cpp src/SocketSAX2Handler.cpp
-	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c)
+	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/Sha1String.cpp)
 
 include_directories(src/include /usr/include)
 
@@ -83,7 +83,8 @@ project(evqueue_api)
 
 add_executable(evqueue_api
 	src/evqueue_api.cpp src/ClientBase.cpp src/Exception.cpp src/SocketResponseSAX2Handler.cpp src/SocketSAX2Handler.cpp
-	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/XMLFormatter.cpp)
+	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/XMLFormatter.cpp
+	src/Sha1String.cpp)
 
 include_directories(src/include /usr/include)
 

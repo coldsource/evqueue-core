@@ -24,6 +24,8 @@ class SocketQuerySAX2Handler;
 class QueryResponse;
 class LibGit2;
 
+#include <xercesc/dom/DOM.hpp>
+
 #include <pthread.h>
 
 #include <string>
@@ -37,16 +39,26 @@ class Git
 	std::string repo_path;
 	LibGit2 *repo = 0;
 	
+	std::string workflows_subdirectory;
+	
 	public:
 		Git();
 		~Git();
 		
 		static Git *GetInstance() { return  instance; }
 		
-		void SaveWorkflow(unsigned int id, const std::string &commit_log);
+		void SaveWorkflow(const std::string &name, const std::string &commit_log, bool force);
 		void LoadWorkflow(const std::string &name);
+		void GetWorkflow(const std::string &name, QueryResponse *response);
+		void RemoveWorkflow(const std::string &name,const std::string &commit_log);
+		void ListWorkflows(QueryResponse *response);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+	
+	private:
+		std::string save_file(const std::string &filename, const std::string &content, const std::string &db_lastcommit, const std::string &commit_log, bool force);
+		void load_file(const std::string &filename, xercesc::DOMLSParser **pparser, xercesc::DOMDocument **pxmldoc);
+		void list_files(const std::string directory, QueryResponse *response);
 };
 
 #endif

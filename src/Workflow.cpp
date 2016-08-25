@@ -46,7 +46,7 @@ Workflow::Workflow()
 
 Workflow::Workflow(DB *db,const string &workflow_name)
 {
-	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_bound FROM t_workflow WHERE workflow_name=%s",&workflow_name);
+	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_bound, workflow_lastcommit FROM t_workflow WHERE workflow_name=%s",&workflow_name);
 	
 	if(!db->FetchRow())
 		throw Exception("Workflow","Unknown Workflow");
@@ -58,6 +58,7 @@ Workflow::Workflow(DB *db,const string &workflow_name)
 	group = db->GetField(3);
 	comment = db->GetField(4);
 	bound_schedule = db->GetFieldInt(5);
+	lastcommit = db->GetField(6)?db->GetField(6):"";
 	
 	db->QueryPrintf("SELECT COUNT(*) FROM t_task WHERE workflow_id = %i",&workflow_id);
 	db->FetchRow();
@@ -135,6 +136,13 @@ void Workflow::CheckInputParameters(WorkflowParameters *parameters)
 	serializer->release();
 }
 
+void Workflow::SetLastCommit(const std::string &commit_id)
+{
+	DB db;
+	
+	db.QueryPrintf("UPDATE t_workflow SET workflow_lastcommit=%s WHERE workflow_id=%i",commit_id.length()?&commit_id:0,&workflow_id);
+}
+
 bool Workflow::CheckWorkflowName(const string &workflow_name)
 {
 	int i,len;
@@ -160,16 +168,17 @@ void Workflow::Get(unsigned int id, QueryResponse *response)
 	node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
 }
 
-unsigned int Workflow::Create(const string &name, const string &base64, const string &group, const string &comment)
+unsigned int Workflow::Create(const string &name, const string &base64, const string &group, const string &comment, const string &lastcommit)
 {
 	string xml = create_edit_check(name,base64,group,comment);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_workflow(workflow_name,workflow_xml,workflow_group,workflow_comment) VALUES(%s,%s,%s,%s)",
+	db.QueryPrintf("INSERT INTO t_workflow(workflow_name,workflow_xml,workflow_group,workflow_comment,workflow_lastcommit) VALUES(%s,%s,%s,%s,%s)",
 		&name,
 		&xml,
 		&group,
-		&comment
+		&comment,
+		lastcommit.length()?&lastcommit:0
 	);
 	
 	return db.InsertID();

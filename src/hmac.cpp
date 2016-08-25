@@ -18,11 +18,8 @@
  */
 
 #include <hmac.h>
-#include <sha1.h>
+#include <Sha1String.h>
 #include <Exception.h>
-
-#include <iomanip>
-#include <sstream>
 
 using namespace std;
 
@@ -77,24 +74,14 @@ string hash_hmac(const string &key, const string &data)
 	}
 	
 	// Compute inner hash
-	sha1_ctx ctx;
-	char c_hash[20];
+	Sha1String isha1;
+	isha1.ProcessBytes(ikey);
+	isha1.ProcessBytes(bdata);
 	
-	sha1_init_ctx(&ctx);
-	sha1_process_bytes(ikey.c_str(),ikey.length(),&ctx);
-	sha1_process_bytes(bdata.c_str(),bdata.length(),&ctx);
-	sha1_finish_ctx(&ctx,c_hash);
+	// Compute outer hash
+	Sha1String osha1;
+	osha1.ProcessBytes(okey);
+	osha1.ProcessBytes(isha1.GetBinary());
 	
-	// Compute outer hash, that is HMAC
-	sha1_init_ctx(&ctx);
-	sha1_process_bytes(okey.c_str(),okey.length(),&ctx);
-	sha1_process_bytes(c_hash,20,&ctx);
-	sha1_finish_ctx(&ctx,c_hash);
-	
-	// Format HEX result
-	stringstream sstream;
-	sstream << hex;
-	for(int i=0;i<20;i++)
-		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
-	return sstream.str();
+	return osha1.GetHex();
 }

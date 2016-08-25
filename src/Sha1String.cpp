@@ -16,12 +16,44 @@
  * 
  * Author: Thibault Kummer <bob@coldsource.net>
  */
+#include <Sha1String.h>
 
-#ifndef _HMAC_H_
-#define _HMAC_H_
+#include <iomanip>
+#include <sstream>
 
-#include <string>
+using namespace std;
 
-std::string hash_hmac(const std::string &key, const std::string &data);
+Sha1String::Sha1String(const std::string &str)
+{
+	sha1_init_ctx(&ctx);
+	
+	ProcessBytes(str);
+}
 
-#endif
+void Sha1String::ProcessBytes(const std::string &str)
+{
+	sha1_process_bytes(str.c_str(),str.length(),&ctx);
+}
+
+std::string Sha1String::GetBinary()
+{
+	char c_hash[20];
+	sha1_finish_ctx(&ctx,c_hash);
+	
+	string hash_str;
+	hash_str.append(c_hash,20);
+	
+	return hash_str;
+}
+
+std::string Sha1String::GetHex()
+{
+	char c_hash[20];
+	sha1_finish_ctx(&ctx,c_hash);
+	
+	stringstream sstream;
+	sstream << hex;
+	for(int i=0;i<20;i++)
+		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
+	return sstream.str();
+}

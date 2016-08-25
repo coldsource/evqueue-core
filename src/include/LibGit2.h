@@ -49,12 +49,13 @@ class LibGit2
 		void RemoveFile(std::string path);
 		std::string GetFileLastCommit(std::string filename);
 		
-		void Commit(std::string log);
+		std::string Commit(std::string log);
 		
 		void Push();
 		void Pull();
 		
 		void Checkout();
+		void ResetLastCommit();
 	
 	private:
 		static int credentials_callback(git_cred **cred,const char *url,const char *username_from_url,unsigned int allowed_types,void *payload);

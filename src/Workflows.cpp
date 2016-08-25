@@ -25,6 +25,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Cluster.h>
+#include <Sha1String.h>
 
 #include <string.h>
 
@@ -90,6 +91,7 @@ bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respons
 			node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
 			node->setAttribute(X("bound-to-schedule"),workflow.GetIsBoundSchedule()?X("1"):X("0"));
 			node->setAttribute(X("has-bound-task"),workflow.GetIsBoundTask()?X("1"):X("0"));
+			node->setAttribute(X("lastcommit"),X(workflow.GetLastCommit().c_str()));
 		}
 		
 		pthread_mutex_unlock(&workflows->lock);

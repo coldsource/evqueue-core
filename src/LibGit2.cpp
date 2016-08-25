@@ -58,6 +58,11 @@ void LibGit2::AddFile(std::string path)
 
 void LibGit2::RemoveFile(std::string path)
 {
+	// Check file exists in index
+	const git_index_entry *entry = git_index_get_bypath(repo_idx,path.c_str(), 0);
+	if(entry==0)
+		throw Exception("LibGit2","File is not in repository");
+	
 	// Remove file from memory index
 	if(git_index_remove_bypath(repo_idx, path.c_str())!=0)
 		throw LigGit2Exception(giterr_last());
@@ -172,11 +177,12 @@ string LibGit2::GetFileLastCommit(string filename)
 	return commit_id_str;
 }
 
-void LibGit2::Commit(std::string log)
+string LibGit2::Commit(std::string log)
 {
 	git_commit *parent = 0;
 	git_tree *tree = 0;
 	git_signature *signature;
+	git_oid new_commit_id;
 	
 	try
 	{
@@ -207,7 +213,6 @@ void LibGit2::Commit(std::string log)
 			throw LigGit2Exception(giterr_last());
 		
 		// Commit changes to HEAD
-		git_oid new_commit_id;
 		int re = git_commit_create_v(
 			&new_commit_id,
 			repo,
@@ -240,6 +245,8 @@ void LibGit2::Commit(std::string log)
 	git_commit_free(parent);
 	git_tree_free(tree);
 	git_signature_free(signature);
+	
+	return OIDToString(&new_commit_id);
 }
 
 void LibGit2::Push()
@@ -351,10 +358,50 @@ void LibGit2::Checkout()
 		throw LigGit2Exception(giterr_last());
 }
 
+void LibGit2::ResetLastCommit()
+{
+	git_oid head_oid;
+	ReferenceToOID(&head_oid,"HEAD");
+	
+	git_oid fetch_head_oid;
+	ReferenceToOID(&fetch_head_oid,"FETCH_HEAD");
+	
+	if(git_oid_cmp(&head_oid, &fetch_head_oid)==0)
+		return; // We won't reset before FETCH_HEAD
+	
+	git_commit *commit = 0, *parent_commmit = 0;
+	try
+	{
+		if(git_commit_lookup(&commit, repo, &head_oid)!=0)
+			throw LigGit2Exception(giterr_last());
+		
+		if(git_commit_parent(&parent_commmit, commit, 0)!=0)
+			throw LigGit2Exception(giterr_last());
+		
+		if(git_reset(repo, (git_object *)parent_commmit, GIT_RESET_HARD, 0)!=0)
+			throw LigGit2Exception(giterr_last());
+	}
+	catch(LigGit2Exception &e)
+	{
+		if(commit)
+			git_commit_free(commit);
+		
+		if(parent_commmit)
+			git_commit_free(parent_commmit);
+		
+		throw e;
+	}
+	
+	git_commit_free(commit);
+	git_commit_free(parent_commmit);
+}
 
 int LibGit2::credentials_callback(git_cred **cred,const char *url,const char *username_from_url,unsigned int allowed_types,void *payload)
 {
-	return git_cred_userpass_plaintext_new(cred,"evqueue","evqueue");
+	string user = Configuration::GetInstance()->Get("git.user");
+	string password = Configuration::GetInstance()->Get("git.password");
+	
+	return git_cred_userpass_plaintext_new(cred,user.c_str(),password.c_str());
 }
 
 bool LibGit2::delta_with_parent(git_commit *commit, int i, git_diff_options *opts)

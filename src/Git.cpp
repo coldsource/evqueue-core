@@ -26,12 +26,17 @@
 #include <Workflows.h>
 #include <Configuration.h>
 #include <Exception.h>
+#include <FileManager.h>
+#include <Logger.h>
+#include <DB.h>
 #include <base64.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <dirent.h>
 
 #include <string>
 
@@ -50,6 +55,8 @@ Git::Git()
 	if(repo_path.length())
 		repo = new LibGit2(repo_path);
 	
+	workflows_subdirectory = config->Get("git.workflows.subdirectory");
+	
 	instance = this;
 }
 
@@ -59,7 +66,7 @@ Git::~Git()
 		delete repo;
 }
 
-void Git::SaveWorkflow(unsigned int id, const string &commit_log)
+void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 {
 	if(!repo)
 		throw Exception("Git", "No git repository is configured, this feature is disabled");
@@ -74,14 +81,16 @@ void Git::SaveWorkflow(unsigned int id, const string &commit_log)
 	try
 	{
 		// Get workflow form its ID
-		Workflow workflow = Workflows::GetInstance()->Get(id);
+		Workflow workflow = Workflows::GetInstance()->Get(name);
+		
+		// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
+		string db_lastcommit = workflow.GetLastCommit();
 		
 		// Generate workflow XML
 		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 		xmldoc = xqillaImplementation->createDocument();
 		
 		DOMElement *node = (DOMElement *)XMLUtils::AppendXML(xmldoc, (DOMNode *)xmldoc, workflow.GetXML());
-		node->setAttribute(X("name"),X(workflow.GetName().c_str()));
 		node->setAttribute(X("group"),X(workflow.GetGroup().c_str()));
 		node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
 		
@@ -89,27 +98,13 @@ void Git::SaveWorkflow(unsigned int id, const string &commit_log)
 		workflow_xml = serializer->writeToString(node);
 		workflow_xml_c = XMLString::transcode(workflow_xml);
 		
-		
 		// Write file to repo
-		string filename = repo_path+"/"+workflow.GetName()+".xml";
+		string commit_id = save_file(workflows_subdirectory+"/"+name+".xml", workflow_xml_c, db_lastcommit, commit_log, force);
 		
-		FILE *f = fopen(filename.c_str(), "w");
-		if(!f)
-			throw Exception("Git","Could not open file "+filename+" for writing");
+		// Update workflow 'lastcommit' to new commit
+		workflow.SetLastCommit(commit_id);
 		
-		int workflow_len = strlen(workflow_xml_c);
-		if(fwrite(workflow_xml_c, 1, workflow_len, f)!=workflow_len)
-		{
-			fclose(f);
-			throw Exception("Git","Error writing workflow file");
-		}
-		
-		fclose(f);
-		
-		// Commit + Push
-		repo->AddFile(workflow.GetName()+".xml");
-		repo->Commit(commit_log);
-		repo->Push();
+		Workflows::GetInstance()->Reload();
 	}
 	catch(Exception  &e)
 	{
@@ -150,22 +145,18 @@ void Git::LoadWorkflow(const string &name)
 	
 	try
 	{
-		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-		parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
+		string filename = workflows_subdirectory+"/"+name+".xml";
 		
 		// Load XML from file
-		string filename = repo_path+"/"+name+".xml";
-		
-		DOMDocument *xmldoc = parser->parseURI(filename.c_str());
-		if(!xmldoc)
-			throw Exception("Git", "Could not parse XML file "+filename);
+		DOMDocument *xmldoc;
+		load_file(filename,&parser, &xmldoc);
 		
 		DOMElement *root_node = xmldoc->getDocumentElement();
 		
-		string name = XMLUtils::GetAttribute(root_node, "name", true);
 		string group = XMLUtils::GetAttribute(root_node, "group", true);
 		string comment = XMLUtils::GetAttribute(root_node, "comment", true);
 		
+		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 		serializer = xqillaImplementation->createLSSerializer();
 		XMLCh *workflow_xml = serializer->writeToString(root_node);
 		char *workflow_xml_c = XMLString::transcode(workflow_xml);
@@ -176,17 +167,31 @@ void Git::LoadWorkflow(const string &name)
 		XMLString::release(&workflow_xml);
 		XMLString::release(&workflow_xml_c);
 		
+		// Read repository lastcommit
+		string repo_lastcommit = repo->GetFileLastCommit(filename);
+		if(!repo_lastcommit.length())
+			throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
+		
 		if(Workflows::GetInstance()->Exists(name))
 		{
 			// Update
+			Logger::Log(LOG_INFO,string("Updating workflow "+name+" from git").c_str());
+			
 			Workflow workflow = Workflows::GetInstance()->Get(name);
 			
 			Workflow::Edit(workflow.GetID(), name, content, group, comment);
+			workflow.SetLastCommit(repo_lastcommit);
+			
+			Workflows::GetInstance()->Reload();
 		}
 		else
 		{
 			// Create
-			Workflow::Create(name, content, group, comment);
+			Logger::Log(LOG_INFO,string("Crerating workflow "+name+" from git").c_str());
+			
+			unsigned int id = Workflow::Create(name, content, group, comment, repo_lastcommit);
+			
+			Workflows::GetInstance()->Reload();
 		}
 	}
 	catch(Exception &e)
@@ -208,20 +213,122 @@ void Git::LoadWorkflow(const string &name)
 	pthread_mutex_unlock(&lock);
 }
 
+void Git::GetWorkflow(const string &name, QueryResponse *response)
+{
+	if(!repo)
+		throw Exception("Git", "No git repository is configured, this feature is disabled");
+	
+	pthread_mutex_lock(&lock);
+	
+	DOMLSParser *parser = 0;
+	
+	try
+	{
+		string filename = workflows_subdirectory+"/"+name+".xml";
+		
+		// Load XML from file
+		DOMDocument *xmldoc;
+		load_file(filename,&parser, &xmldoc);
+		
+		DOMDocument *response_xmldoc = response->GetDOM();
+		DOMNode *node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
+		response_xmldoc->getDocumentElement()->appendChild(node);
+	}
+	catch(Exception &e)
+	{
+		if(parser)
+			parser->release();
+		
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	parser->release();
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
+{
+	if(!repo)
+		throw Exception("Git", "No git repository is configured, this feature is disabled");
+	
+	pthread_mutex_lock(&lock);
+	
+	try
+	{
+		string filename = workflows_subdirectory+"/"+name+".xml";
+		string full_filename = repo_path+"/"+filename;
+		
+		repo->Pull();
+		repo->RemoveFile(filename);
+		repo->Commit(commit_log);
+		repo->Push();
+		
+		if(unlink(full_filename.c_str())!=0)
+			throw Exception("Git","Unable to remove file "+full_filename);
+		
+		if(Workflows::GetInstance()->Exists(name))
+		{
+			Workflow workflow = Workflows::GetInstance()->Get(name);
+			workflow.SetLastCommit("");
+			
+			Workflows::GetInstance()->Reload();
+		}
+	}
+	catch(Exception &e)
+	{
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Git::ListWorkflows(QueryResponse *response)
+{
+	if(!repo)
+		throw Exception("Git", "No git repository is configured, this feature is disabled");
+	
+	pthread_mutex_lock(&lock);
+	
+	try
+	{
+		list_files(workflows_subdirectory,response);
+	}
+	catch(Exception &e)
+	{
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	pthread_mutex_unlock(&lock);
+}
+
 bool Git::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const string action = saxh->GetRootAttribute("action");
 	
-	if(action=="save")
+	if(action=="pull")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
-		string commit_log = saxh->GetRootAttribute("commit_log");
-		
-		Git::GetInstance()->SaveWorkflow(id,commit_log);
+		Git::GetInstance()->repo->Pull();
 		
 		return true;
 	}
-	else if(action=="load")
+	if(action=="save_workflow")
+	{
+		string name = saxh->GetRootAttribute("name");
+		string commit_log = saxh->GetRootAttribute("commit_log");
+		bool force = saxh->GetRootAttributeBool("force",false);
+		
+		Git::GetInstance()->SaveWorkflow(name,commit_log,force);
+		
+		return true;
+	}
+	else if(action=="load_workflow")
 	{
 		string name = saxh->GetRootAttribute("name");
 		
@@ -229,6 +336,155 @@ bool Git::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		
 		return true;
 	}
+	else if(action=="get_workflow")
+	{
+		string name = saxh->GetRootAttribute("name");
+		
+		Git::GetInstance()->GetWorkflow(name,response);
+		
+		return true;
+	}
+	else if(action=="remove_workflow")
+	{
+		string name = saxh->GetRootAttribute("name");
+		string commit_log = saxh->GetRootAttribute("commit_log");
+		
+		Git::GetInstance()->RemoveWorkflow(name,commit_log);
+		
+		return true;
+	}
+	else if(action=="list_workflows")
+	{
+		Git::GetInstance()->ListWorkflows(response);
+		return true;
+	}
 	
 	return false;
+}
+
+string Git::save_file(const string &filename, const string &content, const string &db_lastcommit, const string &commit_log, bool force)
+{
+	// First we need to pull repository to have a clean workking copy
+	repo->Pull();
+	
+	// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
+	if(!force && db_lastcommit.length())
+	{
+		string repo_lastcommit = repo->GetFileLastCommit(filename);
+		if(db_lastcommit!=repo_lastcommit)
+			throw Exception("Git","Database is at a different commit than repository. This could overwrite unwanted data.");
+	}
+	
+	// Compute sha1 on repo before writing
+	string hash_before = "";
+	try
+	{
+		FileManager::GetFileHash(repo_path, filename, hash_before);
+	}
+	catch(Exception &e) {}
+	
+	// Write file to repo
+	string full_filename = repo_path+"/"+filename;
+	
+	FILE *f = fopen(full_filename.c_str(), "w");
+	if(!f)
+		throw Exception("Git","Could not open file "+full_filename+" for writing");
+	
+	if(fwrite(content.c_str(), 1, content.length(), f)!=content.length())
+	{
+		fclose(f);
+		throw Exception("Git","Error writing workflow file");
+	}
+	
+	fclose(f);
+	
+	// Compute hash after writing
+	string hash_after;
+	FileManager::GetFileHash(repo_path, filename, hash_after);
+	
+	// Check we have an effective modification to prevent empty commits
+	if(hash_before==hash_after)
+		throw Exception("Git","No modifications on file, nothing to commit");
+	
+	// Commit + Push
+	repo->AddFile(filename);
+	string commit_id = repo->Commit(commit_log);
+	repo->Push();
+	
+	return commit_id;
+}
+
+void Git::load_file(const string &filename, DOMLSParser **pparser, DOMDocument **pxmldoc)
+{
+	*pparser = 0;
+	*pxmldoc = 0;
+	
+	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+	*pparser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	
+	string full_filename = repo_path+"/"+filename;
+	
+	// Load XML from file
+	DOMDocument *xmldoc;
+	try
+	{
+		xmldoc = (*pparser)->parseURI(full_filename.c_str());
+	}
+	catch(...)
+	{
+		(*pparser)->release();
+		*pparser = 0;
+		throw Exception("Git", "Could not parse XML file "+full_filename);
+	}
+	
+	if(!xmldoc || !xmldoc->getDocumentElement())
+	{
+		(*pparser)->release();
+		*pparser = 0;
+		throw Exception("Git", "Could not parse XML file "+full_filename);
+	}
+	
+	*pxmldoc = xmldoc;
+}
+
+void Git::list_files(const std::string directory, QueryResponse *response)
+{
+	string full_directory = repo_path+"/"+directory;
+	
+	DIR *dh = opendir(full_directory.c_str());
+	if(!dh)
+		throw Exception("Git","Unable to open directory "+directory);
+	
+	struct dirent entry;
+	struct dirent *result;
+	
+	while(true)
+	{
+		if(readdir_r(dh,&entry,&result)!=0)
+		{
+			closedir(dh);
+			throw Exception("Git","Unable to read directory "+directory);
+		}
+		
+		if(result==0)
+			break;
+		
+		if(entry.d_name[0]=='.')
+			continue; // Skip hidden files
+		
+		int len = strlen(entry.d_name);
+		if(len<=4)
+			continue;
+		
+		if(strcasecmp(entry.d_name+len-4,".xml")!=0)
+			continue;
+		
+		DOMElement *node = (DOMElement *)response->AppendXML("<entry />");
+		node->setAttribute(X("name"),X(entry.d_name));
+		
+		string lastcommit = repo->GetFileLastCommit(directory+"/"+string(entry.d_name));
+		node->setAttribute(X("lastcommit"),X(lastcommit.c_str()));
+	}
+	
+	closedir(dh);
 }

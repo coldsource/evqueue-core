@@ -36,6 +36,7 @@ class Workflow
 	std::string group;
 	std::string comment;
 	bool bound_schedule, bound_task;
+	std::string lastcommit;
 	
 	std::vector<unsigned int> notifications;
 		
@@ -54,9 +55,12 @@ class Workflow
 		
 		void CheckInputParameters(WorkflowParameters *parameters);
 		
+		std::string GetLastCommit() const { return lastcommit; }
+		void SetLastCommit(const std::string &commit_id);
+		
 		static bool CheckWorkflowName(const std::string &workflow_name);
 		static void Get(unsigned int id, QueryResponse *response);
-		static unsigned int Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
+		static unsigned int Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment, const std::string &lastcommit = "");
 		static void Edit(unsigned int id, const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
 		static void Delete(unsigned int id, bool *task_deleted);
 		

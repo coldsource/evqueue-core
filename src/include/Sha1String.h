@@ -17,11 +17,24 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _HMAC_H_
-#define _HMAC_H_
+#ifndef _SHA1STRING_H_
+#define _SHA1STRING_H_
+
+#include <sha1.h>
 
 #include <string>
 
-std::string hash_hmac(const std::string &key, const std::string &data);
+class Sha1String
+{
+	sha1_ctx ctx;
+	
+	public:
+		Sha1String(const std::string &str = "");
+		
+		void ProcessBytes(const std::string &str);
+		
+		std::string GetBinary();
+		std::string GetHex();
+};
 
 #endif

@@ -2,6 +2,8 @@ ALTER TABLE t_workflow_instance ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_
 
 ALTER TABLE t_workflow_schedule ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER workflow_schedule_id;
 
+ALTER TABLE t_workflow ADD COLUMN workflow_lastcommit VARCHAR(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL AFTER workflow_bound;
+
 ALTER TABLE t_log ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER log_id;
 
 ALTER TABLE t_task ADD COLUMN task_comment TEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER task_group;
