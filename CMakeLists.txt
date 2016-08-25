@@ -83,7 +83,7 @@ project(evqueue_api)
 
 add_executable(evqueue_api
 	src/evqueue_api.cpp src/ClientBase.cpp src/Exception.cpp src/SocketResponseSAX2Handler.cpp src/SocketSAX2Handler.cpp
-	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c)
+	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/XMLFormatter.cpp)
 
 include_directories(src/include /usr/include)
 

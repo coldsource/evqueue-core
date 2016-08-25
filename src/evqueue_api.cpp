@@ -22,6 +22,7 @@
 
 #include <ClientBase.h>
 #include <Exception.h>
+#include <XMLFormatter.h>
 #include <sha1.h>
 
 #include <xqilla/xqilla-dom3.hpp>
@@ -50,6 +51,7 @@ int main(int argc, char  **argv)
 	string connection_str = "tcp://localhost:5000";
 	string user = "";
 	string password = "";
+	bool format = true;
 	
 	int cur;
 	for(cur=1;cur<argc;cur++)
@@ -78,6 +80,8 @@ int main(int argc, char  **argv)
 			password = argv[cur+1];
 			cur++;
 		}
+		else if(strcmp(argv[cur],"--noformat")==0)
+			format = false;
 		else
 			break;
 	}
@@ -166,7 +170,14 @@ int main(int argc, char  **argv)
 		XMLCh *response_xml = serializer->writeToString(xmldoc->getDocumentElement());
 		char *response_xml_c = XMLString::transcode(response_xml);
 		
-		printf("%s\n",response_xml_c);
+		if(format)
+		{
+			XMLFormatter formatter(response_xml_c);
+			formatter.Format();
+		}
+		else
+			printf("%s\n",response_xml_c);
+		
 		
 		XMLString::release(&response_xml);
 		XMLString::release(&response_xml_c);
