@@ -38,9 +38,12 @@ bool Logs::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		unsigned int limit = saxh->GetRootAttributeInt("limit",100);
 		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
 		
+		string filter_level = saxh->GetRootAttribute("filter_level","LOG_DEBUG");
+		int ifilter_level = Logger::GetIntegerLogLevel(filter_level);
+		
 		DB db;
 		
-		db.QueryPrintf("SELECT node_name,log_level,log_message,log_timestamp FROM t_log LIMIT %i,%i",&offset,&limit);
+		db.QueryPrintf("SELECT node_name,log_level,log_message,log_timestamp FROM t_log WHERE log_level <= %i ORDER BY log_timestamp DESC LIMIT %i,%i",&ifilter_level,&offset,&limit);
 		while(db.FetchRow())
 		{
 			DOMElement *node = (DOMElement *)response->AppendXML("<log />");
