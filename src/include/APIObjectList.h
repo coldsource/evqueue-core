@@ -110,7 +110,7 @@ class APIObjectList
 			return true;
 		}
 		
-		APIObjectType Get(unsigned int id)
+		const APIObjectType Get(unsigned int id)
 		{
 			pthread_mutex_lock(&lock);
 			
@@ -129,7 +129,7 @@ class APIObjectList
 			return object;
 		}
 		
-		APIObjectType Get(const std::string &name)
+		const APIObjectType Get(const std::string &name)
 		{
 			pthread_mutex_lock(&lock);
 			
