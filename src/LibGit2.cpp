@@ -177,6 +177,16 @@ string LibGit2::GetFileLastCommit(string filename)
 	return commit_id_str;
 }
 
+bool LibGit2::StatusIsModified(string path)
+{
+	unsigned int status;
+	if(git_status_file(&status,repo,path.c_str())!=0)
+		throw LigGit2Exception(giterr_last());
+	
+	return status!=GIT_STATUS_CURRENT;
+}
+
+
 string LibGit2::Commit(std::string log)
 {
 	git_commit *parent = 0;

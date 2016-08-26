@@ -48,6 +48,7 @@ class LibGit2
 		void AddFile(std::string path);
 		void RemoveFile(std::string path);
 		std::string GetFileLastCommit(std::string filename);
+		bool StatusIsModified(std::string path);
 		
 		std::string Commit(std::string log);
 		

@@ -356,6 +356,9 @@ string Git::save_file(const string &filename, const string &content, const strin
 
 void Git::load_file(const string &filename, DOMLSParser **pparser, DOMDocument **pxmldoc)
 {
+	if(repo->StatusIsModified(filename))
+		throw Exception("Git", "File has local modifications, discarding");
+	
 	*pparser = 0;
 	*pxmldoc = 0;
 	
