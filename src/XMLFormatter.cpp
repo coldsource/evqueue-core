@@ -67,10 +67,12 @@ void XMLFormatter::format(DOMNode* node)
 			DOMNode *child = (DOMElement *)node->getFirstChild();
 			if(child)
 			{
+				printf(">\n");
 				format(child);
+				display_element_end((DOMElement *)node);
 			}
-			
-			display_element_end((DOMElement *)node);
+			else
+				printf("/>\n");
 		}
 		else if(node_type==DOMNode::TEXT_NODE)
 			display_text(node);
@@ -102,9 +104,6 @@ void XMLFormatter::display_element_start(DOMElement *element)
 		XMLString::release(&name_c);
 		XMLString::release(&value_c);
 	}
-	
-	// Node end
-	printf(">\n");
 	
 	XMLString::release(&node_name_c);
 }
