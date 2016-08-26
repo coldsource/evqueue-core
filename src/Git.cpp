@@ -68,15 +68,7 @@ Git::~Git()
 
 void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 {
-	if(!repo)
-		throw Exception("Git", "No git repository is configured, this feature is disabled");
-	
 	pthread_mutex_lock(&lock);
-	
-	DOMDocument *xmldoc = 0;
-	DOMLSSerializer *serializer = 0;
-	XMLCh *workflow_xml = 0;
-	char *workflow_xml_c = 0;
 	
 	try
 	{
@@ -86,62 +78,31 @@ void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 		// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
 		string db_lastcommit = workflow.GetLastCommit();
 		
-		// Generate workflow XML
-		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-		xmldoc = xqillaImplementation->createDocument();
-		
-		DOMElement *node = (DOMElement *)XMLUtils::AppendXML(xmldoc, (DOMNode *)xmldoc, workflow.GetXML());
-		node->setAttribute(X("group"),X(workflow.GetGroup().c_str()));
-		node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
-		
-		serializer = xqillaImplementation->createLSSerializer();
-		workflow_xml = serializer->writeToString(node);
-		workflow_xml_c = XMLString::transcode(workflow_xml);
+		// Prepare XML
+		string workflow_xml = workflow.SaveToXML();
 		
 		// Write file to repo
-		string commit_id = save_file(workflows_subdirectory+"/"+name+".xml", workflow_xml_c, db_lastcommit, commit_log, force);
+		string commit_id = save_file(workflows_subdirectory+"/"+name+".xml", workflow_xml, db_lastcommit, commit_log, force);
 		
-		// Update workflow 'lastcommit' to new commit
+		// Update workflow 'lastcommit' to new commit and reload configuration
 		workflow.SetLastCommit(commit_id);
-		
 		Workflows::GetInstance()->Reload();
 	}
 	catch(Exception  &e)
 	{
-		if(workflow_xml)
-			XMLString::release(&workflow_xml);
-		
-		if(workflow_xml_c)
-			XMLString::release(&workflow_xml_c);
-		
-		if(serializer)
-			serializer->release();
-		
-		if(xmldoc)
-			xmldoc->release();
-		
 		pthread_mutex_unlock(&lock);
 		
 		throw e;
 	}
-	
-	XMLString::release(&workflow_xml);
-	XMLString::release(&workflow_xml_c);
-	serializer->release();
-	xmldoc->release();
 	
 	pthread_mutex_unlock(&lock);
 }
 
 void Git::LoadWorkflow(const string &name)
 {
-	if(!repo)
-		throw Exception("Git", "No git repository is configured, this feature is disabled");
-	
 	pthread_mutex_lock(&lock);
 	
 	DOMLSParser *parser = 0;
-	DOMLSSerializer *serializer = 0;
 	
 	try
 	{
@@ -151,56 +112,18 @@ void Git::LoadWorkflow(const string &name)
 		DOMDocument *xmldoc;
 		load_file(filename,&parser, &xmldoc);
 		
-		DOMElement *root_node = xmldoc->getDocumentElement();
-		
-		string group = XMLUtils::GetAttribute(root_node, "group", true);
-		string comment = XMLUtils::GetAttribute(root_node, "comment", true);
-		
-		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-		serializer = xqillaImplementation->createLSSerializer();
-		XMLCh *workflow_xml = serializer->writeToString(root_node);
-		char *workflow_xml_c = XMLString::transcode(workflow_xml);
-		
-		string content;
-		base64_encode_string(workflow_xml_c, content);
-		
-		XMLString::release(&workflow_xml);
-		XMLString::release(&workflow_xml_c);
-		
 		// Read repository lastcommit
 		string repo_lastcommit = repo->GetFileLastCommit(filename);
 		if(!repo_lastcommit.length())
 			throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
 		
-		if(Workflows::GetInstance()->Exists(name))
-		{
-			// Update
-			Logger::Log(LOG_INFO,string("Updating workflow "+name+" from git").c_str());
-			
-			Workflow workflow = Workflows::GetInstance()->Get(name);
-			
-			Workflow::Edit(workflow.GetID(), name, content, group, comment);
-			workflow.SetLastCommit(repo_lastcommit);
-			
-			Workflows::GetInstance()->Reload();
-		}
-		else
-		{
-			// Create
-			Logger::Log(LOG_INFO,string("Crerating workflow "+name+" from git").c_str());
-			
-			unsigned int id = Workflow::Create(name, content, group, comment, repo_lastcommit);
-			
-			Workflows::GetInstance()->Reload();
-		}
+		// Create/Edit workflow
+		Workflow::LoadFromXML(name, xmldoc, repo_lastcommit);
 	}
 	catch(Exception &e)
 	{
 		if(parser)
 			parser->release();
-		
-		if(serializer)
-			serializer->release();
 		
 		pthread_mutex_unlock(&lock);
 		
@@ -208,16 +131,12 @@ void Git::LoadWorkflow(const string &name)
 	}
 	
 	parser->release();
-	serializer->release();
 	
 	pthread_mutex_unlock(&lock);
 }
 
 void Git::GetWorkflow(const string &name, QueryResponse *response)
 {
-	if(!repo)
-		throw Exception("Git", "No git repository is configured, this feature is disabled");
-	
 	pthread_mutex_lock(&lock);
 	
 	DOMLSParser *parser = 0;
@@ -249,11 +168,20 @@ void Git::GetWorkflow(const string &name, QueryResponse *response)
 	pthread_mutex_unlock(&lock);
 }
 
+string Git::GetWorkflowHash(const string &name)
+{
+	pthread_mutex_lock(&lock);
+	
+	string hash = get_file_hash(workflows_subdirectory+"/"+name+".xml");
+	
+	pthread_mutex_unlock(&lock);
+	
+	return hash;
+	
+}
+
 void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
 {
-	if(!repo)
-		throw Exception("Git", "No git repository is configured, this feature is disabled");
-	
 	pthread_mutex_lock(&lock);
 	
 	try
@@ -289,9 +217,6 @@ void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
 
 void Git::ListWorkflows(QueryResponse *response)
 {
-	if(!repo)
-		throw Exception("Git", "No git repository is configured, this feature is disabled");
-	
 	pthread_mutex_lock(&lock);
 	
 	try
@@ -310,6 +235,9 @@ void Git::ListWorkflows(QueryResponse *response)
 
 bool Git::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!instance->repo)
+		throw Exception("Git", "No git repository is configured, this feature is disabled");
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="pull")
@@ -487,4 +415,18 @@ void Git::list_files(const std::string directory, QueryResponse *response)
 	}
 	
 	closedir(dh);
+}
+
+string Git::get_file_hash(const string filename)
+{
+	string full_filename = repo_path+"/"+filename;
+	
+	string hash;
+	try
+	{
+		FileManager::GetFileHash(repo_path,filename,hash);
+	}
+	catch(Exception &e) {}
+	
+	return hash;
 }

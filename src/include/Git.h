@@ -50,6 +50,7 @@ class Git
 		void SaveWorkflow(const std::string &name, const std::string &commit_log, bool force);
 		void LoadWorkflow(const std::string &name);
 		void GetWorkflow(const std::string &name, QueryResponse *response);
+		std::string GetWorkflowHash(const std::string &name);
 		void RemoveWorkflow(const std::string &name,const std::string &commit_log);
 		void ListWorkflows(QueryResponse *response);
 		
@@ -59,6 +60,7 @@ class Git
 		std::string save_file(const std::string &filename, const std::string &content, const std::string &db_lastcommit, const std::string &commit_log, bool force);
 		void load_file(const std::string &filename, xercesc::DOMLSParser **pparser, xercesc::DOMDocument **pxmldoc);
 		void list_files(const std::string directory, QueryResponse *response);
+		std::string get_file_hash(const std::string filename);
 };
 
 #endif

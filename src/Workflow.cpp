@@ -24,9 +24,12 @@
 #include <DB.h>
 #include <Exception.h>
 #include <XMLUtils.h>
+#include <Logger.h>
+#include <Sha1String.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Tasks.h>
+#include <Git.h>
 #include <global.h>
 #include <base64.h>
 
@@ -136,11 +139,108 @@ void Workflow::CheckInputParameters(WorkflowParameters *parameters)
 	serializer->release();
 }
 
+bool Workflow::GetIsModified()
+{
+	// We are not bound to git, so we cannot compute this
+	if(lastcommit=="")
+		return false;
+	
+	// Check SHA1 between repo and current instance
+	Git *git = Git::GetInstance();
+	
+	string repo_hash = git->GetWorkflowHash(workflow_name);
+	
+	string db_hash = Sha1String(SaveToXML()).GetBinary();
+	
+	return (repo_hash!=db_hash);
+}
+
 void Workflow::SetLastCommit(const std::string &commit_id)
 {
 	DB db;
 	
 	db.QueryPrintf("UPDATE t_workflow SET workflow_lastcommit=%s WHERE workflow_id=%i",commit_id.length()?&commit_id:0,&workflow_id);
+}
+
+string Workflow::SaveToXML()
+{
+	DOMDocument *xmldoc = 0;
+	DOMLSSerializer *serializer = 0;
+	
+	// Generate workflow XML
+	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+	xmldoc = xqillaImplementation->createDocument();
+	
+	DOMElement *node = (DOMElement *)XMLUtils::AppendXML(xmldoc, (DOMNode *)xmldoc, workflow_xml);
+	node->setAttribute(X("group"),X(group.c_str()));
+	node->setAttribute(X("comment"),X(comment.c_str()));
+	
+	serializer = xqillaImplementation->createLSSerializer();
+	XMLCh *workflow_xml = serializer->writeToString(node);
+	char *workflow_xml_c = XMLString::transcode(workflow_xml);
+	string ret_xml = workflow_xml_c;
+	
+	XMLString::release(&workflow_xml);
+	XMLString::release(&workflow_xml_c);
+	serializer->release();
+	xmldoc->release();
+	
+	return ret_xml;
+}
+
+void Workflow::LoadFromXML(string name, DOMDocument *xmldoc, string repo_lastcommit)
+{
+	DOMLSSerializer *serializer = 0;
+	
+	DOMElement *root_node = xmldoc->getDocumentElement();
+		
+	string group = XMLUtils::GetAttribute(root_node, "group", true);
+	string comment = XMLUtils::GetAttribute(root_node, "comment", true);
+	
+	try
+	{
+		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
+		serializer = xqillaImplementation->createLSSerializer();
+		XMLCh *workflow_xml = serializer->writeToString(root_node);
+		char *workflow_xml_c = XMLString::transcode(workflow_xml);
+		
+		string content;
+		base64_encode_string(workflow_xml_c, content);
+		
+		XMLString::release(&workflow_xml);
+		XMLString::release(&workflow_xml_c);
+		
+		if(Workflows::GetInstance()->Exists(name))
+		{
+			// Update
+			Logger::Log(LOG_INFO,string("Updating workflow "+name+" from git").c_str());
+			
+			Workflow workflow = Workflows::GetInstance()->Get(name);
+			
+			Workflow::Edit(workflow.GetID(), name, content, group, comment);
+			workflow.SetLastCommit(repo_lastcommit);
+			
+			Workflows::GetInstance()->Reload();
+		}
+		else
+		{
+			// Create
+			Logger::Log(LOG_INFO,string("Crerating workflow "+name+" from git").c_str());
+			
+			unsigned int id = Workflow::Create(name, content, group, comment, repo_lastcommit);
+			
+			Workflows::GetInstance()->Reload();
+		}
+	}
+	catch(Exception &e)
+	{
+		if(serializer)
+			serializer->release();
+		
+		throw e;
+	}
+	
+	serializer->release();
 }
 
 bool Workflow::CheckWorkflowName(const string &workflow_name)

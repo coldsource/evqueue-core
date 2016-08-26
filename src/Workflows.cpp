@@ -92,6 +92,7 @@ bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respons
 			node->setAttribute(X("bound-to-schedule"),workflow.GetIsBoundSchedule()?X("1"):X("0"));
 			node->setAttribute(X("has-bound-task"),workflow.GetIsBoundTask()?X("1"):X("0"));
 			node->setAttribute(X("lastcommit"),X(workflow.GetLastCommit().c_str()));
+			node->setAttribute(X("modified"),workflow.GetIsModified()?X("1"):X("0"));
 		}
 		
 		pthread_mutex_unlock(&workflows->lock);
