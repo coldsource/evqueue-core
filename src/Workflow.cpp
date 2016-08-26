@@ -28,6 +28,8 @@
 #include <Sha1String.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <WorkflowScheduler.h>
+#include <Users.h>
 #include <Tasks.h>
 #include <Git.h>
 #include <global.h>
@@ -301,9 +303,14 @@ void Workflow::Edit(unsigned int id,const string &name, const string &base64, co
 	);
 }
 
-void Workflow::Delete(unsigned int id, bool *task_deleted)
+void Workflow::Delete(unsigned int id)
 {
 	DB db;
+	
+	bool task_deleted = false, schedule_deleted = false, rights_deleted = false;
+	
+	db.StartTransaction();
+	
 	db.QueryPrintf("DELETE FROM t_workflow WHERE workflow_id=%i",&id);
 	
 	if(db.AffectedRows()==0)
@@ -312,9 +319,33 @@ void Workflow::Delete(unsigned int id, bool *task_deleted)
 	// Also delete associated tasks
 	db.QueryPrintf("DELETE FROM t_task WHERE workflow_id=%i",&id);
 	if(db.AffectedRows()==0)
-		*task_deleted = false;
-	else
-		*task_deleted = true;
+		task_deleted = false;
+	
+	// Clean notifications
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
+	
+	// Clean schedules
+	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_id=%i",&id);
+	if(db.AffectedRows()==0)
+		schedule_deleted = false;
+	
+	// Delete user rights associated
+	db.QueryPrintf("DELETE FROM t_user_right WHERE workflow_id=%i",&id);
+	if(db.AffectedRows()==0)
+		rights_deleted = false;
+	
+	db.CommitTransaction();
+	
+	Workflows::GetInstance()->Reload();
+	
+	if(task_deleted)
+		Tasks::GetInstance()->Reload();
+	
+	if(schedule_deleted)
+		WorkflowScheduler::GetInstance()->Reload();
+	
+	if(rights_deleted)
+		Users::GetInstance()->Reload();
 }
 
 void Workflow::SubscribeNotification(unsigned int id, unsigned int notification_id)
@@ -391,13 +422,7 @@ bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response
 	{
 		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		bool task_deleted;
-		Delete(id,&task_deleted);
-		
-		Workflows::GetInstance()->Reload();
-		
-		if(task_deleted)
-			Tasks::GetInstance()->Reload();
+		Delete(id);
 		
 		return true;
 	}

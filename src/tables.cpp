@@ -106,7 +106,6 @@ std::map<std::string,std::string> evqueue_tables = {
   `user_right_read` tinyint(1) NOT NULL DEFAULT '0', \
   `user_right_exec` tinyint(1) NOT NULL DEFAULT '0', \
   `user_right_kill` tinyint(4) NOT NULL DEFAULT '0', \
-  `user_right_del` tinyint(4) NOT NULL DEFAULT '0', \
   KEY `user_login` (`user_login`,`workflow_id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \
 "},

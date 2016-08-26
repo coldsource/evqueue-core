@@ -21,6 +21,7 @@
 #define _USER_H_
 
 #include <string>
+#include <map>
 
 class DB;
 class SocketQuerySAX2Handler;
@@ -28,9 +29,19 @@ class QueryResponse;
 
 class User
 {
+	struct user_right
+	{
+		bool edit;
+		bool read;
+		bool exec;
+		bool kill;
+	};
+	
 	std::string user_name;
 	std::string user_password;
 	std::string user_profile;
+	
+	std::map<unsigned int,user_right> rights;
 	
 	public:
 		static User anonymous;
@@ -49,6 +60,10 @@ class User
 		static unsigned int Create(const std::string &name, const std::string &password, const std::string &profile);
 		static void Edit(const std::string &name, const std::string &password, const std::string &profile);
 		static void Delete(const std::string &name);
+		
+		static void ClearRights(const std::string &name);
+		static void GrantRight(const std::string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);
+		static void RevokeRight(const std::string &name, unsigned int workflow_id);
 		
 		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	

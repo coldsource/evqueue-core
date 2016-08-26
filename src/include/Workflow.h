@@ -68,7 +68,7 @@ class Workflow
 		static void Get(unsigned int id, QueryResponse *response);
 		static unsigned int Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment, const std::string &lastcommit = "");
 		static void Edit(unsigned int id, const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
-		static void Delete(unsigned int id, bool *task_deleted);
+		static void Delete(unsigned int id);
 		
 		static void SubscribeNotification(unsigned int id, unsigned int notification_id);
 		static void UnsubscribeNotification(unsigned int id, unsigned int notification_id);

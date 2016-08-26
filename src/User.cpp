@@ -19,6 +19,7 @@
 
 #include <User.h>
 #include <Users.h>
+#include <Workflows.h>
 #include <Exception.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
@@ -46,6 +47,15 @@ User::User(DB *db,const string &user_name)
 	this->user_name = db->GetField(0);
 	user_password = db->GetField(1);
 	user_profile = db->GetField(2);
+	
+	// Load rights
+	db->QueryPrintf("SELECT workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill FROM t_user_right WHERE user_login=%s",&user_name);
+	while(db->FetchRow())
+	{
+		unsigned int workflow_id = db->GetFieldInt(0);
+		user_right wf_rights = {db->GetFieldInt(1)!=0, db->GetFieldInt(2)!=0, db->GetFieldInt(3)!=0, db->GetFieldInt(4)!=0};
+		rights[workflow_id] = wf_rights;
+	}
 }
 
 void User::InitAnonymous()
@@ -76,6 +86,18 @@ void User::Get(const string &name, QueryResponse *response)
 	DOMElement *node = (DOMElement *)response->AppendXML("<user />");
 	node->setAttribute(X("name"),X(user.GetName().c_str()));
 	node->setAttribute(X("profile"),X(user.GetProfile().c_str()));
+	
+	for(auto it=user.rights.begin();it!=user.rights.end();it++)
+	{
+		DOMElement *right_node = response->GetDOM()->createElement(X("right"));
+		right_node->setAttribute(X("workflow_id"),X(to_string(it->first).c_str()));
+		right_node->setAttribute(X("edit"),it->second.edit?X("1"):X("0"));
+		right_node->setAttribute(X("read"),it->second.read?X("1"):X("0"));
+		right_node->setAttribute(X("exec"),it->second.exec?X("1"):X("0"));
+		right_node->setAttribute(X("kill"),it->second.kill?X("1"):X("0"));
+		
+		node->appendChild(right_node);
+	}
 }
 
 unsigned int User::Create(const string &name, const string &password, const string &profile)
@@ -110,10 +132,54 @@ void User::Edit(const string &name,const string &password, const string &profile
 void User::Delete(const string &name)
 {
 	DB db;
-	db.QueryPrintf("DELETE FROM t_user WHERE user_login=%s",name.c_str());
+	
+	db.StartTransaction();
+	
+	db.QueryPrintf("DELETE FROM t_user WHERE user_login=%s",&name);
 	
 	if(db.AffectedRows()==0)
 		throw Exception("User","User not found");
+	
+	db.QueryPrintf("DELETE FROM t_user_right WHERE user_login=%s",&name);
+	
+	db.CommitTransaction();
+}
+
+void User::ClearRights(const string &name)
+{
+	if(!Users::GetInstance()->Exists(name))
+		throw Exception("User","User not found");
+	
+	DB db;
+	db.QueryPrintf("DELETE FROM t_user_right WHERE user_login=%s",&name);
+}
+
+void User::GrantRight(const string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill)
+{
+	if(!Users::GetInstance()->Exists(name))
+		throw Exception("User","User not found");
+	
+	if(!Workflows::GetInstance()->Exists(workflow_id))
+		throw Exception("User","Workflow not found");
+	
+	DB db;
+	int iedit = edit, iread = read, iexec = exec, ikill = kill;
+	db.QueryPrintf(
+		"INSERT INTO t_user_right(user_login, workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill) VALUES(%s,%i,%i,%i,%i,%i)",
+		&name, &workflow_id, &iedit, &iread, &iexec, &ikill
+	);
+}
+
+void User::RevokeRight(const string &name, unsigned int workflow_id)
+{
+	if(!Users::GetInstance()->Exists(name))
+		throw Exception("User","User not found");
+	
+	DB db;
+	db.QueryPrintf("DELETE FROM t_user_right WHERE workflow_id=%i",&workflow_id);
+	
+	if(db.AffectedRows()==0)
+		throw Exception("User","Not right found on that workflow");
 }
 
 void User::create_edit_check(const std::string &name, const std::string &password, const std::string &profile)
@@ -157,6 +223,42 @@ bool User::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		string name = saxh->GetRootAttribute("name");
 		
 		Delete(name);
+		
+		Users::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="clear_rights")
+	{
+		string name = saxh->GetRootAttribute("name");
+		
+		ClearRights(name);
+		
+		Users::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="grant")
+	{
+		string name = saxh->GetRootAttribute("name");
+		unsigned int workflow_id = saxh->GetRootAttributeInt("workflow_id");
+		bool edit = saxh->GetRootAttributeBool("edit");
+		bool read = saxh->GetRootAttributeBool("read");
+		bool exec = saxh->GetRootAttributeBool("exec");
+		bool kill = saxh->GetRootAttributeBool("kill");
+		
+		GrantRight(name, workflow_id, edit, read, exec, kill);
+		
+		Users::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="revoke")
+	{
+		string name = saxh->GetRootAttribute("name");
+		unsigned int workflow_id = saxh->GetRootAttributeInt("workflow_id");
+		
+		RevokeRight(name, workflow_id);
 		
 		Users::GetInstance()->Reload();
 		

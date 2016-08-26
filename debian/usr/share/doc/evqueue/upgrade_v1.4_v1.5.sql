@@ -20,6 +20,7 @@ ALTER TABLE t_workflow_instance_parameters MODIFY workflow_instance_parameter va
 
 ALTER TABLE t_user MODIFY user_profile ENUM('ADMIN','USER') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'USER';
 UPDATE t_user SET user_profile='USER' WHERE user_profile='';
+ALTER TABLE t_user_right DROP COLUMN user_right_del;
 
 -- Alter version number --
 ALTER TABLE t_log COMMENT 'v1.5';
