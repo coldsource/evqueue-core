@@ -42,6 +42,7 @@ static void usage()
 	fprintf(stderr,"  --connect <cnx string>\n");
 	fprintf(stderr,"  --user <username>\n");
 	fprintf(stderr,"  --password <password>\n");
+	fprintf(stderr,"  --noformat\n");
 	exit(-1);
 }
 
@@ -85,6 +86,9 @@ int main(int argc, char  **argv)
 		else
 			break;
 	}
+	
+	if(strcmp(argv[cur],"--")==0)
+		cur++;
 	
 	// If we received a password, compute sha1 of it as a real password
 	if(password.length())
