@@ -56,7 +56,7 @@ void Client::Exec(const std::string &cmd)
 	}
 	catch(Exception &e)
 	{
-		Logger::Log(LOG_WARNING,"Client encountered unexpected exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
+		Logger::Log(LOG_WARNING,"Client encountered unexpected exception in context %s : %s",e.context.c_str(),e.error.c_str());
 		throw e;
 	}
 }
