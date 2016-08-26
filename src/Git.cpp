@@ -336,7 +336,19 @@ string Git::save_file(const string &filename, const string &content, const strin
 	
 	// Commit + Push
 	repo->AddFile(filename);
-	string commit_id = repo->Commit(commit_log);
+	
+	string commit_id;
+	try
+	{
+		commit_id = repo->Commit(commit_log);
+	}
+	catch(Exception &e)
+	{
+		repo->ResetLastCommit();
+		
+		throw e;
+	}
+	
 	repo->Push();
 	
 	return commit_id;
