@@ -28,6 +28,7 @@
 #include <Configuration.h>
 #include <DB.h>
 #include <Logger.h>
+#include <User.h>
 
 #include <string.h>
 
@@ -264,8 +265,11 @@ void WorkflowSchedule::create_edit_check(
 	workflow.CheckInputParameters(parameters);
 }
 
-bool WorkflowSchedule::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")

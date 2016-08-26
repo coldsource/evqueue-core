@@ -28,6 +28,7 @@
 #include <Configuration.h>
 #include <base64.h>
 #include <DB.h>
+#include <User.h>
 
 using namespace std;
 
@@ -94,8 +95,11 @@ void NotificationType::Unregister(unsigned int id)
 		throw Exception("NotificationType","Unable to find notification type");
 }
 
-bool NotificationType::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="register")

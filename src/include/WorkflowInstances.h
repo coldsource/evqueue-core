@@ -26,6 +26,7 @@
 class WorkflowInstance;
 class QueryResponse;
 class SocketQuerySAX2Handler;
+class User;
 
 class WorkflowInstances
 {
@@ -48,15 +49,15 @@ class WorkflowInstances
 		
 		void Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance);
 		void Remove(unsigned int workflow_instance_id);
-		bool Cancel(unsigned int workflow_instance_id);
-		bool Wait(QueryResponse *response, unsigned int workflow_instance_id, int timeout=0);
-		bool KillTask(unsigned int workflow_instance_id, pid_t pid);
+		bool Cancel(const User &user, unsigned int workflow_instance_id);
+		bool Wait(const User &user, QueryResponse *response, unsigned int workflow_instance_id, int timeout=0);
+		bool KillTask(const User &user, unsigned int workflow_instance_id, pid_t pid);
 		
-		void SendStatus(QueryResponse *response);
-		bool SendStatus(QueryResponse *response,unsigned int workflow_instance_id);
+		void SendStatus(const User &user, QueryResponse *response);
+		bool SendStatus(const User &user, QueryResponse *response,unsigned int workflow_instance_id);
 		void RecordSavepoint();
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		void release_waiters(unsigned int workflow_instance_id);

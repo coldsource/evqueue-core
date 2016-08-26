@@ -22,7 +22,8 @@
 
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
-bool ping_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 
 #endif

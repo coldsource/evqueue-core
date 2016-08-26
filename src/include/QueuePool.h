@@ -33,6 +33,7 @@ class Queue;
 class WorkflowInstance;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class QueuePool
 {
@@ -81,7 +82,7 @@ class QueuePool
 		static void GetQueue(unsigned int id, QueryResponse *response);
 		bool Exists(unsigned int id);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
 	private:
 		Queue *get_queue(unsigned int id);

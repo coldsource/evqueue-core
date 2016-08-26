@@ -25,6 +25,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Cluster.h>
+#include <User.h>
 #include <sha1.h>
 
 #include <string.h>
@@ -131,8 +132,11 @@ void Tasks::SyncBinaries(bool notify)
 	}
 }
 
-bool Tasks::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Tasks::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	Tasks *tasks = Tasks::GetInstance();
 	
 	const string action = saxh->GetRootAttribute("action");

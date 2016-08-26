@@ -29,6 +29,7 @@ namespace task_output_method { enum task_output_method {XML,TEXT,UNKNOWN}; }
 class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class Task
 {
@@ -109,7 +110,7 @@ class Task
 		
 		static void Delete(unsigned int id, bool *workflow_deleted);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
 	private:
 		static void create_edit_check(

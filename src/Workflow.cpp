@@ -32,6 +32,7 @@
 #include <Users.h>
 #include <Tasks.h>
 #include <Git.h>
+#include <User.h>
 #include <global.h>
 #include <base64.h>
 
@@ -386,8 +387,11 @@ string Workflow::create_edit_check(const string &name, const string &base64, con
 	return workflow_xml;
 }
 
-bool Workflow::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")

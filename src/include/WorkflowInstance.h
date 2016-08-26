@@ -76,6 +76,7 @@ class WorkflowInstance
 		~WorkflowInstance();
 		
 		unsigned int GetInstanceID() { return workflow_instance_id; }
+		unsigned int GetWorkflowID() { return workflow_id; }
 		unsigned int GetErrors() { return error_tasks; }
 		
 		void Start(bool *workflow_terminated);

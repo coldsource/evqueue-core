@@ -22,11 +22,12 @@
 
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class WorkflowInstanceAPI
 {
 	public:
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

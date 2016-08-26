@@ -29,6 +29,7 @@ class Notification;
 class WorkflowInstance;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class Notifications:public APIObjectList<Notification>
 {
@@ -57,7 +58,7 @@ class Notifications:public APIObjectList<Notification>
 		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
 		void Exit(pid_t pid, int status, char retcode);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

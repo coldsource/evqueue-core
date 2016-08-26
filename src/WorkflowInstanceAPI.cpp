@@ -19,6 +19,8 @@
 
 #include <WorkflowInstanceAPI.h>
 #include <WorkflowInstance.h>
+#include <Workflows.h>
+#include <Workflow.h>
 #include <WorkflowInstances.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
@@ -29,6 +31,7 @@
 #include <QueuePool.h>
 #include <DB.h>
 #include <Configuration.h>
+#include <User.h>
 
 #include <string>
 #include <map>
@@ -38,7 +41,7 @@
 using namespace std;
 using namespace xercesc;
 
-bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const string action = saxh->GetRootAttribute("action");
 	
@@ -48,7 +51,12 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 	if(action=="launch")
 	{
 		string name = saxh->GetRootAttribute("name");
-		string user = saxh->GetRootAttribute("user","");
+		
+		Workflow workflow = Workflows::GetInstance()->Get(name);
+		if(!user.HasAccessToWorkflow(workflow.GetID(), "exec"))
+			User::InsufficientRights();
+		
+		string username = saxh->GetRootAttribute("user","");
 		string host = saxh->GetRootAttribute("host","");
 		string mode = saxh->GetRootAttribute("mode","asynchronous");
 		
@@ -64,7 +72,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 		
 		try
 		{
-			wi = new WorkflowInstance(name,saxh->GetWorkflowParameters(),0,host,user);
+			wi = new WorkflowInstance(name,saxh->GetWorkflowParameters(),0,host,username);
 		}
 		catch(Exception &e)
 		{
@@ -79,8 +87,8 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 		Logger::Log(LOG_NOTICE,"[WID %d] Instanciated",wi->GetInstanceID());
 		
 		int wait_re = true;
-		if(mode=="synchronous")
-			wait_re = WorkflowInstances::GetInstance()->Wait(response,instance_id,timeout);
+		if(!workflow_terminated && mode=="synchronous")
+			wait_re = WorkflowInstances::GetInstance()->Wait(user, response,instance_id,timeout);
 		
 		response->GetDOM()->getDocumentElement()->setAttribute(X("workflow-instance-id"),X(to_string(instance_id).c_str()));
 		if(!wait_re)
@@ -97,6 +105,9 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 		
 		if(action=="migrate")
 		{
+			if(!user.IsAdmin())
+				User::InsufficientRights();
+			
 			DB db;
 			
 			// Check if workflow instance exists and is eligible to migration
@@ -131,12 +142,16 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 			stats->IncWorkflowStatusQueries();
 			
 			WorkflowInstances *wfi = WorkflowInstances::GetInstance();
-			if(!wfi->SendStatus(response,workflow_instance_id))
+			
+			if(!wfi->SendStatus(user, response,workflow_instance_id))
 			{
 				// Workflow is not executing, lookup in database
-				db.QueryPrintf("SELECT workflow_instance_savepoint FROM t_workflow_instance WHERE workflow_instance_id=%i",&workflow_instance_id);
+				db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_id FROM t_workflow_instance WHERE workflow_instance_id=%i",&workflow_instance_id);
 				if(!db.FetchRow())
 					throw Exception("WorkflowInstance","Unknown workflow instance");
+				
+				if(!user.HasAccessToWorkflow(db.GetFieldInt(1), "read"))
+					User::InsufficientRights();
 				
 				response->AppendXML(db.GetField(0));
 			}
@@ -148,7 +163,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 			stats->IncWorkflowCancelQueries();
 			
 			// Prevent workflow instance from instanciating new tasks
-			if(!WorkflowInstances::GetInstance()->Cancel(workflow_instance_id))
+			if(!WorkflowInstances::GetInstance()->Cancel(user, workflow_instance_id))
 				throw Exception("WorkflowInstance","Unknown workflow instance");
 			else
 			{
@@ -165,7 +180,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 		{
 			int timeout = saxh->GetRootAttributeInt("timeout",0);
 			
-			if(!WorkflowInstances::GetInstance()->Wait(response,workflow_instance_id,timeout))
+			if(!WorkflowInstances::GetInstance()->Wait(user, response,workflow_instance_id,timeout))
 				throw Exception("WorkflowInstance","Wait timed out");
 			
 			return true;
@@ -174,7 +189,7 @@ bool WorkflowInstanceAPI::HandleQuery(SocketQuerySAX2Handler *saxh, QueryRespons
 		{
 			unsigned int task_pid = saxh->GetRootAttributeInt("pid");
 			
-			if(!WorkflowInstances::GetInstance()->KillTask(workflow_instance_id,task_pid))
+			if(!WorkflowInstances::GetInstance()->KillTask(user, workflow_instance_id,task_pid))
 				throw Exception("WorkflowInstance","Unknown workflow instance");
 			
 			return true;

@@ -22,6 +22,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 class DB;
 class SocketQuerySAX2Handler;
@@ -55,6 +56,11 @@ class User
 		const std::string &GetPassword() const { return user_password; }
 		const std::string &GetProfile() const { return user_profile; }
 		
+		bool IsAdmin() const { return user_profile=="ADMIN"; }
+		bool HasAccessToWorkflow(unsigned int workflow_id, const std::string &access_type) const;
+		std::vector<int> GetReadAccessWorkflows() const;
+		static bool InsufficientRights();
+		
 		static bool CheckUserName(const std::string &user_name);
 		static void Get(const std::string &name, QueryResponse *response);
 		static unsigned int Create(const std::string &name, const std::string &password, const std::string &profile);
@@ -65,7 +71,7 @@ class User
 		static void GrantRight(const std::string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);
 		static void RevokeRight(const std::string &name, unsigned int workflow_id);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		static void create_edit_check(const std::string &name, const std::string &password, const std::string &profile);

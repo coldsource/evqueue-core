@@ -27,6 +27,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <Exception.h>
 #include <DB.h>
+#include <User.h>
 
 #include <pthread.h>
 #include <sys/socket.h>
@@ -76,7 +77,7 @@ void WorkflowInstances::Remove(unsigned int workflow_instance_id)
 	pthread_mutex_unlock(&lock);
 }
 
-bool WorkflowInstances::Cancel(unsigned int workflow_instance_id)
+bool WorkflowInstances::Cancel(const User &user, unsigned int workflow_instance_id)
 {
 	bool found = false;
 	
@@ -86,6 +87,12 @@ bool WorkflowInstances::Cancel(unsigned int workflow_instance_id)
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
+		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "kill"))
+		{
+			pthread_mutex_unlock(&lock);
+			User::InsufficientRights();
+		}
+		
 		(i->second)->Cancel();
 		found = true;
 	}
@@ -95,7 +102,7 @@ bool WorkflowInstances::Cancel(unsigned int workflow_instance_id)
 	return found;
 }
 
-bool WorkflowInstances::Wait(QueryResponse *response, unsigned int workflow_instance_id, int timeout)
+bool WorkflowInstances::Wait(const User &user, QueryResponse *response, unsigned int workflow_instance_id, int timeout)
 {
 	if(timeout<0)
 		return false;
@@ -110,6 +117,12 @@ bool WorkflowInstances::Wait(QueryResponse *response, unsigned int workflow_inst
 		pthread_mutex_unlock(&lock);
 		
 		throw Exception("WorkflowInstances","Unknown instance ID");
+	}
+	
+	if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "read"))
+	{
+		pthread_mutex_unlock(&lock);
+		User::InsufficientRights();
 	}
 	
 	pthread_cond_t *wait_cond;
@@ -201,7 +214,7 @@ bool WorkflowInstances::Wait(QueryResponse *response, unsigned int workflow_inst
 	return (cond_re==0);
 }
 
-bool WorkflowInstances::KillTask(unsigned int workflow_instance_id, pid_t pid)
+bool WorkflowInstances::KillTask(const User &user, unsigned int workflow_instance_id, pid_t pid)
 {
 	bool found = false;
 	
@@ -211,6 +224,12 @@ bool WorkflowInstances::KillTask(unsigned int workflow_instance_id, pid_t pid)
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
+		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "kill"))
+		{
+			pthread_mutex_unlock(&lock);
+			User::InsufficientRights();
+		}
+		
 		(i->second)->KillTask(pid);
 		found = true;
 	}
@@ -220,17 +239,22 @@ bool WorkflowInstances::KillTask(unsigned int workflow_instance_id, pid_t pid)
 	return found;
 }
 
-void WorkflowInstances::SendStatus(QueryResponse *response)
+void WorkflowInstances::SendStatus(const User &user, QueryResponse *response)
 {
 	pthread_mutex_lock(&lock);
 	
 	for(std::map<unsigned int,WorkflowInstance *>::iterator i = wi.begin();i!=wi.end();++i)
+	{
+		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "read"))
+			continue;
+		
 		i->second->SendStatus(response,false);
+	}
 	
 	pthread_mutex_unlock(&lock);
 }
 
-bool WorkflowInstances::SendStatus(QueryResponse *response,unsigned int workflow_instance_id)
+bool WorkflowInstances::SendStatus(const User &user, QueryResponse *response,unsigned int workflow_instance_id)
 {
 	bool found = false;
 	
@@ -240,6 +264,12 @@ bool WorkflowInstances::SendStatus(QueryResponse *response,unsigned int workflow
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
+		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "read"))
+		{
+			pthread_mutex_unlock(&lock);
+			User::InsufficientRights();
+		}
+		
 		i->second->SendStatus(response,true);
 		found = true;
 	}
@@ -268,7 +298,7 @@ void WorkflowInstances::RecordSavepoint()
 	pthread_mutex_unlock(&lock);
 }
 
-bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const string action = saxh->GetRootAttribute("action");
 	
@@ -317,6 +347,26 @@ bool WorkflowInstances::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse 
 		{
 			query_where += " AND wi.workflow_instance_status=%s";
 			query_where_values.push_back(&filter_status);
+		}
+		
+		if(!user.IsAdmin())
+		{
+			vector<int> read_workflows = user.GetReadAccessWorkflows();
+			if(read_workflows.size()==0)
+				query_where += " AND false";
+			else
+			{
+				query_where += " AND w.workflow_id IN(";
+				for(int i=0;i<read_workflows.size();i++)
+				{
+					if(i>0)
+						query_where+= ", ";
+					
+					query_where += to_string(read_workflows.at(i));
+				}
+				
+				query_where += ")";
+			}
 		}
 		
 		WorkflowParameters *parameters = saxh->GetWorkflowParameters();

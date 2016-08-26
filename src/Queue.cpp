@@ -24,6 +24,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Exception.h>
+#include <User.h>
 #include <DB.h>
 
 #include <string.h>
@@ -265,8 +266,11 @@ void Queue::create_edit_check(const std::string &name, int concurrency, const st
 		throw Exception("Queue","Invalid scheduler name, must be 'prio', 'fifo' or 'default'");
 }
 
-bool Queue::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")

@@ -30,6 +30,7 @@
 #include <Sockets.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <User.h>
 #include <tools.h>
 #include <global.h>
 
@@ -174,8 +175,11 @@ void Notification::create_edit_check(unsigned int type_id,const std::string &nam
 		throw Exception("Notification","Unknown notification type ID");
 }
 
-bool Notification::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")

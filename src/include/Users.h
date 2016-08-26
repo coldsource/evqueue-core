@@ -42,7 +42,7 @@ class Users:public APIObjectList<User>
 		
 		void Reload(bool notify = true);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 

@@ -29,6 +29,7 @@
 
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 enum onfailure_behavior {CONTINUE, SUSPEND};
 
@@ -92,7 +93,7 @@ class WorkflowSchedule
 		
 		static void Delete(unsigned int id);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
 		void SetStatus(bool active);
 	

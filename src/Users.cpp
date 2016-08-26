@@ -69,8 +69,11 @@ void Users::Reload(bool notify)
 	}
 }
 
-bool Users::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Users::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	Users *users = Users::GetInstance();
 	
 	string action = saxh->GetRootAttribute("action");
@@ -81,10 +84,10 @@ bool Users::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		
 		for(auto it = users->objects_name.begin(); it!=users->objects_name.end(); it++)
 		{
-			User user = *it->second;
+			User it_user = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML("<user />");
-			node->setAttribute(X("name"),X(user.GetName().c_str()));
-			node->setAttribute(X("profile"),X(user.GetProfile().c_str()));
+			node->setAttribute(X("name"),X(it_user.GetName().c_str()));
+			node->setAttribute(X("profile"),X(it_user.GetProfile().c_str()));
 		}
 		
 		pthread_mutex_unlock(&users->lock);

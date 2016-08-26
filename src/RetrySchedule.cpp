@@ -24,6 +24,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <XMLUtils.h>
+#include <User.h>
 #include <base64.h>
 #include <global.h>
 
@@ -112,8 +113,11 @@ std::string RetrySchedule::create_edit_check(const std::string &name, const std:
 	return retry_schedule_xml;
 }
 
-bool RetrySchedule::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool RetrySchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")

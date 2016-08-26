@@ -29,6 +29,7 @@ class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 class WorkflowParameters;
+class User;
 
 class Workflow
 {
@@ -74,7 +75,7 @@ class Workflow
 		static void UnsubscribeNotification(unsigned int id, unsigned int notification_id);
 		static void ClearNotifications(unsigned int id);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
 		static std::string CreateSimpleWorkflow(const std::string &task_name, const std::vector<std::string> &inputs);
 	

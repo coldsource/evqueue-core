@@ -29,7 +29,7 @@
 using namespace std;
 using namespace xercesc;
 
-bool Logs::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Logs::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	string action = saxh->GetRootAttribute("action");
 	

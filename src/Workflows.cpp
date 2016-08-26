@@ -26,6 +26,7 @@
 #include <QueryResponse.h>
 #include <Cluster.h>
 #include <Sha1String.h>
+#include <User.h>
 
 #include <string.h>
 
@@ -71,7 +72,7 @@ void Workflows::Reload(bool notify)
 	}
 }
 
-bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	Workflows *workflows = Workflows::GetInstance();
 	
@@ -84,6 +85,10 @@ bool Workflows::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respons
 		for(auto it = workflows->objects_name.begin(); it!=workflows->objects_name.end(); it++)
 		{
 			Workflow workflow = *it->second;
+			
+			if(!user.HasAccessToWorkflow(workflow.GetID(), "read"))
+				continue;
+			
 			DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
 			node->setAttribute(X("id"),X(std::to_string(workflow.GetID()).c_str()));
 			node->setAttribute(X("name"),X(workflow.GetName().c_str()));

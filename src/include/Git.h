@@ -23,6 +23,7 @@
 class SocketQuerySAX2Handler;
 class QueryResponse;
 class LibGit2;
+class User;
 
 #include <xercesc/dom/DOM.hpp>
 
@@ -54,7 +55,7 @@ class Git
 		void RemoveWorkflow(const std::string &name,const std::string &commit_log);
 		void ListWorkflows(QueryResponse *response);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		std::string save_file(const std::string &filename, const std::string &content, const std::string &db_lastcommit, const std::string &commit_log, bool force);

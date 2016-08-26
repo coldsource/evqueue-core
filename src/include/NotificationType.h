@@ -25,6 +25,7 @@
 class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class NotificationType
 {
@@ -50,7 +51,7 @@ class NotificationType
 		static void Register(const std::string &name, const std::string &description, const std::string &binary, const std::string binary_content);
 		static void Unregister(unsigned int id);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

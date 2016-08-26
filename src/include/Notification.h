@@ -28,6 +28,7 @@ class DB;
 class WorkflowInstance;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class Notification
 {
@@ -56,7 +57,7 @@ class Notification
 		static void Edit(unsigned int id,unsigned int type_id,const std::string &name, const std::string parameters);
 		static void Delete(unsigned int id);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		void free(void);

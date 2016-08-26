@@ -29,6 +29,7 @@
 #include <FileManager.h>
 #include <Logger.h>
 #include <DB.h>
+#include <User.h>
 #include <base64.h>
 
 #include <xqilla/xqilla-dom3.hpp>
@@ -233,8 +234,11 @@ void Git::ListWorkflows(QueryResponse *response)
 	pthread_mutex_unlock(&lock);
 }
 
-bool Git::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	if(!instance->repo)
 		throw Exception("Git", "No git repository is configured, this feature is disabled");
 	

@@ -27,6 +27,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Cluster.h>
+#include <User.h>
 
 #include <string.h>
 
@@ -136,8 +137,11 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 	pthread_mutex_unlock(&lock);
 }
 
-bool Notifications::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	Notifications *notifications = Notifications::GetInstance();
 	
 	const string action = saxh->GetRootAttribute("action");

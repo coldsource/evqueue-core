@@ -25,6 +25,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Cluster.h>
+#include <User.h>
 #include <sha1.h>
 
 #include <string.h>
@@ -128,8 +129,11 @@ void NotificationTypes::SyncBinaries(bool notify)
 	}
 }
 
-bool NotificationTypes::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool NotificationTypes::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	NotificationTypes *notification_types = NotificationTypes::GetInstance();
 	
 	const string action = saxh->GetRootAttribute("action");

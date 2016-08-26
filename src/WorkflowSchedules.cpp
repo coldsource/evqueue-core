@@ -25,6 +25,7 @@
 #include <Exception.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <User.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -74,8 +75,11 @@ const vector<WorkflowSchedule *> &WorkflowSchedules::GetActiveWorkflowSchedules(
 	return active_schedules;
 }
 
-bool WorkflowSchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool WorkflowSchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	WorkflowSchedules *workflow_schedules = WorkflowSchedules::GetInstance();
 	
 	string action = saxh->GetRootAttribute("action");

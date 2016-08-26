@@ -25,8 +25,9 @@
 
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
-typedef bool (*t_query_handler)(SocketQuerySAX2Handler *, QueryResponse *);
+typedef bool (*t_query_handler)(const User &user, SocketQuerySAX2Handler *, QueryResponse *);
 
 class QueryHandlers
 {
@@ -40,7 +41,7 @@ class QueryHandlers
 		static QueryHandlers *GetInstance() { return QueryHandlers::instance; }
 		
 		void RegisterHandler(const std::string &type, t_query_handler handler);
-		bool HandleQuery(const std::string &type, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		bool HandleQuery(const User &user, const std::string &type, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

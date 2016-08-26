@@ -36,6 +36,7 @@ using namespace xercesc;
 class WorkflowInstance;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class Queue
 {
@@ -98,7 +99,7 @@ class Queue
 		static void Edit(unsigned int id,const std::string &name, int concurrency, const std::string &scheduler);
 		static void Delete(unsigned int id);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		void enqueue_task(WorkflowInstance *workflow_instance,DOMNode *task);

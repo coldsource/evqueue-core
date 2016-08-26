@@ -27,6 +27,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Cluster.h>
+#include <User.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -440,8 +441,11 @@ bool QueuePool::Exists(unsigned int id)
 	return true;
 }
 
-bool QueuePool::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool QueuePool::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	QueuePool *qp = QueuePool::GetInstance();
 	
 	const string action = saxh->GetRootAttribute("action");

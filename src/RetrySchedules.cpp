@@ -25,6 +25,7 @@
 #include <Logger.h>
 #include <DB.h>
 #include <Cluster.h>
+#include <User.h>
 
 #include <string.h>
 
@@ -72,8 +73,11 @@ void RetrySchedules::Reload(bool notify)
 	}
 }
 
-bool RetrySchedules::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool RetrySchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
 	
 	const string action = saxh->GetRootAttribute("action");

@@ -64,6 +64,44 @@ void User::InitAnonymous()
 	anonymous.user_profile = "ADMIN";
 }
 
+bool User::HasAccessToWorkflow(unsigned int workflow_id, const string &access_type) const
+{
+	if(IsAdmin())
+		return true;
+	
+	auto it = rights.find(workflow_id);
+	if(it==rights.end())
+		return false;
+	
+	if(access_type=="edit" && it->second.edit)
+		return true;
+	else if(access_type=="read" && it->second.read)
+		return true;
+	else if(access_type=="exec" && it->second.exec)
+		return true;
+	else if(access_type=="kill" && it->second.kill)
+		return true;
+	
+	return false;
+}
+
+vector<int> User::GetReadAccessWorkflows() const
+{
+	vector<int> read_workflows;
+	for(auto it=rights.begin();it!=rights.end();++it)
+	{
+		if(it->second.read)
+			read_workflows.push_back(it->first);
+	}
+	
+	return read_workflows;
+}
+
+bool User::InsufficientRights()
+{
+	throw Exception("Access Control", "insufficient rights");
+}
+
 bool User::CheckUserName(const string &user_name)
 {
 	int i,len;
@@ -191,13 +229,16 @@ void User::create_edit_check(const std::string &name, const std::string &passwor
 		throw Exception("User","Invalid profile, should be 'ADMIN' or 'USER'");
 }
 
-bool User::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
 		string name = saxh->GetRootAttribute("name");
+		
+		if(!user.IsAdmin() && user.GetName()!=name)
+			User::InsufficientRights();
 		
 		Get(name,response);
 		
@@ -210,9 +251,19 @@ bool User::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 		string profile = saxh->GetRootAttribute("profile");
 		
 		if(action=="create")
+		{
+			if(!user.IsAdmin())
+				User::InsufficientRights();
+			
 			Create(name, profile, profile);
+		}
 		else
+		{
+			if(!user.IsAdmin() && user.GetName()!=name)
+				User::InsufficientRights();
+			
 			Edit(name, profile, profile);
+		}
 		
 		Users::GetInstance()->Reload();
 		
@@ -220,6 +271,9 @@ bool User::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	}
 	else if(action=="delete")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		string name = saxh->GetRootAttribute("name");
 		
 		Delete(name);
@@ -230,6 +284,9 @@ bool User::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	}
 	else if(action=="clear_rights")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		string name = saxh->GetRootAttribute("name");
 		
 		ClearRights(name);
@@ -240,6 +297,9 @@ bool User::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	}
 	else if(action=="grant")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		string name = saxh->GetRootAttribute("name");
 		unsigned int workflow_id = saxh->GetRootAttributeInt("workflow_id");
 		bool edit = saxh->GetRootAttributeBool("edit");
@@ -255,6 +315,9 @@ bool User::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 	}
 	else if(action=="revoke")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		string name = saxh->GetRootAttribute("name");
 		unsigned int workflow_id = saxh->GetRootAttributeInt("workflow_id");
 		

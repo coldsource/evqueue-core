@@ -28,7 +28,7 @@
 using namespace std;
 using namespace xercesc;
 
-bool ping_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
 	

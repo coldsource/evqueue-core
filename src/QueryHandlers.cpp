@@ -32,11 +32,11 @@ void QueryHandlers::RegisterHandler(const std::string &type, t_query_handler han
 	handlers[type] = handler;
 }
 
-bool QueryHandlers::HandleQuery(const std::string &type, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool QueryHandlers::HandleQuery(const User &user, const std::string &type, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	auto it = handlers.find(type);
 	if(it==handlers.end())
 		return false;
 	
-	return it->second(saxh,response);
+	return it->second(user, saxh,response);
 }

@@ -110,7 +110,7 @@ void *handle_connection(void *sp)
 				if(saxh.GetQueryGroup()=="quit")
 					break;
 				
-				if(!QueryHandlers::GetInstance()->HandleQuery(saxh.GetQueryGroup(),&saxh, &response))
+				if(!QueryHandlers::GetInstance()->HandleQuery(user, saxh.GetQueryGroup(),&saxh, &response))
 					throw Exception("API","Unknown command or action");
 				
 				response.SendResponse();

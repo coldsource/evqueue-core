@@ -35,6 +35,7 @@
 #include <Statistics.h>
 #include <WorkflowInstances.h>
 #include <Users.h>
+#include <User.h>
 #include <Exception.h>
 
 #include <sys/types.h>
@@ -173,12 +174,15 @@ int tools_send_exit_msg(int type,int tid,char retcode)
 	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }
 
-bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(saxh->GetQueryGroup()=="control")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		if(action=="reload")
 		{
 			string module = saxh->GetRootAttribute("module","");
@@ -221,12 +225,15 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 				stats->IncStatisticsQueries();
 				
 				WorkflowInstances *workflow_instances = WorkflowInstances::GetInstance();
-				workflow_instances->SendStatus(response);
+				workflow_instances->SendStatus(user, response);
 				
 				return true;
 			}
 			else if(type=="scheduler")
 			{
+				if(!user.IsAdmin())
+					User::InsufficientRights();
+				
 				stats->IncStatisticsQueries();
 				
 				WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
@@ -236,6 +243,9 @@ bool tools_handle_query(SocketQuerySAX2Handler *saxh, QueryResponse *response)
 			}
 			else if(type=="configuration")
 			{
+				if(!user.IsAdmin())
+					User::InsufficientRights();
+				
 				stats->IncStatisticsQueries();
 				
 				Configuration *config = Configuration::GetInstance();

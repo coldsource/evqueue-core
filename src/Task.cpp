@@ -27,6 +27,7 @@
 #include <Workflows.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <User.h>
 #include <base64.h>
 #include <global.h>
 
@@ -325,8 +326,11 @@ void Task::create_edit_check(
 		throw Exception("Task","output_method must be 'XML' or 'TEXT'");
 }
 
-bool Task::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Task::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	const string action = saxh->GetRootAttribute("action");
 	
 	if(action=="get")

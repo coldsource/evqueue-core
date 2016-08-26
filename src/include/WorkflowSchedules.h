@@ -25,6 +25,7 @@
 class WorkflowSchedule;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class WorkflowSchedules:public APIObjectList<WorkflowSchedule>
 {
@@ -42,5 +43,5 @@ class WorkflowSchedules:public APIObjectList<WorkflowSchedule>
 		
 		const std::vector<WorkflowSchedule *> &GetActiveWorkflowSchedules();
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

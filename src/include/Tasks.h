@@ -28,6 +28,7 @@
 class Task;
 class SocketQuerySAX2Handler;
 class QueryResponse;
+class User;
 
 class Tasks:public APIObjectList<Task>
 {
@@ -44,7 +45,7 @@ class Tasks:public APIObjectList<Task>
 		void Reload(bool notify = true);
 		void SyncBinaries(bool notify = true);
 		
-		static bool HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 
 #endif

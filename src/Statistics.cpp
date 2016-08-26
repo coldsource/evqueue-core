@@ -23,6 +23,7 @@
 #include <QueryResponse.h>
 #include <Exception.h>
 #include <QueuePool.h>
+#include <User.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
@@ -211,7 +212,7 @@ void Statistics::ResetGlobalStatistics()
 	workflow_instance_errors = 0;
 }
 
-bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Statistics::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	Statistics *stats = Statistics::GetInstance();
 	
@@ -243,6 +244,9 @@ bool Statistics::HandleQuery(SocketQuerySAX2Handler *saxh, QueryResponse *respon
 	}
 	else if(action=="reset")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		const string type = saxh->GetRootAttribute("type");
 		
 		if(type=="global")
