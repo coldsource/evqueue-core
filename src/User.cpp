@@ -24,6 +24,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <DB.h>
+#include <Sha1String.h>
 #include <global.h>
 
 #include <xqilla/xqilla-dom3.hpp>
@@ -247,7 +248,7 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 	else if(action=="create" || action=="edit")
 	{
 		string name = saxh->GetRootAttribute("name");
-		string password = saxh->GetRootAttribute("password");
+		string password = Sha1String(saxh->GetRootAttribute("password")).GetHex();
 		string profile = saxh->GetRootAttribute("profile");
 		
 		if(action=="create")
@@ -255,14 +256,14 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 			if(!user.IsAdmin())
 				User::InsufficientRights();
 			
-			Create(name, profile, profile);
+			Create(name, password, profile);
 		}
 		else
 		{
 			if(!user.IsAdmin() && user.GetName()!=name)
 				User::InsufficientRights();
 			
-			Edit(name, profile, profile);
+			Edit(name, password, profile);
 		}
 		
 		Users::GetInstance()->Reload();
