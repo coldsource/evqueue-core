@@ -93,7 +93,9 @@ std::map<std::string,std::string> evqueue_tables = {
 {"t_user",
 "CREATE TABLE `t_user` ( \
   `user_login` varchar(32) COLLATE utf8_unicode_ci NOT NULL, \
-  `user_password` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
+  `user_password` varchar(40) COLLATE ascii_general_ci NOT NULL, \
+  `user_password_salt` VARCHAR(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL, \
+  `user_password_iterations` INT NOT NULL DEFAULT 0, \
   `user_profile` enum('ADMIN','USER') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'USER', \
   PRIMARY KEY (`user_login`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \

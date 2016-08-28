@@ -50,11 +50,11 @@ static string hex2bin(const string &hex)
 	return bin;
 }
 
-string hash_hmac(const string &key, const string &data)
+string hash_hmac(const string &key, const string &data, bool binary)
 {
 	// Decode input hexadecimal strings to binary
-	string bkey = hex2bin(key);
-	string bdata = hex2bin(data);
+	string bkey = binary?key:hex2bin(key);
+	string bdata = binary?data:hex2bin(data);
 	
 	string ikey, okey;
 	
@@ -83,5 +83,5 @@ string hash_hmac(const string &key, const string &data)
 	osha1.ProcessBytes(okey);
 	osha1.ProcessBytes(isha1.GetBinary());
 	
-	return osha1.GetHex();
+	return binary?osha1.GetBinary():osha1.GetHex();
 }

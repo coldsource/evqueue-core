@@ -17,11 +17,11 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _HMAC_H_
-#define _HMAC_H_
+#ifndef _PBKDF2_H_
+#define _PBKDF2_H_
 
 #include <string>
 
-std::string hash_hmac(const std::string &key, const std::string &data, bool binary = false);
+std::string hash_pbkdf2(const std::string &password, const std::string &salt, int iterations = 4096);
 
 #endif

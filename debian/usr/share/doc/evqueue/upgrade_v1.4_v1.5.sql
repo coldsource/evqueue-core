@@ -18,6 +18,9 @@ ALTER TABLE t_queue ADD COLUMN queue_scheduler VARCHAR(32) COLLATE 'ascii_genera
 ALTER TABLE t_workflow_schedule_parameters MODIFY workflow_schedule_parameter varchar(64) COLLATE utf8_unicode_ci NOT NULL;
 ALTER TABLE t_workflow_instance_parameters MODIFY workflow_instance_parameter varchar(64) COLLATE utf8_unicode_ci NOT NULL;
 
+ALTER TABLE t_user MODIFY user_password VARCHAR(40) COLLATE 'ascii_general_ci' NOT NULL;
+ALTER TABLE t_user ADD COLUMN user_password_salt VARCHAR(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL AFTER user_password;
+ALTER TABLE t_user ADD COLUMN user_password_iterations INT NOT NULL DEFAULT 0 AFTER user_password_salt;
 ALTER TABLE t_user MODIFY user_profile ENUM('ADMIN','USER') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'USER';
 UPDATE t_user SET user_profile='USER' WHERE user_profile='';
 ALTER TABLE t_user_right DROP COLUMN user_right_del;
