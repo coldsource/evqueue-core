@@ -66,6 +66,7 @@ class User
 		static unsigned int Create(const std::string &name, const std::string &password, const std::string &profile);
 		static void Edit(const std::string &name, const std::string &password, const std::string &profile);
 		static void Delete(const std::string &name);
+		static void ChangePassword(const std::string &name, const std::string &password);
 		
 		static void ClearRights(const std::string &name);
 		static void GrantRight(const std::string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);

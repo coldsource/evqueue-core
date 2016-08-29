@@ -168,6 +168,18 @@ void User::Edit(const string &name,const string &password, const string &profile
 	);
 }
 
+void User::ChangePassword(const string &name,const string &password)
+{
+	if(!Users::GetInstance()->Exists(name))
+		throw Exception("User","User not found");
+	
+	DB db;
+	db.QueryPrintf("UPDATE t_user SET user_password=%s WHERE user_login=%s",
+		&password,
+		&name
+	);
+}
+
 void User::Delete(const string &name)
 {
 	DB db;
@@ -260,11 +272,25 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 		}
 		else
 		{
-			if(!user.IsAdmin() && user.GetName()!=name)
+			if(!user.IsAdmin())
 				User::InsufficientRights();
 			
 			Edit(name, password, profile);
 		}
+		
+		Users::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="change_password")
+	{
+		string name = saxh->GetRootAttribute("name");
+		string password = Sha1String(saxh->GetRootAttribute("password")).GetHex();
+		
+		if(!user.IsAdmin() && user.GetName()!=name)
+			User::InsufficientRights();
+		
+		ChangePassword(name,password);
 		
 		Users::GetInstance()->Reload();
 		
