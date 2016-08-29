@@ -426,8 +426,10 @@ void Git::list_files(const std::string directory, QueryResponse *response)
 		if(strcasecmp(entry.d_name+len-4,".xml")!=0)
 			continue;
 		
+		string entry_name_str(entry.d_name,len-4);
+		
 		DOMElement *node = (DOMElement *)response->AppendXML("<entry />");
-		node->setAttribute(X("name"),X(entry.d_name));
+		node->setAttribute(X("name"),X(entry_name_str.c_str()));
 		
 		string lastcommit = repo->GetFileLastCommit(directory+"/"+string(entry.d_name));
 		node->setAttribute(X("lastcommit"),X(lastcommit.c_str()));
