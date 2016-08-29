@@ -83,12 +83,14 @@ int main(int argc, char  **argv)
 		}
 		else if(strcmp(argv[cur],"--noformat")==0)
 			format = false;
+		else if(strcmp(argv[cur],"--")==0)
+		{
+			cur++;
+			break;
+		}
 		else
 			break;
 	}
-	
-	if(strcmp(argv[cur],"--")==0)
-		cur++;
 	
 	// If we received a password, compute sha1 of it as a real password
 	if(password.length())
