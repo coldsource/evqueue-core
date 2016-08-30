@@ -29,9 +29,11 @@ class Sha1String
 	sha1_ctx ctx;
 	
 	public:
-		Sha1String(const std::string &str = "");
+		Sha1String();
+		Sha1String(const std::string &str);
 		
 		void ProcessBytes(const std::string &str);
+		void ProcessBytes(void *bytes, int length);
 		
 		std::string GetBinary();
 		std::string GetHex();

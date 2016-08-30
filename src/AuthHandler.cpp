@@ -27,7 +27,7 @@
 #include <User.h>
 #include <Users.h>
 #include <Random.h>
-#include <sha1.h>
+#include <Sha1String.h>
 #include <hmac.h>
 
 #include <sys/types.h>
@@ -99,13 +99,13 @@ User AuthHandler::HandleAuth()
 
 string AuthHandler::generate_challenge()
 {
+	Sha1String sha1;
 	sha1_ctx ctx;
-	sha1_init_ctx(&ctx);
 	
 	struct timeval tv;
 	gettimeofday(&tv,0);
-	sha1_process_bytes((void *)&tv.tv_sec,sizeof(timeval::tv_sec),&ctx);
-	sha1_process_bytes((void *)&tv.tv_usec,sizeof(timeval::tv_usec),&ctx);
+	sha1.ProcessBytes((void *)&tv.tv_sec,sizeof(timeval::tv_sec));
+	sha1.ProcessBytes((void *)&tv.tv_usec,sizeof(timeval::tv_usec));
 	
 	string random_kernel;
 	try
@@ -117,30 +117,23 @@ string AuthHandler::generate_challenge()
 		throw Exception("Authentication Handler","Internal error");
 	}
 	
-	sha1_process_bytes(random_kernel.c_str(), random_kernel.length(), &ctx);
+	sha1.ProcessBytes(random_kernel);
 	
 	string random_mt =  Random::GetInstance()->GetMTRandomBinary(16);
-	sha1_process_bytes(random_mt.c_str(), random_mt.length(), &ctx);
+	sha1.ProcessBytes(random_mt);
 	
 	static clock_t base_time = clock();
 	clock_t t = clock()-base_time;
-	sha1_process_bytes((void *)&t,sizeof(clock_t),&ctx);
+	sha1.ProcessBytes((void *)&t,sizeof(clock_t));
 	
 	Statistics *stats = Statistics::GetInstance();
 	unsigned int accepted_cnx = stats->GetAcceptedConnections();
-	sha1_process_bytes((void *)&accepted_cnx,sizeof(unsigned int),&ctx);
+	sha1.ProcessBytes((void *)&accepted_cnx,sizeof(unsigned int));
 	
-	sha1_process_bytes((void *)remote_host.c_str(),remote_host.length(),&ctx);
-	sha1_process_bytes((void *)&remote_port,sizeof(int),&ctx);
+	sha1.ProcessBytes(remote_host);
+	sha1.ProcessBytes((void *)&remote_port,sizeof(int));
 	
-	char c_hash[20];
-	sha1_finish_ctx(&ctx,c_hash);
-	
-	stringstream sstream;
-	sstream << hex;
-	for(int i=0;i<20;i++)
-		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
-	return sstream.str();
+	return sha1.GetHex();
 }
 
 int AuthHandler::time_constant_strcmp(const std::string &str1, const std::string &str2)

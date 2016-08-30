@@ -23,6 +23,11 @@
 
 using namespace std;
 
+Sha1String::Sha1String()
+{
+	sha1_init_ctx(&ctx);
+}
+
 Sha1String::Sha1String(const std::string &str)
 {
 	sha1_init_ctx(&ctx);
@@ -33,6 +38,11 @@ Sha1String::Sha1String(const std::string &str)
 void Sha1String::ProcessBytes(const std::string &str)
 {
 	sha1_process_bytes(str.c_str(),str.length(),&ctx);
+}
+
+void Sha1String::ProcessBytes(void *bytes, int length)
+{
+	sha1_process_bytes(bytes,length,&ctx);
 }
 
 std::string Sha1String::GetBinary()
