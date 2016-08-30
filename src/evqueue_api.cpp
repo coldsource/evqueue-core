@@ -133,7 +133,7 @@ int main(int argc, char  **argv)
 		
 		string name = argv[cur];
 		if(cur+1>=argc)
-			return -1;
+			usage();
 		
 		string value = argv[cur+1];
 		
