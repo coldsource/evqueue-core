@@ -114,7 +114,7 @@ DOMNode *XMLUtils::AppendXML(DOMDocument *xmldoc, DOMNode *parent_node, const st
 	return node;
 }
 
-string XMLUtils::GetAttribute(DOMElement *node, string name, bool remove_attribute)
+string XMLUtils::GetAttribute(DOMElement *node, const string &name, bool remove_attribute)
 {
 	if(!node->hasAttribute(X(name.c_str())))
 		throw Exception("XMLUtils", "Attribute '"+name+"' does not exist");
@@ -129,4 +129,23 @@ string XMLUtils::GetAttribute(DOMElement *node, string name, bool remove_attribu
 		node->removeAttribute(X(name.c_str()));
 	
 	return value_str;
+}
+
+bool XMLUtils::GetAttributeBool(DOMElement *node, const string &name, bool remove_attribute)
+{
+	string val = GetAttribute(node, name, remove_attribute);
+	
+	if(val=="yes")
+		return true;
+	else if(val=="no")
+		return false;
+
+	try
+	{
+		return std::stoi(val)?true:false;
+	}
+	catch(...)
+	{
+		throw Exception("XML Parser","Attribute '"+name+"' has invalid boolean value");
+	}
 }

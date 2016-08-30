@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+#include <xercesc/dom/DOM.hpp>
+
 namespace task_parameters_mode { enum task_parameters_mode {ENV,CMDLINE,UNKNOWN}; }
 namespace task_output_method { enum task_output_method {XML,TEXT,UNKNOWN}; }
 
@@ -45,6 +47,8 @@ class Task
 	bool task_merge_stderr;
 	std::string task_group;
 	std::string task_comment;
+	std::string lastcommit;
+	unsigned int bound_workflow_id;
 		
 	public:
 		Task();
@@ -63,6 +67,13 @@ class Task
 		task_output_method::task_output_method GetOutputMethod() const  { return output_method; }
 		const std::string &GetGroup() const { return task_group; }
 		const std::string &GetComment() const { return task_comment; }
+		
+		std::string GetLastCommit() const { return lastcommit; }
+		bool GetIsModified();
+		void SetLastCommit(const std::string &commit_id);
+		
+		std::string SaveToXML();
+		static void LoadFromXML(std::string name, xercesc::DOMDocument *xmldoc, std::string repo_lastcommit);
 		
 		static void PutFile(const std::string &filename,const std::string &data,bool base64_encoded=true);
 		static void GetFile(const std::string &filename,std::string &data);
@@ -87,7 +98,8 @@ class Task
 			const std::string &group,
 			const std::string &comment,
 			bool create_workflow,
-			std::vector<std::string> inputs
+			std::vector<std::string> inputs,
+			const std::string &lastcommit = ""
 		);
 		
 		static void Edit(

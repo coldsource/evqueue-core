@@ -86,7 +86,8 @@ std::map<std::string,std::string> evqueue_tables = {
   `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '', \
   `task_comment` text COLLATE utf8_unicode_ci NOT NULL DEFAULT '', \
   `workflow_id` int(10) DEFAULT NULL, \
-  UNIQUE KEY `taskdesc_id` (`task_id`) \
+  `task_lastcommit` varchar(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL, \
+  UNIQUE KEY `taskdesc_id` (`task_id`), \
   UNIQUE KEY `task_name` (`task_name`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \
 "},

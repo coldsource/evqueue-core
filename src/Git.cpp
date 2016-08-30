@@ -24,6 +24,8 @@
 #include <XMLUtils.h>
 #include <Workflow.h>
 #include <Workflows.h>
+#include <Task.h>
+#include <Tasks.h>
 #include <Configuration.h>
 #include <Exception.h>
 #include <FileManager.h>
@@ -57,6 +59,7 @@ Git::Git()
 		repo = new LibGit2(repo_path);
 	
 	workflows_subdirectory = config->Get("git.workflows.subdirectory");
+	tasks_subdirectory = config->Get("git.tasks.subdirectory");
 	
 	instance = this;
 }
@@ -99,6 +102,38 @@ void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 	pthread_mutex_unlock(&lock);
 }
 
+void Git::SaveTask(const string &name, const string &commit_log, bool force)
+{
+	pthread_mutex_lock(&lock);
+	
+	try
+	{
+		// Get workflow form its ID
+		Task task = Tasks::GetInstance()->Get(name);
+		
+		// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
+		string db_lastcommit = task.GetLastCommit();
+		
+		// Prepare XML
+		string task_xml = task.SaveToXML();
+		
+		// Write file to repo
+		string commit_id = save_file(tasks_subdirectory+"/"+name+".xml", task_xml, db_lastcommit, commit_log, force);
+		
+		// Update workflow 'lastcommit' to new commit and reload configuration
+		task.SetLastCommit(commit_id);
+		Tasks::GetInstance()->Reload();
+	}
+	catch(Exception  &e)
+	{
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	pthread_mutex_unlock(&lock);
+}
+
 void Git::LoadWorkflow(const string &name)
 {
 	pthread_mutex_lock(&lock);
@@ -120,6 +155,43 @@ void Git::LoadWorkflow(const string &name)
 		
 		// Create/Edit workflow
 		Workflow::LoadFromXML(name, xmldoc, repo_lastcommit);
+	}
+	catch(Exception &e)
+	{
+		if(parser)
+			parser->release();
+		
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	parser->release();
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Git::LoadTask(const string &name)
+{
+	pthread_mutex_lock(&lock);
+	
+	DOMLSParser *parser = 0;
+	
+	try
+	{
+		string filename = tasks_subdirectory+"/"+name+".xml";
+		
+		// Load XML from file
+		DOMDocument *xmldoc;
+		load_file(filename,&parser, &xmldoc);
+		
+		// Read repository lastcommit
+		string repo_lastcommit = repo->GetFileLastCommit(filename);
+		if(!repo_lastcommit.length())
+			throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
+		
+		// Create/Edit workflow
+		Task::LoadFromXML(name, xmldoc, repo_lastcommit);
 	}
 	catch(Exception &e)
 	{
@@ -169,11 +241,56 @@ void Git::GetWorkflow(const string &name, QueryResponse *response)
 	pthread_mutex_unlock(&lock);
 }
 
+void Git::GetTask(const string &name, QueryResponse *response)
+{
+	pthread_mutex_lock(&lock);
+	
+	DOMLSParser *parser = 0;
+	
+	try
+	{
+		string filename = tasks_subdirectory+"/"+name+".xml";
+		
+		// Load XML from file
+		DOMDocument *xmldoc;
+		load_file(filename,&parser, &xmldoc);
+		
+		DOMDocument *response_xmldoc = response->GetDOM();
+		DOMNode *node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
+		response_xmldoc->getDocumentElement()->appendChild(node);
+	}
+	catch(Exception &e)
+	{
+		if(parser)
+			parser->release();
+		
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	parser->release();
+	
+	pthread_mutex_unlock(&lock);
+}
+
 string Git::GetWorkflowHash(const string &name)
 {
 	pthread_mutex_lock(&lock);
 	
 	string hash = get_file_hash(workflows_subdirectory+"/"+name+".xml");
+	
+	pthread_mutex_unlock(&lock);
+	
+	return hash;
+	
+}
+
+string Git::GetTaskHash(const string &name)
+{
+	pthread_mutex_lock(&lock);
+	
+	string hash = get_file_hash(tasks_subdirectory+"/"+name+".xml");
 	
 	pthread_mutex_unlock(&lock);
 	
@@ -216,6 +333,41 @@ void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
 	pthread_mutex_unlock(&lock);
 }
 
+void Git::RemoveTask(const std::string &name, const string &commit_log)
+{
+	pthread_mutex_lock(&lock);
+	
+	try
+	{
+		string filename = tasks_subdirectory+"/"+name+".xml";
+		string full_filename = repo_path+"/"+filename;
+		
+		repo->Pull();
+		repo->RemoveFile(filename);
+		repo->Commit(commit_log);
+		repo->Push();
+		
+		if(unlink(full_filename.c_str())!=0)
+			throw Exception("Git","Unable to remove file "+full_filename);
+		
+		if(Tasks::GetInstance()->Exists(name))
+		{
+			Task task = Tasks::GetInstance()->Get(name);
+			task.SetLastCommit("");
+			
+			Tasks::GetInstance()->Reload();
+		}
+	}
+	catch(Exception &e)
+	{
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	pthread_mutex_unlock(&lock);
+}
+
 void Git::ListWorkflows(QueryResponse *response)
 {
 	pthread_mutex_lock(&lock);
@@ -223,6 +375,24 @@ void Git::ListWorkflows(QueryResponse *response)
 	try
 	{
 		list_files(workflows_subdirectory,response);
+	}
+	catch(Exception &e)
+	{
+		pthread_mutex_unlock(&lock);
+		
+		throw e;
+	}
+	
+	pthread_mutex_unlock(&lock);
+}
+
+void Git::ListTasks(QueryResponse *response)
+{
+	pthread_mutex_lock(&lock);
+	
+	try
+	{
+		list_files(tasks_subdirectory,response);
 	}
 	catch(Exception &e)
 	{
@@ -288,6 +458,46 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	else if(action=="list_workflows")
 	{
 		Git::GetInstance()->ListWorkflows(response);
+		return true;
+	}
+	if(action=="save_task")
+	{
+		string name = saxh->GetRootAttribute("name");
+		string commit_log = saxh->GetRootAttribute("commit_log");
+		bool force = saxh->GetRootAttributeBool("force",false);
+		
+		Git::GetInstance()->SaveTask(name,commit_log,force);
+		
+		return true;
+	}
+	else if(action=="load_task")
+	{
+		string name = saxh->GetRootAttribute("name");
+		
+		Git::GetInstance()->LoadTask(name);
+		
+		return true;
+	}
+	else if(action=="get_task")
+	{
+		string name = saxh->GetRootAttribute("name");
+		
+		Git::GetInstance()->GetTask(name,response);
+		
+		return true;
+	}
+	else if(action=="remove_task")
+	{
+		string name = saxh->GetRootAttribute("name");
+		string commit_log = saxh->GetRootAttribute("commit_log");
+		
+		Git::GetInstance()->RemoveTask(name,commit_log);
+		
+		return true;
+	}
+	else if(action=="list_tasks")
+	{
+		Git::GetInstance()->ListTasks(response);
 		return true;
 	}
 	

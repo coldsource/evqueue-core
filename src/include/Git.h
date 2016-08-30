@@ -41,6 +41,7 @@ class Git
 	LibGit2 *repo = 0;
 	
 	std::string workflows_subdirectory;
+	std::string tasks_subdirectory;
 	
 	public:
 		Git();
@@ -49,11 +50,17 @@ class Git
 		static Git *GetInstance() { return  instance; }
 		
 		void SaveWorkflow(const std::string &name, const std::string &commit_log, bool force);
+		void SaveTask(const std::string &name, const std::string &commit_log, bool force);
 		void LoadWorkflow(const std::string &name);
+		void LoadTask(const std::string &name);
 		void GetWorkflow(const std::string &name, QueryResponse *response);
+		void GetTask(const std::string &name, QueryResponse *response);
 		std::string GetWorkflowHash(const std::string &name);
+		std::string GetTaskHash(const std::string &name);
 		void RemoveWorkflow(const std::string &name,const std::string &commit_log);
+		void RemoveTask(const std::string &name,const std::string &commit_log);
 		void ListWorkflows(QueryResponse *response);
+		void ListTasks(QueryResponse *response);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
