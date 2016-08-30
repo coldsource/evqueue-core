@@ -157,6 +157,7 @@ bool Tasks::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 			node->setAttribute(X("parameters_mode"),task.GetParametersMode()==task_parameters_mode::ENV?X("ENV"):X("CMDLINE"));
 			node->setAttribute(X("group"),X(task.GetGroup().c_str()));
 			node->setAttribute(X("comment"),X(task.GetComment().c_str()));
+			node->setAttribute(X("modified"),task.GetIsModified()?X("1"):X("0"));
 		}
 		
 		pthread_mutex_unlock(&tasks->lock);
