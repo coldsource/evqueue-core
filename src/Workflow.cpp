@@ -174,7 +174,8 @@ string Workflow::SaveToXML()
 	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 	xmldoc = xqillaImplementation->createDocument();
 	
-	DOMElement *node = (DOMElement *)XMLUtils::AppendXML(xmldoc, (DOMNode *)xmldoc, workflow_xml);
+	DOMElement *node = (DOMElement *)XMLUtils::AppendXML(xmldoc, (DOMNode *)xmldoc, "<workflow />");
+	XMLUtils::AppendXML(xmldoc, (DOMNode *)node, workflow_xml);
 	node->setAttribute(X("group"),X(group.c_str()));
 	node->setAttribute(X("comment"),X(comment.c_str()));
 	
@@ -204,7 +205,7 @@ void Workflow::LoadFromXML(string name, DOMDocument *xmldoc, string repo_lastcom
 	{
 		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 		serializer = xqillaImplementation->createLSSerializer();
-		XMLCh *workflow_xml = serializer->writeToString(root_node);
+		XMLCh *workflow_xml = serializer->writeToString(root_node->getFirstChild());
 		char *workflow_xml_c = XMLString::transcode(workflow_xml);
 		
 		string content;
@@ -265,7 +266,8 @@ void Workflow::Get(unsigned int id, QueryResponse *response)
 {
 	Workflow workflow = Workflows::GetInstance()->Get(id);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
+	DOMElement *node = (DOMElement *)response->AppendXML("<workflow />");
+	response->AppendXML(workflow.GetXML(), node);
 	node->setAttribute(X("name"),X(workflow.GetName().c_str()));
 	node->setAttribute(X("group"),X(workflow.GetGroup().c_str()));
 	node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));

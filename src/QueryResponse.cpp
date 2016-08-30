@@ -51,9 +51,11 @@ void QueryResponse::SetError(const string &error)
 	status_ok = false;
 }
 
-DOMNode *QueryResponse::AppendXML(const string &xml)
+DOMNode *QueryResponse::AppendXML(const string &xml, DOMElement *node)
 {
-	return XMLUtils::AppendXML(xmldoc, xmldoc->getDocumentElement(), xml);
+	if(!node)
+		node = xmldoc->getDocumentElement();
+	return XMLUtils::AppendXML(xmldoc, node, xml);
 }
 
 void QueryResponse::SendResponse()
