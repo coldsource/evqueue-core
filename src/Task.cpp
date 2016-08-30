@@ -87,7 +87,7 @@ Task::Task(DB *db,const string &task_name)
 	
 	task_group = db->GetFieldInt(10);
 	
-	task_comment = db->GetFieldInt(11);
+	task_comment = db->GetField(11);
 	
 	lastcommit = db->GetField(12)?db->GetField(12):"";
 	
