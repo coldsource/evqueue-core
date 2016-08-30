@@ -373,7 +373,7 @@ WorkflowInstance::~WorkflowInstance()
 		serializer->release();
 	
 	if(!is_shutting_down)
-		Logger::Log(LOG_NOTICE,"[WID %d] Terminated",workflow_instance_id);
+		Logger::Log(LOG_INFO,"[WID %d] Terminated",workflow_instance_id);
 	else
 		Logger::Log(LOG_NOTICE,"[WID %d] Suspended during shutdown",workflow_instance_id);
 }
@@ -382,7 +382,7 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 {
 	pthread_mutex_lock(&lock);
 	
-	Logger::Log(LOG_NOTICE,"[WID %d] Started",workflow_instance_id);
+	Logger::Log(LOG_INFO,"[WID %d] Started",workflow_instance_id);
 	
 	char workflow_instance_id_str[10];
 	char buf[32];
@@ -763,7 +763,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 		return -1;
 	}
 	
-	Logger::Log(LOG_NOTICE,"[WID %d] Executing %s",workflow_instance_id,task_name_c);
+	Logger::Log(LOG_INFO,"[WID %d] Executing %s",workflow_instance_id,task_name_c);
 	
 	XMLString::release(&task_name_c);
 	
@@ -1551,7 +1551,7 @@ void WorkflowInstance::enqueue_task(DOMNode *task)
 	queued_tasks++;
 	
 	char *task_name_c = XMLString::transcode(task_name);
-	Logger::Log(LOG_NOTICE,"[WID %d] Added task %s to queue %s\n",workflow_instance_id,task_name_c,queue_name_c);
+	Logger::Log(LOG_INFO,"[WID %d] Added task %s to queue %s\n",workflow_instance_id,task_name_c,queue_name_c);
 	XMLString::release(&task_name_c);
 	
 	XMLString::release(&queue_name_c);
@@ -1683,7 +1683,7 @@ void WorkflowInstance::record_savepoint(bool force)
 	{
 		if(tries>0)
 		{
-			Logger::Log(LOG_NOTICE,"[ WorkflowInstance::record_savepoint() ] Retrying in %d seconds\n",savepoint_retry_wait);
+			Logger::Log(LOG_WARNING,"[ WorkflowInstance::record_savepoint() ] Retrying in %d seconds\n",savepoint_retry_wait);
 			sleep(savepoint_retry_wait);
 		}
 		
@@ -1718,7 +1718,7 @@ void WorkflowInstance::record_savepoint(bool force)
 		}
 		catch(Exception &e)
 		{
-			Logger::Log(LOG_WARNING,"[ WorkflowInstance::record_savepoint() ] Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
+			Logger::Log(LOG_ERR,"[ WorkflowInstance::record_savepoint() ] Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
 		}
 		
 		tries++;

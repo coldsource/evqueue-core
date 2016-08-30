@@ -47,7 +47,7 @@ WorkflowSchedules::~WorkflowSchedules()
 
 void WorkflowSchedules::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"[ WorkflowSchedules ] Reloading workflow schedules definitions");
+	Logger::Log(LOG_NOTICE,"Reloading workflow schedules definitions");
 	
 	pthread_mutex_lock(&lock);
 	

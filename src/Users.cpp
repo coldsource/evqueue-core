@@ -46,7 +46,7 @@ Users::~Users()
 
 void Users::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"[ Users ] Reloading users definitions");
+	Logger::Log(LOG_NOTICE,"Reloading users definitions");
 	
 	pthread_mutex_lock(&lock);
 	

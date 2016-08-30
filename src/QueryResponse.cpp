@@ -19,6 +19,7 @@
 
 #include <QueryResponse.h>
 #include <XMLUtils.h>
+#include <Logger.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -86,6 +87,7 @@ void QueryResponse::SendResponse()
 
 bool QueryResponse::Ping()
 {
+	Logger::Log(LOG_DEBUG, "Checking for dead peer");
 	int re = send(socket,"<ping />\n",9,0);
 	if(re!=9)
 		return false;

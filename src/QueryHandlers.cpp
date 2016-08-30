@@ -18,6 +18,7 @@
  */
 
 #include <QueryHandlers.h>
+#include <Logger.h>
 
 QueryHandlers *QueryHandlers::instance=0;
 
@@ -37,6 +38,8 @@ bool QueryHandlers::HandleQuery(const User &user, const std::string &type, Socke
 	auto it = handlers.find(type);
 	if(it==handlers.end())
 		return false;
+	
+	Logger::Log(LOG_DEBUG, "API : Found handler for group '%s'",type.c_str());
 	
 	return it->second(user, saxh,response);
 }

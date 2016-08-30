@@ -53,7 +53,7 @@ Notifications::~Notifications()
 
 void Notifications::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"[ Notifications ] Reloading notifications definitions");
+	Logger::Log(LOG_NOTICE,"Reloading notifications definitions");
 	
 	pthread_mutex_lock(&lock);
 	

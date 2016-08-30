@@ -49,7 +49,7 @@ QueuePool::QueuePool(void)
 	std::string scheduler_str = Configuration::GetInstance()->Get("queuepool.scheduler");
 	default_scheduler = get_scheduler_from_string(scheduler_str);
 	
-	Logger::Log(LOG_NOTICE,"[ QueuePool ] Loaded default scheduler '%s'",scheduler_str.c_str());
+	Logger::Log(LOG_NOTICE,"Loaded default scheduler '%s'",scheduler_str.c_str());
 	
 	FILE *f;
 	char buf[10];
@@ -240,7 +240,7 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	// Check if queue has been marked as 'to be removed'
 	if(q->IsRemoved() && q->GetSize()==0 && q->GetRunningTasks()==0)
 	{
-		Logger::Log(LOG_NOTICE,"[ QueuePool ] Removed queue %s",q->GetName().c_str());
+		Logger::Log(LOG_NOTICE,"Removed queue %s",q->GetName().c_str());
 		
 		queues_name.erase(q->GetName());
 		delete q;
@@ -295,7 +295,7 @@ void QueuePool::Reload(bool notify)
 {
 	DB db;
 	
-	Logger::Log(LOG_NOTICE,"[ QueuePool ] Reloading queues definitions");
+	Logger::Log(LOG_NOTICE,"Reloading queues definitions");
 	
 	pthread_mutex_lock(&mutex);
 	

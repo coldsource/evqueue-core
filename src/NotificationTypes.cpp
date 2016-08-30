@@ -50,7 +50,7 @@ NotificationTypes::~NotificationTypes()
 
 void NotificationTypes::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Reloading configuration from database");
+	Logger::Log(LOG_NOTICE,"Reloading configuration from database");
 	
 	pthread_mutex_lock(&lock);
 	

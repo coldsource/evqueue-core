@@ -52,6 +52,9 @@ void Logger::Log(int level,const char *msg,...)
 	va_list ap;
 	int n;
 	
+	if((!instance->log_syslog || level>instance->syslog_filter) && (!instance->log_db || level>instance->db_filter))
+		return;
+	
 	va_start(ap, msg);
 	n = vsnprintf(buf,1024,msg,ap);
 	va_end(ap);
@@ -69,7 +72,7 @@ void Logger::Log(int level,const char *msg,...)
 			DB db;
 			db.QueryPrintfC("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,buf);
 		}
-		catch(Exception &e) { }
+		catch(Exception &e) { } // Logger should never send exceptions on database error to prevent exception storm
 	}
 }
 

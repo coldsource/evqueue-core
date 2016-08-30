@@ -49,7 +49,7 @@ RetrySchedules::~RetrySchedules()
 
 void RetrySchedules::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"[ RetrySchedules ] Reloading schedules definitions");
+	Logger::Log(LOG_NOTICE,"Reloading schedules definitions");
 	
 	pthread_mutex_lock(&lock);
 	

@@ -18,6 +18,7 @@
  */
 
 #include <ActiveConnections.h>
+#include <Logger.h>
 #include <handle_connection.h>
 
 using namespace std;
@@ -45,6 +46,8 @@ void ActiveConnections::StartConnection(int s)
 	int *sp = new int;
 	*sp = s;
 	
+	Logger::Log(LOG_DEBUG, "Accepting new connection, current connections : %d",active_threads.size()+1);
+	
 	pthread_t thread;
 	pthread_attr_t thread_attr;
 	pthread_attr_init(&thread_attr);
@@ -68,6 +71,8 @@ void ActiveConnections::EndConnection(pthread_t thread)
 	
 	pthread_detach(thread);
 	active_threads.erase(thread);
+	
+	Logger::Log(LOG_DEBUG, "Ending connection, current connections : %d",active_threads.size());
 	
 	pthread_mutex_unlock(&lock);
 }

@@ -52,7 +52,7 @@ Tasks::~Tasks()
 
 void Tasks::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"[ Tasks ] Reloading tasks definitions");
+	Logger::Log(LOG_NOTICE,"Reloading tasks definitions");
 	
 	pthread_mutex_lock(&lock);
 	

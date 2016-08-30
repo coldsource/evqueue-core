@@ -19,6 +19,7 @@
 
 #include <DB.h>
 #include <Exception.h>
+#include <Logger.h>
 #include <Configuration.h>
 
 #include <stdlib.h>
@@ -87,6 +88,8 @@ void DB::Query(const char *query)
 		res=0;
 	}
 
+	Logger::Log(LOG_DEBUG, "Executing query : %s",query);
+	
 	if(mysql_query(mysql,query)!=0)
 	{
 		if(transaction_started)

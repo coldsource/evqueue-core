@@ -50,7 +50,7 @@ Workflows::~Workflows()
 
 void Workflows::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"[ Workflows ] Reloading workflows definitions");
+	Logger::Log(LOG_NOTICE,"Reloading workflows definitions");
 	
 	pthread_mutex_lock(&lock);
 	

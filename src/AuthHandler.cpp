@@ -82,17 +82,23 @@ User AuthHandler::HandleAuth()
 		catch(Exception &e)
 		{
 			// Cach exceptions to hide real error for security reasons
+			Logger::Log(LOG_NOTICE,"Authentication failed : unknown user",user.GetName().c_str());
 			throw Exception("Authentication Handler","Invalid authentication");
 		}
 		
 		string hmac = hash_hmac(user.GetPassword(),challenge);
 		if(time_constant_strcmp("hmac",response)!=0 && time_constant_strcmp(hmac,response)!=0)
+		{
+			Logger::Log(LOG_NOTICE,"Authentication failed for user '%s' : wrong password",user.GetName().c_str());
 			throw Exception("Authentication Handler","Invalid authentication");
+		}
 	}
 	catch(Exception &e)
 	{
 		throw e;
 	}
+	
+	Logger::Log(LOG_INFO,"Successful authentication of user '%s'",user.GetName().c_str());
 	
 	return user;
 }
