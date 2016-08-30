@@ -26,6 +26,7 @@
 #include <Configuration.h>
 #include <User.h>
 #include <Users.h>
+#include <Random.h>
 #include <sha1.h>
 #include <hmac.h>
 
@@ -106,14 +107,20 @@ string AuthHandler::generate_challenge()
 	sha1_process_bytes((void *)&tv.tv_sec,sizeof(timeval::tv_sec),&ctx);
 	sha1_process_bytes((void *)&tv.tv_usec,sizeof(timeval::tv_usec),&ctx);
 	
-	char devrandom[6];
-	FILE *f = fopen("/dev/urandom","r");
-	if(!f || fread(devrandom,1,6,f)!=6)
+	string random_kernel;
+	try
 	{
-		Logger::Log(LOG_ERR,"Unable to read /dev/urandom while trying to generate challenge");
+		random_kernel = Random::GetInstance()->GetKernelRandomBinary(6);
+	}
+	catch(Exception &e)
+	{
 		throw Exception("Authentication Handler","Internal error");
 	}
-	fclose(f);
+	
+	sha1_process_bytes(random_kernel.c_str(), random_kernel.length(), &ctx);
+	
+	string random_mt =  Random::GetInstance()->GetMTRandomBinary(16);
+	sha1_process_bytes(random_mt.c_str(), random_mt.length(), &ctx);
 	
 	static clock_t base_time = clock();
 	clock_t t = clock()-base_time;

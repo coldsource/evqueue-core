@@ -76,6 +76,7 @@
 #include <User.h>
 #include <Users.h>
 #include <Sockets.h>
+#include <Random.h>
 #include <QueryHandlers.h>
 #include <Cluster.h>
 #include <ActiveConnections.h>
@@ -339,6 +340,9 @@ int main(int argc,const char **argv)
 		
 		// Instanciate sequence generator, used for savepoint level 0 or 1
 		SequenceGenerator *seq = new SequenceGenerator();
+		
+		// Instanciate random numbers generator
+		Random *random = new Random();
 		
 		// Git repository
 		Git *git = new Git();
@@ -618,6 +622,7 @@ int main(int argc,const char **argv)
 				delete cluster;
 				delete users;
 				delete active_connections;
+				delete random;
 				
 				XQillaPlatformUtils::terminate();
 				
