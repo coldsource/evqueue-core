@@ -182,7 +182,7 @@ void Configuration::SendConfiguration(QueryResponse *response)
 	{
 		DOMElement *entry_node = xmldoc->createElement(X("entry"));
 		entry_node->setAttribute(X("name"),X(it->first.c_str()));
-		if(it->first=="mysql.password" || it->first=="cluster.notify.password")
+		if(it->first=="mysql.password" || it->first=="cluster.notify.password" || it->first=="git.password")
 			entry_node->setAttribute(X("value"),X("****")); // Do not send password
 		else
 			entry_node->setAttribute(X("value"),X(it->second.c_str()));
