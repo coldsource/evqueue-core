@@ -351,6 +351,17 @@ void Workflow::Delete(unsigned int id)
 		Users::GetInstance()->Reload();
 }
 
+void Workflow::ListNotifications(unsigned int id, QueryResponse *response)
+{
+	Workflow workflow = Workflows::GetInstance()->Get(id);
+	
+	for(int i=0;i<workflow.notifications.size();i++)
+	{
+		DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
+		node->setAttribute(X("id"),X(std::to_string(workflow.notifications.at(i)).c_str()));
+	}
+}
+
 void Workflow::SubscribeNotification(unsigned int id, unsigned int notification_id)
 {
 	if(!Notifications::GetInstance()->Exists(notification_id))
@@ -412,7 +423,10 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 		string comment = saxh->GetRootAttribute("comment","");
 		
 		if(action=="create")
-			Create(name, content, group, comment);
+		{
+			unsigned int id = Create(name, content, group, comment);
+			response->GetDOM()->getDocumentElement()->setAttribute(X("workflow-id"),X(to_string(id).c_str()));
+		}
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
@@ -432,7 +446,7 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 		
 		return true;
 	}
-	else if(action=="subscribe_notification" || action=="unsubscribe_notification" || action=="clear_notifications")
+	else if(action=="subscribe_notification" || action=="unsubscribe_notification" || action=="clear_notifications" || action=="list_notifications")
 	{
 		unsigned int id = saxh->GetRootAttributeInt("id");
 		
@@ -441,6 +455,12 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 			ClearNotifications(id);
 			
 			Workflows::GetInstance()->Reload();
+			
+			return true;
+		}
+		else if(action=="list_notifications")
+		{
+			ListNotifications(id, response);
 			
 			return true;
 		}

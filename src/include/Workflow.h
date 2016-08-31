@@ -74,6 +74,7 @@ class Workflow
 		static void SubscribeNotification(unsigned int id, unsigned int notification_id);
 		static void UnsubscribeNotification(unsigned int id, unsigned int notification_id);
 		static void ClearNotifications(unsigned int id);
+		static void ListNotifications(unsigned int id, QueryResponse *response);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
