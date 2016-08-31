@@ -205,6 +205,20 @@ void User::ClearRights(const string &name)
 	db.QueryPrintf("DELETE FROM t_user_right WHERE user_login=%s",&name);
 }
 
+void User::ListRights(const string &name, QueryResponse *response)
+{
+	User user = Users::GetInstance()->Get(name);
+	
+	for(auto it=user.rights.begin();it!=user.rights.end();++it)
+	{
+		DOMElement *node = (DOMElement *)response->AppendXML("<right />");
+		node->setAttribute(X("read"),it->second.read?X("yes"):X("no"));
+		node->setAttribute(X("edit"),it->second.edit?X("yes"):X("no"));
+		node->setAttribute(X("exec"),it->second.exec?X("yes"):X("no"));
+		node->setAttribute(X("kill"),it->second.kill?X("yes"):X("no"));
+	}
+}
+
 void User::GrantRight(const string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill)
 {
 	if(!Users::GetInstance()->Exists(name))
@@ -319,6 +333,17 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 		ClearRights(name);
 		
 		Users::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="list_rights")
+	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
+		string name = saxh->GetRootAttribute("name");
+		
+		ListRights(name, response);
 		
 		return true;
 	}

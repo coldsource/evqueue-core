@@ -69,6 +69,7 @@ class User
 		static void ChangePassword(const std::string &name, const std::string &password);
 		
 		static void ClearRights(const std::string &name);
+		static void ListRights(const std::string &name, QueryResponse *response);
 		static void GrantRight(const std::string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);
 		static void RevokeRight(const std::string &name, unsigned int workflow_id);
 		
