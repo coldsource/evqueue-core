@@ -130,10 +130,10 @@ void User::Get(const string &name, QueryResponse *response)
 	{
 		DOMElement *right_node = response->GetDOM()->createElement(X("right"));
 		right_node->setAttribute(X("workflow-id"),X(to_string(it->first).c_str()));
-		right_node->setAttribute(X("edit"),it->second.edit?X("1"):X("0"));
-		right_node->setAttribute(X("read"),it->second.read?X("1"):X("0"));
-		right_node->setAttribute(X("exec"),it->second.exec?X("1"):X("0"));
-		right_node->setAttribute(X("kill"),it->second.kill?X("1"):X("0"));
+		right_node->setAttribute(X("edit"),it->second.edit?X("yes"):X("no"));
+		right_node->setAttribute(X("read"),it->second.read?X("yes"):X("no"));
+		right_node->setAttribute(X("exec"),it->second.exec?X("yes"):X("no"));
+		right_node->setAttribute(X("kill"),it->second.kill?X("yes"):X("no"));
 		
 		node->appendChild(right_node);
 	}
