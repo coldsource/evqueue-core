@@ -158,6 +158,7 @@ bool Tasks::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 			node->setAttribute(X("group"),X(task.GetGroup().c_str()));
 			node->setAttribute(X("comment"),X(task.GetComment().c_str()));
 			node->setAttribute(X("modified"),task.GetIsModified()?X("1"):X("0"));
+			node->setAttribute(X("lastcommit"),X(task.GetLastCommit().c_str()));
 		}
 		
 		pthread_mutex_unlock(&tasks->lock);
