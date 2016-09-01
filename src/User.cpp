@@ -256,7 +256,7 @@ void User::create_edit_check(const std::string &name, const std::string &passwor
 	if(profile!="ADMIN" && profile!="USER")
 		throw Exception("User","Invalid profile, should be 'ADMIN' or 'USER'");
 	
-	if(password=="")
+	if(password=="da39a3ee5e6b4b0d3255bfef95601890afd80709") // SHA1 for empty tring
 		throw Exception("User","Empty password");
 }
 
