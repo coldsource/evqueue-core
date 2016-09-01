@@ -85,7 +85,7 @@ Task::Task(DB *db,const string &task_name)
 	
 	task_merge_stderr = db->GetFieldInt(9);
 	
-	task_group = db->GetFieldInt(10);
+	task_group = db->GetField(10);
 	
 	task_comment = db->GetField(11);
 	
