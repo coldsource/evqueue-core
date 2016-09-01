@@ -143,10 +143,12 @@ unsigned int User::Create(const string &name, const string &password, const stri
 {
 	create_edit_check(name,password,profile);
 	
+	string password_sha1 = Sha1String(password).GetHex();
+	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_user(user_login,user_password,user_profile) VALUES(%s,%s,%s)",
 		&name,
-		&password,
+		&password_sha1,
 		&profile
 	);
 	
@@ -160,9 +162,11 @@ void User::Edit(const string &name,const string &password, const string &profile
 	if(!Users::GetInstance()->Exists(name))
 		throw Exception("User","User not found");
 	
+	string password_sha1 = Sha1String(password).GetHex();
+	
 	DB db;
 	db.QueryPrintf("UPDATE t_user SET user_password=%s,user_profile=%s WHERE user_login=%s",
-		&password,
+		&password_sha1,
 		&profile,
 		&name
 	);
@@ -173,9 +177,11 @@ void User::ChangePassword(const string &name,const string &password)
 	if(!Users::GetInstance()->Exists(name))
 		throw Exception("User","User not found");
 	
+	string password_sha1 = Sha1String(password).GetHex();
+	
 	DB db;
 	db.QueryPrintf("UPDATE t_user SET user_password=%s WHERE user_login=%s",
-		&password,
+		&password_sha1,
 		&name
 	);
 }
@@ -256,7 +262,7 @@ void User::create_edit_check(const std::string &name, const std::string &passwor
 	if(profile!="ADMIN" && profile!="USER")
 		throw Exception("User","Invalid profile, should be 'ADMIN' or 'USER'");
 	
-	if(password=="da39a3ee5e6b4b0d3255bfef95601890afd80709") // SHA1 for empty tring
+	if(password=="")
 		throw Exception("User","Empty password");
 }
 
@@ -278,7 +284,7 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 	else if(action=="create" || action=="edit")
 	{
 		string name = saxh->GetRootAttribute("name");
-		string password = Sha1String(saxh->GetRootAttribute("password")).GetHex();
+		string password = saxh->GetRootAttribute("password");
 		string profile = saxh->GetRootAttribute("profile");
 		
 		if(action=="create")
@@ -304,7 +310,7 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 	else if(action=="change_password")
 	{
 		string name = saxh->GetRootAttribute("name");
-		string password = Sha1String(saxh->GetRootAttribute("password")).GetHex();
+		string password = saxh->GetRootAttribute("password");
 		
 		if(!user.IsAdmin() && user.GetName()!=name)
 			User::InsufficientRights();
