@@ -309,11 +309,12 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		string filter_launched_from = saxh->GetRootAttribute("filter_launched_from","");
 		string filter_launched_until = saxh->GetRootAttribute("filter_launched_until","");
 		string filter_status = saxh->GetRootAttribute("filter_status","");
+		unsigned int filter_schedule_id = saxh->GetRootAttributeInt("filter_schedule_id",0);
 		unsigned int limit = saxh->GetRootAttributeInt("limit",30);
 		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
 		
 		// Build query parts
-		string query_select = "SELECT wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status";
+		string query_select = "SELECT wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status, wi.workflow_schedule_id";
 		string query_from = "FROM t_workflow_instance wi, t_workflow w";
 		
 		string query_where = "WHERE wi.workflow_id=w.workflow_id";
@@ -347,6 +348,12 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		{
 			query_where += " AND wi.workflow_instance_status=%s";
 			query_where_values.push_back(&filter_status);
+		}
+		
+		if(filter_schedule_id!=0)
+		{
+			query_where += " AND wi.workflow_schedule_id=%i";
+			query_where_values.push_back(&filter_schedule_id);
 		}
 		
 		if(!user.IsAdmin())
@@ -399,6 +406,7 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 			node->setAttribute(X("end_time"),X(db.GetField(5)));
 			node->setAttribute(X("errors"),X(db.GetField(6)));
 			node->setAttribute(X("status"),X(db.GetField(7)));
+			node->setAttribute(X("schedule_id"),X(db.GetField(8)));
 		}
 		
 		return true;
