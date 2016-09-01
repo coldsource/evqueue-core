@@ -212,6 +212,7 @@ void User::ListRights(const string &name, QueryResponse *response)
 	for(auto it=user.rights.begin();it!=user.rights.end();++it)
 	{
 		DOMElement *node = (DOMElement *)response->AppendXML("<right />");
+		node->setAttribute(X("workflow-id"),X(to_string(it->first).c_str()));
 		node->setAttribute(X("read"),it->second.read?X("yes"):X("no"));
 		node->setAttribute(X("edit"),it->second.edit?X("yes"):X("no"));
 		node->setAttribute(X("exec"),it->second.exec?X("yes"):X("no"));
