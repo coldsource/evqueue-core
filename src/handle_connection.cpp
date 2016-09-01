@@ -99,6 +99,7 @@ void *handle_connection(void *sp)
 		
 		while(true)
 		{
+			try
 			{
 				QueryResponse response(s);
 				
@@ -120,6 +121,14 @@ void *handle_connection(void *sp)
 				
 				Logger::Log(LOG_DEBUG,"API : Successfully called, sending response");
 				
+				response.SendResponse();
+			}
+			catch (Exception &e)
+			{
+				Logger::Log(LOG_DEBUG,"Unexpected (catched) exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
+				
+				QueryResponse response(s);
+				response.SetError(e.error);
 				response.SendResponse();
 			}
 		}
