@@ -107,9 +107,19 @@ void *handle_connection(void *sp)
 				
 				Logger::Log(LOG_DEBUG,"API : Waiting request");
 				
+				
+				socket_sax2_handler.HandleQuery(&saxh);
+				
+				if(saxh.GetQueryGroup()=="quit")
+				{
+					Logger::Log(LOG_DEBUG,"API : Received quit command, exiting channel");
+					break;
+				}
+				
 				try
 				{
-					socket_sax2_handler.HandleQuery(&saxh);
+					if(!QueryHandlers::GetInstance()->HandleQuery(user, saxh.GetQueryGroup(),&saxh, &response))
+						throw Exception("API","Unknown command or action");
 				}
 				catch (Exception &e)
 				{
@@ -121,15 +131,6 @@ void *handle_connection(void *sp)
 					
 					continue;
 				}
-				
-				if(saxh.GetQueryGroup()=="quit")
-				{
-					Logger::Log(LOG_DEBUG,"API : Received quit command, exiting channel");
-					break;
-				}
-				
-				if(!QueryHandlers::GetInstance()->HandleQuery(user, saxh.GetQueryGroup(),&saxh, &response))
-					throw Exception("API","Unknown command or action");
 				
 				Logger::Log(LOG_DEBUG,"API : Successfully called, sending response");
 				
