@@ -255,6 +255,9 @@ void User::create_edit_check(const std::string &name, const std::string &passwor
 	
 	if(profile!="ADMIN" && profile!="USER")
 		throw Exception("User","Invalid profile, should be 'ADMIN' or 'USER'");
+	
+	if(password=="")
+		throw Exception("User","Empty password");
 }
 
 bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -283,7 +286,8 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 			if(!user.IsAdmin())
 				User::InsufficientRights();
 			
-			Create(name, password, profile);
+			unsigned int id = Create(name, password, profile);
+			response->GetDOM()->getDocumentElement()->setAttribute(X("user-id"),X(to_string(id).c_str()));
 		}
 		else
 		{
