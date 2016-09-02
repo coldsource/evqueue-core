@@ -91,11 +91,11 @@ int main(int argc,char ** argv)
 	{
 		const char *working_directory = getenv("EVQUEUE_WORKING_DIRECTORY");
 		
-		if(working_directory)
+		if(working_directory && working_directory[0]!='\0')
 		{
 			if(chdir(working_directory)!=0)
 			{
-				fprintf(stderr,"Unable change directory to %s\n",working_directory);
+				fprintf(stderr,"Unable to change directory to %s\n",working_directory);
 				return -1;
 			}
 		}

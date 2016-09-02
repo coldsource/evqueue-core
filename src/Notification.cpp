@@ -95,7 +95,7 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		
 		setenv("EVQUEUE_IPC_QID",Configuration::GetInstance()->Get("core.ipc.qid").c_str(),true);
 		
-		setenv("EVQUEUE_WORKING_DIRECTORY",Configuration::GetInstance()->Get("notifications.monitor.path").c_str(),true);
+		setenv("EVQUEUE_WORKING_DIRECTORY",Configuration::GetInstance()->Get("notifications.tasks.directory").c_str(),true);
 		
 		char str_timeout[16],str_instance_id[16],str_errors[16];
 		sprintf(str_timeout,"%d",Configuration::GetInstance()->GetInt("notifications.tasks.timeout"));
@@ -103,6 +103,7 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		sprintf(str_errors,"%d",workflow_instance->GetErrors());
 		
 		execl(notification_monitor_path.c_str(),notification_monitor_path.c_str(),notification_binary.c_str(),str_timeout,str_instance_id,str_errors,unix_socket_path.c_str(),(char *)0);
+		Logger::Log(LOG_ERR,"Unable to execute notification monitor");
 		
 		tools_send_exit_msg(2,0,-1);
 		exit(-1);
@@ -154,7 +155,7 @@ void Notification::Edit(unsigned int id,unsigned int type_id,const std::string &
 		throw Exception("Notification","Unable to find notification");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_parameters=%s WHERE notification_id=%i",type_id,&name,&parameters,&id);
+	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_parameters=%s WHERE notification_id=%i",&type_id,&name,&parameters,&id);
 }
 
 void Notification::Delete(unsigned int id)

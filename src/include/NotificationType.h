@@ -52,6 +52,7 @@ class NotificationType
 		static void GetConfFileHash(const std::string &filename,std::string &hash);
 		static void RemoveConfFile(const std::string &filename);
 		
+		static void Get(unsigned int id, QueryResponse *response);
 		static void Register(const std::string &name, const std::string &description, const std::string binary_content);
 		static void Unregister(unsigned int id);
 		

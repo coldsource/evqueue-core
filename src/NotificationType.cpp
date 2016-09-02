@@ -93,6 +93,15 @@ void NotificationType::RemoveConfFile(const string &filename)
 	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename);
 }
 
+void NotificationType::Get(unsigned int id, QueryResponse *response)
+{
+	NotificationType type = NotificationTypes::GetInstance()->Get(id);
+	
+	DOMElement *node = (DOMElement *)response->AppendXML("<notification_type />");
+	node->setAttribute(X("name"),X(type.GetName().c_str()));
+	node->setAttribute(X("description"),X(type.GetDescription().c_str()));
+}
+
 void NotificationType::Register(const std::string &name, const std::string &description, const std::string binary_content)
 {
 	if(name.length()==0)
@@ -155,7 +164,15 @@ bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	
 	const string action = saxh->GetRootAttribute("action");
 	
-	if(action=="register")
+	if(action=="get")
+	{
+		unsigned int id = saxh->GetRootAttributeInt("id");
+		
+		Get(id, response);
+		
+		return true;
+	}
+	else if(action=="register")
 	{
 		string name = saxh->GetRootAttribute("name");
 		string description = saxh->GetRootAttribute("description");
