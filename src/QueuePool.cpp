@@ -417,6 +417,7 @@ void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
 	}
 	
 	DOMElement *node = (DOMElement *)response->AppendXML("<queue />");
+	node->setAttribute(X("id"),X(to_string(q->GetID()).c_str()));
 	node->setAttribute(X("name"),X(q->GetName().c_str()));
 	node->setAttribute(X("concurrency"),X(to_string(q->GetConcurrency()).c_str()));
 	node->setAttribute(X("scheduler"),X(q->GetWantedScheduler().c_str()));
