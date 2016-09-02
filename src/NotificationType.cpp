@@ -120,14 +120,27 @@ void NotificationType::Unregister(unsigned int id)
 {
 	DB db;
 	
+	NotificationType notification_type = NotificationTypes::GetInstance()->Get(id);
+	
 	db.StartTransaction();
 	
 	db.QueryPrintf("DELETE FROM t_notification_type WHERE notification_type_id=%i",&id);
 	
-	if(db.AffectedRows()==0)
-		throw Exception("NotificationType","Unable to find notification type");
-	
 	db.QueryPrintf("DELETE FROM t_notification WHERE notification_type_id=%i",&id);
+	
+	// Remove binary
+	try
+	{
+		RemoveFile(notification_type.name);
+	}
+	catch(Exception &e) {}
+	
+	// Remove config file
+	try
+	{
+		RemoveConfFile(notification_type.name);
+	}
+	catch(Exception &e) {}	
 	
 	db.CommitTransaction();
 }
