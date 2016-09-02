@@ -34,17 +34,8 @@ using namespace std;
 
 bool FileManager::CheckFileName(const std::string &directory,const string &file_name)
 {
-	string path = directory+"/"+file_name;
-	
-	char buf[PATH_MAX];
-	if(!realpath(path.c_str(),buf))
-		return false;
-	
-	if(string(buf).find(path,0)!=0)
-		return false;
-	
 	for(int i=0;i<file_name.length();i++)
-		if(!isalnum(file_name[i]) && file_name[i]!='_' && file_name[i]!='-' && file_name[i]!='.' && file_name[i]!='/' && file_name[i]!='@')
+		if(!isalnum(file_name[i]) && file_name[i]!='_' && file_name[i]!='-' && file_name[i]!='.' && file_name[i]!='@')
 			return false;
 	
 	return true;

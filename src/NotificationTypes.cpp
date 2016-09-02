@@ -79,45 +79,87 @@ void NotificationTypes::SyncBinaries(bool notify)
 	
 	pthread_mutex_lock(&lock);
 	
-	DB db;
-	
-	// Load tasks from database
-	db.Query("SELECT notification_type_binary, notification_type_binary_content FROM t_notification_type WHERE notification_type_binary_content IS NOT NULL");
-	
-	struct sha1_ctx ctx;
-	char db_hash[20];
-	string file_hash;
-	
-	while(db.FetchRow())
+	try
 	{
-		// Compute database SHA1 hash
-		sha1_init_ctx(&ctx);
-		sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
-		sha1_finish_ctx(&ctx,db_hash);
+		DB db;
 		
-		// Compute file SHA1 hash
-		try
+		// Load tasks binaries from database
+		db.Query("SELECT notification_type_name, notification_type_binary_content FROM t_notification_type WHERE notification_type_binary_content IS NOT NULL");
+		
+		struct sha1_ctx ctx;
+		char db_hash[20];
+		string file_hash;
+		
+		while(db.FetchRow())
 		{
-			NotificationType::GetFileHash(db.GetField(0),file_hash);
-		}
-		catch(Exception &e)
-		{
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s was not found creating it",db.GetField(0));
+			// Compute database SHA1 hash
+			sha1_init_ctx(&ctx);
+			sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
+			sha1_finish_ctx(&ctx,db_hash);
+			
+			// Compute file SHA1 hash
+			try
+			{
+				NotificationType::GetFileHash(db.GetField(0),file_hash);
+			}
+			catch(Exception &e)
+			{
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s was not found creating it",db.GetField(0));
+				
+				NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+				continue;
+			}
+			
+			if(memcmp(file_hash.c_str(),db_hash,20)==0)
+			{
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s hash matches DB, skipping",db.GetField(0));
+				continue;
+			}
+			
+			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s hash does not match DB, replacing",db.GetField(0));
 			
 			NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
-			continue;
 		}
 		
-		if(memcmp(file_hash.c_str(),db_hash,20)==0)
+		// Load tasks config files from database
+		db.Query("SELECT notification_type_name, notification_type_conf_content FROM t_notification_type WHERE notification_type_conf_content IS NOT NULL");
+		
+		while(db.FetchRow())
 		{
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s hash matches DB, skipping",db.GetField(0));
-			continue;
+			// Compute database SHA1 hash
+			sha1_init_ctx(&ctx);
+			sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
+			sha1_finish_ctx(&ctx,db_hash);
+			
+			// Compute file SHA1 hash
+			try
+			{
+				NotificationType::GetConfFileHash(db.GetField(0),file_hash);
+			}
+			catch(Exception &e)
+			{
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task %s was not found creating it",db.GetField(0));
+				
+				NotificationType::PutConfFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+				continue;
+			}
+			
+			if(memcmp(file_hash.c_str(),db_hash,20)==0)
+			{
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task %s hash matches DB, skipping",db.GetField(0));
+				continue;
+			}
+			
+			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task %s hash does not match DB, replacing",db.GetField(0));
+			
+			NotificationType::PutConfFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 		}
+	}
+	catch(Exception &e)
+	{
+		pthread_mutex_unlock(&lock);
 		
-		Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s hash does not match DB, replacing",db.GetField(0));
-		
-		NotificationType::RemoveFile(db.GetField(0));
-		NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+		throw e;
 	}
 	
 	pthread_mutex_unlock(&lock);

@@ -32,7 +32,6 @@ class NotificationType
 	unsigned int id;
 	std::string name;
 	std::string description;
-	std::string binary;
 	
 	public:
 
@@ -41,15 +40,23 @@ class NotificationType
 		unsigned int GetID() { return id; }
 		const std::string &GetName() { return name; }
 		const std::string &GetDescription() { return description; }
-		const std::string &GetBinary() { return binary; }
+		const std::string &GetBinary() { return name; }
 		
 		static void PutFile(const std::string &filename,const std::string &data,bool base64_encoded=true);
 		static void GetFile(const std::string &filename,std::string &data);
 		static void GetFileHash(const std::string &filename,std::string &hash);
 		static void RemoveFile(const std::string &filename);
 		
-		static void Register(const std::string &name, const std::string &description, const std::string &binary, const std::string binary_content);
+		static void PutConfFile(const std::string &filename,const std::string &data,bool base64_encoded=true);
+		static void GetConfFile(const std::string &filename,std::string &data);
+		static void GetConfFileHash(const std::string &filename,std::string &hash);
+		static void RemoveConfFile(const std::string &filename);
+		
+		static void Register(const std::string &name, const std::string &description, const std::string binary_content);
 		static void Unregister(unsigned int id);
+		
+		static void GetConf(unsigned int id, QueryResponse *response);
+		static void SetConf(unsigned int id, const std::string &data);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
