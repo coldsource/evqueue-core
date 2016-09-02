@@ -307,7 +307,7 @@ void Task::Create(
 	
 	DB db;
 	db.QueryPrintf(
-		"INSERT INTO t_task(task_name, task_binary, task_binary_content, task_user, task_host, task_parameters_mode, task_output_method, task_wd, task_group, task_comment,workflow_id, task_use_agent, task_merge_stderr) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%i,%i,%i)",
+		"INSERT INTO t_task(task_name, task_binary, task_binary_content, task_user, task_host, task_parameters_mode, task_output_method, task_wd, task_group, task_comment,workflow_id, task_use_agent, task_merge_stderr, task_lastcommit) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%i,%i,%i,%s)",
 		&real_name,
 		&binary,
 		binary_content.length()?&binary_content:0,
@@ -320,7 +320,8 @@ void Task::Create(
 		&comment,
 		create_workflow?&workflow_id:0,
 		&iuse_agent,
-		&imerge_stderr
+		&imerge_stderr,
+		lastcommit.length()?&lastcommit:0
 		);
 }
 
