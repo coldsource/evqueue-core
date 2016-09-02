@@ -160,11 +160,18 @@ void Notification::Edit(unsigned int id,unsigned int type_id,const std::string &
 
 void Notification::Delete(unsigned int id)
 {
+	if(!Notifications::GetInstance()->Exists(id))
+		throw Exception("Notification","Unable to find notification");
+	
 	DB db;
+	
+	db.StartTransaction();
+	
 	db.QueryPrintf("DELETE FROM t_notification WHERE notification_id=%i",&id);
 	
-	if(db.AffectedRows()==0)
-		throw Exception("Notification","Unable to find notification");
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",&id);
+	
+	db.CommitTransaction();
 }
 
 void Notification::create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters)
