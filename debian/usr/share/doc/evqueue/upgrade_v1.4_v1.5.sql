@@ -15,7 +15,7 @@ ALTER TABLE t_task ADD COLUMN task_lastcommit VARCHAR(40) COLLATE 'ascii_general
 ALTER TABLE t_notification_type DROP COLUMN notification_type_binary;
 ALTER TABLE t_notification_type ADD COLUMN notification_type_binary_content LONGBLOB NULL DEFAULT NULL AFTER notification_type_description;
 ALTER TABLE t_notification_type ADD COLUMN notification_type_conf_content LONGBLOB NULL DEFAULT NULL AFTER notification_type_binary_content;
-ALTER TABLE t_notification_type ADD UNIQUE KEY `task_name` (`task_name`);
+ALTER TABLE t_notification_type ADD UNIQUE KEY `notification_type_name` (`notification_type_name`);
 
 ALTER TABLE t_queue ADD COLUMN queue_scheduler VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT 'default' AFTER queue_concurrency;
 
