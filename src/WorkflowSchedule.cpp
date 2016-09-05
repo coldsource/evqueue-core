@@ -188,21 +188,24 @@ void WorkflowSchedule::Edit(
 {
 	create_edit_check(workflow_id, schedule_description, onfailure_continue, user, host, active, comment, parameters);
 	
-	if(!WorkflowSchedules::GetInstance()->Exists(id))
-		throw Exception("WorkflowSchedule","Workflow schedule not found");
-	
 	int iactive = active;
+	string sonfailure_continue = onfailure_continue?"CONTINUE":"SUSPEND";
 	
 	DB db;
 	
 	db.StartTransaction();
+	
+	// We only store locally schedules that belong to our node, we have to check existence against DB
+	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&id);
+	if(!db.FetchRow() || db.GetFieldInt(0)==0)
+		throw Exception("WorkflowSchedule","Workflow schedule not found");
 	
 	db.QueryPrintf(
 		"UPDATE t_workflow_schedule SET node_name=%s,workflow_id=%i,workflow_schedule=%s,workflow_schedule_onfailure=%s,workflow_schedule_user=%s,workflow_schedule_host=%s,workflow_schedule_active=%i,workflow_schedule_comment=%s WHERE workflow_schedule_id=%i",
 		&Configuration::GetInstance()->Get("network.node.name"),
 		&workflow_id,
 		&schedule_description,
-		onfailure_continue?"CONTINUE":"SUSPEND",
+		&sonfailure_continue,
 		user.length()?&user:0,
 		host.length()?&host:0,
 		&iactive,
