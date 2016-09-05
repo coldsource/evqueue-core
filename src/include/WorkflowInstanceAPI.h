@@ -27,6 +27,8 @@ class User;
 class WorkflowInstanceAPI
 {
 	public:
+		static void Delete(unsigned int id);
+		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
 

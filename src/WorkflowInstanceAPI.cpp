@@ -41,6 +41,15 @@
 using namespace std;
 using namespace xercesc;
 
+void WorkflowInstanceAPI::Delete(unsigned int id)
+{
+	DB db;
+	
+	db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",&id);
+	if(db.AffectedRows()==0)
+		throw Exception("WorkflowInstanceAPI", "Instance ID not found");
+}
+
 bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const string action = saxh->GetRootAttribute("action");
@@ -191,6 +200,12 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			
 			if(!WorkflowInstances::GetInstance()->KillTask(user, workflow_instance_id,task_pid))
 				throw Exception("WorkflowInstance","Unknown workflow instance");
+			
+			return true;
+		}
+		else if(action=="delete")
+		{
+			Delete(workflow_instance_id);
 			
 			return true;
 		}
