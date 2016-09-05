@@ -54,6 +54,7 @@ WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 	this->workflow_id = db.GetFieldInt(0);
 	
 	schedule = Schedule(db.GetField(1));
+	schedule_description = db.GetField(1);
 	
 	if(strcmp(db.GetField(2),"CONTINUE")==0)
 		onfailure = CONTINUE;
