@@ -280,7 +280,8 @@ void Task::Create(
 	const string &comment,
 	bool create_workflow,
 	std::vector<std::string> inputs,
-	const std::string &lastcommit
+	const std::string &lastcommit,
+	QueryResponse *response
 )
 {
 	create_edit_check(name,binary,binary_content,wd,user,host,use_agent,parameters_mode,output_method,merge_stderr,group,comment);
@@ -323,6 +324,15 @@ void Task::Create(
 		&imerge_stderr,
 		lastcommit.length()?&lastcommit:0
 		);
+	
+	unsigned int id = db.InsertID();
+	
+	if(response)
+	{
+		if(create_workflow)
+			response->GetDOM()->getDocumentElement()->setAttribute(X("workflow-id"),X(to_string(workflow_id).c_str()));
+		response->GetDOM()->getDocumentElement()->setAttribute(X("task-id"),X(to_string(id).c_str()));
+	}
 }
 
 void Task::Edit(
@@ -479,7 +489,7 @@ bool Task::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 		bool create_workflow = saxh->GetRootAttributeBool("create_workflow",false);
 		
 		if(action=="create")
-			Create(name,binary,binary_content,wd,user,host,use_agent,parameters_mode,output_method,merge_stderr,group,comment,create_workflow,saxh->GetInputs());
+			Create(name,binary,binary_content,wd,user,host,use_agent,parameters_mode,output_method,merge_stderr,group,comment,create_workflow,saxh->GetInputs(),"",response);
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");

@@ -99,7 +99,8 @@ class Task
 			const std::string &comment,
 			bool create_workflow,
 			std::vector<std::string> inputs,
-			const std::string &lastcommit = ""
+			const std::string &lastcommit = "",
+			QueryResponse *response = 0
 		);
 		
 		static void Edit(
