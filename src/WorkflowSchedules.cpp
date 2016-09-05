@@ -86,24 +86,23 @@ bool WorkflowSchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 	
 	if(action=="list")
 	{
-		pthread_mutex_lock(&workflow_schedules->lock);
+		DB db;
+		db.Query("SELECT ws.workflow_schedule_id, ws.node_name, ws.workflow_id, ws.workflow_schedule, ws.workflow_schedule_onfailure, ws.workflow_schedule_user, ws.workflow_schedule_host, ws.workflow_schedule_active, ws.workflow_schedule_comment, w.workflow_id FROM t_workflow_schedule ws, t_workflow w WHERE ws.workflow_id=w.workflow_id");
 		
-		for(auto it = workflow_schedules->objects_id.begin(); it!=workflow_schedules->objects_id.end(); it++)
+		while(db.FetchRow())
 		{
-			WorkflowSchedule workflow_schedule = *it->second;
 			DOMElement *node = (DOMElement *)response->AppendXML("<workflow_schedule />");
-			node->setAttribute(X("id"),X(to_string(workflow_schedule.GetID()).c_str()));
-			node->setAttribute(X("workflow_id"),X(to_string(workflow_schedule.GetWorkflowID()).c_str()));
-			node->setAttribute(X("workflow_name"),X(workflow_schedule.GetWorkflowName().c_str()));
-			node->setAttribute(X("schedule"),X(workflow_schedule.GetScheduleDescription().c_str()));
-			node->setAttribute(X("onfailure"),X(workflow_schedule.GetOnFailureBehavior()==CONTINUE?"CONTINUE":"SUSPEND"));
-			node->setAttribute(X("user"),X(workflow_schedule.GetUser().c_str()));
-			node->setAttribute(X("host"),X(workflow_schedule.GetHost().c_str()));
-			node->setAttribute(X("active"),X(workflow_schedule.GetIsActive()?"1":"0"));
-			node->setAttribute(X("comment"),X(workflow_schedule.GetComment().c_str()));
+			node->setAttribute(X("id"),X(db.GetField(0)));
+			node->setAttribute(X("node"),X(db.GetField(1)));
+			node->setAttribute(X("workflow_id"),X(db.GetField(2)));
+			node->setAttribute(X("schedule"),X(db.GetField(3)));
+			node->setAttribute(X("onfailure"),X(db.GetField(4)));
+			node->setAttribute(X("user"),X(db.GetField(5)));
+			node->setAttribute(X("host"),X(db.GetField(6)));
+			node->setAttribute(X("active"),X(db.GetField(7)));
+			node->setAttribute(X("comment"),X(db.GetField(8)));
+			node->setAttribute(X("workflow_name"),X(db.GetField(9)));
 		}
-		
-		pthread_mutex_unlock(&workflow_schedules->lock);
 		
 		return true;
 	}
