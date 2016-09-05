@@ -126,6 +126,7 @@ void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
 
 void WorkflowSchedule::Create(
 	unsigned int workflow_id,
+	const string &node,
 	const string &schedule_description,
 	bool onfailure_continue,
 	const string &user,
@@ -135,7 +136,7 @@ void WorkflowSchedule::Create(
 	WorkflowParameters *parameters
 )
 {
-	create_edit_check(workflow_id, schedule_description, onfailure_continue, user, host, active, comment, parameters);
+	create_edit_check(workflow_id, node, schedule_description, onfailure_continue, user, host, active, comment, parameters);
 	
 	int iactive = active;
 	
@@ -147,7 +148,7 @@ void WorkflowSchedule::Create(
 	
 	db.QueryPrintf(
 		"INSERT INTO t_workflow_schedule(node_name,workflow_id,workflow_schedule,workflow_schedule_onfailure,workflow_schedule_user,workflow_schedule_host,workflow_schedule_active,workflow_schedule_comment) VALUES(%s,%i,%s,%s,%s,%s,%i,%s)",
-		&Configuration::GetInstance()->Get("network.node.name"),
+		&node,
 		&workflow_id,
 		&schedule_description,
 		&onfailure_continue_str,
@@ -177,6 +178,7 @@ void WorkflowSchedule::Create(
 void WorkflowSchedule::Edit(
 	unsigned int id,
 	unsigned int workflow_id,
+	const string &node,
 	const string &schedule_description,
 	bool onfailure_continue,
 	const string &user,
@@ -186,7 +188,7 @@ void WorkflowSchedule::Edit(
 	WorkflowParameters *parameters
 )
 {
-	create_edit_check(workflow_id, schedule_description, onfailure_continue, user, host, active, comment, parameters);
+	create_edit_check(workflow_id, node, schedule_description, onfailure_continue, user, host, active, comment, parameters);
 	
 	int iactive = active;
 	string sonfailure_continue = onfailure_continue?"CONTINUE":"SUSPEND";
@@ -196,13 +198,12 @@ void WorkflowSchedule::Edit(
 	db.StartTransaction();
 	
 	// We only store locally schedules that belong to our node, we have to check existence against DB
-	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&id);
-	if(!db.FetchRow() || db.GetFieldInt(0)==0)
+	if(WorkflowSchedules::GetInstance()->Exists(id))
 		throw Exception("WorkflowSchedule","Workflow schedule not found");
 	
 	db.QueryPrintf(
 		"UPDATE t_workflow_schedule SET node_name=%s,workflow_id=%i,workflow_schedule=%s,workflow_schedule_onfailure=%s,workflow_schedule_user=%s,workflow_schedule_host=%s,workflow_schedule_active=%i,workflow_schedule_comment=%s WHERE workflow_schedule_id=%i",
-		&Configuration::GetInstance()->Get("network.node.name"),
+		&node,
 		&workflow_id,
 		&schedule_description,
 		&sonfailure_continue,
@@ -250,6 +251,7 @@ void WorkflowSchedule::Delete(unsigned int id)
 
 void WorkflowSchedule::create_edit_check(
 	unsigned int workflow_id,
+	const string &node,
 	const string &schedule_description,
 	bool onfailure,
 	const string &user,
@@ -287,6 +289,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	else if(action=="create" || action=="edit")
 	{
 		unsigned int workflow_id = saxh->GetRootAttributeInt("workflow_id");
+		string node = saxh->GetRootAttribute("node");
 		string schedule = saxh->GetRootAttribute("schedule");
 		
 		string onfailure = saxh->GetRootAttribute("onfailure");
@@ -304,12 +307,12 @@ bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 		string comment =  saxh->GetRootAttribute("comment","");
 		
 		if(action=="create")
-			Create(workflow_id,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
+			Create(workflow_id,node,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			Edit(id, workflow_id,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
+			Edit(id, workflow_id,node,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
 		}
 		
 		WorkflowScheduler::GetInstance()->Reload();

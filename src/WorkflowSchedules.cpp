@@ -56,14 +56,16 @@ void WorkflowSchedules::Reload(bool notify)
 	
 	DB db;
 	
-	db.QueryPrintf("SELECT workflow_schedule_id FROM t_workflow_schedule WHERE node_name=%s",&Configuration::GetInstance()->Get("network.node.name"));
+	// Build the list of active and inactive schedules
+	db.QueryPrintf("SELECT workflow_schedule_id,node_name FROM t_workflow_schedule");
 	while(db.FetchRow())
 	{
 		WorkflowSchedule *workflow_schedule = new WorkflowSchedule(db.GetFieldInt(0));
 		
 		add(db.GetFieldInt(0),"",workflow_schedule);
 		
-		if(workflow_schedule->GetIsActive())
+		// Schedule is actif if set as active AND configured on the current node
+		if(workflow_schedule->GetIsActive() && string(db.GetField(1))==Configuration::GetInstance()->Get("network.node.name"))
 			active_schedules.push_back(workflow_schedule);
 	}
 	

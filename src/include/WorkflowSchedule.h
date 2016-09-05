@@ -70,6 +70,7 @@ class WorkflowSchedule
 		
 		static void Create(
 			unsigned int workflow_id,
+			const std::string &node,
 			const std::string &schedule_description,
 			bool onfailure_continue,
 			const std::string &user,
@@ -82,6 +83,7 @@ class WorkflowSchedule
 		static void Edit(
 			unsigned int id,
 			unsigned int workflow_id,
+			const std::string &node,
 			const std::string &schedule_description,
 			bool onfailure_continue,
 			const std::string &user,
@@ -100,6 +102,7 @@ class WorkflowSchedule
 	private:
 		static void create_edit_check(
 			unsigned int workflow_id,
+			const std::string &node,
 			const std::string &schedule_description,
 			bool onfailure_continue,
 			const std::string &user,
