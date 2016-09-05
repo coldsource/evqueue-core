@@ -65,7 +65,7 @@ Configuration::Configuration(void)
 	entries["network.bind.ip"] = "";
 	entries["network.bind.path"] = "";
 	entries["network.bind.port"] = "5000";
-	entries["network.node.name"] = "";
+	entries["network.node.name"] = "localhost";
 	entries["network.connections.max"] = "128";
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";
