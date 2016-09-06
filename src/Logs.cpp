@@ -48,7 +48,41 @@ bool Logs::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 		{
 			DOMElement *node = (DOMElement *)response->AppendXML("<log />");
 			node->setAttribute(X("node"),X(db.GetField(0)));
-			node->setAttribute(X("level"),X(db.GetField(1)));
+			switch(db.GetFieldInt(1))
+			{
+				case 0:
+					node->setAttribute(X("level"),X("LOG_EMERG"));
+					break;
+				
+				case 1:
+					node->setAttribute(X("level"),X("LOG_ALERT"));
+					break;
+				
+				case 2:
+					node->setAttribute(X("level"),X("LOG_CRIT"));
+					break;
+				
+				case 3:
+					node->setAttribute(X("level"),X("LOG_ERR"));
+					break;
+				
+				case 4:
+					node->setAttribute(X("level"),X("LOG_WARNING"));
+					break;
+				
+				case 5:
+					node->setAttribute(X("level"),X("LOG_NOTICE"));
+					break;
+				
+				case 6:
+					node->setAttribute(X("level"),X("LOG_INFO"));
+					break;
+				
+				case 7:
+					node->setAttribute(X("level"),X("LOG_DEBUG"));
+					break;
+			}
+			
 			node->setAttribute(X("message"),X(db.GetField(2)));
 			node->setAttribute(X("timestamp"),X(db.GetField(3)));
 		}
