@@ -198,7 +198,7 @@ void WorkflowSchedule::Edit(
 	db.StartTransaction();
 	
 	// We only store locally schedules that belong to our node, we have to check existence against DB
-	if(WorkflowSchedules::GetInstance()->Exists(id))
+	if(!WorkflowSchedules::GetInstance()->Exists(id))
 		throw Exception("WorkflowSchedule","Workflow schedule not found");
 	
 	db.QueryPrintf(
