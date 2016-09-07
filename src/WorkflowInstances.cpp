@@ -314,7 +314,7 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
 		
 		// Build query parts
-		string query_select = "SELECT wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status, wi.workflow_schedule_id";
+		string query_select = "SELECT SQL_CALC_FOUND_ROWS wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status, wi.workflow_schedule_id";
 		string query_from = "FROM t_workflow_instance wi, t_workflow w";
 		
 		string query_where = "WHERE wi.workflow_id=w.workflow_id";
@@ -408,6 +408,10 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 			node->setAttribute(X("status"),X(db.GetField(7)));
 			node->setAttribute(X("schedule_id"),X(db.GetField(8)));
 		}
+		
+		db.Query("SELECT FOUND_ROWS()");
+		db.FetchRow();
+		response->GetDOM()->getDocumentElement()->setAttribute(X("rows"),X(db.GetField(0)));
 		
 		return true;
 	}
