@@ -96,6 +96,7 @@ bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
 			node->setAttribute(X("bound-to-schedule"),workflow.GetIsBoundSchedule()?X("1"):X("0"));
 			node->setAttribute(X("has-bound-task"),workflow.GetIsBoundTask()?X("1"):X("0"));
+			node->setAttribute(X("bound-task-id"),X(to_string(workflow.GetBoundTaskID()).c_str()));
 			node->setAttribute(X("lastcommit"),X(workflow.GetLastCommit().c_str()));
 			node->setAttribute(X("modified"),workflow.GetIsModified()?X("1"):X("0"));
 		}
