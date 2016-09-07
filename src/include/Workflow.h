@@ -39,6 +39,7 @@ class Workflow
 	std::string group;
 	std::string comment;
 	bool bound_schedule, bound_task;
+	unsigned int bound_task_id;
 	std::string lastcommit;
 	
 	std::vector<unsigned int> notifications;
@@ -54,6 +55,7 @@ class Workflow
 		const std::string GetComment() const { return comment; }
 		bool GetIsBoundSchedule() const { return bound_schedule; }
 		bool GetIsBoundTask() const { return bound_task; }
+		unsigned int GetBoundTaskID() const { return bound_task_id; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
 		
 		void CheckInputParameters(WorkflowParameters *parameters);
