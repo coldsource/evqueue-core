@@ -366,8 +366,6 @@ void Task::Edit(
 	if(task.bound_workflow_id>0)
 	{
 		// Task is bound to a workflod
-		unsigned int workflow_id = db.GetFieldInt(0);
-		
 		real_name = "@"+name;
 		
 		string workflow_xml = Workflow::CreateSimpleWorkflow(real_name,inputs);
@@ -375,7 +373,7 @@ void Task::Edit(
 		string base64;
 		base64_encode_string(workflow_xml,base64);
 		
-		Workflow::Edit(workflow_id,name, base64, group, comment);
+		Workflow::Edit(task.bound_workflow_id,name, base64, group, comment);
 		
 		*bound_workflow = true;
 	}
