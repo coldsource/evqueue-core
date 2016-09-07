@@ -40,7 +40,7 @@ User::User()
 
 User::User(DB *db,const string &user_name)
 {
-	db->QueryPrintf("SELECT user_login,user_password,user_profile FROM t_user WHERE user_login=%s",&user_name);
+	db->QueryPrintf("SELECT user_login,user_password,user_profile,user_preferences FROM t_user WHERE user_login=%s",&user_name);
 	
 	if(!db->FetchRow())
 		throw Exception("User","Unknown User");
@@ -48,6 +48,7 @@ User::User(DB *db,const string &user_name)
 	this->user_name = db->GetField(0);
 	user_password = db->GetField(1);
 	user_profile = db->GetField(2);
+	user_preferences = db->GetField(3);
 	
 	// Load rights
 	db->QueryPrintf("SELECT workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill FROM t_user_right WHERE user_login=%s",&user_name);
@@ -125,6 +126,7 @@ void User::Get(const string &name, QueryResponse *response)
 	DOMElement *node = (DOMElement *)response->AppendXML("<user />");
 	node->setAttribute(X("name"),X(user.GetName().c_str()));
 	node->setAttribute(X("profile"),X(user.GetProfile().c_str()));
+	node->setAttribute(X("preferences"),X(user.GetPreferences().c_str()));
 	
 	for(auto it=user.rights.begin();it!=user.rights.end();it++)
 	{
@@ -182,6 +184,18 @@ void User::ChangePassword(const string &name,const string &password)
 	DB db;
 	db.QueryPrintf("UPDATE t_user SET user_password=%s WHERE user_login=%s",
 		&password_sha1,
+		&name
+	);
+}
+
+void User::UpdatePreferences(const string &name, const string &preferences)
+{
+	if(!Users::GetInstance()->Exists(name))
+		throw Exception("User","User not found");
+	
+	DB db;
+	db.QueryPrintf("UPDATE t_user SET user_preferences=%s WHERE user_login=%s",
+		&preferences,
 		&name
 	);
 }
@@ -316,6 +330,20 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 			User::InsufficientRights();
 		
 		ChangePassword(name,password);
+		
+		Users::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="update_preferences")
+	{
+		string name = saxh->GetRootAttribute("name");
+		string preferences = saxh->GetRootAttribute("preferences");
+		
+		if(!user.IsAdmin() && user.GetName()!=name)
+			User::InsufficientRights();
+		
+		UpdatePreferences(name,preferences);
 		
 		Users::GetInstance()->Reload();
 		

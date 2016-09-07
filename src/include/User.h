@@ -41,6 +41,7 @@ class User
 	std::string user_name;
 	std::string user_password;
 	std::string user_profile;
+	std::string user_preferences;
 	
 	std::map<unsigned int,user_right> rights;
 	
@@ -55,6 +56,7 @@ class User
 		const std::string &GetName() const { return user_name; }
 		const std::string &GetPassword() const { return user_password; }
 		const std::string &GetProfile() const { return user_profile; }
+		const std::string &GetPreferences() const { return user_preferences; }
 		
 		bool IsAdmin() const { return user_profile=="ADMIN"; }
 		bool HasAccessToWorkflow(unsigned int workflow_id, const std::string &access_type) const;
@@ -67,6 +69,7 @@ class User
 		static void Edit(const std::string &name, const std::string &password, const std::string &profile);
 		static void Delete(const std::string &name);
 		static void ChangePassword(const std::string &name, const std::string &password);
+		static void UpdatePreferences(const std::string &name, const std::string &preferences);
 		
 		static void ClearRights(const std::string &name);
 		static void ListRights(const std::string &name, QueryResponse *response);

@@ -26,6 +26,7 @@ ALTER TABLE t_user MODIFY user_password VARCHAR(40) COLLATE 'ascii_general_ci' N
 ALTER TABLE t_user ADD COLUMN user_password_salt VARCHAR(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL AFTER user_password;
 ALTER TABLE t_user ADD COLUMN user_password_iterations INT NOT NULL DEFAULT 0 AFTER user_password_salt;
 ALTER TABLE t_user MODIFY user_profile ENUM('ADMIN','USER') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'USER';
+ALTER TABLE t_user ADD COLUMN user_preferences TEXT NOT NULL DEFAULT '' AFTER user_profile;
 UPDATE t_user SET user_profile='USER' WHERE user_profile='';
 ALTER TABLE t_user_right DROP COLUMN user_right_del;
 
