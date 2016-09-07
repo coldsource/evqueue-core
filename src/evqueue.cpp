@@ -81,6 +81,7 @@
 #include <Cluster.h>
 #include <ActiveConnections.h>
 #include <Git.h>
+#include <Filesystem.h>
 #include <handle_connection.h>
 #include <tools.h>
 #include <tools_db.h>
@@ -465,6 +466,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
 		qh->RegisterHandler("ping",ping_handle_query);
 		qh->RegisterHandler("git",Git::HandleQuery);
+		qh->RegisterHandler("filesystem",Filesystem::HandleQuery);
 		
 		// Create sockets set
 		Sockets *sockets = new Sockets();
