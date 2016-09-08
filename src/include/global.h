@@ -30,8 +30,6 @@
 #define ERROR_MAX_LEN                  256
 #define USER_NAME_MAX_LEN               32
 
-extern int listen_socket; // Global because we must close it in children
-
 #include <unistd.h>
 
 struct st_msgbuf

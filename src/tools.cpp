@@ -44,6 +44,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -209,6 +210,13 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		{
 			bool notify = saxh->GetRootAttributeBool("notify",true);
 			tools_sync_notifications(notify);
+			return true;
+		}
+		else if(action=="shutdown")
+		{
+			// Send SIGTERM
+			pid_t pid = getpid();
+			kill(pid,SIGTERM);
 			return true;
 		}
 	}
