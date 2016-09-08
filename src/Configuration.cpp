@@ -65,7 +65,6 @@ Configuration::Configuration(void)
 	entries["network.bind.ip"] = "";
 	entries["network.bind.path"] = "";
 	entries["network.bind.port"] = "5000";
-	entries["network.node.name"] = "localhost";
 	entries["network.connections.max"] = "128";
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";
@@ -88,6 +87,7 @@ Configuration::Configuration(void)
 	entries["workflowinstance.savepoint.retry.enable"] = "yes";
 	entries["workflowinstance.savepoint.retry.times"] = "0";
 	entries["workflowinstance.savepoint.retry.wait"] = "2";
+	entries["cluster.node.name"] = "localhost";
 	entries["cluster.notify"] = "yes";
 	entries["cluster.notify.user"] = "";
 	entries["cluster.notify.password"] = "";

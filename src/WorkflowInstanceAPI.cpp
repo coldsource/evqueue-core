@@ -120,7 +120,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			DB db;
 			
 			// Check if workflow instance exists and is eligible to migration
-			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,&config->Get("network.node.name"));
+			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,&config->Get("cluster.node.name"));
 			if(!db.FetchRow())
 				throw Exception("Workflow Migration","Workflow ID not found or already belongs to this node");
 			

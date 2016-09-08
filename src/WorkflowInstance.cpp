@@ -267,7 +267,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 	if(savepoint_level>=2)
 	{
 		// Insert workflow instance in DB
-		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start) VALUES(%s,%i,%i,%s,'EXECUTING',NOW())",&Configuration::GetInstance()->Get("network.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host);
+		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start) VALUES(%s,%i,%i,%s,'EXECUTING',NOW())",&Configuration::GetInstance()->Get("cluster.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host);
 		this->workflow_instance_id = db.InsertID();
 		
 		// Save workflow parameters
@@ -495,7 +495,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 	Configuration *config = Configuration::GetInstance();
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",&config->Get("network.node.name"),&workflow_instance_id);
+	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",&config->Get("cluster.node.name"),&workflow_instance_id);
 	
 	pthread_mutex_unlock(&lock);
 }

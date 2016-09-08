@@ -33,7 +33,7 @@ Logger *Logger::instance = 0;
 using namespace std;
 
 Logger::Logger():
-	node_name(Configuration::GetInstance()->Get("network.node.name"))
+	node_name(Configuration::GetInstance()->Get("cluster.node.name"))
 {
 	Configuration *config = Configuration::GetInstance();
 	

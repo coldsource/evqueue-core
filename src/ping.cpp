@@ -33,7 +33,7 @@ bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
 	
 	response->GetDOM()->getDocumentElement()->setAttribute(X("version"),X(EVQUEUE_VERSION));
-	response->GetDOM()->getDocumentElement()->setAttribute(X("node"),X(Configuration::GetInstance()->Get("network.node.name").c_str()));
+	response->GetDOM()->getDocumentElement()->setAttribute(X("node"),X(Configuration::GetInstance()->Get("cluster.node.name").c_str()));
 	
 	return true;
 }
