@@ -85,7 +85,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `task_merge_stderr` tinyint NOT NULL DEFAULT 0, \
   `task_xsd` longtext COLLATE utf8_unicode_ci, \
   `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '', \
-  `task_comment` text COLLATE utf8_unicode_ci NOT NULL DEFAULT '', \
+  `task_comment` text COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_id` int(10) DEFAULT NULL, \
   `task_lastcommit` varchar(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL, \
   UNIQUE KEY `taskdesc_id` (`task_id`), \
