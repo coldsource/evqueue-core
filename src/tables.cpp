@@ -48,7 +48,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `notification_type_binary_content` longblob, \
   `notification_type_conf_content` longblob, \
   PRIMARY KEY (`notification_type_id`), \
-  UNIQUE KEY `task_name` (`task_name`) \
+  UNIQUE KEY `notification_type_name` (`notification_type_name`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \
 "},
 {"t_queue",
