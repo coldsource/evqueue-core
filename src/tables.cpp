@@ -99,7 +99,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `user_password_salt` VARCHAR(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL, \
   `user_password_iterations` INT NOT NULL DEFAULT 0, \
   `user_profile` enum('ADMIN','USER') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'USER', \
-  `user_preferences` TEXT COLLATE 'ascii_general_ci' NOT NULL, \
+  `user_preferences` TEXT COLLATE 'ascii_general_ci' NULL DEFAULT '', \
   PRIMARY KEY (`user_login`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v1.5'; \
 "},
