@@ -50,7 +50,7 @@ void tools_init_db(void)
 			if(it->first=="t_queue")
 				db.Query("INSERT INTO t_queue(queue_name,queue_concurrency,queue_scheduler) VALUES('default',1,'default');");
 			else if(it->first=="t_user")
-				db.Query("INSERT INTO t_user(user_login,user_password,user_profile) VALUES('admin',SHA1('admin'),'ADMIN');");
+				db.Query("INSERT INTO t_user(user_login,user_password,user_profile,user_preferences) VALUES('admin',SHA1('admin'),'ADMIN','');");
 		}
 		else
 			if(string(db.GetField(0))!="v" EVQUEUE_VERSION)

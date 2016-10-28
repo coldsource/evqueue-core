@@ -251,7 +251,7 @@ void User::GrantRight(const string &name, unsigned int workflow_id, bool edit, b
 	DB db;
 	int iedit = edit, iread = read, iexec = exec, ikill = kill;
 	db.QueryPrintf(
-		"INSERT INTO t_user_right(user_login, workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill) VALUES(%s,%i,%i,%i,%i,%i)",
+		"INSERT INTO t_user_right(user_login, workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill, user_preferences) VALUES(%s,%i,%i,%i,%i,%i,'')",
 		&name, &workflow_id, &iedit, &iread, &iexec, &ikill
 	);
 }
