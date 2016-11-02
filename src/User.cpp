@@ -48,7 +48,7 @@ User::User(DB *db,const string &user_name)
 	this->user_name = db->GetField(0);
 	user_password = db->GetField(1);
 	user_profile = db->GetField(2);
-	user_preferences = db->GetField(3);
+	user_preferences = db->GetField(3)?db->GetField(3):"";
 	
 	// Load rights
 	db->QueryPrintf("SELECT workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill FROM t_user_right WHERE user_login=%s",&user_name);
