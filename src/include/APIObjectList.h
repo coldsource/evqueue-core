@@ -119,7 +119,7 @@ class APIObjectList
 			{
 				pthread_mutex_unlock(&lock);
 				
-				throw Exception("API","Unknown object ID");
+				throw Exception("API","Unknown object ID : " + std::to_string(id));
 			}
 			
 			APIObjectType object = *it->second;
@@ -138,7 +138,7 @@ class APIObjectList
 			{
 				pthread_mutex_unlock(&lock);
 				
-				throw Exception("API","Unknown object name");
+				throw Exception("API","Unknown object name : " + name);
 			}
 			
 			APIObjectType object = *it->second;
