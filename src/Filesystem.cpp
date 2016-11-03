@@ -26,6 +26,7 @@
 
 #include <sys/types.h>
 #include <dirent.h>
+#include <errno.h>
 
 #include <xqilla/xqilla-dom3.hpp>
 
@@ -44,12 +45,13 @@ void Filesystem::List(const string &path,QueryResponse *response)
 	if(!dh)
 		throw Exception("Filesystem","Unable to open directory "+full_path);
 	
-	struct dirent entry;
 	struct dirent *result;
 	
 	while(true)
 	{
-		if(readdir_r(dh,&entry,&result)!=0)
+		errno = 0;
+		result = readdir(dh);
+		if(result==0 && errno!=0)
 		{
 			closedir(dh);
 			throw Exception("Filesystem","Unable to read directory "+full_path);
@@ -58,14 +60,14 @@ void Filesystem::List(const string &path,QueryResponse *response)
 		if(result==0)
 			break;
 		
-		if(entry.d_name[0]=='.')
+		if(result->d_name[0]=='.')
 			continue; // Skip hidden files
 		
 		DOMElement *node = (DOMElement *)response->AppendXML("<entry />");
-		node->setAttribute(X("name"),X(entry.d_name));
-		if(entry.d_type==DT_DIR)
+		node->setAttribute(X("name"),X(result->d_name));
+		if(result->d_type==DT_DIR)
 			node->setAttribute(X("type"),X("directory"));
-		else if(entry.d_type==DT_REG || entry.d_type==DT_LNK)
+		else if(result->d_type==DT_REG || result->d_type==DT_LNK)
 			node->setAttribute(X("type"),X("file"));
 		else
 			node->setAttribute(X("type"),X("unknown"));

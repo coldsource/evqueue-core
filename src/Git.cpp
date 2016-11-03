@@ -40,6 +40,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 #include <string>
 
@@ -612,12 +613,13 @@ void Git::list_files(const std::string directory, QueryResponse *response)
 	if(!dh)
 		throw Exception("Git","Unable to open directory "+directory);
 	
-	struct dirent entry;
 	struct dirent *result;
 	
 	while(true)
 	{
-		if(readdir_r(dh,&entry,&result)!=0)
+		errno = 0;
+		result = readdir(dh);
+		if(result==0 && errno!=0)
 		{
 			closedir(dh);
 			throw Exception("Git","Unable to read directory "+directory);
@@ -626,22 +628,22 @@ void Git::list_files(const std::string directory, QueryResponse *response)
 		if(result==0)
 			break;
 		
-		if(entry.d_name[0]=='.')
+		if(result->d_name[0]=='.')
 			continue; // Skip hidden files
 		
-		int len = strlen(entry.d_name);
+		int len = strlen(result->d_name);
 		if(len<=4)
 			continue;
 		
-		if(strcasecmp(entry.d_name+len-4,".xml")!=0)
+		if(strcasecmp(result->d_name+len-4,".xml")!=0)
 			continue;
 		
-		string entry_name_str(entry.d_name,len-4);
+		string entry_name_str(result->d_name,len-4);
 		
 		DOMElement *node = (DOMElement *)response->AppendXML("<entry />");
 		node->setAttribute(X("name"),X(entry_name_str.c_str()));
 		
-		string lastcommit = repo->GetFileLastCommit(directory+"/"+string(entry.d_name));
+		string lastcommit = repo->GetFileLastCommit(directory+"/"+string(result->d_name));
 		node->setAttribute(X("lastcommit"),X(lastcommit.c_str()));
 	}
 	
