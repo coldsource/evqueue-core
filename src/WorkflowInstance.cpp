@@ -644,6 +644,7 @@ bool WorkflowInstance::TaskStop(DOMNode *task_node,int retval,const char *stdout
 		{
 			// We are in cancelling state, we won't execute anything more
 			((DOMElement *)task_node)->setAttribute(X("error"),X("Won't retry because workflow is cancelling"));
+			error_tasks++;
 		}
 		else
 			retry_task(task_node);
