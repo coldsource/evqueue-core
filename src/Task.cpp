@@ -247,11 +247,10 @@ bool Task::CheckTaskName(const string &task_name)
 	return true;
 }
 
-void Task::Get(unsigned int id, QueryResponse *response)
+void Task::get(const Task &task, QueryResponse *response)
 {
-	Task task = Tasks::GetInstance()->Get(id);
-	
 	DOMElement *node = (DOMElement *)response->AppendXML("<task />");
+	node->setAttribute(X("id"),X(to_string(task.GetID()).c_str()));
 	node->setAttribute(X("name"),X(task.GetName().c_str()));
 	node->setAttribute(X("binary"),X(task.GetBinary().c_str()));
 	node->setAttribute(X("wd"),X(task.GetWorkingDirectory().c_str()));
@@ -263,6 +262,18 @@ void Task::Get(unsigned int id, QueryResponse *response)
 	node->setAttribute(X("merge_stderr"),task.GetMergeStderr()?X("1"):X("0"));
 	node->setAttribute(X("group"),X(task.GetGroup().c_str()));
 	node->setAttribute(X("comment"),X(task.GetComment().c_str()));
+}
+
+void Task::GetByID(unsigned int id, QueryResponse *response)
+{
+	Task task = Tasks::GetInstance()->Get(id);
+	return get(task,response);
+}
+
+void Task::GetByName(const string &name, QueryResponse *response)
+{
+	Task task = Tasks::GetInstance()->Get(name);
+	return get(task,response);
 }
 
 void Task::Create(
@@ -463,7 +474,15 @@ bool Task::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 	{
 		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		Get(id,response);
+		GetByID(id,response);
+		
+		return true;
+	}
+	else if(action=="search")
+	{
+		string name = saxh->GetRootAttribute("name");
+		
+		GetByName(name,response);
 		
 		return true;
 	}

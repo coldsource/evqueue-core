@@ -82,7 +82,8 @@ class Task
 		
 		static bool CheckTaskName(const std::string &task_name);
 		
-		static void Get(unsigned int id, QueryResponse *response);
+		static void GetByID(unsigned int id, QueryResponse *response);
+		static void GetByName(const std::string &name, QueryResponse *response);
 		
 		static void Create(
 			const std::string &name,
@@ -140,6 +141,8 @@ class Task
 			const std::string &group,
 			const std::string &comment
 		);
+		
+		static void get(const Task &task, QueryResponse *response);
 };
 
 #endif
