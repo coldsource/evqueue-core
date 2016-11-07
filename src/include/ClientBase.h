@@ -31,6 +31,7 @@ class ClientBase
 {
 	bool connected;
 	bool authenticated;
+	std::string node;
 	
 	std::string connection_str;
 	std::string user;
@@ -54,9 +55,11 @@ class ClientBase
 		ClientBase(const std::string &connection_str, const std::string &user, const std::string &password);
 		virtual ~ClientBase();
 		
+		const std::string &Connect(void);
 		void Exec(const std::string &cmd, bool record = false);
 		DOMDocument *GetResponseDOM();
 		SocketResponseSAX2Handler *GetResponseHandler() { return saxh; }
+		const std::string &GetNode() { return node; }
 		
 		void SetTimeouts(int cnx_timeout,int snd_timeout,int rcv_timeout);
 	

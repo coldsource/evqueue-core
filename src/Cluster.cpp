@@ -90,6 +90,15 @@ void Cluster::ExecuteCommand(const string &command)
 		try
 		{
 			Client client(nodes.at(i),user,password);
+			
+			// Check if we are not self connecting
+			const string node = client.Connect();
+			if(node==Configuration::GetInstance()->Get("cluster.node.name"))
+			{
+				Logger::Log(LOG_NOTICE, "Skipping current node in cluster notification");
+				continue;
+			}
+			
 			client.SetTimeouts(cnx_timeout,snd_timeout,rcv_timeout);
 			client.Exec(command);
 		}

@@ -110,6 +110,13 @@ ClientBase::~ClientBase()
 		delete saxh;
 }
 
+const string& ClientBase::Connect(void)
+{
+	connect();
+	
+	return GetNode();
+}
+
 void ClientBase::Exec(const std::string &cmd, bool record)
 {
 	if(!connected)
@@ -229,7 +236,10 @@ void ClientBase::connect()
 	recv();
 	
 	if(saxh->GetGroup()=="ready")
+	{
 		authenticated = true;
+		node = saxh->GetRootAttribute("node");
+	}
 	else
 		authenticate();
 }
@@ -269,6 +279,7 @@ void ClientBase::authenticate()
 		throw Exception("Client","Authentication error");
 	
 	authenticated = true;
+	node = saxh->GetRootAttribute("node");
 }
 
 void ClientBase::disconnect()
