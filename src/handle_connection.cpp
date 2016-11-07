@@ -94,7 +94,7 @@ void *handle_connection(void *sp)
 		AuthHandler auth_handler(s,remote_addr_str,remote_port);
 		User user = auth_handler.HandleAuth();
 		
-		string ready_string = "<ready profile='"+user.GetProfile()+"' />\n";
+		string ready_string = "<ready profile='"+user.GetProfile()+"' node='"+config->Get("cluster.node.name")+"' />\n";
 		send(s,ready_string.c_str(),ready_string.length(),0);
 		
 		while(true)
