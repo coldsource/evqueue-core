@@ -19,7 +19,7 @@ Package: evqueue-utils
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: evQueue utilities to manage daemon
- evQueue is a fast event driven scheduler and queueing engine
+ Utilities to use evQueue from CLI (launch workflows and send API commands)
 
 Package: evqueue-agent
 Architecture: any
