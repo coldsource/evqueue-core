@@ -1,0 +1,19 @@
+Template: evqueue-core/hostname
+Type: string
+_Description: MySQL hostname:
+ Hostame of the MySQL server that will contain evQueue database.
+
+Template: evqueue-core/user
+Type: string
+_Description: MySQL user:
+ User used to connect to MySQL server.
+
+Template: evqueue-core/password
+Type: string
+_Description: MySQL password:
+ User used to connect to MySQL server.
+
+Template: evqueue-core/database
+Type: string
+_Description: MySQL database name:
+ Name of the evQueue database.

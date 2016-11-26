@@ -10,7 +10,7 @@ Vcs-Browser: https://github.com/coldsource/evqueue-core
 
 Package: evqueue-core
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base (>= 3.0-6)
 Pre-Depends: adduser (>= 3.40)
 Description: evQueue core module
  evQueue is a fast event driven scheduler and queueing engine

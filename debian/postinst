@@ -13,9 +13,20 @@ if [ "$1" = "configure" ]; then
 	
 	chown -R evqueue:evqueue /usr/share/evqueue-core
 	
-	service rsyslog restart
+	. /usr/share/debconf/confmodule
+	db_get evqueue-core/hostname
+	sed --in-place -e "s/#\?[ ]*mysql.host[ ]*=.*/mysql.host=$RET/" /etc/evqueue.conf
 
-	exit 0
+	db_get evqueue-core/user
+	sed --in-place -e "s/#\?[ ]*mysql.user[ ]*=.*/mysql.user=$RET/" /etc/evqueue.conf
+
+	db_get evqueue-core/password
+	sed --in-place -e "s/#\?[ ]*mysql.password[ ]*=.*/mysql.password=$RET/" /etc/evqueue.conf
+
+	db_get evqueue-core/database
+	sed --in-place -e "s/#\?[ ]*mysql.database[ ]*=.*/mysql.database=$RET/" /etc/evqueue.conf
+	
+	service rsyslog restart
 fi
 
 #DEBHELPER#
