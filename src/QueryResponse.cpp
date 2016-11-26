@@ -28,14 +28,14 @@
 
 using namespace std;
 
-QueryResponse::QueryResponse(int socket)
+QueryResponse::QueryResponse(int socket, const string &root_node_name)
 {
 	this->socket = socket;
 	
 	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 	xmldoc = xqillaImplementation->createDocument();
 	
-	DOMElement *response_node = xmldoc->createElement(X("response"));
+	DOMElement *response_node = xmldoc->createElement(X(root_node_name.c_str()));
 	xmldoc->appendChild(response_node);
 	
 	status_ok = true;
@@ -50,6 +50,11 @@ void QueryResponse::SetError(const string &error)
 {
 	this->error = error;
 	status_ok = false;
+}
+
+void QueryResponse::SetAttribute(const std::string &name, const std::string &value)
+{
+	xmldoc->getDocumentElement()->setAttribute(X(name.c_str()),X(value.c_str()));
 }
 
 DOMNode *QueryResponse::AppendXML(const string &xml, DOMElement *node)

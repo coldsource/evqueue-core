@@ -36,11 +36,12 @@ class QueryResponse
 	std::string error;
 	
 	public:
-		QueryResponse(int socket);
+		QueryResponse(int socket, const std::string &root_node_name = "response");
 		~QueryResponse();
 		
 		DOMDocument *GetDOM() { return xmldoc; }
 		void SetError(const std::string &error);
+		void SetAttribute(const std::string &name, const std::string &value);
 		
 		DOMNode *AppendXML(const std::string &xml, DOMElement *node = 0);
 		
