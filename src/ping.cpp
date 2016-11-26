@@ -23,17 +23,14 @@
 #include <QueryResponse.h>
 #include <Configuration.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
 	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
 	
-	response->GetDOM()->getDocumentElement()->setAttribute(X("version"),X(EVQUEUE_VERSION));
-	response->GetDOM()->getDocumentElement()->setAttribute(X("node"),X(Configuration::GetInstance()->Get("cluster.node.name").c_str()));
+	response->SetAttribute("version",EVQUEUE_VERSION);
+	response->SetAttribute("node",Configuration::GetInstance()->Get("cluster.node.name"));
 	
 	return true;
 }
