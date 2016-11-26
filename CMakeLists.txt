@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(EVQUEUE_VERSION "1.5")
+set(EVQUEUE_VERSION "2.0")
 
 set(CMAKE_BUILD_TYPE Release)
 
@@ -37,14 +37,14 @@ endif()
 
 include_directories(include /usr/include)
 
+target_link_libraries(evqueue git2)
+target_link_libraries(evqueue z)
 target_link_libraries(evqueue mysqlclient)
 target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue xqilla)
 target_link_libraries(evqueue rt)
 target_link_libraries(evqueue pcrecpp)
-target_link_libraries(evqueue git2.a)
-target_link_libraries(evqueue z)
 target_link_libraries(evqueue curl)
 target_link_libraries(evqueue ssh2)
 target_link_libraries(evqueue http_parser)
