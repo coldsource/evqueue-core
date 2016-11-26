@@ -94,8 +94,11 @@ void *handle_connection(void *sp)
 		AuthHandler auth_handler(s,remote_addr_str,remote_port);
 		User user = auth_handler.HandleAuth();
 		
-		string ready_string = "<ready profile='"+user.GetProfile()+"' node='"+config->Get("cluster.node.name")+"' />\n";
-		send(s,ready_string.c_str(),ready_string.length(),0);
+		QueryResponse ready_response(s,"ready");
+		ready_response.SetAttribute("profile",user.GetProfile());
+		ready_response.SetAttribute("version",EVQUEUE_VERSION);
+		ready_response.SetAttribute("node",Configuration::GetInstance()->Get("cluster.node.name"));
+		ready_response.SendResponse();
 		
 		while(true)
 		{
