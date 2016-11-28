@@ -37,7 +37,7 @@ endif()
 
 include_directories(include /usr/include)
 
-target_link_libraries(evqueue git2)
+target_link_libraries(evqueue libgit2.a)
 target_link_libraries(evqueue z)
 target_link_libraries(evqueue mysqlclient)
 target_link_libraries(evqueue pthread)
