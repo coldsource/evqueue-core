@@ -842,7 +842,7 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 	}
 	
 	pid_t pid;
-	if(!stdin_parameter_c || parameters_pipe[0]==-1)
+	if(!stdin_parameter_c || parameters_pipe[0]!=-1)
 	{
 		// Fork child
 		pid = fork();
