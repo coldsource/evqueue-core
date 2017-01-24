@@ -101,7 +101,14 @@ DOMNode *XMLUtils::AppendXML(DOMDocument *xmldoc, DOMNode *parent_node, const st
 	// Set XML content and parse document
 	XMLCh *xml_xmlch = XMLString::transcode(xml.c_str());
 	input->setStringData(xml_xmlch);
+	
 	DOMDocument *fragment_doc = parser->parse(input);
+	if(!fragment_doc || !fragment_doc->getDocumentElement())
+	{
+		input->release();
+		parser->release();
+		throw Exception("XML Parser","Invalid XML document");
+	}
 	
 	XMLString::release(&xml_xmlch);
 	input->release();
