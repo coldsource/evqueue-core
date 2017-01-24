@@ -155,12 +155,18 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			if(!wfi->SendStatus(user, response,workflow_instance_id))
 			{
 				// Workflow is not executing, lookup in database
-				db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_id FROM t_workflow_instance WHERE workflow_instance_id=%i",&workflow_instance_id);
+				db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_id, workflow_instance_status FROM t_workflow_instance WHERE workflow_instance_id=%i",&workflow_instance_id);
 				if(!db.FetchRow())
 					throw Exception("WorkflowInstance","Unknown workflow instance");
 				
 				if(!user.HasAccessToWorkflow(db.GetFieldInt(1), "read"))
 					User::InsufficientRights();
+				
+				if(string(db.GetField(2))!="TERMINATED")
+					throw Exception("WorkflowInstance","Workflow instance is still running on another node, query the corresponding node");
+				
+				if(!db.GetField(0))
+					throw Exception("WorkflowInstance","Invalid workflow XML");
 				
 				response->AppendXML(db.GetField(0));
 			}
