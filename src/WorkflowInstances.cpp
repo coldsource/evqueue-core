@@ -309,6 +309,7 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		string filter_launched_from = saxh->GetRootAttribute("filter_launched_from","");
 		string filter_launched_until = saxh->GetRootAttribute("filter_launched_until","");
 		string filter_status = saxh->GetRootAttribute("filter_status","");
+		bool filter_error = saxh->GetRootAttributeBool("filter_error",false);
 		unsigned int filter_schedule_id = saxh->GetRootAttributeInt("filter_schedule_id",0);
 		unsigned int limit = saxh->GetRootAttributeInt("limit",30);
 		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
@@ -349,6 +350,9 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 			query_where += " AND wi.workflow_instance_status=%s";
 			query_where_values.push_back(&filter_status);
 		}
+		
+		if(filter_error)
+			query_where += " AND wi.workflow_instance_errors>0";
 		
 		if(filter_schedule_id!=0)
 		{
