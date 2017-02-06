@@ -51,22 +51,32 @@ void WorkflowSchedules::Reload(bool notify)
 	
 	pthread_mutex_lock(&lock);
 	
-	clear();
-	active_schedules.clear();
-	
-	DB db;
-	
-	// Build the list of active and inactive schedules
-	db.QueryPrintf("SELECT workflow_schedule_id,node_name FROM t_workflow_schedule");
-	while(db.FetchRow())
+	try
 	{
-		WorkflowSchedule *workflow_schedule = new WorkflowSchedule(db.GetFieldInt(0));
+		clear();
+		active_schedules.clear();
 		
-		add(db.GetFieldInt(0),"",workflow_schedule);
+		DB db;
 		
-		// Schedule is actif if set as active AND configured on the current node
-		if(workflow_schedule->GetIsActive() && string(db.GetField(1))==Configuration::GetInstance()->Get("cluster.node.name"))
-			active_schedules.push_back(workflow_schedule);
+		// Build the list of active and inactive schedules
+		db.QueryPrintf("SELECT workflow_schedule_id,node_name FROM t_workflow_schedule");
+		while(db.FetchRow())
+		{
+			WorkflowSchedule *workflow_schedule = new WorkflowSchedule(db.GetFieldInt(0));
+			
+			add(db.GetFieldInt(0),"",workflow_schedule);
+			
+			// Schedule is actif if set as active AND configured on the current node
+			if(workflow_schedule->GetIsActive() && string(db.GetField(1))==Configuration::GetInstance()->Get("cluster.node.name"))
+				active_schedules.push_back(workflow_schedule);
+		}
+	}
+	catch(Exception &e)
+	{
+		Logger::Log(LOG_ERR,"[ WorkflowSchedules ] Unexpected exception trying to reload configuration : [ %s ] %s",e.context.c_str(),e.error.c_str());
+		Logger::Log(LOG_ERR,"[ WorkflowSchedules ] Configuration reload failed");
+		pthread_mutex_unlock(&lock);
+		return;
 	}
 	
 	pthread_mutex_unlock(&lock);
