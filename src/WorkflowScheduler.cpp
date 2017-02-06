@@ -86,30 +86,38 @@ void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, un
 {
 	pthread_mutex_lock(&wfs_mutex);
 	
-	if(!workflow_instance_id)
+	try
 	{
-		// Workflow is currently inactive, schedule it
-		ScheduledWorkflow *new_scheduled_wf = new ScheduledWorkflow;
-		new_scheduled_wf->workflow_schedule = workflow_schedule;
-		new_scheduled_wf->scheduled_at = workflow_schedule->GetNextTime();
-		
-		char buf[32];
-		struct tm time_t;
-		localtime_r(&new_scheduled_wf->scheduled_at,&time_t);
-		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
-		Logger::Log(LOG_NOTICE,"[WSID %d] Scheduled workflow %s at %s",workflow_schedule->GetID(),workflow_schedule->GetWorkflowName().c_str(),buf);
-		
-		InsertEvent(new_scheduled_wf);
-	}
-	else
-	{
-		// This schedule has a running workflow instance, put it in executing instances
-		int i = lookup_wfs(workflow_schedule->GetID());
-		if(i!=-1)
+		if(!workflow_instance_id)
 		{
-			wfs_wi_ids[i] = workflow_instance_id;
-			wfs_executing_instances[i] = workflow_schedule;
+			// Workflow is currently inactive, schedule it
+			ScheduledWorkflow *new_scheduled_wf = new ScheduledWorkflow;
+			new_scheduled_wf->workflow_schedule = workflow_schedule;
+			new_scheduled_wf->scheduled_at = workflow_schedule->GetNextTime();
+			
+			char buf[32];
+			struct tm time_t;
+			localtime_r(&new_scheduled_wf->scheduled_at,&time_t);
+			strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
+			Logger::Log(LOG_NOTICE,"[WSID %d] Scheduled workflow %s at %s",workflow_schedule->GetID(),workflow_schedule->GetWorkflowName().c_str(),buf);
+			
+			InsertEvent(new_scheduled_wf);
 		}
+		else
+		{
+			// This schedule has a running workflow instance, put it in executing instances
+			int i = lookup_wfs(workflow_schedule->GetID());
+			if(i!=-1)
+			{
+				wfs_wi_ids[i] = workflow_instance_id;
+				wfs_executing_instances[i] = workflow_schedule;
+			}
+		}
+	}
+	catch(Exception &e)
+	{
+		pthread_mutex_unlock(&wfs_mutex);
+		throw e;
 	}
 	
 	pthread_mutex_unlock(&wfs_mutex);
