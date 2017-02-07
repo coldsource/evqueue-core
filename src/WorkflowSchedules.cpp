@@ -95,6 +95,7 @@ bool WorkflowSchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 	WorkflowSchedules *workflow_schedules = WorkflowSchedules::GetInstance();
 	
 	string action = saxh->GetRootAttribute("action");
+	bool display_parameters = saxh->GetRootAttributeBool("display_parameters",false);
 	
 	if(action=="list")
 	{
@@ -114,6 +115,21 @@ bool WorkflowSchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 			node->setAttribute(X("active"),X(db.GetField(7)));
 			node->setAttribute(X("comment"),X(db.GetField(8)));
 			node->setAttribute(X("workflow_name"),X(db.GetField(9)));
+			
+			if(display_parameters)
+			{
+				WorkflowSchedule workflow_schedule = WorkflowSchedules::GetInstance()->Get(db.GetFieldInt(0));
+				WorkflowParameters *parameters = workflow_schedule.GetParameters();
+				
+				parameters->SeekStart();
+				string name, value;
+				while(parameters->Get(name,value))
+				{
+					DOMElement *parameter_node = (DOMElement *)response->AppendXML("<parameter />",node);
+					parameter_node->setAttribute(X("name"),X(name.c_str()));
+					parameter_node->setAttribute(X("value"),X(value.c_str()));
+				}
+			}
 		}
 		
 		return true;
