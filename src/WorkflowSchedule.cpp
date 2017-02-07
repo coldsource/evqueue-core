@@ -214,8 +214,6 @@ void WorkflowSchedule::Edit(
 		&id
 		);
 	
-	unsigned int workflow_schedule_id = db.InsertID();
-	
 	string parameter_name;
 	string parameter_value;
 	
@@ -225,7 +223,7 @@ void WorkflowSchedule::Edit(
 	while(parameters->Get(parameter_name,parameter_value))
 		db.QueryPrintf(
 			"INSERT INTO t_workflow_schedule_parameters(workflow_schedule_id,workflow_schedule_parameter,workflow_schedule_parameter_value) VALUES(%i,%s,%s)",
-			&workflow_schedule_id,
+			&id,
 			&parameter_name,
 			&parameter_value
 		);
