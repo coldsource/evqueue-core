@@ -44,6 +44,7 @@ class WorkflowSchedule
 		std::string workflow_schedule_user;
 		bool active;
 		std::string comment;
+		std::string node;
 		
 		WorkflowParameters parameters;
 		
@@ -63,6 +64,7 @@ class WorkflowSchedule
 		const std::string &GetUser() { return workflow_schedule_user; }
 		bool GetIsActive() { return active; }
 		const std::string &GetComment() { return comment; }
+		const std::string &GetNode() { return node; }
 		WorkflowParameters *GetParameters() { return &parameters; }
 		time_t GetNextTime() { return schedule.GetNextTime(); }
 		

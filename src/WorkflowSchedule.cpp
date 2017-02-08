@@ -44,7 +44,7 @@ WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 	DB db;
 	
 	// Fetch schedule parameters
-	db.QueryPrintf("SELECT workflow_id, workflow_schedule, workflow_schedule_onfailure,workflow_schedule_host,workflow_schedule_user,workflow_schedule_active, workflow_schedule_comment FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&workflow_schedule_id);
+	db.QueryPrintf("SELECT workflow_id, workflow_schedule, workflow_schedule_onfailure,workflow_schedule_host,workflow_schedule_user,workflow_schedule_active, workflow_schedule_comment, node_name FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&workflow_schedule_id);
 	
 	if(!db.FetchRow())
 		throw Exception("WorkflowSchedule","Unknown schedule ID");
@@ -69,6 +69,7 @@ WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 	
 	active = db.GetFieldInt(5);
 	comment = db.GetField(6);
+	node = db.GetField(7);
 	
 	// Fetch schedule parameters
 	db.QueryPrintf("SELECT workflow_schedule_parameter,workflow_schedule_parameter_value FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",&workflow_schedule_id);
@@ -108,6 +109,7 @@ void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
 	node->setAttribute(X("host"),X(workflow_schedule.GetHost().c_str()));
 	node->setAttribute(X("active"),X(workflow_schedule.GetIsActive()?"1":"0"));
 	node->setAttribute(X("comment"),X(workflow_schedule.GetComment().c_str()));
+	node->setAttribute(X("node"),X(workflow_schedule.GetNode().c_str()));
 	
 	string parameter_name;
 	string parameter_value;
