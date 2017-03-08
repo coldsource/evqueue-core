@@ -1193,6 +1193,7 @@ void WorkflowInstance::run(DOMNode *job,DOMNode *context_node)
 
 	DOMNode *task;
 	int tasks_index = 0;
+	int count_tasks_skipped = 0;
 	try
 	{
 		while(tasks->snapshotItem(tasks_index++))
@@ -1240,9 +1241,9 @@ void WorkflowInstance::run(DOMNode *job,DOMNode *context_node)
 				if(!test_value)
 				{
 					test_expr->release();
-
 					((DOMElement *)task)->setAttribute(X("status"),X("SKIPPED"));
 					((DOMElement *)task)->setAttribute(X("details"),X("Condition evaluates to false"));
+					count_tasks_skipped++;
 					continue;
 				}
 
@@ -1295,6 +1296,10 @@ void WorkflowInstance::run(DOMNode *job,DOMNode *context_node)
 				replace_value(task,context_node);
 				enqueue_task(task);
 			}
+		}
+		// If all task of job is skipped goto child job :
+		if (count_tasks_skipped == tasks_index-1){
+			run_subjobs(job);
 		}
 	}
 	catch(Exception &e)
