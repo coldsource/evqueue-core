@@ -1186,7 +1186,7 @@ void WorkflowInstance::retry_task(DOMNode *task)
 
 void WorkflowInstance::run(DOMNode *job,DOMNode *context_node)
 {
-	int jobs_index = 0, matching_nodes_index = 0;
+	int jobs_index = 0;
 
 	// Loop for tasks
 	DOMXPathResult *tasks = xmldoc->evaluate(X("tasks/task"),job,resolver,DOMXPathResult::SNAPSHOT_RESULT_TYPE ,0);
@@ -1272,7 +1272,7 @@ void WorkflowInstance::run(DOMNode *job,DOMNode *context_node)
 					throw Exception("WorkflowInstance","Exception in workflow instance");
 				}
 
-
+				int matching_nodes_index = 0;
 				while(matching_nodes->snapshotItem(matching_nodes_index++))
 				{
 					matching_node = matching_nodes->getNodeValue();
