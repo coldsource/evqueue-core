@@ -29,4 +29,6 @@ class XMLUtils
 		static DOMNode *AppendXML(DOMDocument *xmldoc, DOMNode *parent_node, const std::string &xml);
 		static std::string GetAttribute(DOMElement *node, const std::string &name, bool remove_attribute = false);
 		static bool GetAttributeBool(DOMElement *node, const std::string &name, bool remove_attribute = false);
+		
+		static std::string ExpandXPathAttribute(const std::string &attribute,DOMXPathNSResolver* resolver, DOMNode *context_node);
 };

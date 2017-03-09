@@ -20,6 +20,8 @@
 #include <XMLUtils.h>
 #include <Exception.h>
 
+#include <pcrecpp.h>
+
 #include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
 
@@ -155,4 +157,50 @@ bool XMLUtils::GetAttributeBool(DOMElement *node, const string &name, bool remov
 	{
 		throw Exception("XML Parser","Attribute '"+name+"' has invalid boolean value");
 	}
+}
+
+string XMLUtils::ExpandXPathAttribute(const string &attribute,DOMXPathNSResolver* resolver,DOMNode *context_node)
+{
+	DOMDocument *xmldoc = context_node->getOwnerDocument();
+	
+	string attribute_expanded = attribute;
+	
+	pcrecpp::RE regex("(\\{[^\\}]+\\})");
+	pcrecpp::StringPiece str_to_match(attribute);
+	std::string match;
+	while(regex.FindAndConsume(&str_to_match,&match))
+	{
+		string xpath_piece_raw = match;
+		string xpath_piece =  xpath_piece_raw.substr(1,xpath_piece_raw.length()-2);
+		
+		DOMXPathResult *value_nodes;
+		
+		// This is unchecked user input. We have to try evaluation
+		try
+		{
+			value_nodes = xmldoc->evaluate(X(xpath_piece.c_str()),context_node,resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
+		}
+		catch(XQillaException &xqe)
+		{
+			// XPath expression error
+			throw Exception("WorkflowInstance","Error computing input values");
+		}
+
+		DOMNode *value_node;
+		
+		if(value_nodes->isNode())
+		{
+			value_node = value_nodes->getNodeValue();
+			
+			size_t start_pos = attribute_expanded.find(xpath_piece_raw);
+			
+			char *expanded_value = XMLString::transcode(value_node->getTextContent());
+			attribute_expanded.replace(start_pos,xpath_piece_raw.length(),string(expanded_value));
+			XMLString::release(&expanded_value);
+		}
+		
+		value_nodes->release();
+	}
+	
+	return attribute_expanded;
 }

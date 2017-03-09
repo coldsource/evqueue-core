@@ -39,6 +39,7 @@
 #include <Notifications.h>
 #include <Sockets.h>
 #include <QueryResponse.h>
+#include <XMLUtils.h>
 #include <tools.h>
 #include <global.h>
 
@@ -871,10 +872,28 @@ pid_t WorkflowInstance::TaskExecute(DOMNode *task_node,pid_t tid,bool *workflow_
 			// Set SSH variables for remote execution if needed by task
 			if(!task.GetHost().empty())
 			{
+				// Task is configured as distant
 				setenv("EVQUEUE_SSH_HOST",task.GetHost().c_str(),true);
 
 				if(!task.GetUser().empty())
 					setenv("EVQUEUE_SSH_USER",task.GetUser().c_str(),true);
+			}
+			else if(task_node->getAttributes()->getNamedItem(X("host")))
+			{
+				// Dynamic task execution is enabled
+				// Set SSH variables for remote execution if needed by workflow instance
+				char *ssh_host;
+				ssh_host = XMLString::transcode(((DOMElement *)task_node)->getAttribute(X("host")));
+				setenv("EVQUEUE_SSH_HOST",ssh_host,true);
+				XMLString::release(&ssh_host);
+				
+				if(task_node->getAttributes()->getNamedItem(X("user")))
+				{
+					char *ssh_user;
+					ssh_user = XMLString::transcode(((DOMElement *)task_node)->getAttribute(X("user")));
+					setenv("EVQUEUE_SSH_USER",ssh_user,true);
+					XMLString::release(&ssh_user);
+				}
 			}
 			else if(xmldoc->getDocumentElement()->getAttributes()->getNamedItem(X("host")))
 			{
@@ -1467,7 +1486,29 @@ void WorkflowInstance::replace_value(DOMNode *task,DOMNode *context_node)
 	}
 
 	values->release();
-
+	
+	// Expand dynamic task host if needed
+	if(task->getAttributes()->getNamedItem(X("host")))
+	{
+		char * attr_val = XMLString::transcode(((DOMElement *)task)->getAttribute(X("host")));
+		
+		std::string expanded_attr_val = XMLUtils::ExpandXPathAttribute(attr_val,resolver,context_node);
+		((DOMElement *)task)->setAttribute(X("host"),X(expanded_attr_val.c_str()));
+		
+		XMLString::release(&attr_val);
+	}
+	
+	// Expand dynamic task user if needed
+	if(task->getAttributes()->getNamedItem(X("user")))
+	{
+		char * attr_val = XMLString::transcode(((DOMElement *)task)->getAttribute(X("user")));
+		
+		std::string expanded_attr_val = XMLUtils::ExpandXPathAttribute(attr_val,resolver,context_node);
+		((DOMElement *)task)->setAttribute(X("user"),X(expanded_attr_val.c_str()));
+		
+		XMLString::release(&attr_val);
+	}
+	
 	// Replace <copy> nodes par their value
 	values = xmldoc->evaluate(X(".//copy"),task,resolver,DOMXPathResult::SNAPSHOT_RESULT_TYPE,0);
 	values_index = 0;
