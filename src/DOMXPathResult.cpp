@@ -25,7 +25,14 @@ bool DOMXPathResult::isNode()
 
 DOMNode DOMXPathResult::getNodeValue()
 {
-	return result->getNodeValue();
+	try
+	{
+		return result->getNodeValue();
+	}
+	catch(XQillaException &xqe)
+	{
+		throw Exception("DOMXPathResult","Evaluation returned no result");
+	}
 }
 
 int DOMXPathResult::getIntegerValue()
