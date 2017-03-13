@@ -194,7 +194,7 @@ void Queue::SetScheduler(unsigned int new_scheduler)
 	if(new_scheduler==scheduler)
 		return;
 	
-	Logger::Log(LOG_NOTICE,"[ Queue ] %s : migrating scheduler to %s",name.c_str(),QueuePool::get_scheduler_from_int(new_scheduler).c_str());
+	Logger::Log(LOG_NOTICE,"[ Queue ] "+name+" : migrating scheduler to "+QueuePool::get_scheduler_from_int(new_scheduler));
 	
 	if(new_scheduler==QUEUE_SCHEDULER_FIFO)
 	{

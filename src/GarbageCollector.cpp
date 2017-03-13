@@ -164,7 +164,7 @@ int GarbageCollector::purge(void)
 	}
 	catch(Exception &e)
 	{
-		Logger::Log(LOG_ERR,"[ GarbageCollector ] Error trying to clean old entries. DB returned : %s",e.error.c_str());
+		Logger::Log(LOG_ERR,"[ GarbageCollector ] Error trying to clean old entries. DB returned : "+e.error);
 		// Error connecting to database. Will try again later
 		return 0;
 	}

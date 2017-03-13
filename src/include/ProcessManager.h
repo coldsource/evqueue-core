@@ -31,7 +31,6 @@ class ProcessManager
 		int msgqid;
 		
 		std::string logs_directory;
-		char *log_filename;
 		bool logs_delete;
 		
 		static volatile bool is_shutting_down;

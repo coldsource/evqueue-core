@@ -95,7 +95,7 @@ void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, un
 			struct tm time_t;
 			localtime_r(&new_scheduled_wf->scheduled_at,&time_t);
 			strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
-			Logger::Log(LOG_NOTICE,"[WSID %d] Scheduled workflow %s at %s",workflow_schedule->GetID(),workflow_schedule->GetWorkflowName().c_str(),buf);
+			Logger::Log(LOG_NOTICE,"[WSID "+to_string(workflow_schedule->GetID())+"] Scheduled workflow "+workflow_schedule->GetWorkflowName()+" at "+string(buf));
 			
 			InsertEvent(new_scheduled_wf);
 		}
@@ -156,7 +156,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 	{
 		Statistics *stats = Statistics::GetInstance();
 		
-		const char *workflow_name = scheduled_wf->workflow_schedule->GetWorkflowName().c_str();
+		const string workflow_name = scheduled_wf->workflow_schedule->GetWorkflowName();
 		bool workflow_terminated;
 		
 		WorkflowInstance *wi = 0;
@@ -194,7 +194,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		{
 			stats->IncWorkflowExceptions();
 			
-			Logger::Log(LOG_WARNING,"[ WorkflowScheduler ] Unexpected exception trying to instanciate workflow '%s': [ %s ] %s",workflow_name,e.context.c_str(),e.error.c_str());
+			Logger::Log(LOG_WARNING,"[ WorkflowScheduler ] Unexpected exception trying to instanciate workflow '"+workflow_name+"': [ "+e.context+" ] "+e.error);
 			delete scheduled_wf;
 			
 			if(wi)

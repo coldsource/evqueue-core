@@ -70,7 +70,7 @@ void WorkflowSchedules::Reload(bool notify)
 	}
 	catch(Exception &e)
 	{
-		Logger::Log(LOG_ERR,"[ WorkflowSchedules ] Unexpected exception trying to reload configuration : [ %s ] %s",e.context.c_str(),e.error.c_str());
+		Logger::Log(LOG_ERR,"[ WorkflowSchedules ] Unexpected exception trying to reload configuration : [ "+e.context+" ] "+e.error);
 		Logger::Log(LOG_ERR,"[ WorkflowSchedules ] Configuration reload failed");
 		pthread_mutex_unlock(&lock);
 		return;

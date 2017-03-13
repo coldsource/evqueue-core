@@ -83,7 +83,7 @@ void Cluster::ExecuteCommand(const string &command)
 	if(nodes.size()==0)
 		return; // Cluster is not configures
 	
-	Logger::Log(LOG_NOTICE, "Executing cluster command %s",command.c_str());
+	Logger::Log(LOG_NOTICE, "Executing cluster command "+command);
 	
 	for(int i=0;i<nodes.size();i++)
 	{

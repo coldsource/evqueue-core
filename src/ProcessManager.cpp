@@ -283,7 +283,7 @@ char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int f
 	long log_size;
 	char *output;
 	
-	f  = fopen(pm->log_filename,"r");
+	f  = fopen(log_filename.c_str(),"r");
 	
 	if(f)
 	{
@@ -308,7 +308,7 @@ char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int f
 	}
 	
 	if(pm->logs_delete)
-		remove(pm->log_filename); // Delete log file since it is not usefull anymore
+		unlink(log_filename.c_str()); // Delete log file since it is not usefull anymore
 	
 	return output;
 }
