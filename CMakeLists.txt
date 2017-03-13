@@ -22,7 +22,7 @@ add_executable(evqueue
 	src/NotificationType.cpp src/NotificationTypes.cpp src/sha1.c src/WorkflowInstanceAPI.cpp src/SocketSAX2Handler.cpp
 	src/hmac.cpp src/AuthHandler.cpp src/User.cpp src/Users.cpp src/Logs.cpp src/ClientBase.cpp src/Client.cpp
 	src/ActiveConnections.cpp src/LibGit2.cpp src/Git.cpp src/Sha1String.cpp src/pbkdf2.cpp src/Random.cpp
-	src/Filesystem.cpp)
+	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp src/DOMDocument.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)

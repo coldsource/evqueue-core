@@ -34,8 +34,6 @@
 #include <User.h>
 #include <base64.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -43,6 +41,7 @@
 #include <errno.h>
 
 #include <string>
+#include <memory>
 
 using namespace std;
 
@@ -139,15 +138,12 @@ void Git::LoadWorkflow(const string &name)
 {
 	pthread_mutex_lock(&lock);
 	
-	DOMLSParser *parser = 0;
-	
 	try
 	{
 		string filename = workflows_subdirectory+"/"+name+".xml";
 		
 		// Load XML from file
-		DOMDocument *xmldoc;
-		load_file(filename,&parser, &xmldoc);
+		unique_ptr<DOMDocument> xmldoc(load_file(filename));
 		
 		// Read repository lastcommit
 		string repo_lastcommit = repo->GetFileLastCommit(filename);
@@ -155,19 +151,14 @@ void Git::LoadWorkflow(const string &name)
 			throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
 		
 		// Create/Edit workflow
-		Workflow::LoadFromXML(name, xmldoc, repo_lastcommit);
+		Workflow::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
 	}
 	catch(Exception &e)
 	{
-		if(parser)
-			parser->release();
-		
 		pthread_mutex_unlock(&lock);
 		
 		throw e;
 	}
-	
-	parser->release();
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -176,15 +167,12 @@ void Git::LoadTask(const string &name)
 {
 	pthread_mutex_lock(&lock);
 	
-	DOMLSParser *parser = 0;
-	
 	try
 	{
 		string filename = tasks_subdirectory+"/"+name+".xml";
 		
 		// Load XML from file
-		DOMDocument *xmldoc;
-		load_file(filename,&parser, &xmldoc);
+		unique_ptr<DOMDocument> xmldoc(load_file(filename));
 		
 		// Read repository lastcommit
 		string repo_lastcommit = repo->GetFileLastCommit(filename);
@@ -192,19 +180,14 @@ void Git::LoadTask(const string &name)
 			throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
 		
 		// Create/Edit workflow
-		Task::LoadFromXML(name, xmldoc, repo_lastcommit);
+		Task::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
 	}
 	catch(Exception &e)
 	{
-		if(parser)
-			parser->release();
-		
 		pthread_mutex_unlock(&lock);
 		
 		throw e;
 	}
-	
-	parser->release();
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -213,31 +196,23 @@ void Git::GetWorkflow(const string &name, QueryResponse *response)
 {
 	pthread_mutex_lock(&lock);
 	
-	DOMLSParser *parser = 0;
-	
 	try
 	{
 		string filename = workflows_subdirectory+"/"+name+".xml";
 		
 		// Load XML from file
-		DOMDocument *xmldoc;
-		load_file(filename,&parser, &xmldoc);
+		unique_ptr<DOMDocument> xmldoc(load_file(filename));
 		
 		DOMDocument *response_xmldoc = response->GetDOM();
-		DOMNode *node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
-		response_xmldoc->getDocumentElement()->appendChild(node);
+		DOMNode node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
+		response_xmldoc->getDocumentElement().appendChild(node);
 	}
 	catch(Exception &e)
 	{
-		if(parser)
-			parser->release();
-		
 		pthread_mutex_unlock(&lock);
 		
 		throw e;
 	}
-	
-	parser->release();
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -246,31 +221,23 @@ void Git::GetTask(const string &name, QueryResponse *response)
 {
 	pthread_mutex_lock(&lock);
 	
-	DOMLSParser *parser = 0;
-	
 	try
 	{
 		string filename = tasks_subdirectory+"/"+name+".xml";
 		
 		// Load XML from file
-		DOMDocument *xmldoc;
-		load_file(filename,&parser, &xmldoc);
+		unique_ptr<DOMDocument> xmldoc(load_file(filename));
 		
 		DOMDocument *response_xmldoc = response->GetDOM();
-		DOMNode *node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
-		response_xmldoc->getDocumentElement()->appendChild(node);
+		DOMNode node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
+		response_xmldoc->getDocumentElement().appendChild(node);
 	}
 	catch(Exception &e)
 	{
-		if(parser)
-			parser->release();
-		
 		pthread_mutex_unlock(&lock);
 		
 		throw e;
 	}
-	
-	parser->release();
 	
 	pthread_mutex_unlock(&lock);
 }
@@ -569,40 +536,19 @@ string Git::save_file(const string &filename, const string &content, const strin
 	return commit_id;
 }
 
-void Git::load_file(const string &filename, DOMLSParser **pparser, DOMDocument **pxmldoc)
+DOMDocument *Git::load_file(const string &filename)
 {
 	if(repo->StatusIsModified(filename))
 		throw Exception("Git", "File has local modifications, discarding");
 	
-	*pparser = 0;
-	*pxmldoc = 0;
-	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	*pparser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
-	
 	string full_filename = repo_path+"/"+filename;
 	
 	// Load XML from file
-	DOMDocument *xmldoc;
-	try
-	{
-		xmldoc = (*pparser)->parseURI(full_filename.c_str());
-	}
-	catch(...)
-	{
-		(*pparser)->release();
-		*pparser = 0;
+	DOMDocument *xmldoc = DOMDocument::ParseFile(full_filename);
+	if(!xmldoc)
 		throw Exception("Git", "Could not parse XML file "+full_filename);
-	}
 	
-	if(!xmldoc || !xmldoc->getDocumentElement())
-	{
-		(*pparser)->release();
-		*pparser = 0;
-		throw Exception("Git", "Could not parse XML file "+full_filename);
-	}
-	
-	*pxmldoc = xmldoc;
+	return xmldoc;
 }
 
 void Git::list_files(const std::string directory, QueryResponse *response)
@@ -640,11 +586,11 @@ void Git::list_files(const std::string directory, QueryResponse *response)
 		
 		string entry_name_str(result->d_name,len-4);
 		
-		DOMElement *node = (DOMElement *)response->AppendXML("<entry />");
-		node->setAttribute(X("name"),X(entry_name_str.c_str()));
+		DOMElement node = (DOMElement)response->AppendXML("<entry />");
+		node.setAttribute("name",entry_name_str);
 		
 		string lastcommit = repo->GetFileLastCommit(directory+"/"+string(result->d_name));
-		node->setAttribute(X("lastcommit"),X(lastcommit.c_str()));
+		node.setAttribute("lastcommit",lastcommit);
 	}
 	
 	closedir(dh);

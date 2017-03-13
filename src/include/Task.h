@@ -23,8 +23,6 @@
 #include <string>
 #include <vector>
 
-#include <xercesc/dom/DOM.hpp>
-
 namespace task_parameters_mode { enum task_parameters_mode {ENV,CMDLINE,UNKNOWN}; }
 namespace task_output_method { enum task_output_method {XML,TEXT,UNKNOWN}; }
 
@@ -32,6 +30,7 @@ class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 class User;
+class DOMDocument;
 
 class Task
 {
@@ -73,7 +72,7 @@ class Task
 		void SetLastCommit(const std::string &commit_id);
 		
 		std::string SaveToXML();
-		static void LoadFromXML(std::string name, xercesc::DOMDocument *xmldoc, std::string repo_lastcommit);
+		static void LoadFromXML(std::string name, DOMDocument *xmldoc, std::string repo_lastcommit);
 		
 		static void PutFile(const std::string &filename,const std::string &data,bool base64_encoded=true);
 		static void GetFile(const std::string &filename,std::string &data);

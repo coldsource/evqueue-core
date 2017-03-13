@@ -502,30 +502,41 @@ void DB::RollbackTransaction()
 	transaction_started = false;
 }
 
-char *DB::GetField(int n)
+bool DB::GetFieldIsNULL(int n)
 {
 	if(res==0 || row==0)
-		return 0;
+		return true;
 
-	return row[n];
+	return row[n]==0;
+}
+
+string DB::GetField(int n)
+{
+	if(res==0 || row==0)
+		return "";
+
+	if(!row[n])
+		return "";
+	
+	return string(row[n]);
 }
 
 int DB::GetFieldInt(int n)
 {
-	const char *v = GetField(n);
-	if(!v)
+	string v = GetField(n);
+	if(v=="")
 		return 0;
 	
-	return atoi(v);
+	return stoi(v);
 }
 
 double DB::GetFieldDouble(int n)
 {
-	const char *v = GetField(n);
-	if(!v)
+	string v = GetField(n);
+	if(v=="")
 		return 0;
 	
-	return atof(v);
+	return stof(v);
 }
 
 unsigned long DB::GetFieldLength(int n)

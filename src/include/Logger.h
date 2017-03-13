@@ -41,6 +41,7 @@ class Logger
 		static Logger *GetInstance() { return instance; }
 		
 		static void Log(int level,const char *msg,...);
+		static void Log(int level,const std::string &msg);
 		static int GetIntegerLogLevel(const std::string &log_level) { return parse_log_level(log_level); }
 		
 	private:

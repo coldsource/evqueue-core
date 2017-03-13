@@ -26,11 +26,11 @@
 #include <Exception.h>
 #include <User.h>
 #include <DB.h>
+#include <DOMDocument.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <xqilla/framework/XPath2MemoryManager.hpp>
 
 using namespace std;
 
@@ -74,17 +74,15 @@ bool Queue::CheckQueueName(const string &queue_name)
 		return false;
 	
 	for(i=0;i<len;i++)
-		if(!isalnum(queue_name[i]) && queue_name[i]!='_' && queue_name[i]!='-')
+		if(!isalnum(queue_name[i]) && queue_name[i]!='_' && queue_name[i]!='-' && queue_name[i]!='@' && queue_name[i]!='.')
 			return false;
 	
 	return true;
 }
 
-void Queue::EnqueueTask(WorkflowInstance *workflow_instance,DOMNode *task)
+void Queue::EnqueueTask(WorkflowInstance *workflow_instance,DOMElement task)
 {
-	Task *new_task = new Task;
-	new_task->workflow_instance = workflow_instance;
-	new_task->task = task;
+	Task *new_task = new Task(workflow_instance,task);
 	
 	if(scheduler==QUEUE_SCHEDULER_FIFO)
 		queue.push_back(new_task);
@@ -94,7 +92,7 @@ void Queue::EnqueueTask(WorkflowInstance *workflow_instance,DOMNode *task)
 	size++;
 }
 
-bool Queue::DequeueTask(WorkflowInstance **p_workflow_instance,DOMNode **p_task)
+bool Queue::DequeueTask(WorkflowInstance **p_workflow_instance,DOMElement *p_task)
 {
 	if(IsLocked())
 		return false;

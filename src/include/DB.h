@@ -62,7 +62,8 @@ public:
 	void CommitTransaction();
 	void RollbackTransaction();
 	
-	char *GetField(int n);
+	bool GetFieldIsNULL(int n);
+	std::string GetField(int n);
 	int GetFieldInt(int n);
 	double GetFieldDouble(int n);
 	unsigned long GetFieldLength(int n);

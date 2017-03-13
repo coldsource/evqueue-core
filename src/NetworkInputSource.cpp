@@ -19,6 +19,8 @@
 
 #include <NetworkInputSource.h>
 
+using namespace xercesc;
+
 
 NetworkInputSource::NetworkInputSource(int socket)
 {

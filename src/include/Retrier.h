@@ -22,8 +22,7 @@
 
 #include <Scheduler.h>
 
-#include <xercesc/dom/DOM.hpp>
-using namespace xercesc;
+#include <DOMElement.h>
 
 class WorkflowInstance;
 
@@ -33,7 +32,7 @@ class Retrier:public Scheduler
 		struct TimedTask:Event
 		{
 			WorkflowInstance *workflow_instance;
-			DOMNode *task;
+			DOMElement task;
 			
 			virtual ~TimedTask() {}
 		};
@@ -48,7 +47,7 @@ class Retrier:public Scheduler
 		Retrier();
 		static Retrier *GetInstance() { return instance; }
 		
-		void InsertTask(WorkflowInstance *workflow_instance,DOMNode *task, time_t retry_at );
+		void InsertTask(WorkflowInstance *workflow_instance,DOMElement task, time_t retry_at );
 		
 		void FlushWorkflowInstance(unsigned int workflow_instance_id);
 	

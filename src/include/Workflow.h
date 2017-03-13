@@ -23,13 +23,12 @@
 #include <vector>
 #include <string>
 
-#include <xercesc/dom/DOM.hpp>
-
 class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 class WorkflowParameters;
 class User;
+class DOMDocument;
 
 class Workflow
 {
@@ -65,7 +64,7 @@ class Workflow
 		void SetLastCommit(const std::string &commit_id);
 		
 		std::string SaveToXML();
-		static void LoadFromXML(std::string name, xercesc::DOMDocument *xmldoc, std::string repo_lastcommit);
+		static void LoadFromXML(std::string name, DOMDocument *xmldoc, std::string repo_lastcommit);
 		
 		static bool CheckWorkflowName(const std::string &workflow_name);
 		static void Get(unsigned int id, QueryResponse *response);

@@ -38,10 +38,9 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
+#include <memory>
 
 using namespace std;
-using namespace xercesc;
 
 extern string workflow_xsd_str;
 
@@ -64,7 +63,7 @@ Workflow::Workflow(DB *db,const string &workflow_name)
 	group = db->GetField(3);
 	comment = db->GetField(4);
 	bound_schedule = db->GetFieldInt(5);
-	lastcommit = db->GetField(6)?db->GetField(6):"";
+	lastcommit = db->GetField(6);
 	
 	db->QueryPrintf("SELECT task_id FROM t_task WHERE workflow_id = %i",&workflow_id);
 	if(db->FetchRow())
@@ -86,68 +85,31 @@ Workflow::Workflow(DB *db,const string &workflow_name)
 void Workflow::CheckInputParameters(WorkflowParameters *parameters)
 {
 	// Load workflow XML
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMLSParser *parser = xqillaImplementation->createLSParser(DOMImplementationLS::MODE_SYNCHRONOUS,0);
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
+	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(workflow_xml));
 	
-	DOMLSInput *input = xqillaImplementation->createLSInput();
+	string parameter_name;
+	string parameter_value;
+	int passed_parameters = 0;
 	
-	// Set XML content and parse document
-	XMLCh *xml;
-	xml = XMLString::transcode(workflow_xml.c_str());
-	input->setStringData(xml);
-	DOMDocument *xmldoc = parser->parse(input);
-	
-	input->release();
-	
-	XMLString::release(&xml);
-	
-	DOMXPathNSResolver *resolver = xmldoc->createNSResolver(xmldoc->getDocumentElement());
-	resolver->addNamespaceBinding(X("xs"), X("http://www.w3.org/2001/XMLSchema"));
-	
-	try
+	parameters->SeekStart();
+	while(parameters->Get(parameter_name,parameter_value))
 	{
-		string parameter_name;
-		string parameter_value;
-		int passed_parameters = 0;
-		char buf2[256+PARAMETER_NAME_MAX_LEN];
+		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("parameters/parameter[@name = '"+parameter_name+"']",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+		if(!res->isNode())
+			throw Exception("Workflow","Unknown parameter : "+parameter_name);
 		
-		parameters->SeekStart();
-		while(parameters->Get(parameter_name,parameter_value))
-		{
-			sprintf(buf2,"parameters/parameter[@name = '%s']",parameter_name.c_str());
-			DOMXPathResult *res = xmldoc->evaluate(X(buf2),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
-			if(!res->isNode())
-			{
-				res->release();
-				throw Exception("Workflow","Unknown parameter : "+parameter_name);
-			}
-			
-			res->release();
-			passed_parameters++;
-		}
-		
-		DOMXPathResult *res = xmldoc->evaluate(X("count(parameters/parameter)"),xmldoc->getDocumentElement(),resolver,DOMXPathResult::FIRST_RESULT_TYPE,0);
-		int workflow_template_parameters = res->getIntegerValue();
-		res->release();
-		
-		if(workflow_template_parameters!=passed_parameters)
-		{
-			char e[256];
-			sprintf(e, "Invalid number of parameters. Workflow expects %d, but %d are given.",workflow_template_parameters,passed_parameters);
-			throw Exception("Workflow",e);
-		}
-	}
-	catch(Exception &e)
-	{
-		parser->release();
-		serializer->release();
-		
-		throw e;
+		passed_parameters++;
 	}
 	
-	parser->release();
-	serializer->release();
+	unique_ptr<DOMXPathResult> res(xmldoc->evaluate("count(parameters/parameter)",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+	int workflow_template_parameters = res->getIntegerValue();
+	
+	if(workflow_template_parameters!=passed_parameters)
+	{
+		char e[256];
+		sprintf(e, "Invalid number of parameters. Workflow expects %d, but %d are given.",workflow_template_parameters,passed_parameters);
+		throw Exception("Workflow",e);
+	}
 }
 
 bool Workflow::GetIsModified()
@@ -175,84 +137,50 @@ void Workflow::SetLastCommit(const std::string &commit_id)
 
 string Workflow::SaveToXML()
 {
-	DOMDocument *xmldoc = 0;
-	DOMLSSerializer *serializer = 0;
+	DOMDocument xmldoc;
 	
 	// Generate workflow XML
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	xmldoc = xqillaImplementation->createDocument();
+	DOMElement node = (DOMElement)XMLUtils::AppendXML(&xmldoc, xmldoc, "<workflow />");
+	XMLUtils::AppendXML(&xmldoc, node, workflow_xml);
+	node.setAttribute("group",group);
+	node.setAttribute("comment",comment);
 	
-	DOMElement *node = (DOMElement *)XMLUtils::AppendXML(xmldoc, (DOMNode *)xmldoc, "<workflow />");
-	XMLUtils::AppendXML(xmldoc, (DOMNode *)node, workflow_xml);
-	node->setAttribute(X("group"),X(group.c_str()));
-	node->setAttribute(X("comment"),X(comment.c_str()));
-	
-	serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *workflow_xml = serializer->writeToString(node);
-	char *workflow_xml_c = XMLString::transcode(workflow_xml);
-	string ret_xml = workflow_xml_c;
-	
-	XMLString::release(&workflow_xml);
-	XMLString::release(&workflow_xml_c);
-	serializer->release();
-	xmldoc->release();
-	
-	return ret_xml;
+	return xmldoc.Serialize(xmldoc.getDocumentElement());
 }
 
 void Workflow::LoadFromXML(string name, DOMDocument *xmldoc, string repo_lastcommit)
 {
-	DOMLSSerializer *serializer = 0;
-	
-	DOMElement *root_node = xmldoc->getDocumentElement();
+	DOMElement root_node = xmldoc->getDocumentElement();
 		
 	string group = XMLUtils::GetAttribute(root_node, "group", true);
 	string comment = XMLUtils::GetAttribute(root_node, "comment", true);
 	
-	try
-	{
-		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-		serializer = xqillaImplementation->createLSSerializer();
-		XMLCh *workflow_xml = serializer->writeToString(root_node->getFirstChild());
-		char *workflow_xml_c = XMLString::transcode(workflow_xml);
-		
-		string content;
-		base64_encode_string(workflow_xml_c, content);
-		
-		XMLString::release(&workflow_xml);
-		XMLString::release(&workflow_xml_c);
-		
-		if(Workflows::GetInstance()->Exists(name))
-		{
-			// Update
-			Logger::Log(LOG_INFO,string("Updating workflow "+name+" from git").c_str());
-			
-			Workflow workflow = Workflows::GetInstance()->Get(name);
-			
-			Workflow::Edit(workflow.GetID(), name, content, group, comment);
-			workflow.SetLastCommit(repo_lastcommit);
-			
-			Workflows::GetInstance()->Reload();
-		}
-		else
-		{
-			// Create
-			Logger::Log(LOG_INFO,string("Crerating workflow "+name+" from git").c_str());
-			
-			unsigned int id = Workflow::Create(name, content, group, comment, repo_lastcommit);
-			
-			Workflows::GetInstance()->Reload();
-		}
-	}
-	catch(Exception &e)
-	{
-		if(serializer)
-			serializer->release();
-		
-		throw e;
-	}
+	string workflow_xml = xmldoc->Serialize(root_node.getFirstChild());
 	
-	serializer->release();
+	string content;
+	base64_encode_string(workflow_xml, content);
+	
+	if(Workflows::GetInstance()->Exists(name))
+	{
+		// Update
+		Logger::Log(LOG_INFO,string("Updating workflow "+name+" from git").c_str());
+		
+		Workflow workflow = Workflows::GetInstance()->Get(name);
+		
+		Workflow::Edit(workflow.GetID(), name, content, group, comment);
+		workflow.SetLastCommit(repo_lastcommit);
+		
+		Workflows::GetInstance()->Reload();
+	}
+	else
+	{
+		// Create
+		Logger::Log(LOG_INFO,string("Crerating workflow "+name+" from git").c_str());
+		
+		unsigned int id = Workflow::Create(name, content, group, comment, repo_lastcommit);
+		
+		Workflows::GetInstance()->Reload();
+	}
 }
 
 bool Workflow::CheckWorkflowName(const string &workflow_name)
@@ -274,11 +202,11 @@ void Workflow::Get(unsigned int id, QueryResponse *response)
 {
 	Workflow workflow = Workflows::GetInstance()->Get(id);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML("<workflow />");
+	DOMElement node = (DOMElement)response->AppendXML("<workflow />");
 	response->AppendXML(workflow.GetXML(), node);
-	node->setAttribute(X("name"),X(workflow.GetName().c_str()));
-	node->setAttribute(X("group"),X(workflow.GetGroup().c_str()));
-	node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
+	node.setAttribute("name",workflow.GetName());
+	node.setAttribute("group",workflow.GetGroup());
+	node.setAttribute("comment",workflow.GetComment());
 }
 
 unsigned int Workflow::Create(const string &name, const string &base64, const string &group, const string &comment, const string &lastcommit)
@@ -365,8 +293,8 @@ void Workflow::ListNotifications(unsigned int id, QueryResponse *response)
 	
 	for(int i=0;i<workflow.notifications.size();i++)
 	{
-		DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
-		node->setAttribute(X("id"),X(std::to_string(workflow.notifications.at(i)).c_str()));
+		DOMElement node = (DOMElement)response->AppendXML("<notification />");
+		node.setAttribute("id",to_string(workflow.notifications.at(i)));
 	}
 }
 
@@ -433,7 +361,7 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 		if(action=="create")
 		{
 			unsigned int id = Create(name, content, group, comment);
-			response->GetDOM()->getDocumentElement()->setAttribute(X("workflow-id"),X(to_string(id).c_str()));
+			response->GetDOM()->getDocumentElement().setAttribute("workflow-id",to_string(id));
 		}
 		else
 		{
@@ -492,48 +420,35 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 
 string Workflow::CreateSimpleWorkflow(const string &task_name, const vector<std::string> &inputs)
 {
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	DOMDocument xmldoc;
 	
-	DOMElement *workflow_node = xmldoc->createElement(X("workflow"));
-	xmldoc->appendChild(workflow_node);
+	DOMElement workflow_node = xmldoc.createElement("workflow");
+	xmldoc.appendChild(workflow_node);
 	
-	DOMElement *parameters_node = xmldoc->createElement(X("parameters"));
-	workflow_node->appendChild(parameters_node);
+	DOMElement parameters_node = xmldoc.createElement("parameters");
+	workflow_node.appendChild(parameters_node);
 	
-	DOMElement *subjobs_node = xmldoc->createElement(X("subjobs"));
-	workflow_node->appendChild(subjobs_node);
+	DOMElement subjobs_node = xmldoc.createElement("subjobs");
+	workflow_node.appendChild(subjobs_node);
 	
-	DOMElement *job_node = xmldoc->createElement(X("job"));
-	subjobs_node->appendChild(job_node);
+	DOMElement job_node = xmldoc.createElement("job");
+	subjobs_node.appendChild(job_node);
 	
-	DOMElement *tasks_node = xmldoc->createElement(X("tasks"));
-	job_node->appendChild(tasks_node);
+	DOMElement tasks_node = xmldoc.createElement("tasks");
+	job_node.appendChild(tasks_node);
 	
-	DOMElement *task_node = xmldoc->createElement(X("task"));
-	task_node->setAttribute(X("name"),X(task_name.c_str()));
-	task_node->setAttribute(X("queue"),X("default"));
-	tasks_node->appendChild(task_node);
+	DOMElement task_node = xmldoc.createElement("task");
+	task_node.setAttribute("name",task_name);
+	task_node.setAttribute("queue","default");
+	tasks_node.appendChild(task_node);
 	
 	for(int i = 0;i<inputs.size();i++)
 	{
-		DOMElement *input_node = xmldoc->createElement(X("input"));
-		input_node->setAttribute(X("name"),X((string("argument_")+to_string(i)).c_str()));
-		input_node->appendChild(xmldoc->createTextNode(X(inputs.at(i).c_str())));
-		task_node->appendChild(input_node);
+		DOMElement input_node = xmldoc.createElement("input");
+		input_node.setAttribute("name",(string("argument_")+to_string(i)));
+		input_node.appendChild(xmldoc.createTextNode(inputs.at(i)));
+		task_node.appendChild(input_node);
 	}
 	
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *workflow_xml = serializer->writeToString(workflow_node);
-	char *workflow_xml_c = XMLString::transcode(workflow_xml);
-	
-	string workflow_xml_str = workflow_xml_c;
-	
-	XMLString::release(&workflow_xml);
-	XMLString::release(&workflow_xml_c);
-	serializer->release();
-	
-	xmldoc->release();
-	
-	return workflow_xml_str;
+	return xmldoc.Serialize(workflow_node);
 }

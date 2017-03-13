@@ -20,18 +20,14 @@
 #include <Configuration.h>
 #include <Exception.h>
 #include <QueryResponse.h>
+#include <DOMDocument.h>
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdlib.h>
 #include <pcrecpp.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-#include <xercesc/dom/DOM.hpp>
-
-
 using namespace std;
-using namespace xercesc;
 
 Configuration *Configuration::instance=0;
 
@@ -173,19 +169,19 @@ void Configuration::SendConfiguration(QueryResponse *response)
 	
 	DOMDocument *xmldoc = response->GetDOM();
 	
-	DOMElement *configuration_node = xmldoc->createElement(X("configuration"));
-	xmldoc->getDocumentElement()->appendChild(configuration_node);
+	DOMElement configuration_node = xmldoc->createElement("configuration");
+	xmldoc->getDocumentElement().appendChild(configuration_node);
 	
 	
 	map<string,string>::iterator it;
 	for(it=entries.begin();it!=entries.end();it++)
 	{
-		DOMElement *entry_node = xmldoc->createElement(X("entry"));
-		entry_node->setAttribute(X("name"),X(it->first.c_str()));
+		DOMElement entry_node = xmldoc->createElement("entry");
+		entry_node.setAttribute("name",it->first);
 		if(it->first=="mysql.password" || it->first=="cluster.notify.password" || it->first=="git.password")
-			entry_node->setAttribute(X("value"),X("****")); // Do not send password
+			entry_node.setAttribute("value","****"); // Do not send password
 		else
-			entry_node->setAttribute(X("value"),X(it->second.c_str()));
-		configuration_node->appendChild(entry_node);
+			entry_node.setAttribute("value",it->second);
+		configuration_node.appendChild(entry_node);
 	}
 }

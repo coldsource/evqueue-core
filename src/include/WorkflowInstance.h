@@ -20,13 +20,11 @@
 #ifndef _WORKFLOWINSTANCE_H_
 #define _WORKFLOWINSTANCE_H_
 
-#include <xercesc/dom/DOM.hpp>
+#include <DOMDocument.h>
 #include <pthread.h>
 
 #include <string>
 #include <vector>
-
-using namespace xercesc;
 
 class WorkflowParameters;
 class WorkflowSchedule;
@@ -35,10 +33,6 @@ class QueryResponse;
 class WorkflowInstance
 {
 	private:
-		DOMLSParser *parser;
-		DOMLSSerializer *serializer;
-		DOMXPathNSResolver *resolver;
-		
 		unsigned int workflow_id;
 		unsigned int workflow_instance_id;
 		unsigned int running_tasks,queued_tasks,retrying_tasks,error_tasks;
@@ -85,11 +79,10 @@ class WorkflowInstance
 		void Cancel();
 		void Shutdown();
 		
-		void TaskRestart(DOMNode *task, bool *workflow_terminated);
-		bool TaskStop(DOMNode *task,int retval,const char *stdout_output,const char * stderr_output,const char *log_output,bool *workflow_terminated);
-		pid_t TaskExecute(DOMNode *task,pid_t tid,bool *workflow_terminated);
-		bool CheckTaskName(const char *task_name);
-		void TaskUpdateProgression(DOMNode *task, int prct);
+		void TaskRestart(DOMElement task, bool *workflow_terminated);
+		bool TaskStop(DOMElement task,int retval,const char *stdout_output,const char * stderr_output,const char *log_output,bool *workflow_terminated);
+		pid_t TaskExecute(DOMElement task,pid_t tid,bool *workflow_terminated);
+		void TaskUpdateProgression(DOMElement task, int prct);
 		
 		void SendStatus(QueryResponse *response, bool full_status);
 		void RecordSavepoint();
@@ -99,16 +92,16 @@ class WorkflowInstance
 	private:
 		WorkflowInstance();
 		
-		void run(DOMNode *job,DOMNode *context_node);
-		void run_subjobs(DOMNode *context_node);
-		void enqueue_task(DOMNode *task);
-		void retry_task(DOMNode *task);
-		void schedule_update(DOMNode *task,const char *schedule_name,int *retry_delay,int *retry_times);
+		void run(DOMElement job,DOMElement context_node);
+		void run_subjobs(DOMElement context_node);
+		void enqueue_task(DOMElement task);
+		void retry_task(DOMElement task);
+		void schedule_update(DOMElement task,const std::string &schedule_name,int *retry_delay,int *retry_times);
 		bool workflow_ended(void);
 		
 		void record_savepoint(bool force=false);
-		void replace_value(DOMNode *task,DOMNode *context_node);
-		void format_datetime(char *str);
+		void replace_value(DOMElement task,DOMElement context_node);
+		std::string format_datetime();
 		int open_log_file(int tid, int fileno);
 		void update_statistics();
 };

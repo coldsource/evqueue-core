@@ -26,12 +26,9 @@
 #include <QueryResponse.h>
 #include <Cluster.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 Users *Users::instance = 0;
 
 using namespace std;
-using namespace xercesc;
 
 Users::Users():APIObjectList()
 {
@@ -85,9 +82,9 @@ bool Users::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		for(auto it = users->objects_name.begin(); it!=users->objects_name.end(); it++)
 		{
 			User it_user = *it->second;
-			DOMElement *node = (DOMElement *)response->AppendXML("<user />");
-			node->setAttribute(X("name"),X(it_user.GetName().c_str()));
-			node->setAttribute(X("profile"),X(it_user.GetProfile().c_str()));
+			DOMElement node = (DOMElement)response->AppendXML("<user />");
+			node.setAttribute("name",it_user.GetName());
+			node.setAttribute("profile",it_user.GetProfile());
 		}
 		
 		pthread_mutex_unlock(&users->lock);

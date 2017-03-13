@@ -30,10 +30,7 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 extern string retry_schedule_xsd_str;
 
@@ -69,9 +66,9 @@ void RetrySchedule::Get(unsigned int id, QueryResponse *response)
 {
 	RetrySchedule retry_schedule = RetrySchedules::GetInstance()->Get(id);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML(retry_schedule.GetXML());
-	node->setAttribute(X("id"),X(to_string(retry_schedule.GetID()).c_str()));
-	node->setAttribute(X("name"),X(retry_schedule.GetName().c_str()));
+	DOMElement node = (DOMElement)response->AppendXML(retry_schedule.GetXML());
+	node.setAttribute("id",to_string(retry_schedule.GetID()));
+	node.setAttribute("name",retry_schedule.GetName());
 }
 
 void RetrySchedule::Create(const std::string &name, const std::string &base64)

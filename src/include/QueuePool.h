@@ -20,8 +20,7 @@
 #ifndef _QUEUEPOOL_H_
 #define _QUEUEPOOL_H_
 
-#include <xercesc/dom/DOM.hpp>
-using namespace xercesc;
+#include <DOMElement.h>
 
 #include <sys/types.h>
 #include <pthread.h>
@@ -45,7 +44,7 @@ class QueuePool
 		std::map<unsigned int,Queue *> queues_id;
 		
 		Queue **tid_queue;
-		DOMNode **tid_task;
+		DOMElement *tid_task;
 		WorkflowInstance **tid_workflow_instance;
 		unsigned int maxpid;
 		unsigned int lasttid;
@@ -61,11 +60,11 @@ class QueuePool
 		
 		static QueuePool *GetInstance() { return instance; }
 		
-		bool EnqueueTask(const std::string &queue_name,WorkflowInstance *workflow_instance,DOMNode *task);
-		bool DequeueTask(std::string &queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
-		pid_t ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const std::string &queue_name,pid_t task_id);
-		bool TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
-		bool GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task);
+		bool EnqueueTask(const std::string &queue_name,const std::string &queue_host,WorkflowInstance *workflow_instance,DOMElement task);
+		bool DequeueTask(std::string &queue_name,WorkflowInstance **p_workflow_instance,DOMElement *p_task);
+		pid_t ExecuteTask(WorkflowInstance *workflow_instance,DOMElement task,const std::string &queue_name,pid_t task_id);
+		bool TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMElement *p_task);
+		bool GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMElement *p_task);
 		
 		bool CancelTasks(unsigned int workflow_instance_id);
 		

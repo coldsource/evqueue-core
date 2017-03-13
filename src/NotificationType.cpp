@@ -30,10 +30,7 @@
 #include <DB.h>
 #include <User.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 {
@@ -97,9 +94,9 @@ void NotificationType::Get(unsigned int id, QueryResponse *response)
 {
 	NotificationType type = NotificationTypes::GetInstance()->Get(id);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML("<notification_type />");
-	node->setAttribute(X("name"),X(type.GetName().c_str()));
-	node->setAttribute(X("description"),X(type.GetDescription().c_str()));
+	DOMElement node = (DOMElement)response->AppendXML("<notification_type />");
+	node.setAttribute("name",type.GetName());
+	node.setAttribute("description",type.GetDescription());
 }
 
 void NotificationType::Register(const std::string &name, const std::string &description, const std::string binary_content)
@@ -158,12 +155,12 @@ void NotificationType::GetConf(unsigned int id, QueryResponse *response)
 	if(!db.FetchRow())
 		throw Exception("NotificationType","Unable to find notification type");
 	
-	string conf = db.GetField(0)?db.GetField(0):"";
+	string conf = db.GetField(0);
 	string conf_base64;
 	base64_encode_string(conf,conf_base64);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML("<conf>");
-	node->setAttribute(X("content"),X(conf_base64.c_str()));
+	DOMElement node = (DOMElement)response->AppendXML("<conf>");
+	node.setAttribute("content",conf_base64);
 }
 
 void NotificationType::SetConf(unsigned int id, const string &data)

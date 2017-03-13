@@ -21,8 +21,6 @@
 #include <WorkflowParameters.h>
 #include <SocketSAX2Handler.h>
 
-using namespace xercesc;
-
 #include <string>
 #include <map>
 #include <vector>
@@ -43,7 +41,7 @@ class SocketQuerySAX2Handler : public SocketSAX2HandlerInterface {
 		SocketQuerySAX2Handler(const std::string &context);
 		~SocketQuerySAX2Handler();
 		
-		void startElement( const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const Attributes&  attrs );
+		void startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes&  attrs );
 		void endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname);
 		void endDocument();
 		

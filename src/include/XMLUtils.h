@@ -16,19 +16,16 @@
  * 
  * Author: Thibault Kummer <bob@coldsource.net>
  */
-#include <xercesc/dom/DOM.hpp>
+#include <DOMDocument.h>
 
 #include <string>
-
-using namespace xercesc;
 
 class XMLUtils
 {
 	public:
 		static void ValidateXML(const std::string &xml, const std::string &xsd);
-		static DOMNode *AppendXML(DOMDocument *xmldoc, DOMNode *parent_node, const std::string &xml);
-		static std::string GetAttribute(DOMElement *node, const std::string &name, bool remove_attribute = false);
-		static bool GetAttributeBool(DOMElement *node, const std::string &name, bool remove_attribute = false);
-		
-		static std::string ExpandXPathAttribute(const std::string &attribute,DOMXPathNSResolver* resolver, DOMNode *context_node);
+		static DOMNode AppendXML(DOMDocument *xmldoc, DOMNode parent_node, const std::string &xml);
+		static std::string GetAttribute(DOMElement node, const std::string &name, bool remove_attribute = false);
+		static bool GetAttributeBool(DOMElement node, const std::string &name, bool remove_attribute = false);
+		static int GetAttributeInt(DOMElement node, const std::string &name, bool remove_attribute = false);
 };

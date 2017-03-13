@@ -30,12 +30,9 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 Workflows *Workflows::instance = 0;
 
 using namespace std;
-using namespace xercesc;
 
 Workflows::Workflows():APIObjectList()
 {
@@ -89,16 +86,16 @@ bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			if(!user.HasAccessToWorkflow(workflow.GetID(), "read"))
 				continue;
 			
-			DOMElement *node = (DOMElement *)response->AppendXML(workflow.GetXML());
-			node->setAttribute(X("id"),X(std::to_string(workflow.GetID()).c_str()));
-			node->setAttribute(X("name"),X(workflow.GetName().c_str()));
-			node->setAttribute(X("group"),X(workflow.GetGroup().c_str()));
-			node->setAttribute(X("comment"),X(workflow.GetComment().c_str()));
-			node->setAttribute(X("bound-to-schedule"),workflow.GetIsBoundSchedule()?X("1"):X("0"));
-			node->setAttribute(X("has-bound-task"),workflow.GetIsBoundTask()?X("1"):X("0"));
-			node->setAttribute(X("bound-task-id"),X(to_string(workflow.GetBoundTaskID()).c_str()));
-			node->setAttribute(X("lastcommit"),X(workflow.GetLastCommit().c_str()));
-			node->setAttribute(X("modified"),workflow.GetIsModified()?X("1"):X("0"));
+			DOMElement node = (DOMElement)response->AppendXML(workflow.GetXML());
+			node.setAttribute("id",to_string(workflow.GetID()));
+			node.setAttribute("name",workflow.GetName());
+			node.setAttribute("group",workflow.GetGroup());
+			node.setAttribute("comment",workflow.GetComment());
+			node.setAttribute("bound-to-schedule",workflow.GetIsBoundSchedule()?"1":"0");
+			node.setAttribute("has-bound-task",workflow.GetIsBoundTask()?"1":"0");
+			node.setAttribute("bound-task-id",to_string(workflow.GetBoundTaskID()));
+			node.setAttribute("lastcommit",workflow.GetLastCommit());
+			node.setAttribute("modified",workflow.GetIsModified()?"1":"0");
 		}
 		
 		pthread_mutex_unlock(&workflows->lock);

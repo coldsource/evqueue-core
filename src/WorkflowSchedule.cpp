@@ -35,7 +35,6 @@
 #include <xqilla/xqilla-dom3.hpp>
 
 using namespace std;
-using namespace xercesc;
 
 WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 {
@@ -49,22 +48,22 @@ WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 	if(!db.FetchRow())
 		throw Exception("WorkflowSchedule","Unknown schedule ID");
 	
-	Logger::Log(LOG_NOTICE,"[WSID %d] Loading workflow schedule for workflow '%s'",workflow_schedule_id,db.GetField(0));
+	Logger::Log(LOG_NOTICE,"[WSID "+to_string(workflow_schedule_id)+"] Loading workflow schedule for workflow '"+db.GetField(0)+"'");
 	
 	this->workflow_id = db.GetFieldInt(0);
 	
 	schedule = Schedule(db.GetField(1));
 	schedule_description = db.GetField(1);
 	
-	if(strcmp(db.GetField(2),"CONTINUE")==0)
+	if(db.GetField(2)=="CONTINUE")
 		onfailure = CONTINUE;
-	else if(strcmp(db.GetField(2),"SUSPEND")==0)
+	else if(db.GetField(2)=="SUSPEND")
 		onfailure = SUSPEND;
 	
-	if(db.GetField(3))
+	if(!db.GetFieldIsNULL(3))
 		workflow_schedule_host = db.GetField(3);
 	
-	if(db.GetField(4))
+	if(!db.GetFieldIsNULL(4))
 		workflow_schedule_user = db.GetField(4);
 	
 	active = db.GetFieldInt(5);
@@ -101,15 +100,15 @@ void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
 {
 	WorkflowSchedule workflow_schedule = WorkflowSchedules::GetInstance()->Get(id);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML("<workflow_schedule />");
-	node->setAttribute(X("workflow_id"),X(to_string(workflow_schedule.GetWorkflowID()).c_str()));
-	node->setAttribute(X("schedule"),X(workflow_schedule.GetScheduleDescription().c_str()));
-	node->setAttribute(X("onfailure"),X(workflow_schedule.GetOnFailureBehavior()==CONTINUE?"CONTINUE":"SUSPEND"));
-	node->setAttribute(X("user"),X(workflow_schedule.GetUser().c_str()));
-	node->setAttribute(X("host"),X(workflow_schedule.GetHost().c_str()));
-	node->setAttribute(X("active"),X(workflow_schedule.GetIsActive()?"1":"0"));
-	node->setAttribute(X("comment"),X(workflow_schedule.GetComment().c_str()));
-	node->setAttribute(X("node"),X(workflow_schedule.GetNode().c_str()));
+	DOMElement node = (DOMElement)response->AppendXML("<workflow_schedule />");
+	node.setAttribute("workflow_id",to_string(workflow_schedule.GetWorkflowID()));
+	node.setAttribute("schedule",workflow_schedule.GetScheduleDescription());
+	node.setAttribute("onfailure",workflow_schedule.GetOnFailureBehavior()==CONTINUE?"CONTINUE":"SUSPEND");
+	node.setAttribute("user",workflow_schedule.GetUser());
+	node.setAttribute("host",workflow_schedule.GetHost());
+	node.setAttribute("active",workflow_schedule.GetIsActive()?"1":"0");
+	node.setAttribute("comment",workflow_schedule.GetComment());
+	node.setAttribute("node",workflow_schedule.GetNode());
 	
 	string parameter_name;
 	string parameter_value;
@@ -118,11 +117,11 @@ void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
 	parameters->SeekStart();
 	while(parameters->Get(parameter_name,parameter_value))
 	{
-		DOMElement *parameter_node = response->GetDOM()->createElement(X("parameter"));
-		parameter_node->setAttribute(X("name"),X(parameter_name.c_str()));
-		parameter_node->setAttribute(X("value"),X(parameter_value.c_str()));
+		DOMElement parameter_node = response->GetDOM()->createElement("parameter");
+		parameter_node.setAttribute("name",parameter_name);
+		parameter_node.setAttribute("value",parameter_value);
 		
-		node->appendChild(parameter_node);
+		node.appendChild(parameter_node);
 	}
 }
 

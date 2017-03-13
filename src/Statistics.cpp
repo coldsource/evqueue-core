@@ -24,9 +24,7 @@
 #include <Exception.h>
 #include <QueuePool.h>
 #include <User.h>
-
-#include <xqilla/xqilla-dom3.hpp>
-#include <xercesc/dom/DOM.hpp>
+#include <DOMDocument.h>
 
 #include <stdio.h>
 
@@ -35,7 +33,6 @@
 
 Statistics *Statistics::instance = 0;
 
-using namespace xercesc;
 using namespace std;
 
 Statistics::Statistics(void)
@@ -154,48 +151,22 @@ void Statistics::DecWaitingThreads(void)
 
 void Statistics::SendGlobalStatistics(QueryResponse *response)
 {
-	char buf[16];
-	
 	DOMDocument *xmldoc = response->GetDOM();
 	
-	DOMElement *statistics_node = xmldoc->createElement(X("statistics"));
-	xmldoc->getDocumentElement()->appendChild(statistics_node);
-	
-	sprintf(buf,"%d",accepted_connections);
-	statistics_node->setAttribute(X("accepted_connections"),X(buf));
-	
-	sprintf(buf,"%d",ActiveConnections::GetInstance()->GetNumber());
-	statistics_node->setAttribute(X("current_connections"),X(buf));
-	
-	sprintf(buf,"%d",input_errors);
-	statistics_node->setAttribute(X("input_errors"),X(buf));
-	
-	sprintf(buf,"%d",workflow_queries);
-	statistics_node->setAttribute(X("workflow_queries"),X(buf));
-	
-	sprintf(buf,"%d",workflow_status_queries);
-	statistics_node->setAttribute(X("workflow_status_queries"),X(buf));
-	
-	sprintf(buf,"%d",workflow_cancel_queries);
-	statistics_node->setAttribute(X("workflow_cancel_queries"),X(buf));
-	
-	sprintf(buf,"%d",statistics_queries);
-	statistics_node->setAttribute(X("statistics_queries"),X(buf));
-	
-	sprintf(buf,"%d",workflow_exceptions);
-	statistics_node->setAttribute(X("workflow_exceptions"),X(buf));
-	
-	sprintf(buf,"%d",workflow_instance_launched);
-	statistics_node->setAttribute(X("workflow_instance_launched"),X(buf));
-	
-	sprintf(buf,"%d",workflow_instance_executing);
-	statistics_node->setAttribute(X("workflow_instance_executing"),X(buf));
-	
-	sprintf(buf,"%d",workflow_instance_errors);
-	statistics_node->setAttribute(X("workflow_instance_errors"),X(buf));
-	
-	sprintf(buf,"%d",waiting_threads);
-	statistics_node->setAttribute(X("waiting_threads"),X(buf));
+	DOMElement statistics_node = xmldoc->createElement("statistics");
+	xmldoc->getDocumentElement().appendChild(statistics_node);
+	statistics_node.setAttribute("accepted_connections",to_string(accepted_connections));
+	statistics_node.setAttribute("current_connections",to_string(ActiveConnections::GetInstance()->GetNumber()));
+	statistics_node.setAttribute("input_errors",to_string(input_errors));
+	statistics_node.setAttribute("workflow_queries",to_string(workflow_queries));
+	statistics_node.setAttribute("workflow_status_queries",to_string(workflow_status_queries));
+	statistics_node.setAttribute("workflow_cancel_queries",to_string(workflow_cancel_queries));
+	statistics_node.setAttribute("statistics_queries",to_string(statistics_queries));
+	statistics_node.setAttribute("workflow_exceptions",to_string(workflow_exceptions));
+	statistics_node.setAttribute("workflow_instance_launched",to_string(workflow_instance_launched));
+	statistics_node.setAttribute("workflow_instance_executing",to_string(workflow_instance_executing));
+	statistics_node.setAttribute("workflow_instance_errors",to_string(workflow_instance_errors));
+	statistics_node.setAttribute("waiting_threads",to_string(waiting_threads));
 }
 
 void Statistics::ResetGlobalStatistics()

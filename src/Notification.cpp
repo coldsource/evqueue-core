@@ -44,10 +44,7 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 Notification::Notification(DB *db,unsigned int notification_id)
 {
@@ -133,10 +130,10 @@ void Notification::Get(unsigned int id,QueryResponse *response)
 {
 	Notification notification = Notifications::GetInstance()->Get(id);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
-	node->setAttribute(X("type_id"),X(to_string(notification.GetTypeID()).c_str()));
-	node->setAttribute(X("name"),X(notification.GetName().c_str()));
-	node->setAttribute(X("parameters"),X(notification.GetConfiguration().c_str()));
+	DOMElement node = (DOMElement)response->AppendXML("<notification />");
+	node.setAttribute("type_id",to_string(notification.GetTypeID()));
+	node.setAttribute("name",notification.GetName());
+	node.setAttribute("parameters",notification.GetConfiguration());
 }
 
 void Notification::Create(unsigned int type_id,const std::string &name, const std::string parameters)

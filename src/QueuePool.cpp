@@ -29,8 +29,6 @@
 #include <Cluster.h>
 #include <User.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,7 +65,7 @@ QueuePool::QueuePool(void)
 	lasttid = 0;
 	
 	tid_queue = new Queue*[maxpid+1];
-	tid_task = new DOMNode*[maxpid+1];
+	tid_task = new DOMElement[maxpid+1];
 	tid_workflow_instance = new WorkflowInstance*[maxpid+1];
 	
 	for(int i=0;i<=maxpid;i++)
@@ -106,7 +104,7 @@ QueuePool::~QueuePool(void)
 	delete[] tid_workflow_instance;
 }
 
-bool QueuePool::EnqueueTask(const string &queue_name,WorkflowInstance *workflow_instance,DOMNode *task)
+bool QueuePool::EnqueueTask(const string &queue_name,const string &queue_host,WorkflowInstance *workflow_instance,DOMElement task)
 {
 	pthread_mutex_lock(&mutex);
 	
@@ -118,7 +116,21 @@ bool QueuePool::EnqueueTask(const string &queue_name,WorkflowInstance *workflow_
 		return false;
 	}
 	
-	q->EnqueueTask(workflow_instance,task);
+	if(queue_host=="")
+		q->EnqueueTask(workflow_instance,task);
+	else
+	{
+		string dynamic_queue_name = queue_name+"@"+queue_host;
+		Queue *dyn_q = get_queue(dynamic_queue_name);
+		if(!dyn_q)
+		{
+			dyn_q = new Queue(q->GetID(),dynamic_queue_name,q->GetConcurrency(),q->GetScheduler(),q->GetWantedScheduler());
+			dyn_q->Remove();
+			queues_name[dynamic_queue_name] = dyn_q;
+		}
+		
+		dyn_q->EnqueueTask(workflow_instance,task);
+	}
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
@@ -128,7 +140,7 @@ bool QueuePool::EnqueueTask(const string &queue_name,WorkflowInstance *workflow_
 	return true;
 }
 
-bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_instance,DOMNode **p_task)
+bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_instance,DOMElement *p_task)
 {
 	int i;
 	unsigned int task_instance_id;
@@ -175,7 +187,7 @@ bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_ins
 	return false;
 }
 
-pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,const string &queue_name,pid_t task_id)
+pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMElement task,const string &queue_name,pid_t task_id)
 {
 	Queue *q = get_queue(queue_name);
 	
@@ -216,7 +228,7 @@ pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMNode *task,c
 	return task_id;
 }
 
-bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task)
+bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMElement *p_task)
 {
 	pthread_mutex_lock(&mutex);
 	
@@ -255,7 +267,7 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	return true;
 }
 
-bool QueuePool::GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMNode **p_task)
+bool QueuePool::GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMElement *p_task)
 {
 	pthread_mutex_lock(&mutex);
 	
@@ -371,32 +383,23 @@ void QueuePool::Shutdown(void)
 
 void QueuePool::SendStatistics(QueryResponse *response)
 {
-	char buf[16];
-	
 	pthread_mutex_lock(&mutex);
 	
 	DOMDocument *xmldoc = response->GetDOM();
 	
-	DOMElement *statistics_node = xmldoc->createElement(X("statistics"));
-	xmldoc->getDocumentElement()->appendChild(statistics_node);
+	DOMElement statistics_node = xmldoc->createElement("statistics");
+	xmldoc->getDocumentElement().appendChild(statistics_node);
 	
 	for(auto it=queues_name.begin();it!=queues_name.end();++it)
 	{
-		DOMElement *queue_node = xmldoc->createElement(X("queue"));
-		queue_node->setAttribute(X("name"),X(it->first.c_str()));
+		DOMElement queue_node = xmldoc->createElement("queue");
+		queue_node.setAttribute("name",it->first);
+		queue_node.setAttribute("concurrency",to_string(it->second->GetConcurrency()));
+		queue_node.setAttribute("size",to_string(it->second->GetSize()));
+		queue_node.setAttribute("running_tasks",to_string(it->second->GetRunningTasks()));
+		queue_node.setAttribute("scheduler",get_scheduler_from_int(it->second->GetScheduler()));
 		
-		sprintf(buf,"%d",it->second->GetConcurrency());
-		queue_node->setAttribute(X("concurrency"),X(buf));
-		
-		sprintf(buf,"%d",it->second->GetSize());
-		queue_node->setAttribute(X("size"),X(buf));
-		
-		sprintf(buf,"%d",it->second->GetRunningTasks());
-		queue_node->setAttribute(X("running_tasks"),X(buf));
-		
-		queue_node->setAttribute(X("scheduler"),X(get_scheduler_from_int(it->second->GetScheduler()).c_str()));
-		
-		statistics_node->appendChild(queue_node);
+		statistics_node.appendChild(queue_node);
 	}
 	
 	pthread_mutex_unlock(&mutex);
@@ -416,11 +419,11 @@ void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
 		throw Exception("QueuePool","Unable to find queue");
 	}
 	
-	DOMElement *node = (DOMElement *)response->AppendXML("<queue />");
-	node->setAttribute(X("id"),X(to_string(q->GetID()).c_str()));
-	node->setAttribute(X("name"),X(q->GetName().c_str()));
-	node->setAttribute(X("concurrency"),X(to_string(q->GetConcurrency()).c_str()));
-	node->setAttribute(X("scheduler"),X(q->GetWantedScheduler().c_str()));
+	DOMElement node = (DOMElement)response->AppendXML("<queue />");
+	node.setAttribute("id",to_string(q->GetID()));
+	node.setAttribute("name",q->GetName());
+	node.setAttribute("concurrency",to_string(q->GetConcurrency()));
+	node.setAttribute("scheduler",q->GetWantedScheduler());
 	
 	pthread_mutex_unlock(&qp->mutex);
 }
@@ -457,11 +460,11 @@ bool QueuePool::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 		
 		for(auto it = qp->queues_name.begin(); it!=qp->queues_name.end(); it++)
 		{
-			DOMElement *node = (DOMElement *)response->AppendXML("<queue />");
-			node->setAttribute(X("id"),X(std::to_string(it->second->GetID()).c_str()));
-			node->setAttribute(X("name"),X(it->second->GetName().c_str()));
-			node->setAttribute(X("concurrency"),X(to_string(it->second->GetConcurrency()).c_str()));
-			node->setAttribute(X("scheduler"),X(it->second->GetWantedScheduler().c_str()));
+			DOMElement node = (DOMElement)response->AppendXML("<queue />");
+			node.setAttribute("id",to_string(it->second->GetID()));
+			node.setAttribute("name",it->second->GetName());
+			node.setAttribute("concurrency",to_string(it->second->GetConcurrency()));
+			node.setAttribute("scheduler",it->second->GetWantedScheduler());
 		}
 		
 		pthread_mutex_unlock(&qp->mutex);

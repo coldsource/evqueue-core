@@ -20,8 +20,7 @@
 #ifndef _QUEUE_H_
 #define _QUEUE_H_
 
-#include <xercesc/dom/DOM.hpp>
-using namespace xercesc;
+#include <DOMElement.h>
 
 #include <global.h>
 
@@ -43,8 +42,13 @@ class Queue
 	private:
 		struct Task
 		{
+			Task(WorkflowInstance *workflow_instance, DOMElement task):task(task)
+			{
+				this->workflow_instance = workflow_instance;
+			}
+			
 			WorkflowInstance *workflow_instance;
-			DOMNode *task;
+			DOMElement task;
 		};
 		
 		unsigned int id;
@@ -73,8 +77,8 @@ class Queue
 		static bool CheckQueueName(const std::string &queue_name);
 		inline const std::string &GetName(void) { return name; }
 		
-		void EnqueueTask(WorkflowInstance *workflow_instance,DOMNode *task);
-		bool DequeueTask(WorkflowInstance **p_workflow_instance,DOMNode **p_task);
+		void EnqueueTask(WorkflowInstance *workflow_instance,DOMElement task);
+		bool DequeueTask(WorkflowInstance **p_workflow_instance,DOMElement *p_task);
 		bool ExecuteTask(void);
 		bool TerminateTask(void);
 		bool CancelTasks(unsigned int workflow_instance_id);
@@ -102,8 +106,8 @@ class Queue
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
-		void enqueue_task(WorkflowInstance *workflow_instance,DOMNode *task);
-		void dequeue_task(WorkflowInstance **p_workflow_instance,DOMNode **p_task);
+		void enqueue_task(WorkflowInstance *workflow_instance,DOMElement task);
+		void dequeue_task(WorkflowInstance **p_workflow_instance,DOMElement *p_task);
 		
 		static void create_edit_check(const std::string &name, int concurrency, const std::string &scheduler);
 };

@@ -24,10 +24,7 @@
 #include <xercesc/sax/InputSource.hpp>
 #include <BinNetworkInputStream.h>
 
-using namespace xercesc;
-
-
-class NetworkInputSource : public InputSource
+class NetworkInputSource : public xercesc::InputSource
 {
 	private:
 		int socket;
@@ -36,7 +33,7 @@ class NetworkInputSource : public InputSource
 		NetworkInputSource(int socket);
 		~NetworkInputSource();
 		
-		BinInputStream* makeStream() const;
+		xercesc::BinInputStream* makeStream() const;
 };
 
 #endif

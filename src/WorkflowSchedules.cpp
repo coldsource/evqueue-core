@@ -27,10 +27,7 @@
 #include <QueryResponse.h>
 #include <User.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 WorkflowSchedules *WorkflowSchedules::instance = 0;
 
@@ -104,17 +101,19 @@ bool WorkflowSchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		
 		while(db.FetchRow())
 		{
-			DOMElement *node = (DOMElement *)response->AppendXML("<workflow_schedule />");
-			node->setAttribute(X("id"),X(db.GetField(0)));
-			node->setAttribute(X("node"),X(db.GetField(1)));
-			node->setAttribute(X("workflow_id"),X(db.GetField(2)));
-			node->setAttribute(X("schedule"),X(db.GetField(3)));
-			node->setAttribute(X("onfailure"),X(db.GetField(4)));
-			node->setAttribute(X("user"),X(db.GetField(5)));
-			node->setAttribute(X("host"),X(db.GetField(6)));
-			node->setAttribute(X("active"),X(db.GetField(7)));
-			node->setAttribute(X("comment"),X(db.GetField(8)));
-			node->setAttribute(X("workflow_name"),X(db.GetField(9)));
+			DOMElement node = (DOMElement)response->AppendXML("<workflow_schedule />");
+			node.setAttribute("id",db.GetField(0));
+			node.setAttribute("node",db.GetField(1));
+			node.setAttribute("workflow_id",db.GetField(2));
+			node.setAttribute("schedule",db.GetField(3));
+			node.setAttribute("onfailure",db.GetField(4));
+			if(!db.GetFieldIsNULL(5))
+				node.setAttribute("user",db.GetField(5));
+			if(!db.GetFieldIsNULL(6))
+				node.setAttribute("host",db.GetField(6));
+			node.setAttribute("active",db.GetField(7));
+			node.setAttribute("comment",db.GetField(8));
+			node.setAttribute("workflow_name",db.GetField(9));
 			
 			if(display_parameters)
 			{
@@ -125,9 +124,9 @@ bool WorkflowSchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 				string name, value;
 				while(parameters->Get(name,value))
 				{
-					DOMElement *parameter_node = (DOMElement *)response->AppendXML("<parameter />",node);
-					parameter_node->setAttribute(X("name"),X(name.c_str()));
-					parameter_node->setAttribute(X("value"),X(value.c_str()));
+					DOMElement parameter_node = (DOMElement)response->AppendXML("<parameter />",node);
+					parameter_node.setAttribute("name",name);
+					parameter_node.setAttribute("value",value);
 				}
 			}
 		}

@@ -30,13 +30,15 @@
 
 #include <time.h>
 
+#include <string>
+
 class Schedule
 {
 	bool schedule[SCHEDULE_LENGTH];
 	
 	public:
 		Schedule() {}
-		Schedule(const char *schedule_description);
+		Schedule(const std::string &schedule_description_s);
 		
 		static int GetScheduleLength(int level);
 		static int GetScheduleOffset(int level);

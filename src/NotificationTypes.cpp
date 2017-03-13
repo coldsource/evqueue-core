@@ -30,12 +30,9 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 NotificationTypes *NotificationTypes::instance = 0;
 
 using namespace std;
-using namespace xercesc;
 
 NotificationTypes::NotificationTypes():APIObjectList()
 {
@@ -94,7 +91,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 		{
 			// Compute database SHA1 hash
 			sha1_init_ctx(&ctx);
-			sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
+			sha1_process_bytes(db.GetField(1).c_str(),db.GetFieldLength(1),&ctx);
 			sha1_finish_ctx(&ctx,db_hash);
 			
 			// Compute file SHA1 hash
@@ -104,7 +101,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 			}
 			catch(Exception &e)
 			{
-				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s was not found creating it",db.GetField(0));
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" was not found creating it");
 				
 				NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 				continue;
@@ -112,11 +109,11 @@ void NotificationTypes::SyncBinaries(bool notify)
 			
 			if(memcmp(file_hash.c_str(),db_hash,20)==0)
 			{
-				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s hash matches DB, skipping",db.GetField(0));
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" hash matches DB, skipping");
 				continue;
 			}
 			
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task %s hash does not match DB, replacing",db.GetField(0));
+			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" hash does not match DB, replacing");
 			
 			NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 		}
@@ -128,7 +125,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 		{
 			// Compute database SHA1 hash
 			sha1_init_ctx(&ctx);
-			sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
+			sha1_process_bytes(db.GetField(1).c_str(),db.GetFieldLength(1),&ctx);
 			sha1_finish_ctx(&ctx,db_hash);
 			
 			// Compute file SHA1 hash
@@ -138,7 +135,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 			}
 			catch(Exception &e)
 			{
-				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task %s was not found creating it",db.GetField(0));
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task "+db.GetField(0)+" was not found creating it");
 				
 				NotificationType::PutConfFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 				continue;
@@ -146,11 +143,11 @@ void NotificationTypes::SyncBinaries(bool notify)
 			
 			if(memcmp(file_hash.c_str(),db_hash,20)==0)
 			{
-				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task %s hash matches DB, skipping",db.GetField(0));
+				Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task "+db.GetField(0)+" hash matches DB, skipping");
 				continue;
 			}
 			
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task %s hash does not match DB, replacing",db.GetField(0));
+			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task "+db.GetField(0)+" hash does not match DB, replacing");
 			
 			NotificationType::PutConfFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 		}
@@ -187,11 +184,11 @@ bool NotificationTypes::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		for(auto it = notification_types->objects_name.begin(); it!=notification_types->objects_name.end(); it++)
 		{
 			NotificationType notification_type = *it->second;
-			DOMElement *node = (DOMElement *)response->AppendXML("<notification_type />");
-			node->setAttribute(X("id"),X(std::to_string(notification_type.GetID()).c_str()));
-			node->setAttribute(X("name"),X(notification_type.GetName().c_str()));
-			node->setAttribute(X("description"),X(notification_type.GetDescription().c_str()));
-			node->setAttribute(X("binary"),X(notification_type.GetBinary().c_str()));
+			DOMElement node = (DOMElement)response->AppendXML("<notification_type />");
+			node.setAttribute("id",to_string(notification_type.GetID()));
+			node.setAttribute("name",notification_type.GetName());
+			node.setAttribute("description",notification_type.GetDescription());
+			node.setAttribute("binary",notification_type.GetBinary());
 		}
 		
 		pthread_mutex_unlock(&notification_types->lock);

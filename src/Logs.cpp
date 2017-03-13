@@ -24,10 +24,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 bool Logs::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
@@ -46,45 +43,45 @@ bool Logs::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 		db.QueryPrintf("SELECT node_name,log_level,log_message,log_timestamp FROM t_log WHERE log_level <= %i ORDER BY log_timestamp DESC,log_id DESC LIMIT %i,%i",&ifilter_level,&offset,&limit);
 		while(db.FetchRow())
 		{
-			DOMElement *node = (DOMElement *)response->AppendXML("<log />");
-			node->setAttribute(X("node"),X(db.GetField(0)));
+			DOMElement node = (DOMElement)response->AppendXML("<log />");
+			node.setAttribute("node",db.GetField(0));
 			switch(db.GetFieldInt(1))
 			{
 				case 0:
-					node->setAttribute(X("level"),X("LOG_EMERG"));
+					node.setAttribute("level","LOG_EMERG");
 					break;
 				
 				case 1:
-					node->setAttribute(X("level"),X("LOG_ALERT"));
+					node.setAttribute("level","LOG_ALERT");
 					break;
 				
 				case 2:
-					node->setAttribute(X("level"),X("LOG_CRIT"));
+					node.setAttribute("level","LOG_CRIT");
 					break;
 				
 				case 3:
-					node->setAttribute(X("level"),X("LOG_ERR"));
+					node.setAttribute("level","LOG_ERR");
 					break;
 				
 				case 4:
-					node->setAttribute(X("level"),X("LOG_WARNING"));
+					node.setAttribute("level","LOG_WARNING");
 					break;
 				
 				case 5:
-					node->setAttribute(X("level"),X("LOG_NOTICE"));
+					node.setAttribute("level","LOG_NOTICE");
 					break;
 				
 				case 6:
-					node->setAttribute(X("level"),X("LOG_INFO"));
+					node.setAttribute("level","LOG_INFO");
 					break;
 				
 				case 7:
-					node->setAttribute(X("level"),X("LOG_DEBUG"));
+					node.setAttribute("level","LOG_DEBUG");
 					break;
 			}
 			
-			node->setAttribute(X("message"),X(db.GetField(2)));
-			node->setAttribute(X("timestamp"),X(db.GetField(3)));
+			node.setAttribute("message",db.GetField(2));
+			node.setAttribute("timestamp",db.GetField(3));
 		}
 		
 		return true;

@@ -27,10 +27,7 @@
 #include <Sha1String.h>
 #include <global.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 User User::anonymous;
 
@@ -48,7 +45,7 @@ User::User(DB *db,const string &user_name)
 	this->user_name = db->GetField(0);
 	user_password = db->GetField(1);
 	user_profile = db->GetField(2);
-	user_preferences = db->GetField(3)?db->GetField(3):"";
+	user_preferences = db->GetField(3);
 	
 	// Load rights
 	db->QueryPrintf("SELECT workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill FROM t_user_right WHERE user_login=%s",&user_name);
@@ -123,21 +120,21 @@ void User::Get(const string &name, QueryResponse *response)
 {
 	User user = Users::GetInstance()->Get(name);
 	
-	DOMElement *node = (DOMElement *)response->AppendXML("<user />");
-	node->setAttribute(X("name"),X(user.GetName().c_str()));
-	node->setAttribute(X("profile"),X(user.GetProfile().c_str()));
-	node->setAttribute(X("preferences"),X(user.GetPreferences().c_str()));
+	DOMElement node = (DOMElement)response->AppendXML("<user />");
+	node.setAttribute("name",user.GetName());
+	node.setAttribute("profile",user.GetProfile());
+	node.setAttribute("preferences",user.GetPreferences());
 	
 	for(auto it=user.rights.begin();it!=user.rights.end();it++)
 	{
-		DOMElement *right_node = response->GetDOM()->createElement(X("right"));
-		right_node->setAttribute(X("workflow-id"),X(to_string(it->first).c_str()));
-		right_node->setAttribute(X("edit"),it->second.edit?X("yes"):X("no"));
-		right_node->setAttribute(X("read"),it->second.read?X("yes"):X("no"));
-		right_node->setAttribute(X("exec"),it->second.exec?X("yes"):X("no"));
-		right_node->setAttribute(X("kill"),it->second.kill?X("yes"):X("no"));
+		DOMElement right_node = response->GetDOM()->createElement("right");
+		right_node.setAttribute("workflow-id",to_string(it->first));
+		right_node.setAttribute("edit",it->second.edit?"yes":"no");
+		right_node.setAttribute("read",it->second.read?"yes":"no");
+		right_node.setAttribute("exec",it->second.exec?"yes":"no");
+		right_node.setAttribute("kill",it->second.kill?"yes":"no");
 		
-		node->appendChild(right_node);
+		node.appendChild(right_node);
 	}
 }
 
@@ -231,12 +228,12 @@ void User::ListRights(const string &name, QueryResponse *response)
 	
 	for(auto it=user.rights.begin();it!=user.rights.end();++it)
 	{
-		DOMElement *node = (DOMElement *)response->AppendXML("<right />");
-		node->setAttribute(X("workflow-id"),X(to_string(it->first).c_str()));
-		node->setAttribute(X("read"),it->second.read?X("yes"):X("no"));
-		node->setAttribute(X("edit"),it->second.edit?X("yes"):X("no"));
-		node->setAttribute(X("exec"),it->second.exec?X("yes"):X("no"));
-		node->setAttribute(X("kill"),it->second.kill?X("yes"):X("no"));
+		DOMElement node = (DOMElement)response->AppendXML("<right />");
+		node.setAttribute("workflow-id",to_string(it->first));
+		node.setAttribute("read",it->second.read?"yes":"no");
+		node.setAttribute("edit",it->second.edit?"yes":"no");
+		node.setAttribute("exec",it->second.exec?"yes":"no");
+		node.setAttribute("kill",it->second.kill?"yes":"no");
 	}
 }
 
@@ -307,7 +304,7 @@ bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 				User::InsufficientRights();
 			
 			unsigned int id = Create(name, password, profile);
-			response->GetDOM()->getDocumentElement()->setAttribute(X("user-id"),X(to_string(id).c_str()));
+			response->GetDOM()->getDocumentElement().setAttribute("user-id",to_string(id));
 		}
 		else
 		{

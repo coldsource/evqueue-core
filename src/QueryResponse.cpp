@@ -20,8 +20,7 @@
 #include <QueryResponse.h>
 #include <XMLUtils.h>
 #include <Logger.h>
-
-#include <xqilla/xqilla-dom3.hpp>
+#include <DOMDocument.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -32,10 +31,9 @@ QueryResponse::QueryResponse(int socket, const string &root_node_name)
 {
 	this->socket = socket;
 	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	xmldoc = xqillaImplementation->createDocument();
+	xmldoc = new DOMDocument();
 	
-	DOMElement *response_node = xmldoc->createElement(X(root_node_name.c_str()));
+	DOMElement response_node = xmldoc->createElement(root_node_name);
 	xmldoc->appendChild(response_node);
 	
 	status_ok = true;
@@ -43,7 +41,7 @@ QueryResponse::QueryResponse(int socket, const string &root_node_name)
 
 QueryResponse::~QueryResponse()
 {
-	xmldoc->release();
+	delete xmldoc;
 }
 
 void QueryResponse::SetError(const string &error)
@@ -54,40 +52,35 @@ void QueryResponse::SetError(const string &error)
 
 void QueryResponse::SetAttribute(const std::string &name, const std::string &value)
 {
-	xmldoc->getDocumentElement()->setAttribute(X(name.c_str()),X(value.c_str()));
+	xmldoc->getDocumentElement().setAttribute(name,value);
 }
 
-DOMNode *QueryResponse::AppendXML(const string &xml, DOMElement *node)
+DOMNode QueryResponse::AppendXML(const string &xml)
 {
-	if(!node)
-		node = xmldoc->getDocumentElement();
+	return XMLUtils::AppendXML(xmldoc, xmldoc->getDocumentElement(), xml);
+}
+
+DOMNode QueryResponse::AppendXML(const string &xml, DOMElement node)
+{
 	return XMLUtils::AppendXML(xmldoc, node, xml);
 }
 
 void QueryResponse::SendResponse()
 {
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	
-	DOMElement *response_node = xmldoc->getDocumentElement();
+	DOMElement response_node = xmldoc->getDocumentElement();
 	
 	if(status_ok)
-		response_node->setAttribute(X("status"),X("OK"));
+		response_node.setAttribute("status","OK");
 	else
 	{
-		response_node->setAttribute(X("status"),X("KO"));
-		response_node->setAttribute(X("error"),X(error.c_str()));
+		response_node.setAttribute("status","KO");
+		response_node.setAttribute("error",error);
 	}
 	
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *response = serializer->writeToString(response_node);
-	char *response_c = XMLString::transcode(response);
+	string response = xmldoc->Serialize(xmldoc->getDocumentElement());
 	
-	send(socket,response_c,strlen(response_c),0);
+	send(socket,response.c_str(),response.length(),0);
 	send(socket,"\n",1,0);
-	
-	XMLString::release(&response);
-	XMLString::release(&response_c);
-	serializer->release();
 }
 
 bool QueryResponse::Ping()

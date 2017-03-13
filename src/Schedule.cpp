@@ -25,14 +25,17 @@
 
 #include <stdio.h>
 
-Schedule::Schedule(const char *schedule_description)
+using namespace std;
+
+Schedule::Schedule(const string &schedule_description_s)
 {
+	const char *schedule_description = schedule_description_s.c_str();
+	
 	// Parse schedule description
 	memset(&schedule,0,SCHEDULE_LENGTH);
 	
 	const char *start_ptr;
 	char *end_ptr;
-	int schedule_description_len = strlen(schedule_description);
 	int i = 0, level = 0, offset = 0, length = 0, min_day = 32;
 	do
 	{

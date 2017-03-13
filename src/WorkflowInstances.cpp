@@ -33,15 +33,12 @@
 #include <sys/socket.h>
 #include <poll.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 #include <string>
 #include <vector>
 
 WorkflowInstances *WorkflowInstances::instance = 0;
 
 using namespace std;
-using namespace xercesc;
 
 WorkflowInstances::WorkflowInstances()
 {
@@ -401,21 +398,23 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		db.QueryVsPrintf(query,query_where_values);
 		while(db.FetchRow())
 		{
-			DOMElement *node = (DOMElement *)response->AppendXML("<workflow />");
-			node->setAttribute(X("id"),X(std::to_string(db.GetFieldInt(0)).c_str()));
-			node->setAttribute(X("name"),X(db.GetField(1)));
-			node->setAttribute(X("node_name"),X(db.GetField(2)));
-			node->setAttribute(X("host"),X(db.GetField(3)));
-			node->setAttribute(X("start_time"),X(db.GetField(4)));
-			node->setAttribute(X("end_time"),X(db.GetField(5)));
-			node->setAttribute(X("errors"),X(db.GetField(6)));
-			node->setAttribute(X("status"),X(db.GetField(7)));
-			node->setAttribute(X("schedule_id"),X(db.GetField(8)));
+			DOMElement node = (DOMElement)response->AppendXML("<workflow />");
+			node.setAttribute("id",to_string(db.GetFieldInt(0)));
+			node.setAttribute("name",db.GetField(1));
+			node.setAttribute("node_name",db.GetField(2));
+			if(!db.GetFieldIsNULL(3))
+				node.setAttribute("host",db.GetField(3));
+			node.setAttribute("start_time",db.GetField(4));
+			node.setAttribute("end_time",db.GetField(5));
+			node.setAttribute("errors",db.GetField(6));
+			node.setAttribute("status",db.GetField(7));
+			if(!db.GetFieldIsNULL(8))
+				node.setAttribute("schedule_id",db.GetField(8));
 		}
 		
 		db.Query("SELECT FOUND_ROWS()");
 		db.FetchRow();
-		response->GetDOM()->getDocumentElement()->setAttribute(X("rows"),X(db.GetField(0)));
+		response->GetDOM()->getDocumentElement().setAttribute("rows",db.GetField(0));
 		
 		return true;
 	}

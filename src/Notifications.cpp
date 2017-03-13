@@ -31,12 +31,9 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 Notifications *Notifications::instance = 0;
 
 using namespace std;
-using namespace xercesc;
 
 Notifications::Notifications():APIObjectList()
 {
@@ -152,10 +149,10 @@ bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 		
 		for(auto it = notifications->objects_id.begin(); it!=notifications->objects_id.end(); it++)
 		{
-			DOMElement *node = (DOMElement *)response->AppendXML("<notification />");
-			node->setAttribute(X("id"),X(std::to_string(it->second->GetID()).c_str()));
-			node->setAttribute(X("type_id"),X(std::to_string(it->second->GetTypeID()).c_str()));
-			node->setAttribute(X("name"),X(it->second->GetName().c_str()));
+			DOMElement node = (DOMElement)response->AppendXML("<notification />");
+			node.setAttribute("id",to_string(it->second->GetID()));
+			node.setAttribute("type_id",std::to_string(it->second->GetTypeID()));
+			node.setAttribute("name",it->second->GetName());
 		}
 		
 		pthread_mutex_unlock(&notifications->lock);

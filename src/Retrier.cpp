@@ -38,7 +38,7 @@ Retrier::Retrier(): Scheduler()
 	pthread_mutex_init(&retrier_lock, NULL);
 }
 
-void Retrier::InsertTask(WorkflowInstance *workflow_instance,DOMNode *task, time_t retry_at)
+void Retrier::InsertTask(WorkflowInstance *workflow_instance,DOMElement task, time_t retry_at)
 {
 	TimedTask *new_task = new TimedTask;
 	new_task->workflow_instance = workflow_instance;

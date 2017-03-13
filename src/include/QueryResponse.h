@@ -20,11 +20,10 @@
 #ifndef _QUERYRESPONSE_H_
 #define _QUERYRESPONSE_H_
 
-#include <xercesc/dom/DOM.hpp>
+#include <DOMElement.h>
+#include <DOMDocument.h>
 
 #include <string>
-
-using namespace xercesc;
 
 class QueryResponse
 {
@@ -43,7 +42,8 @@ class QueryResponse
 		void SetError(const std::string &error);
 		void SetAttribute(const std::string &name, const std::string &value);
 		
-		DOMNode *AppendXML(const std::string &xml, DOMElement *node = 0);
+		DOMNode AppendXML(const std::string &xml);
+		DOMNode AppendXML(const std::string &xml, DOMElement node);
 		
 		void SendResponse();
 		bool Ping();

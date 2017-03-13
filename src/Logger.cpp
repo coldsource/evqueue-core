@@ -76,6 +76,22 @@ void Logger::Log(int level,const char *msg,...)
 	}
 }
 
+void Logger::Log(int level,const string &msg)
+{
+	if(instance->log_syslog && level<=instance->syslog_filter)
+		syslog(LOG_NOTICE,"%s",msg.c_str());
+	
+	if(instance->log_db && level<=instance->db_filter)
+	{
+		try
+		{
+			DB db;
+			db.QueryPrintfC("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,msg.c_str());
+		}
+		catch(Exception &e) { } // Logger should never send exceptions on database error to prevent exception storm
+	}
+}
+
 int Logger::parse_log_level(const string &log_level)
 {
 	if(log_level=="LOG_EMERG")

@@ -37,10 +37,7 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 Task::Task()
 {
@@ -59,26 +56,26 @@ Task::Task(DB *db,const string &task_name)
 	
 	this->task_name = db->GetField(1);
 	
-	if(db->GetField(2))
+	if(!db->GetFieldIsNULL(2))
 		task_binary = db->GetField(2);
 	
-	if(db->GetField(3))
+	if(!db->GetFieldIsNULL(3))
 		task_wd = db->GetField(3);
 	
-	if(db->GetField(4))
+	if(!db->GetFieldIsNULL(4))
 		task_user = db->GetField(4);
 
-	if(db->GetField(5))
+	if(!db->GetFieldIsNULL(5))
 		task_host = db->GetField(5);
 	
 	task_use_agent = db->GetFieldInt(6);
 	
-	if(strcmp(db->GetField(7),"ENV")==0)
+	if(db->GetField(7)=="ENV")
 		parameters_mode = task_parameters_mode::ENV;
 	else
 		parameters_mode = task_parameters_mode::CMDLINE;
 	
-	if(strcmp(db->GetField(8),"XML")==0)
+	if(db->GetField(8)=="XML")
 		output_method = task_output_method::XML;
 	else
 		output_method = task_output_method::TEXT;
@@ -87,11 +84,11 @@ Task::Task(DB *db,const string &task_name)
 	
 	task_group = db->GetField(10);
 	
-	task_comment = db->GetField(11)?db->GetField(11):"";
+	task_comment = db->GetField(11);
 	
-	lastcommit = db->GetField(12)?db->GetField(12):"";
+	lastcommit = db->GetField(12);
 	
-	bound_workflow_id = db->GetField(13)?db->GetFieldInt(13):0;
+	bound_workflow_id = db->GetFieldIsNULL(13)?0:db->GetFieldInt(13);
 }
 
 bool Task::GetIsModified()
@@ -119,42 +116,27 @@ void Task::SetLastCommit(const std::string &commit_id)
 
 string Task::SaveToXML()
 {
-	DOMDocument *xmldoc = 0;
-	DOMLSSerializer *serializer = 0;
+	DOMDocument xmldoc;
 	
-	// Generate workflow XML
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	xmldoc = xqillaImplementation->createDocument();
+	DOMElement node = (DOMElement)XMLUtils::AppendXML(&xmldoc, xmldoc, "<task />");
+	node.setAttribute("binary",GetBinary());
+	node.setAttribute("wd",GetWorkingDirectory());
+	node.setAttribute("user",GetUser());
+	node.setAttribute("host",GetHost());
+	node.setAttribute("use_agent",GetUseAgent()?"yes":"no");
+	node.setAttribute("parameters_mode",GetParametersMode()==task_parameters_mode::ENV?"ENV":"CMDLINE");
+	node.setAttribute("output_method",GetOutputMethod()==task_output_method::XML?"XML":"TEXT");
+	node.setAttribute("merge_stderr",GetMergeStderr()?"yes":"no");
+	node.setAttribute("group",GetGroup());
+	node.setAttribute("comment",GetComment());
+	node.setAttribute("workflow_bound",bound_workflow_id>0?"yes":"no");
 	
-	DOMElement *node = (DOMElement *)XMLUtils::AppendXML(xmldoc, (DOMNode *)xmldoc, "<task />");
-	node->setAttribute(X("binary"),X(GetBinary().c_str()));
-	node->setAttribute(X("wd"),X(GetWorkingDirectory().c_str()));
-	node->setAttribute(X("user"),X(GetUser().c_str()));
-	node->setAttribute(X("host"),X(GetHost().c_str()));
-	node->setAttribute(X("use_agent"),GetUseAgent()?X("yes"):X("no"));
-	node->setAttribute(X("parameters_mode"),GetParametersMode()==task_parameters_mode::ENV?X("ENV"):X("CMDLINE"));
-	node->setAttribute(X("output_method"),GetOutputMethod()==task_output_method::XML?X("XML"):X("TEXT"));
-	node->setAttribute(X("merge_stderr"),GetMergeStderr()?X("yes"):X("no"));
-	node->setAttribute(X("group"),X(GetGroup().c_str()));
-	node->setAttribute(X("comment"),X(GetComment().c_str()));
-	node->setAttribute(X("workflow_bound"),bound_workflow_id>0?X("yes"):X("no"));
-	
-	serializer = xqillaImplementation->createLSSerializer();
-	XMLCh *workflow_xml = serializer->writeToString(node);
-	char *workflow_xml_c = XMLString::transcode(workflow_xml);
-	string ret_xml = workflow_xml_c;
-	
-	XMLString::release(&workflow_xml);
-	XMLString::release(&workflow_xml_c);
-	serializer->release();
-	xmldoc->release();
-	
-	return ret_xml;
+	return xmldoc.Serialize(xmldoc.getDocumentElement());
 }
 
 void Task::LoadFromXML(string name, DOMDocument *xmldoc, string repo_lastcommit)
 {
-	DOMElement *root_node = xmldoc->getDocumentElement();
+	DOMElement root_node = xmldoc->getDocumentElement();
 		
 	string binary = XMLUtils::GetAttribute(root_node, "binary", true);
 	string binary_content;
@@ -249,19 +231,19 @@ bool Task::CheckTaskName(const string &task_name)
 
 void Task::get(const Task &task, QueryResponse *response)
 {
-	DOMElement *node = (DOMElement *)response->AppendXML("<task />");
-	node->setAttribute(X("id"),X(to_string(task.GetID()).c_str()));
-	node->setAttribute(X("name"),X(task.GetName().c_str()));
-	node->setAttribute(X("binary"),X(task.GetBinary().c_str()));
-	node->setAttribute(X("wd"),X(task.GetWorkingDirectory().c_str()));
-	node->setAttribute(X("user"),X(task.GetUser().c_str()));
-	node->setAttribute(X("host"),X(task.GetHost().c_str()));
-	node->setAttribute(X("use_agent"),task.GetUseAgent()?X("1"):X("0"));
-	node->setAttribute(X("parameters_mode"),task.GetParametersMode()==task_parameters_mode::ENV?X("ENV"):X("CMDLINE"));
-	node->setAttribute(X("output_method"),task.GetOutputMethod()==task_output_method::XML?X("XML"):X("TEXT"));
-	node->setAttribute(X("merge_stderr"),task.GetMergeStderr()?X("1"):X("0"));
-	node->setAttribute(X("group"),X(task.GetGroup().c_str()));
-	node->setAttribute(X("comment"),X(task.GetComment().c_str()));
+	DOMElement node = (DOMElement)response->AppendXML("<task />");
+	node.setAttribute("id",to_string(task.GetID()));
+	node.setAttribute("name",task.GetName());
+	node.setAttribute("binary",task.GetBinary());
+	node.setAttribute("wd",task.GetWorkingDirectory());
+	node.setAttribute("user",task.GetUser());
+	node.setAttribute("host",task.GetHost());
+	node.setAttribute("use_agent",task.GetUseAgent()?"1":"0");
+	node.setAttribute("parameters_mode",task.GetParametersMode()==task_parameters_mode::ENV?"ENV":"CMDLINE");
+	node.setAttribute("output_method",task.GetOutputMethod()==task_output_method::XML?"XML":"TEXT");
+	node.setAttribute("merge_stderr",task.GetMergeStderr()?"1":"0");
+	node.setAttribute("group",task.GetGroup());
+	node.setAttribute("comment",task.GetComment());
 }
 
 void Task::GetByID(unsigned int id, QueryResponse *response)
@@ -341,8 +323,8 @@ void Task::Create(
 	if(response)
 	{
 		if(create_workflow)
-			response->GetDOM()->getDocumentElement()->setAttribute(X("workflow-id"),X(to_string(workflow_id).c_str()));
-		response->GetDOM()->getDocumentElement()->setAttribute(X("task-id"),X(to_string(id).c_str()));
+			response->GetDOM()->getDocumentElement().setAttribute("workflow-id",to_string(workflow_id));
+		response->GetDOM()->getDocumentElement().setAttribute("task-id",to_string(id));
 	}
 }
 

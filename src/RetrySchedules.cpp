@@ -29,12 +29,9 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 RetrySchedules *RetrySchedules::instance = 0;
 
 using namespace std;
-using namespace xercesc;
 
 RetrySchedules::RetrySchedules():APIObjectList()
 {
@@ -89,9 +86,9 @@ bool RetrySchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh,
 		for(auto it = retry_schedules->objects_name.begin(); it!=retry_schedules->objects_name.end(); it++)
 		{
 			RetrySchedule retry_schedule = *it->second;
-			DOMElement *node = (DOMElement *)response->AppendXML(retry_schedule.GetXML());
-			node->setAttribute(X("id"),X(std::to_string(retry_schedule.GetID()).c_str()));
-			node->setAttribute(X("name"),X(retry_schedule.GetName().c_str()));
+			DOMElement node = (DOMElement)response->AppendXML(retry_schedule.GetXML());
+			node.setAttribute("id",to_string(retry_schedule.GetID()));
+			node.setAttribute("name",retry_schedule.GetName());
 		}
 		
 		pthread_mutex_unlock(&retry_schedules->lock);

@@ -23,9 +23,7 @@
 #include <sys/types.h>
 #include <xercesc/util/BinInputStream.hpp>
 
-using namespace xercesc;
-
-class BinNetworkInputStream : public BinInputStream
+class BinNetworkInputStream : public xercesc::BinInputStream
 {
 	protected:
 		int socket;

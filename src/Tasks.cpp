@@ -30,12 +30,9 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 Tasks *Tasks::instance = 0;
 
 using namespace std;
-using namespace xercesc;
 
 Tasks::Tasks():APIObjectList()
 {
@@ -97,7 +94,7 @@ void Tasks::SyncBinaries(bool notify)
 		{
 			// Compute database SHA1 hash
 			sha1_init_ctx(&ctx);
-			sha1_process_bytes(db.GetField(1),db.GetFieldLength(1),&ctx);
+			sha1_process_bytes(db.GetField(1).c_str(),db.GetFieldLength(1),&ctx);
 			sha1_finish_ctx(&ctx,db_hash);
 			
 			// Compute file SHA1 hash
@@ -107,7 +104,7 @@ void Tasks::SyncBinaries(bool notify)
 			}
 			catch(Exception &e)
 			{
-				Logger::Log(LOG_NOTICE,"[ Tasks ] Task %s was not found creating it",db.GetField(0));
+				Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" was not found creating it");
 				
 				Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 				continue;
@@ -115,11 +112,11 @@ void Tasks::SyncBinaries(bool notify)
 			
 			if(memcmp(file_hash.c_str(),db_hash,20)==0)
 			{
-				Logger::Log(LOG_NOTICE,"[ Tasks ] Task %s hash matches DB, skipping",db.GetField(0));
+				Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" hash matches DB, skipping");
 				continue;
 			}
 			
-			Logger::Log(LOG_NOTICE,"[ Tasks ] Task %s hash does not match DB, replacing",db.GetField(0));
+			Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" hash does not match DB, replacing");
 			
 			Task::RemoveFile(db.GetField(0));
 			Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
@@ -157,17 +154,17 @@ bool Tasks::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		for(auto it = tasks->objects_name.begin(); it!=tasks->objects_name.end(); it++)
 		{
 			Task task = *it->second;
-			DOMElement *node = (DOMElement *)response->AppendXML("<task />");
-			node->setAttribute(X("id"),X(std::to_string(task.GetID()).c_str()));
-			node->setAttribute(X("name"),X(task.GetName().c_str()));
-			node->setAttribute(X("user"),X(task.GetUser().c_str()));
-			node->setAttribute(X("host"),X(task.GetHost().c_str()));
-			node->setAttribute(X("binary"),X(task.GetBinary().c_str()));
-			node->setAttribute(X("parameters_mode"),task.GetParametersMode()==task_parameters_mode::ENV?X("ENV"):X("CMDLINE"));
-			node->setAttribute(X("group"),X(task.GetGroup().c_str()));
-			node->setAttribute(X("comment"),X(task.GetComment().c_str()));
-			node->setAttribute(X("modified"),task.GetIsModified()?X("1"):X("0"));
-			node->setAttribute(X("lastcommit"),X(task.GetLastCommit().c_str()));
+			DOMElement node = (DOMElement)response->AppendXML("<task />");
+			node.setAttribute("id",to_string(task.GetID()));
+			node.setAttribute("name",task.GetName());
+			node.setAttribute("user",task.GetUser());
+			node.setAttribute("host",task.GetHost());
+			node.setAttribute("binary",task.GetBinary());
+			node.setAttribute("parameters_mode",task.GetParametersMode()==task_parameters_mode::ENV?"ENV":"CMDLINE");
+			node.setAttribute("group",task.GetGroup());
+			node.setAttribute("comment",task.GetComment());
+			node.setAttribute("modified",task.GetIsModified()?"1":"0");
+			node.setAttribute("lastcommit",task.GetLastCommit());
 		}
 		
 		pthread_mutex_unlock(&tasks->lock);

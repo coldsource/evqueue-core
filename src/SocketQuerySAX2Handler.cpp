@@ -39,9 +39,9 @@ SocketQuerySAX2Handler::~SocketQuerySAX2Handler()
 }
 
 
-void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const Attributes& attrs)
+void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes& attrs)
 {
-	char *node_name_c = XMLString::transcode(localname);
+	char *node_name_c = xercesc::XMLString::transcode(localname);
 	char *name_c = 0;
 	char *value_c = 0;
 	
@@ -61,13 +61,13 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				attr_value = attrs.getValue(i);
 				
 				char *attr_name_c, *attr_value_c;
-				attr_name_c = XMLString::transcode(attr_name);
-				attr_value_c = XMLString::transcode(attr_value);
+				attr_name_c = xercesc::XMLString::transcode(attr_name);
+				attr_value_c = xercesc::XMLString::transcode(attr_value);
 				
 				root_attributes[attr_name_c] = attr_value_c;
 				
-				XMLString::release(&attr_name_c);
-				XMLString::release(&attr_value_c);
+				xercesc::XMLString::release(&attr_name_c);
+				xercesc::XMLString::release(&attr_value_c);
 			}
 		}
 			
@@ -82,8 +82,8 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			if (name==0 || value==0)
 				throw Exception("SocketQuerySAX2Handler","Invalue parameter node, missing name or value attributes");
 			
-			name_c = XMLString::transcode(name);
-			value_c = XMLString::transcode(value);
+			name_c = xercesc::XMLString::transcode(name);
+			value_c = xercesc::XMLString::transcode(value);
 			
 			int i;
 			int name_len = strlen(name_c);
@@ -105,7 +105,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 				throw Exception("SocketQuerySAX2Handler","Expecting input node");
 			
 			const XMLCh *value = attrs.getValue(X("value"));
-			value_c = XMLString::transcode(value);
+			value_c = xercesc::XMLString::transcode(value);
 			
 			inputs.push_back(value_c);
 		}
@@ -119,19 +119,19 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 	catch(Exception e)
 	{
 		if(name_c)
-			XMLString::release(&name_c);
+			xercesc::XMLString::release(&name_c);
 		if(value_c)
-			XMLString::release(&value_c);
-		XMLString::release(&node_name_c);
+			xercesc::XMLString::release(&value_c);
+		xercesc::XMLString::release(&node_name_c);
 		
 		throw e;
 	}
 	
 	if(name_c)
-		XMLString::release(&name_c);
+		xercesc::XMLString::release(&name_c);
 	if(value_c)
-		XMLString::release(&value_c);
-	XMLString::release(&node_name_c);
+		xercesc::XMLString::release(&value_c);
+	xercesc::XMLString::release(&node_name_c);
 }
 
 void SocketQuerySAX2Handler::endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname)

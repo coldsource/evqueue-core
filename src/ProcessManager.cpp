@@ -63,8 +63,6 @@ ProcessManager::ProcessManager()
 	
 	logs_delete = config->GetBool("processmanager.logs.delete");
 	
-	log_filename = new char[logs_directory.length()+32];
-	
 	// Create message queue
 	msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
@@ -87,7 +85,6 @@ ProcessManager::ProcessManager()
 
 ProcessManager::~ProcessManager()
 {
-	delete[] log_filename;
 }
 
 void *ProcessManager::Fork(void *process_manager)
@@ -103,7 +100,7 @@ void *ProcessManager::Fork(void *process_manager)
 	ProcessManager *pm = (ProcessManager *)process_manager;
 	QueuePool *qp = QueuePool::GetInstance();
 	WorkflowInstance *workflow_instance;
-	DOMNode *task;
+	DOMElement task;
 	
 	string queue_name;
 	bool workflow_terminated;
@@ -132,7 +129,7 @@ void *ProcessManager::Fork(void *process_manager)
 		{
 			// Unable to execute task, release task ID
 			WorkflowInstance *workflow_instance;
-			DOMNode *task;
+			DOMElement task;
 			QueuePool::GetInstance()->TerminateTask(tid,&workflow_instance,&task);
 		}
 		
@@ -161,7 +158,7 @@ void *ProcessManager::Gather(void *process_manager)
 	st_msgbuf msgbuf;
 	
 	WorkflowInstance *workflow_instance;
-	DOMNode *task;
+	DOMElement task;
 	
 	mysql_thread_init();
 	
@@ -274,12 +271,13 @@ void ProcessManager::WaitForShutdown(void)
 
 char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno)
 {
+	string log_filename;
 	if(fileno==STDOUT_FILENO)
-		sprintf(pm->log_filename,"%s/%d.stdout",pm->logs_directory.c_str(),tid);
+		log_filename = pm->logs_directory+"/"+to_string(tid)+".stdout";
 	else if(fileno==STDERR_FILENO)
-		sprintf(pm->log_filename,"%s/%d.stderr",pm->logs_directory.c_str(),tid);
+		log_filename = pm->logs_directory+"/"+to_string(tid)+".stderr";
 	else
-		sprintf(pm->log_filename,"%s/%d.log",pm->logs_directory.c_str(),tid);
+		log_filename = pm->logs_directory+"/"+to_string(tid)+".log";
 	
 	FILE *f;
 	long log_size;
@@ -310,7 +308,7 @@ char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int f
 	}
 	
 	if(pm->logs_delete)
-		unlink(pm->log_filename); // Delete log file since it is not usefull anymore
+		remove(pm->log_filename); // Delete log file since it is not usefull anymore
 	
 	return output;
 }

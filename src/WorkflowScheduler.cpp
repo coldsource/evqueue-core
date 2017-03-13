@@ -39,11 +39,7 @@
 
 #include <vector>
 
-#include <xqilla/xqilla-dom3.hpp>
-#include <xercesc/dom/DOM.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 WorkflowScheduler *WorkflowScheduler::instance = 0;
 
@@ -284,8 +280,8 @@ void WorkflowScheduler::SendStatus(QueryResponse *response)
 	
 	DOMDocument *xmldoc = response->GetDOM();
 	
-	DOMElement *status_node = xmldoc->createElement(X("status"));
-	xmldoc->getDocumentElement()->appendChild(status_node);
+	DOMElement status_node = xmldoc->createElement("status");
+	xmldoc->getDocumentElement().appendChild(status_node);
 	
 	// We need to get all mutexes to guarantee that status dump is fully coherent
 	pthread_mutex_lock(&wfs_mutex);
@@ -294,19 +290,17 @@ void WorkflowScheduler::SendStatus(QueryResponse *response)
 	ScheduledWorkflow *event = (ScheduledWorkflow *)first_event;
 	while(event)
 	{
-		DOMElement *workflow_node = xmldoc->createElement(X("workflow"));
+		DOMElement workflow_node = xmldoc->createElement("workflow");
 		
-		sprintf(buf,"%d",event->workflow_schedule->GetID());
-		workflow_node->setAttribute(X("workflow_schedule_id"),X(buf));
-		
-		workflow_node->setAttribute(X("name"),X(event->workflow_schedule->GetWorkflowName().c_str()));
+		workflow_node.setAttribute("workflow_schedule_id",to_string(event->workflow_schedule->GetID()));
+		workflow_node.setAttribute("name",event->workflow_schedule->GetWorkflowName());
 		
 		struct tm time_t;
 		localtime_r(&event->scheduled_at,&time_t);
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
-		workflow_node->setAttribute(X("scheduled_at"),X(buf));
+		workflow_node.setAttribute("scheduled_at",buf);
 		
-		status_node->appendChild(workflow_node);
+		status_node.appendChild(workflow_node);
 		
 		event = (ScheduledWorkflow *)event->next_event;
 	}
@@ -315,19 +309,13 @@ void WorkflowScheduler::SendStatus(QueryResponse *response)
 	{
 		if(wfs_executing_instances[i])
 		{
-			DOMElement *workflow_node = xmldoc->createElement(X("workflow"));
+			DOMElement workflow_node = xmldoc->createElement("workflow");
+			workflow_node.setAttribute("workflow_schedule_id",to_string(wfs_executing_instances[i]->GetID()));
+			workflow_node.setAttribute("name",wfs_executing_instances[i]->GetWorkflowName());
+			workflow_node.setAttribute("workflow_instance_id",to_string(wfs_wi_ids[i]));
+			workflow_node.setAttribute("scheduled_at","running");
 			
-			sprintf(buf,"%d",wfs_executing_instances[i]->GetID());
-			workflow_node->setAttribute(X("workflow_schedule_id"),X(buf));
-			
-			workflow_node->setAttribute(X("name"),X(wfs_executing_instances[i]->GetWorkflowName().c_str()));
-			
-			sprintf(buf,"%d",wfs_wi_ids[i]);
-			workflow_node->setAttribute(X("workflow_instance_id"),X(buf));
-			
-			workflow_node->setAttribute(X("scheduled_at"),X("running"));
-			
-			status_node->appendChild(workflow_node);
+			status_node.appendChild(workflow_node);
 		}
 	}
 	

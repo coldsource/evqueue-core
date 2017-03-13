@@ -24,8 +24,7 @@ class SocketQuerySAX2Handler;
 class QueryResponse;
 class LibGit2;
 class User;
-
-#include <xercesc/dom/DOM.hpp>
+class DOMDocument;
 
 #include <pthread.h>
 
@@ -66,7 +65,7 @@ class Git
 	
 	private:
 		std::string save_file(const std::string &filename, const std::string &content, const std::string &db_lastcommit, const std::string &commit_log, bool force);
-		void load_file(const std::string &filename, xercesc::DOMLSParser **pparser, xercesc::DOMDocument **pxmldoc);
+		DOMDocument *load_file(const std::string &filename);
 		void list_files(const std::string directory, QueryResponse *response);
 		std::string get_file_hash(const std::string filename);
 };

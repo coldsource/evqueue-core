@@ -36,10 +36,7 @@
 #include <string>
 #include <map>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 void WorkflowInstanceAPI::Delete(unsigned int id)
 {
@@ -99,9 +96,9 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		if(!workflow_terminated && mode=="synchronous")
 			wait_re = WorkflowInstances::GetInstance()->Wait(user, response,instance_id,timeout);
 		
-		response->GetDOM()->getDocumentElement()->setAttribute(X("workflow-instance-id"),X(to_string(instance_id).c_str()));
+		response->GetDOM()->getDocumentElement().setAttribute("workflow-instance-id",to_string(instance_id));
 		if(!wait_re)
-			response->GetDOM()->getDocumentElement()->setAttribute(X("wait"),X("timedout"));
+			response->GetDOM()->getDocumentElement().setAttribute("wait","timedout");
 		
 		if(workflow_terminated)
 			delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
@@ -165,7 +162,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 				if(string(db.GetField(2))!="TERMINATED")
 					throw Exception("WorkflowInstance","Workflow instance is still running on another node, query the corresponding node");
 				
-				if(!db.GetField(0))
+				if(db.GetFieldIsNULL(0))
 					throw Exception("WorkflowInstance","Invalid workflow XML");
 				
 				response->AppendXML(db.GetField(0));

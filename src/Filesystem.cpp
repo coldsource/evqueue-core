@@ -28,10 +28,7 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
-using namespace xercesc;
 
 void Filesystem::List(const string &path,QueryResponse *response)
 {
@@ -63,14 +60,14 @@ void Filesystem::List(const string &path,QueryResponse *response)
 		if(result->d_name[0]=='.')
 			continue; // Skip hidden files
 		
-		DOMElement *node = (DOMElement *)response->AppendXML("<entry />");
-		node->setAttribute(X("name"),X(result->d_name));
+		DOMElement node = (DOMElement)response->AppendXML("<entry />");
+		node.setAttribute("name",result->d_name);
 		if(result->d_type==DT_DIR)
-			node->setAttribute(X("type"),X("directory"));
+			node.setAttribute("type","directory");
 		else if(result->d_type==DT_REG || result->d_type==DT_LNK)
-			node->setAttribute(X("type"),X("file"));
+			node.setAttribute("type","file");
 		else
-			node->setAttribute(X("type"),X("unknown"));
+			node.setAttribute("type","unknown");
 	}
 	
 	closedir(dh);

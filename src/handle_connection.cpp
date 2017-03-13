@@ -33,12 +33,6 @@
 #include <ActiveConnections.h>
 #include <tools.h>
 
-#include <xercesc/sax2/SAX2XMLReader.hpp>
-#include <xercesc/sax2/XMLReaderFactory.hpp>
-#include <xercesc/sax2/DefaultHandler.hpp>
-#include <xercesc/framework/MemBufInputSource.hpp>
-#include <xercesc/framework/Wrapper4InputSource.hpp>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -126,7 +120,7 @@ void *handle_connection(void *sp)
 				}
 				catch (Exception &e)
 				{
-					Logger::Log(LOG_DEBUG,"Unexpected (catched) exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
+					Logger::Log(LOG_DEBUG,"Unexpected (caught) exception in context %s : %s\n",e.context.c_str(),e.error.c_str());
 					
 					QueryResponse response(s);
 					response.SetError(e.error);
