@@ -26,15 +26,14 @@ class LibGit2;
 class User;
 class DOMDocument;
 
-#include <pthread.h>
-
+#include <mutex>
 #include <string>
 
 class Git
 {
 	static Git *instance;
 	
-	pthread_mutex_t lock;
+	std::mutex lock;
 	
 	std::string repo_path;
 	LibGit2 *repo = 0;

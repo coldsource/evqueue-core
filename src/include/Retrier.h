@@ -24,6 +24,8 @@
 
 #include <DOMElement.h>
 
+#include <mutex>
+
 class WorkflowInstance;
 
 class Retrier:public Scheduler
@@ -39,7 +41,7 @@ class Retrier:public Scheduler
 		
 		static Retrier *instance;
 		
-		pthread_mutex_t retrier_lock;
+		std::mutex retrier_lock;
 		
 		unsigned int filter_workflow_instance_id;
 		

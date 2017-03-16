@@ -29,7 +29,6 @@
 #include <Logger.h>
 #include <tools_ipc.h>
 
-#include <pthread.h>
 #include <mysql/mysql.h>
 
 #include <stdio.h>
@@ -40,6 +39,7 @@
 #include <signal.h>
 #include <signal.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -68,26 +68,18 @@ ProcessManager::ProcessManager()
 	if(msgqid==-1)
 		throw Exception("ProcessManager","Unable to get message queue");
 	
-	pthread_attr_t thread_attr;
-	
 	// Start forker
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
-	pthread_create(&forker_thread_handle,&thread_attr,ProcessManager::Fork,this);
-	pthread_setname_np(forker_thread_handle,"forker");
+	forker_thread_handle = thread(ProcessManager::Fork,this);
 	
 	// Start gatherer
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
-	pthread_create(&gatherer_thread_handle,&thread_attr,ProcessManager::Gather,this);
-	pthread_setname_np(gatherer_thread_handle,"gatherer");
+	gatherer_thread_handle = thread(ProcessManager::Gather,this);
 }
 
 ProcessManager::~ProcessManager()
 {
 }
 
-void *ProcessManager::Fork(void *process_manager)
+void *ProcessManager::Fork(ProcessManager *pm)
 {
 	// Block signals
 	sigset_t signal_mask;
@@ -97,7 +89,6 @@ void *ProcessManager::Fork(void *process_manager)
 	sigaddset(&signal_mask, SIGHUP);
 	pthread_sigmask(SIG_BLOCK, &signal_mask, NULL);
 	
-	ProcessManager *pm = (ProcessManager *)process_manager;
 	QueuePool *qp = QueuePool::GetInstance();
 	WorkflowInstance *workflow_instance;
 	DOMElement task;
@@ -138,7 +129,7 @@ void *ProcessManager::Fork(void *process_manager)
 	}
 }
 
-void *ProcessManager::Gather(void *process_manager)
+void *ProcessManager::Gather(ProcessManager *pm)
 {
 	// Block signals
 	sigset_t signal_mask;
@@ -147,8 +138,6 @@ void *ProcessManager::Gather(void *process_manager)
 	sigaddset(&signal_mask, SIGTERM);
 	sigaddset(&signal_mask, SIGHUP);
 	pthread_sigmask(SIG_BLOCK, &signal_mask, NULL);
-	
-	ProcessManager *pm = (ProcessManager *)process_manager;
 	
 	char *stdout_output,*stderr_output,*log_output;
 	bool workflow_terminated;
@@ -265,8 +254,8 @@ void ProcessManager::Shutdown(void)
 
 void ProcessManager::WaitForShutdown(void)
 {
-	pthread_join(forker_thread_handle,0);
-	pthread_join(gatherer_thread_handle,0);
+	forker_thread_handle.join();
+	gatherer_thread_handle.join();
 }
 
 char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno)

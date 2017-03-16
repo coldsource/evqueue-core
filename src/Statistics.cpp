@@ -37,8 +37,6 @@ using namespace std;
 
 Statistics::Statistics(void)
 {
-	pthread_mutex_init(&lock,NULL);
-	
 	instance = this;
 	
 	accepted_connections = 0;
@@ -56,97 +54,82 @@ Statistics::Statistics(void)
 
 unsigned int Statistics::GetAcceptedConnections(void)
 {
-	pthread_mutex_lock(&lock);
-	unsigned int n = accepted_connections;
-	pthread_mutex_unlock(&lock);
-	
-	return n;
+	unique_lock<mutex> llock(lock);
+	return accepted_connections;
 }
 
 void Statistics::IncAcceptedConnections(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	accepted_connections++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncInputErrors(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	input_errors++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncWorkflowQueries(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	workflow_queries++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncWorkflowStatusQueries(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	workflow_status_queries++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncWorkflowCancelQueries(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	workflow_cancel_queries++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncStatisticsQueries(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	statistics_queries++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncWorkflowExceptions(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	workflow_exceptions++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncWorkflowInstanceExecuting(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	workflow_instance_launched++;
 	workflow_instance_executing++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::DecWorkflowInstanceExecuting(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	if(workflow_instance_executing>0)
 		workflow_instance_executing--;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncWorkflowInstanceErrors(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	workflow_instance_errors++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::IncWaitingThreads(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	waiting_threads++;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::DecWaitingThreads(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	waiting_threads--;
-	pthread_mutex_unlock(&lock);
 }
 
 void Statistics::SendGlobalStatistics(QueryResponse *response)
@@ -171,6 +154,7 @@ void Statistics::SendGlobalStatistics(QueryResponse *response)
 
 void Statistics::ResetGlobalStatistics()
 {
+	unique_lock<mutex> llock(lock);
 	accepted_connections = 0;
 	input_errors = 0;
 	workflow_queries = 0;

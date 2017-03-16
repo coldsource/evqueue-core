@@ -45,7 +45,7 @@ void Users::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"Reloading users definitions");
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	clear();
 	
@@ -57,7 +57,7 @@ void Users::Reload(bool notify)
 	while(db.FetchRow())
 		add(0,db.GetField(0),new User(&db2,db.GetField(0)));
 	
-	pthread_mutex_unlock(&lock);
+	llock.unlock();
 	
 	if(notify)
 	{
@@ -77,7 +77,7 @@ bool Users::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 	
 	if(action=="list")
 	{
-		pthread_mutex_lock(&users->lock);
+		unique_lock<mutex> llock(users->lock);
 		
 		for(auto it = users->objects_name.begin(); it!=users->objects_name.end(); it++)
 		{
@@ -86,8 +86,6 @@ bool Users::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 			node.setAttribute("name",it_user.GetName());
 			node.setAttribute("profile",it_user.GetProfile());
 		}
-		
-		pthread_mutex_unlock(&users->lock);
 		
 		return true;
 	}

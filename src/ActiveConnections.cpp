@@ -29,77 +29,53 @@ ActiveConnections::ActiveConnections()
 {
 	instance = this;
 	is_shutting_down = false;
-	pthread_mutex_init(&lock, NULL);
 }
 
 void ActiveConnections::StartConnection(int s)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	if(is_shutting_down)
-	{
-		pthread_mutex_unlock(&lock);
-		
 		return;
-	}
-	
-	int *sp = new int;
-	*sp = s;
 	
 	Logger::Log(LOG_DEBUG, "Accepting new connection, current connections : %d",active_threads.size()+1);
 	
-	pthread_t thread;
-	pthread_attr_t thread_attr;
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
-	pthread_create(&thread, &thread_attr, handle_connection, sp);
-	
-	active_threads.insert(thread);
-	
-	pthread_mutex_unlock(&lock);
+	thread t(handle_connection, s);
+	active_threads[t.get_id()] = move(t);
 }
 
-void ActiveConnections::EndConnection(pthread_t thread)
+void ActiveConnections::EndConnection(thread::id thread_id)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	if(is_shutting_down)
-	{
-		pthread_mutex_unlock(&lock);
 		return;
-	}
 	
-	pthread_detach(thread);
-	active_threads.erase(thread);
+	active_threads.at(thread_id).detach();
+	active_threads.erase(thread_id);
 	
 	Logger::Log(LOG_DEBUG, "Ending connection, current connections : %d",active_threads.size());
-	
-	pthread_mutex_unlock(&lock);
 }
 
 unsigned int ActiveConnections::GetNumber()
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	int n = active_threads.size();
-	
-	pthread_mutex_unlock(&lock);
 	
 	return n;
 }
 
 void ActiveConnections::Shutdown(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	is_shutting_down = true;
-	
-	pthread_mutex_unlock(&lock);
 }
 
 void ActiveConnections::WaitForShutdown()
 {
 	// Join all threads to ensure no more connections are active
 	for(auto it=active_threads.begin();it!=active_threads.end();it++)
-		pthread_join(*it,0);
+		it->second.join();
 }

@@ -35,7 +35,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-#include <pthread.h>
 
 #include <vector>
 
@@ -53,11 +52,6 @@ WorkflowScheduler::WorkflowScheduler(): Scheduler()
 {
 	self_name = "Workflow scheduler";
 	instance = this;
-	
-	pthread_mutexattr_t wfs_mutex_attr;
-	pthread_mutexattr_init(&wfs_mutex_attr);
-	pthread_mutexattr_settype(&wfs_mutex_attr,PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&wfs_mutex,&wfs_mutex_attr);
 	
 	init();
 }
@@ -80,54 +74,42 @@ WorkflowScheduler::~WorkflowScheduler()
 
 void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, unsigned int workflow_instance_id)
 {
-	pthread_mutex_lock(&wfs_mutex);
+	unique_lock<recursive_mutex> llock(wfs_mutex);
 	
-	try
+	if(!workflow_instance_id)
 	{
-		if(!workflow_instance_id)
+		// Workflow is currently inactive, schedule it
+		ScheduledWorkflow *new_scheduled_wf = new ScheduledWorkflow;
+		new_scheduled_wf->workflow_schedule = workflow_schedule;
+		new_scheduled_wf->scheduled_at = workflow_schedule->GetNextTime();
+		
+		char buf[32];
+		struct tm time_t;
+		localtime_r(&new_scheduled_wf->scheduled_at,&time_t);
+		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
+		Logger::Log(LOG_NOTICE,"[WSID "+to_string(workflow_schedule->GetID())+"] Scheduled workflow "+workflow_schedule->GetWorkflowName()+" at "+string(buf));
+		
+		InsertEvent(new_scheduled_wf);
+	}
+	else
+	{
+		// This schedule has a running workflow instance, put it in executing instances
+		int i = lookup_wfs(workflow_schedule->GetID());
+		if(i!=-1)
 		{
-			// Workflow is currently inactive, schedule it
-			ScheduledWorkflow *new_scheduled_wf = new ScheduledWorkflow;
-			new_scheduled_wf->workflow_schedule = workflow_schedule;
-			new_scheduled_wf->scheduled_at = workflow_schedule->GetNextTime();
-			
-			char buf[32];
-			struct tm time_t;
-			localtime_r(&new_scheduled_wf->scheduled_at,&time_t);
-			strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
-			Logger::Log(LOG_NOTICE,"[WSID "+to_string(workflow_schedule->GetID())+"] Scheduled workflow "+workflow_schedule->GetWorkflowName()+" at "+string(buf));
-			
-			InsertEvent(new_scheduled_wf);
-		}
-		else
-		{
-			// This schedule has a running workflow instance, put it in executing instances
-			int i = lookup_wfs(workflow_schedule->GetID());
-			if(i!=-1)
-			{
-				wfs_wi_ids[i] = workflow_instance_id;
-				wfs_executing_instances[i] = workflow_schedule;
-			}
+			wfs_wi_ids[i] = workflow_instance_id;
+			wfs_executing_instances[i] = workflow_schedule;
 		}
 	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&wfs_mutex);
-		throw e;
-	}
-	
-	pthread_mutex_unlock(&wfs_mutex);
 }
 
 void WorkflowScheduler::ScheduledWorkflowInstanceStop(unsigned int workflow_schedule_id, bool success)
 {
-	pthread_mutex_lock(&wfs_mutex);
+	unique_lock<recursive_mutex> llock(wfs_mutex);
 	
 	int i = lookup_wfs(workflow_schedule_id);
 	if(i==-1)
 	{
-		pthread_mutex_unlock(&wfs_mutex);
-		
 		Logger::Log(LOG_NOTICE,"[WSID %d] Scheduled workflow instance stopped but workflow schedule has vanished, ignoring...",workflow_schedule_id);
 		return; // Can happen when schedule has been removed
 	}
@@ -144,8 +126,6 @@ void WorkflowScheduler::ScheduledWorkflowInstanceStop(unsigned int workflow_sche
 		workflow_schedule->SetStatus(false);
 		delete workflow_schedule;
 	}
-	
-	pthread_mutex_unlock(&wfs_mutex);
 }
 
 void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
@@ -176,12 +156,12 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			wi = new WorkflowInstance(workflow_name,workflow_schedule->GetParameters(),workflow_schedule->GetID(),workflow_schedule->GetHost().c_str(),workflow_schedule->GetUser().c_str());
 			
 			// Put instance in executing list
-			pthread_mutex_lock(&wfs_mutex);
+			wfs_mutex.lock();
 			
 			if(i!=-1)
 				wfs_wi_ids[i] = wi->GetInstanceID();
 			
-			pthread_mutex_unlock(&wfs_mutex);
+			wfs_mutex.unlock();
 			
 			Logger::Log(LOG_NOTICE,"[WID %d] Instanciated by workflow scheduler",wi->GetInstanceID());
 			
@@ -215,7 +195,7 @@ void WorkflowScheduler::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ WorkflowScheduler ] Reloading configuration from database");
 	
-	pthread_mutex_lock(&wfs_mutex);
+	unique_lock<recursive_mutex> llock(wfs_mutex);
 	
 	// Reload schedules while locked to ensure consistency
 	WorkflowSchedules::GetInstance()->Reload(notify);
@@ -265,7 +245,7 @@ void WorkflowScheduler::Reload(bool notify)
 	delete[] backup_wfs_wi_ids;
 	delete[] backup_wfs_executing_instances;
 	
-	pthread_mutex_unlock(&wfs_mutex);
+	llock.unlock();
 	
 	if(notify)
 	{
@@ -284,8 +264,8 @@ void WorkflowScheduler::SendStatus(QueryResponse *response)
 	xmldoc->getDocumentElement().appendChild(status_node);
 	
 	// We need to get all mutexes to guarantee that status dump is fully coherent
-	pthread_mutex_lock(&wfs_mutex);
-	pthread_mutex_lock(&mutex);
+	unique_lock<recursive_mutex> llock1(wfs_mutex);
+	unique_lock<mutex> llock2(scheduler_mutex);
 	
 	ScheduledWorkflow *event = (ScheduledWorkflow *)first_event;
 	while(event)
@@ -318,9 +298,6 @@ void WorkflowScheduler::SendStatus(QueryResponse *response)
 			status_node.appendChild(workflow_node);
 		}
 	}
-	
-	pthread_mutex_unlock(&mutex);
-	pthread_mutex_unlock(&wfs_mutex);
 }
 
 void WorkflowScheduler::init(void)

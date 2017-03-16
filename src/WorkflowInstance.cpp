@@ -50,14 +50,9 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <string.h>
-#include <pthread.h>
 #include <errno.h>
 
 #include <memory>
-
-extern pthread_mutex_t main_mutex;
-extern pthread_cond_t fork_lock;
-extern bool fork_locked,fork_possible;
 
 using namespace std;
 
@@ -96,12 +91,6 @@ WorkflowInstance::WorkflowInstance(void):
 	error_tasks = 0;
 
 	is_shutting_down = false;
-
-	// Initialize mutex
-	pthread_mutexattr_t lock_attr;
-	pthread_mutexattr_init(&lock_attr);
-	pthread_mutexattr_settype(&lock_attr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&lock, &lock_attr);
 }
 
 WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const string &workflow_host, const string &workflow_user):
@@ -302,7 +291,7 @@ WorkflowInstance::~WorkflowInstance()
 
 void WorkflowInstance::Start(bool *workflow_terminated)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	Logger::Log(LOG_INFO,"[WID %d] Started",workflow_instance_id);
 
@@ -322,15 +311,13 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 	*workflow_terminated = workflow_ended();
 
 	record_savepoint();
-
-	pthread_mutex_unlock(&lock);
 }
 
 void WorkflowInstance::Resume(bool *workflow_terminated)
 {
 	QueuePool *qp = QueuePool::GetInstance();
 
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	// Look for EXECUTING tasks (they might be still in execution or terminated)
 	// Also look for TERMINATED tasks because we might have to retry them
@@ -364,13 +351,11 @@ void WorkflowInstance::Resume(bool *workflow_terminated)
 
 	if(tasks_index>0)
 		record_savepoint(); // XML has been modified (tasks status update from DB)
-
-	pthread_mutex_unlock(&lock);
 }
 
 void WorkflowInstance::Migrate(bool *workflow_terminated)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	// For EXECUTING tasks : since we are migrating from another node, they will never end, fake termination
 	unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task[@status='QUEUED' or @status='EXECUTING' or @status='TERMINATED']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
@@ -406,19 +391,15 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 
 	DB db;
 	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",&config->Get("cluster.node.name"),&workflow_instance_id);
-
-	pthread_mutex_unlock(&lock);
 }
 
 void WorkflowInstance::Cancel()
 {
 	Logger::Log(LOG_NOTICE,"[WID %d] Cancelling",workflow_instance_id);
 
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	is_cancelling = true;
-
-	pthread_mutex_unlock(&lock);
 }
 
 void WorkflowInstance::Shutdown(void)
@@ -428,7 +409,7 @@ void WorkflowInstance::Shutdown(void)
 
 void WorkflowInstance::TaskRestart(DOMElement task, bool *workflow_terminated)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	enqueue_task(task);
 	retrying_tasks--;
@@ -436,13 +417,11 @@ void WorkflowInstance::TaskRestart(DOMElement task, bool *workflow_terminated)
 	*workflow_terminated = workflow_ended();
 
 	record_savepoint();
-
-	pthread_mutex_unlock(&lock);
 }
 
 bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdout_output,const char *stderr_output,const char *log_output,bool *workflow_terminated)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	task_node.setAttribute("status","TERMINATED");
 	task_node.setAttribute("retval",to_string(retval));
@@ -581,8 +560,6 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 
 	record_savepoint();
 
-	pthread_mutex_unlock(&lock);
-
 	return true;
 }
 
@@ -593,7 +570,7 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 	int parameters_pipe[2];
 	Task task;
 
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	// As we arrive here, the task is queued. Whatever comes, its status will not be queued anymore (will be executing or aborted)
 	queued_tasks--;
@@ -611,7 +588,6 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 
 		record_savepoint();
 
-		pthread_mutex_unlock(&lock);
 		return -1;
 	}
 
@@ -637,7 +613,6 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 
 		Logger::Log(LOG_WARNING,"[WID %d] Unknown task name '%s'",workflow_instance_id,task_name.c_str());
 
-		pthread_mutex_unlock(&lock);
 		return -1;
 	}
 
@@ -868,8 +843,6 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 
 	record_savepoint();
 
-	pthread_mutex_unlock(&lock);
-
 	return pid;
 }
 
@@ -880,7 +853,7 @@ void WorkflowInstance::TaskUpdateProgression(DOMElement task, int prct)
 
 void WorkflowInstance::SendStatus(QueryResponse *response, bool full_status)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	DOMDocument *status_doc = response->GetDOM();
 
@@ -894,24 +867,20 @@ void WorkflowInstance::SendStatus(QueryResponse *response, bool full_status)
 		DOMNode workflow_node = status_doc->importNode(xmldoc->getDocumentElement(),true);
 		status_doc->getDocumentElement().appendChild(workflow_node);
 	}
-
-	pthread_mutex_unlock(&lock);
 }
 
 void WorkflowInstance::RecordSavepoint()
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	record_savepoint(true);
-
-	pthread_mutex_unlock(&lock);
 }
 
 bool WorkflowInstance::KillTask(pid_t pid)
 {
 	bool found = false;
 
-	pthread_mutex_lock(&lock);
+	unique_lock<recursive_mutex> llock(lock);
 
 	// Look for EXECUTING tasks with specified PID
 	unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task[@status='EXECUTING' and @pid='"+to_string(pid)+"']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
@@ -924,8 +893,6 @@ bool WorkflowInstance::KillTask(pid_t pid)
 		kill(pid,SIGTERM);
 		found = true;
 	}
-
-	pthread_mutex_unlock(&lock);
 
 	return found;
 }

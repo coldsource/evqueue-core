@@ -28,6 +28,8 @@
 #include <time.h>
 #include <mysql/mysql.h>
 
+using namespace std;
+
 GarbageCollector::GarbageCollector()
 {
 	// Read configuration
@@ -42,27 +44,18 @@ GarbageCollector::GarbageCollector()
 	
 	is_shutting_down = false;
 	
-	pthread_mutex_init(&lock,NULL);
-	
 	if(enable)
 	{
 		// Create our thread
-		pthread_attr_t attr;
-		pthread_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-		pthread_create(&gc_thread_handle, &attr, &GarbageCollector::gc_thread,this);
-		
-		pthread_setname_np(gc_thread_handle,"garbage_collect");
+		gc_thread_handle = thread(GarbageCollector::gc_thread,this);
 	}
 }
 
 void GarbageCollector::Shutdown(void)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	is_shutting_down = true;
-	
-	pthread_mutex_unlock(&lock);
 }
 
 void GarbageCollector::WaitForShutdown(void)
@@ -70,13 +63,11 @@ void GarbageCollector::WaitForShutdown(void)
 	if(!enable)
 		return; // gc_thread not launched, nothing to wait on
 	
-	pthread_join(gc_thread_handle,0);
+	gc_thread_handle.join();
 }
 
-void *GarbageCollector::gc_thread( void *context )
+void *GarbageCollector::gc_thread(GarbageCollector *gc)
 {
-	GarbageCollector *gc = (GarbageCollector *)context;
-	
 	mysql_thread_init();
 	
 	Logger::Log(LOG_INFO,"Garbage Collector started");
@@ -85,7 +76,8 @@ void *GarbageCollector::gc_thread( void *context )
 	{
 		for(int iinterval=0;iinterval<gc->interval;iinterval++)
 		{
-			pthread_mutex_lock(&gc->lock);
+			// Wait for GC interval seconds by steps of 1 second to allow shutdown detection
+			unique_lock<mutex> llock(gc->lock);
 			
 			if(gc->is_shutting_down)
 			{
@@ -96,7 +88,7 @@ void *GarbageCollector::gc_thread( void *context )
 				return 0;
 			}
 			
-			pthread_mutex_unlock(&gc->lock);
+			llock.unlock();
 			
 			sleep(1);
 		}
@@ -111,7 +103,7 @@ void *GarbageCollector::gc_thread( void *context )
 				
 				for(int idelay=0;idelay<gc->delay;idelay++)
 				{
-					pthread_mutex_lock(&gc->lock);
+					unique_lock<mutex> llock(gc->lock);
 		
 					if(gc->is_shutting_down)
 					{
@@ -119,7 +111,7 @@ void *GarbageCollector::gc_thread( void *context )
 						return 0;
 					}
 					
-					pthread_mutex_unlock(&gc->lock);
+					llock.unlock();
 					
 					sleep(1);
 				}

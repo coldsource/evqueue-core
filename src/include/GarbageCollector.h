@@ -20,7 +20,8 @@
 #ifndef _GARBAGECOLLECTOR_H_
 #define _GARBAGECOLLECTOR_H_
 
-#include <pthread.h>
+#include <thread>
+#include <mutex>
 
 class GarbageCollector
 {
@@ -34,8 +35,8 @@ class GarbageCollector
 		
 		bool is_shutting_down;
 		
-		pthread_t gc_thread_handle;
-		pthread_mutex_t lock;
+		std::thread gc_thread_handle;
+		std::mutex lock;
 		
 	public:
 		GarbageCollector();
@@ -44,7 +45,7 @@ class GarbageCollector
 		void WaitForShutdown(void);
 	
 	private:
-		static void *gc_thread(void *context);
+		static void *gc_thread(GarbageCollector *gc);
 		
 		int purge(void);
 };

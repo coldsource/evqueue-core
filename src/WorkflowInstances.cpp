@@ -50,51 +50,40 @@ WorkflowInstances::WorkflowInstances()
 		throw Exception("WorkflowInstances","DPD: Invalid poll interval, should be greater or equal than 0");
 	
 	is_shutting_down = false;
-	
-	pthread_mutex_init(&lock, NULL);
 }
 
 void WorkflowInstances::Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	wi[workflow_instance_id] = workflow_instance;
-	
-	pthread_mutex_unlock(&lock);
 }
 
 void WorkflowInstances::Remove(unsigned int workflow_instance_id)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	wi.erase(workflow_instance_id);
 	
 	release_waiters(workflow_instance_id);
-	
-	pthread_mutex_unlock(&lock);
 }
 
 bool WorkflowInstances::Cancel(const User &user, unsigned int workflow_instance_id)
 {
 	bool found = false;
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	std::map<unsigned int,WorkflowInstance *>::iterator i;
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
 		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "kill"))
-		{
-			pthread_mutex_unlock(&lock);
 			User::InsufficientRights();
-		}
 		
 		(i->second)->Cancel();
 		found = true;
 	}
-	
-	pthread_mutex_unlock(&lock);
 	
 	return found;
 }
@@ -104,40 +93,31 @@ bool WorkflowInstances::Wait(const User &user, QueryResponse *response, unsigned
 	if(timeout<0)
 		return false;
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	// First check specified instance exists
 	std::map<unsigned int,WorkflowInstance *>::iterator i;
 	i = wi.find(workflow_instance_id);
 	if(i==wi.end())
-	{
-		pthread_mutex_unlock(&lock);
-		
 		throw Exception("WorkflowInstances","Unknown instance ID");
-	}
 	
 	if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "read"))
-	{
-		pthread_mutex_unlock(&lock);
 		User::InsufficientRights();
-	}
 	
-	pthread_cond_t *wait_cond;
+	condition_variable *wait_cond;
 	
 	// Check if a wait condition has already been set
-	std::map<unsigned int,pthread_cond_t *>::iterator j;
-	j = wi_wait.find(workflow_instance_id);
+	auto j = wi_wait.find(workflow_instance_id);
 	if(j==wi_wait.end())
 	{
 		// No one is waiting, create wait condition
-		wait_cond = new pthread_cond_t;
-		pthread_cond_init(wait_cond, NULL);
+		wait_cond = new condition_variable;
 		wi_wait[workflow_instance_id] = wait_cond;
 	}
 	else
 		wait_cond = j->second; // Another thread is already waiting, wait together
 	
-	int cond_re,re;
+	cv_status cond_re = cv_status::no_timeout,re;
 	
 	Statistics::GetInstance()->IncWaitingThreads();
 	
@@ -146,50 +126,44 @@ bool WorkflowInstances::Wait(const User &user, QueryResponse *response, unsigned
 		// Dead peer detection is disabled
 		
 		if(timeout==0)
-			cond_re = pthread_cond_wait(wait_cond, &lock);
+			wait_cond->wait(llock);
 		else
 		{
-			timespec abstime;
-			clock_gettime(CLOCK_REALTIME,&abstime);
-			abstime.tv_sec += timeout;
-			cond_re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
+			auto abstime = chrono::system_clock::now() + chrono::seconds(timeout);
+			cond_re = wait_cond->wait_until(llock,abstime);
 		}
 	}
 	else
 	{
 		// Dead peer detection is enabled, use poll_interval as timeout
 		
-		timespec abstime_end;
+		auto abstime_end = chrono::system_clock::now();
 		if(timeout!=0)
-		{
-			clock_gettime(CLOCK_REALTIME,&abstime_end);
-			abstime_end.tv_sec += timeout;
-		}
+			abstime_end += chrono::seconds(timeout);
 		
 		while(1)
 		{
 			// Determine the amount of time we will wait
-			timespec abstime;
-			clock_gettime(CLOCK_REALTIME,&abstime);
+			auto abstime = chrono::system_clock::now();
 			
 			if(timeout==0)
-				abstime.tv_sec += poll_interval;
+				abstime += chrono::seconds(poll_interval);
 			else
 			{
-				if(abstime.tv_sec+poll_interval>abstime_end.tv_sec || (abstime.tv_sec+poll_interval==abstime_end.tv_sec && abstime.tv_nsec>abstime_end.tv_nsec))
+				if(abstime+chrono::seconds(poll_interval)>abstime_end)
 					abstime = abstime_end;
 				else
-					abstime.tv_sec += poll_interval;
+					abstime += chrono::seconds(poll_interval);
 			}
 			
-			cond_re = pthread_cond_timedwait(wait_cond,&lock,&abstime);
+			cond_re = wait_cond->wait_until(llock,abstime);
 			
-			if(cond_re==0)
+			if(cond_re==cv_status::no_timeout)
 				break; // Workflow has ended, normal exit condition
 			else if(timeout!=0)
 			{
-				clock_gettime(CLOCK_REALTIME,&abstime);
-				if(abstime.tv_sec>abstime_end.tv_sec || (abstime.tv_sec==abstime_end.tv_sec && abstime.tv_nsec>=abstime_end.tv_nsec))
+				auto abstime = chrono::system_clock::now();
+				if(abstime>abstime_end)
 					break; // We have reached timeout
 			}
 			
@@ -204,41 +178,34 @@ bool WorkflowInstances::Wait(const User &user, QueryResponse *response, unsigned
 	
 	Statistics::GetInstance()->DecWaitingThreads();
 		
-	pthread_mutex_unlock(&lock);
-	
 	if(is_shutting_down)
 		return false; // Force error even if cond_re==0
-	return (cond_re==0);
+	return (cond_re==cv_status::no_timeout);
 }
 
 bool WorkflowInstances::KillTask(const User &user, unsigned int workflow_instance_id, pid_t pid)
 {
 	bool found = false;
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	std::map<unsigned int,WorkflowInstance *>::iterator i;
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
 		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "kill"))
-		{
-			pthread_mutex_unlock(&lock);
 			User::InsufficientRights();
-		}
 		
 		(i->second)->KillTask(pid);
 		found = true;
 	}
-	
-	pthread_mutex_unlock(&lock);
 	
 	return found;
 }
 
 void WorkflowInstances::SendStatus(const User &user, QueryResponse *response)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	for(std::map<unsigned int,WorkflowInstance *>::iterator i = wi.begin();i!=wi.end();++i)
 	{
@@ -247,38 +214,31 @@ void WorkflowInstances::SendStatus(const User &user, QueryResponse *response)
 		
 		i->second->SendStatus(response,false);
 	}
-	
-	pthread_mutex_unlock(&lock);
 }
 
 bool WorkflowInstances::SendStatus(const User &user, QueryResponse *response,unsigned int workflow_instance_id)
 {
 	bool found = false;
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	std::map<unsigned int,WorkflowInstance *>::iterator i;
 	i = wi.find(workflow_instance_id);
 	if(i!=wi.end())
 	{
 		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "read"))
-		{
-			pthread_mutex_unlock(&lock);
 			User::InsufficientRights();
-		}
 		
 		i->second->SendStatus(response,true);
 		found = true;
 	}
-	
-	pthread_mutex_unlock(&lock);
 	
 	return found;
 }
 
 void WorkflowInstances::RecordSavepoint()
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	is_shutting_down = true;
 	
@@ -291,8 +251,6 @@ void WorkflowInstances::RecordSavepoint()
 		
 		delete i->second;
 	}
-	
-	pthread_mutex_unlock(&lock);
 }
 
 bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -425,16 +383,13 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 void WorkflowInstances::release_waiters(unsigned int workflow_instance_id)
 {
 	// Check for waiters
-	std::map<unsigned int,pthread_cond_t *>::iterator i;
-	i = wi_wait.find(workflow_instance_id);
+	auto i = wi_wait.find(workflow_instance_id);
 	if(i==wi_wait.end())
 		return;
 	
 	// Release waiters
-	pthread_cond_t *wait_cond = i->second;
-	pthread_cond_broadcast(wait_cond);
+	i->second->notify_all();
 	
 	wi_wait.erase(workflow_instance_id);
-	pthread_cond_destroy(wait_cond);
-	delete wait_cond;
+	delete i->second;
 }

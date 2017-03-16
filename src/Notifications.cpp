@@ -52,7 +52,7 @@ void Notifications::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"Reloading notifications definitions");
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	clear();
 	
@@ -64,7 +64,7 @@ void Notifications::Reload(bool notify)
 	while(db.FetchRow())
 		add(db.GetFieldInt(0),"",new Notification(&db2,db.GetFieldInt(0)));
 	
-	pthread_mutex_unlock(&lock);
+	llock.unlock();
 	
 	if(notify)
 	{
@@ -79,7 +79,7 @@ void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflo
 	{
 		Notification notification = Get(notification_id);
 		
-		pthread_mutex_lock(&lock);
+		unique_lock<mutex> llock(lock);
 		
 		if(notification_instances.size()<max_concurrency)
 		{
@@ -91,8 +91,6 @@ void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflo
 		{
 			Logger::Log(LOG_WARNING,"Maximum concurrency reached for notifications calls, dropping call for notification '%s' of workflow instance %d",notification.GetName().c_str(),workflow_instance->GetInstanceID());
 		}
-		
-		pthread_mutex_unlock(&lock);
 	}
 	catch(Exception &e)
 	{
@@ -102,13 +100,12 @@ void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflo
 
 void Notifications::Exit(pid_t pid, int status, char retcode)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	map<pid_t,st_notification_instance>::iterator it;
 	it = notification_instances.find(pid);
 	if(it==notification_instances.end())
 	{
-		pthread_mutex_unlock(&lock);
 		Logger::Log(LOG_WARNING,"[ Notifications ] Got exit from pid %d but could not find corresponding notification",pid);
 		return;
 	}
@@ -130,8 +127,6 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 		Logger::Log(LOG_ALERT,"Notification task '%s' (pid %d) for workflow instance %d could not be forked",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
 	
 	notification_instances.erase(pid);
-	
-	pthread_mutex_unlock(&lock);
 }
 
 bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -145,7 +140,7 @@ bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 	
 	if(action=="list")
 	{
-		pthread_mutex_lock(&notifications->lock);
+		unique_lock<mutex> llock(notifications->lock);
 		
 		for(auto it = notifications->objects_id.begin(); it!=notifications->objects_id.end(); it++)
 		{
@@ -154,8 +149,6 @@ bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 			node.setAttribute("type_id",std::to_string(it->second->GetTypeID()));
 			node.setAttribute("name",it->second->GetName());
 		}
-		
-		pthread_mutex_unlock(&notifications->lock);
 		
 		return true;
 	}

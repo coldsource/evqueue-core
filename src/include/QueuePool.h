@@ -23,10 +23,11 @@
 #include <DOMElement.h>
 
 #include <sys/types.h>
-#include <pthread.h>
 
 #include <map>
 #include <string>
+#include <mutex>
+#include <condition_variable>
 
 class Queue;
 class WorkflowInstance;
@@ -49,8 +50,8 @@ class QueuePool
 		unsigned int maxpid;
 		unsigned int lasttid;
 		
-		pthread_mutex_t mutex;
-		pthread_cond_t fork_lock;
+		std::mutex lock;
+		std::condition_variable fork_lock;
 		bool fork_locked,fork_possible;
 		bool is_shutting_down;
 	

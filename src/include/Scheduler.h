@@ -21,7 +21,10 @@
 #define _SCHEDULER_H_
 
 #include <time.h>
-#include <pthread.h>
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 class Scheduler
 {
@@ -41,9 +44,9 @@ class Scheduler
 		unsigned int number_of_events;
 		Event *first_event;
 		
-		pthread_t retry_thread_handle;
-		pthread_mutex_t mutex;
-		pthread_cond_t sleep_cond;
+		std::thread retry_thread_handle;
+		std::mutex scheduler_mutex;
+		std::condition_variable sleep_cond;
 		
 		bool is_shutting_down;
 		bool thread_is_running;
@@ -59,7 +62,7 @@ class Scheduler
 		void WaitForShutdown(void);
 	
 	private:
-		static void *retry_thread(void *context);
+		static void *retry_thread(Scheduler *scheduler);
 		
 		Event *shift_event( time_t curr_time );
 		time_t get_sleep_time( time_t curr_time );

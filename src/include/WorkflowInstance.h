@@ -21,10 +21,10 @@
 #define _WORKFLOWINSTANCE_H_
 
 #include <DOMDocument.h>
-#include <pthread.h>
 
 #include <string>
 #include <vector>
+#include <mutex>
 
 class WorkflowParameters;
 class WorkflowSchedule;
@@ -62,7 +62,7 @@ class WorkflowInstance
 		
 		bool is_shutting_down;
 		
-		pthread_mutex_t lock;
+		std::recursive_mutex lock;
 	
 	public:
 		WorkflowInstance(const std::string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id = 0,const std::string &workflow_host=0, const std::string &workflow_user=0);

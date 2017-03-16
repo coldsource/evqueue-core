@@ -21,7 +21,8 @@
 #define _WORKFLOWINSTANCES_H_
 
 #include <map>
-#include <pthread.h>
+#include <mutex>
+#include <condition_variable>
 
 class WorkflowInstance;
 class QueryResponse;
@@ -36,11 +37,10 @@ class WorkflowInstances
 	
 	bool is_shutting_down;
 	
-	pthread_mutex_t lock;
+	std::mutex lock;
 	
 	std::map<unsigned int,WorkflowInstance *> wi;
-	
-	std::map<unsigned int,pthread_cond_t *> wi_wait;
+	std::map<unsigned int,std::condition_variable *> wi_wait;
 	
 	public:
 		WorkflowInstances();

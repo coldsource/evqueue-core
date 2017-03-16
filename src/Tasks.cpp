@@ -38,8 +38,6 @@ Tasks::Tasks():APIObjectList()
 {
 	instance = this;
 	
-	pthread_mutex_init(&lock, NULL);
-	
 	Reload(false);
 }
 
@@ -51,7 +49,7 @@ void Tasks::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"Reloading tasks definitions");
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	// Clean current tasks
 	clear();
@@ -64,8 +62,6 @@ void Tasks::Reload(bool notify)
 	while(db.FetchRow())
 		add(db.GetFieldInt(0),db.GetField(1),new Task(&db2,db.GetField(1)));
 	
-	pthread_mutex_unlock(&lock);
-	
 	if(notify)
 	{
 		// Notify cluster
@@ -77,59 +73,50 @@ void Tasks::SyncBinaries(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"[ Tasks ] Syncing binaries");
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
+	DB db;
+	
+	// Load tasks from database
+	db.Query("SELECT task_binary, task_binary_content FROM t_task WHERE task_binary_content IS NOT NULL");
+	
+	struct sha1_ctx ctx;
+	char db_hash[20];
+	string file_hash;
+	
+	while(db.FetchRow())
 	{
-		DB db;
+		// Compute database SHA1 hash
+		sha1_init_ctx(&ctx);
+		sha1_process_bytes(db.GetField(1).c_str(),db.GetFieldLength(1),&ctx);
+		sha1_finish_ctx(&ctx,db_hash);
 		
-		// Load tasks from database
-		db.Query("SELECT task_binary, task_binary_content FROM t_task WHERE task_binary_content IS NOT NULL");
-		
-		struct sha1_ctx ctx;
-		char db_hash[20];
-		string file_hash;
-		
-		while(db.FetchRow())
+		// Compute file SHA1 hash
+		try
 		{
-			// Compute database SHA1 hash
-			sha1_init_ctx(&ctx);
-			sha1_process_bytes(db.GetField(1).c_str(),db.GetFieldLength(1),&ctx);
-			sha1_finish_ctx(&ctx,db_hash);
-			
-			// Compute file SHA1 hash
-			try
-			{
-				Task::GetFileHash(db.GetField(0),file_hash);
-			}
-			catch(Exception &e)
-			{
-				Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" was not found creating it");
-				
-				Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
-				continue;
-			}
-			
-			if(memcmp(file_hash.c_str(),db_hash,20)==0)
-			{
-				Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" hash matches DB, skipping");
-				continue;
-			}
-			
-			Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" hash does not match DB, replacing");
-			
-			Task::RemoveFile(db.GetField(0));
-			Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+			Task::GetFileHash(db.GetField(0),file_hash);
 		}
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
+		catch(Exception &e)
+		{
+			Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" was not found creating it");
+			
+			Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+			continue;
+		}
 		
-		throw e;
+		if(memcmp(file_hash.c_str(),db_hash,20)==0)
+		{
+			Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" hash matches DB, skipping");
+			continue;
+		}
+		
+		Logger::Log(LOG_NOTICE,"[ Tasks ] Task "+db.GetField(0)+" hash does not match DB, replacing");
+		
+		Task::RemoveFile(db.GetField(0));
+		Task::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 	}
 	
-	pthread_mutex_unlock(&lock);
+	llock.unlock();
 	
 	if(notify)
 	{
@@ -149,7 +136,7 @@ bool Tasks::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 	
 	if(action=="list")
 	{
-		pthread_mutex_lock(&tasks->lock);
+		unique_lock<mutex> llock(tasks->lock);
 		
 		for(auto it = tasks->objects_name.begin(); it!=tasks->objects_name.end(); it++)
 		{
@@ -166,8 +153,6 @@ bool Tasks::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 			node.setAttribute("modified",task.GetIsModified()?"1":"0");
 			node.setAttribute("lastcommit",task.GetLastCommit());
 		}
-		
-		pthread_mutex_unlock(&tasks->lock);
 		
 		return true;
 	}

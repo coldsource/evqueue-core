@@ -28,67 +28,53 @@ Sockets *Sockets::instance = 0;
 
 Sockets::Sockets()
 {
-	pthread_mutex_init(&lock, NULL);
-	
 	instance = this;
 }
 
 void Sockets::RegisterSocket(int s)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	sockets.insert(s);
-	
-	pthread_mutex_unlock(&lock);
 }
 
 void Sockets::UnregisterSocket(int s)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	sockets.erase(s);
 	close(s);
-	
-	pthread_mutex_unlock(&lock);
 }
 
 void Sockets::CloseSockets()
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	for(set<int>::iterator it=sockets.begin();it!=sockets.end();it++)
 		close(*it);
-	
-	pthread_mutex_unlock(&lock);
 }
 
 void Sockets::ShutdownSockets()
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	for(set<int>::iterator it=sockets.begin();it!=sockets.end();it++)
 		shutdown(*it,SHUT_RDWR);
-	
-	pthread_mutex_unlock(&lock);
 }
 
 unsigned int Sockets::GetNumber()
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	int n = sockets.size();
-	
-	pthread_mutex_unlock(&lock);
-	
-	return n;
+	return sockets.size();
 }
 
 void Sockets::Lock()
 {
-	pthread_mutex_lock(&lock);
+	lock.lock();
 }
 
 void Sockets::Unlock()
 {
-	pthread_mutex_unlock(&lock);
+	lock.unlock();
 }

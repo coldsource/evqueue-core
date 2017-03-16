@@ -48,7 +48,7 @@ void RetrySchedules::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"Reloading schedules definitions");
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	// Clean current tasks
 	clear();
@@ -61,7 +61,7 @@ void RetrySchedules::Reload(bool notify)
 	while(db.FetchRow())
 		add(db.GetFieldInt(0),db.GetField(1),new RetrySchedule(&db2,db.GetField(1)));
 	
-	pthread_mutex_unlock(&lock);
+	llock.unlock();
 	
 	if(notify)
 	{
@@ -81,7 +81,7 @@ bool RetrySchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh,
 	
 	if(action=="list")
 	{
-		pthread_mutex_lock(&retry_schedules->lock);
+		unique_lock<mutex> llock(retry_schedules->lock);
 		
 		for(auto it = retry_schedules->objects_name.begin(); it!=retry_schedules->objects_name.end(); it++)
 		{
@@ -90,8 +90,6 @@ bool RetrySchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh,
 			node.setAttribute("id",to_string(retry_schedule.GetID()));
 			node.setAttribute("name",retry_schedule.GetName());
 		}
-		
-		pthread_mutex_unlock(&retry_schedules->lock);
 		
 		return true;
 	}

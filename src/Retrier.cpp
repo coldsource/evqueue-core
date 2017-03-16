@@ -26,16 +26,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-#include <pthread.h>
 
 Retrier *Retrier::instance = 0;
+
+using namespace std;
 
 Retrier::Retrier(): Scheduler()
 {
 	self_name = "Retrier";
 	instance = this;
-	
-	pthread_mutex_init(&retrier_lock, NULL);
 }
 
 void Retrier::InsertTask(WorkflowInstance *workflow_instance,DOMElement task, time_t retry_at)
@@ -52,13 +51,11 @@ void Retrier::FlushWorkflowInstance(unsigned int workflow_instance_id)
 {
 	Logger::Log(LOG_NOTICE,"%s : Flushing tasks of workflow instance %d",self_name,workflow_instance_id);
 	
-	pthread_mutex_lock(&retrier_lock);
+	unique_lock<mutex> llock(retrier_lock);
 	
 	filter_workflow_instance_id = workflow_instance_id;
 	
 	Flush(true);
-	
-	pthread_mutex_unlock(&retrier_lock);
 }
 
 void Retrier::event_removed(Event *e, event_reasons reason)

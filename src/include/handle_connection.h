@@ -20,6 +20,6 @@
 #ifndef _HANDLE_CONNECTION_H_
 #define _HANDLE_CONNECTION_H_
 
-void* handle_connection( void *sp );
+void handle_connection(int s);
 
 #endif

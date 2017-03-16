@@ -49,7 +49,7 @@ void Workflows::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"Reloading workflows definitions");
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	clear();
 	
@@ -60,7 +60,8 @@ void Workflows::Reload(bool notify)
 	
 	while(db.FetchRow())
 		add(db.GetFieldInt(0),db.GetField(1),new Workflow(&db2,db.GetField(1)));
-	pthread_mutex_unlock(&lock);
+	
+	llock.unlock();
 	
 	if(notify)
 	{
@@ -77,7 +78,7 @@ bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 	
 	if(action=="list")
 	{
-		pthread_mutex_lock(&workflows->lock);
+		unique_lock<mutex> llock(workflows->lock);
 		
 		for(auto it = workflows->objects_name.begin(); it!=workflows->objects_name.end(); it++)
 		{
@@ -97,8 +98,6 @@ bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			node.setAttribute("lastcommit",workflow.GetLastCommit());
 			node.setAttribute("modified",workflow.GetIsModified()?"1":"0");
 		}
-		
-		pthread_mutex_unlock(&workflows->lock);
 		
 		return true;
 	}

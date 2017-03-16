@@ -23,8 +23,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-#include <pthread.h>
 #include <mysql/mysql.h>
+
+#include <chrono>
+#include <atomic>
+
+using namespace std;
 
 Scheduler::Scheduler()
 {
@@ -35,9 +39,6 @@ Scheduler::Scheduler()
 	
 	is_shutting_down = false;
 	thread_is_running = false;
-	
-	pthread_mutex_init(&mutex,NULL);
-	pthread_cond_init(&sleep_cond,NULL);
 }
 
 Scheduler::~Scheduler()
@@ -56,7 +57,7 @@ Scheduler::~Scheduler()
 
 void Scheduler::InsertEvent(Event *new_event)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(scheduler_mutex);
 	
 	bool wake_up_retry_thread = false;
 	
@@ -71,11 +72,7 @@ void Scheduler::InsertEvent(Event *new_event)
 		{
 			thread_is_running = true;
 			
-			pthread_attr_t attr;
-			pthread_attr_init(&attr);
-			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-			pthread_create(&retry_thread_handle, &attr, &Scheduler::retry_thread,this);
-			pthread_setname_np(retry_thread_handle,self_name);
+			retry_thread_handle = thread(Scheduler::retry_thread,this);
 		}
 	}
 	else if (new_event->scheduled_at < first_event->scheduled_at)
@@ -96,21 +93,17 @@ void Scheduler::InsertEvent(Event *new_event)
 	number_of_events++;
 	
 	if (wake_up_retry_thread)
-		pthread_cond_signal(&sleep_cond); // Wake up retry_thread because a new task starts sooner
-	
-	pthread_mutex_unlock(&mutex);
+		sleep_cond.notify_one(); // Wake up retry_thread because a new task starts sooner
 }
 
 void Scheduler::Flush(bool use_filter)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(scheduler_mutex);
 	
 	bool wake_up_retry_thread = false;
 	
 	if(number_of_events==0)
 	{
-		pthread_mutex_unlock(&mutex);
-		
 		Logger::Log(LOG_NOTICE,"%s is empty",self_name);
 		return; // Nothing to do
 	}
@@ -137,23 +130,19 @@ void Scheduler::Flush(bool use_filter)
 	}
 	
 	if(wake_up_retry_thread)
-		pthread_cond_signal(&sleep_cond); // Release retry_thread if it is locked
-	
-	pthread_mutex_unlock(&mutex);
+		sleep_cond.notify_one();  // Release retry_thread if it is locked
 	
 	Logger::Log(LOG_NOTICE,"%s flushed",self_name);
 }
 
 void Scheduler::Shutdown(void)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(scheduler_mutex);
 	
 	is_shutting_down = true;
 	
 	if(number_of_events>0)
-		pthread_cond_signal(&sleep_cond); // Release retry_thread if it is locked
-	
-	pthread_mutex_unlock(&mutex);
+		sleep_cond.notify_one(); // Release retry_thread if it is locked
 }
 
 void Scheduler::WaitForShutdown(void)
@@ -161,12 +150,11 @@ void Scheduler::WaitForShutdown(void)
 	if(number_of_events==0)
 		return; // retry_thread not launched, nothing to wait on
 	
-	pthread_join(retry_thread_handle,0);
+	retry_thread_handle.join();
 }
 
-void *Scheduler::retry_thread( void *context )
+void *Scheduler::retry_thread(Scheduler *scheduler)
 {
-	Scheduler *scheduler = (Scheduler *)context;
 	Event *event;
 	
 	mysql_thread_init();
@@ -182,14 +170,13 @@ void *Scheduler::retry_thread( void *context )
 			scheduler->event_removed(event,ALARM);
 		}
 		
-		pthread_mutex_lock(&scheduler->mutex);
+		unique_lock<mutex> llock(scheduler->scheduler_mutex);
 		
 		if (scheduler->number_of_events == 0)
 		{
 			scheduler->thread_is_running = false;
 			
-			pthread_mutex_unlock(&scheduler->mutex);
-			pthread_detach(scheduler->retry_thread_handle); // We are not in shutdown status, we won't be joined
+			scheduler->retry_thread_handle.detach(); // We are not in shutdown status, we won't be joined
 			
 			mysql_thread_end();
 			
@@ -200,9 +187,7 @@ void *Scheduler::retry_thread( void *context )
 		{
 			time_t time_to_sleep = scheduler->get_sleep_time(curr_time);
 			if (time_to_sleep > 0) {
-				timespec abstime;
-				clock_gettime(CLOCK_REALTIME,&abstime);
-				abstime.tv_sec += time_to_sleep;
+				auto abstime = chrono::system_clock::now() + chrono::seconds(time_to_sleep);
 				
 				if(scheduler->is_shutting_down)
 				{
@@ -213,7 +198,7 @@ void *Scheduler::retry_thread( void *context )
 					return 0; // Shutdown in progress
 				}
 				
-				pthread_cond_timedwait(&scheduler->sleep_cond,&scheduler->mutex,&abstime);
+				scheduler->sleep_cond.wait_until(llock,abstime);
 				
 				if(scheduler->is_shutting_down)
 				{
@@ -223,8 +208,6 @@ void *Scheduler::retry_thread( void *context )
 					
 					return 0; // Shutdown in progress
 				}
-				
-				pthread_mutex_unlock(&scheduler->mutex);
 			}
 		}
 	}
@@ -237,7 +220,7 @@ bool Scheduler::flush_filter(Scheduler::Event *e)
 
 Scheduler::Event *Scheduler::shift_event(time_t curr_time)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(scheduler_mutex);
 	
 	if ( first_event != 0 && first_event->scheduled_at <= curr_time )
 	{
@@ -245,11 +228,9 @@ Scheduler::Event *Scheduler::shift_event(time_t curr_time)
 		first_event = first_event->next_event;
 		number_of_events--;
 		
-		pthread_mutex_unlock(&mutex);
 		return event;
 	}
 	
-	pthread_mutex_unlock(&mutex);
 	return 0;
 }
 

@@ -21,9 +21,9 @@
 #define _PROCESS_MANAGER_H_
 
 #include <sys/types.h>
-#include <pthread.h>
 
 #include <string>
+#include <thread>
 
 class ProcessManager
 {
@@ -35,16 +35,16 @@ class ProcessManager
 		
 		static volatile bool is_shutting_down;
 		
-		pthread_t forker_thread_handle;
-		pthread_t gatherer_thread_handle;
+		std::thread forker_thread_handle;
+		std::thread gatherer_thread_handle;
 		
 	public:
 		ProcessManager();
 		~ProcessManager();
 		
 		pid_t ExecuteTask(const char *binary);
-		static void *Fork(void *context);
-		static void *Gather(void *context);
+		static void *Fork(ProcessManager *pm);
+		static void *Gather(ProcessManager *pm);
 		
 		void Shutdown(void);
 		void WaitForShutdown(void);

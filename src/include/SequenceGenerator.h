@@ -20,12 +20,12 @@
 #ifndef _SEQUENCEGENERATOR_H_
 #define _SEQUENCEGENERATOR_H_
 
-#include <pthread.h>
+#include <mutex>
 
 class SequenceGenerator
 {
 	private:
-		pthread_mutex_t lock;
+		std::mutex lock;
 		unsigned int seq;
 		
 		static SequenceGenerator* instance;

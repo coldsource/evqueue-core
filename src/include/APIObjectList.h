@@ -22,16 +22,15 @@
 
 #include <Exception.h>
 
-#include <pthread.h>
-
 #include <string>
 #include <map>
+#include <mutex>
 
 template<typename APIObjectType>
 class APIObjectList
 {
 	protected:
-		pthread_mutex_t lock;
+		std::mutex lock;
 		
 		std::map<unsigned int,APIObjectType *> objects_id;
 		std::map<std::string,APIObjectType *> objects_name;
@@ -68,7 +67,7 @@ class APIObjectList
 		
 		APIObjectList()
 		{
-			pthread_mutex_init(&lock, NULL);
+			;
 		}
 		
 		~APIObjectList()
@@ -78,72 +77,48 @@ class APIObjectList
 		
 		bool Exists(unsigned int id)
 		{
-			pthread_mutex_lock(&lock);
+			std::unique_lock<std::mutex> llock(lock);
 			
 			auto it = objects_id.find(id);
 			if(it==objects_id.end())
-			{
-				pthread_mutex_unlock(&lock);
-				
 				return false;
-			}
-			
-			pthread_mutex_unlock(&lock);
 			
 			return true;
 		}
 		
 		bool Exists(const std::string &name)
 		{
-			pthread_mutex_lock(&lock);
+			std::unique_lock<std::mutex> llock(lock);
 			
 			auto it = objects_name.find(name);
 			if(it==objects_name.end())
-			{
-				pthread_mutex_unlock(&lock);
-				
 				return false;
-			}
-			
-			pthread_mutex_unlock(&lock);
 			
 			return true;
 		}
 		
 		const APIObjectType Get(unsigned int id)
 		{
-			pthread_mutex_lock(&lock);
+			std::unique_lock<std::mutex> llock(lock);
 			
 			auto it = objects_id.find(id);
 			if(it==objects_id.end())
-			{
-				pthread_mutex_unlock(&lock);
-				
 				throw Exception("API","Unknown object ID : " + std::to_string(id));
-			}
 			
 			APIObjectType object = *it->second;
-			
-			pthread_mutex_unlock(&lock);
 			
 			return object;
 		}
 		
 		const APIObjectType Get(const std::string &name)
 		{
-			pthread_mutex_lock(&lock);
+			std::unique_lock<std::mutex> llock(lock);
 			
 			auto it = objects_name.find(name);
 			if(it==objects_name.end())
-			{
-				pthread_mutex_unlock(&lock);
-				
 				throw Exception("API","Unknown object name : " + name);
-			}
 			
 			APIObjectType object = *it->second;
-			
-			pthread_mutex_unlock(&lock);
 			
 			return object;
 		}

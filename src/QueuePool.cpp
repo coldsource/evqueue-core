@@ -77,12 +77,10 @@ QueuePool::QueuePool(void)
 	
 	is_shutting_down = false;
 	
-	pthread_mutex_init(&mutex,NULL);
-	pthread_cond_init(&fork_lock,NULL);
 	
-	pthread_mutex_lock(&mutex);
+	lock.lock();
 	fork_possible = !IsLocked();
-	pthread_mutex_unlock(&mutex);
+	lock.unlock();
 	
 	fork_locked = false;
 	
@@ -106,15 +104,12 @@ QueuePool::~QueuePool(void)
 
 bool QueuePool::EnqueueTask(const string &queue_name,const string &queue_host,WorkflowInstance *workflow_instance,DOMElement task)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	Queue *q = get_queue(queue_name);
 	
 	if(!q)
-	{
-		pthread_mutex_unlock(&mutex);
 		return false;
-	}
 	
 	if(queue_host=="")
 		q->EnqueueTask(workflow_instance,task);
@@ -134,8 +129,7 @@ bool QueuePool::EnqueueTask(const string &queue_name,const string &queue_host,Wo
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
-		pthread_cond_signal(&fork_lock);
-	pthread_mutex_unlock(&mutex);
+		fork_lock.notify_one();
 	
 	return true;
 }
@@ -145,23 +139,23 @@ bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_ins
 	int i;
 	unsigned int task_instance_id;
 	
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	if(is_shutting_down)
 	{
-		pthread_mutex_unlock(&mutex); // Shutdown in progress juste exit
+		// Shutdown in progress just exit
 		return false;
 	}
 	
 	if(!fork_possible)
 	{
 		fork_locked = true;
-		pthread_cond_wait(&fork_lock,&mutex);
+		fork_lock.wait(llock);
 	}
 	
 	if(is_shutting_down)
 	{
-		pthread_mutex_unlock(&mutex); // Shutdown in progress juste exit
+		// Shutdown in progress juste exit
 		return false;
 	}
 	
@@ -176,13 +170,9 @@ bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_ins
 			
 			fork_possible = !IsLocked();
 		
-			pthread_mutex_unlock(&mutex);
-			
 			return true;
 		}
 	}
-	
-	pthread_mutex_unlock(&mutex);
 	
 	return false;
 }
@@ -194,7 +184,7 @@ pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMElement task
 	if(!q)
 		return 0;
 	
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	if(task_id==0)
 	{
@@ -208,7 +198,6 @@ pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMElement task
 		{
 			Logger::Log(LOG_ERR,"Could not allocate task ID, maxpid (%d) is reached",maxpid);
 			
-			pthread_mutex_unlock(&mutex);
 			return 0; // Could not allocate tid
 		}
 	}
@@ -221,21 +210,18 @@ pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMElement task
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
-		pthread_cond_signal(&fork_lock);
-	
-	pthread_mutex_unlock(&mutex);
+		fork_lock.notify_one();
 	
 	return task_id;
 }
 
 bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMElement *p_task)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	if(tid_workflow_instance[task_id]==0)
 	{
 		// Task not found
-		pthread_mutex_unlock(&mutex);
 		return false;
 	}
 	
@@ -260,35 +246,30 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
-		pthread_cond_signal(&fork_lock);
-	
-	pthread_mutex_unlock(&mutex);
+		fork_lock.notify_one();
 	
 	return true;
 }
 
 bool QueuePool::GetTask(pid_t task_id,WorkflowInstance **p_workflow_instance,DOMElement *p_task)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	if(tid_workflow_instance[task_id]==0)
 	{
 		// Task not found
-		pthread_mutex_unlock(&mutex);
 		return false;
 	}
 	
 	*p_workflow_instance = tid_workflow_instance[task_id];
 	*p_task = tid_task[task_id];
 	
-	pthread_mutex_unlock(&mutex);
-	
 	return true;
 }
 
 bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	map<string,Queue *>::iterator it;
 	for(it=queues_name.begin();it!=queues_name.end();++it)
@@ -296,9 +277,7 @@ bool QueuePool::CancelTasks(unsigned int workflow_instance_id)
 	
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
-		pthread_cond_signal(&fork_lock);
-	
-	pthread_mutex_unlock(&mutex);
+		fork_lock.notify_one();
 	
 	return true;
 }
@@ -309,7 +288,7 @@ void QueuePool::Reload(bool notify)
 	
 	Logger::Log(LOG_NOTICE,"Reloading queues definitions");
 	
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	// First, remove empty queues and mark others as to be removed
 	for(auto it=queues_name.cbegin();it!=queues_name.cend();)
@@ -349,9 +328,9 @@ void QueuePool::Reload(bool notify)
 	// Update locked status as concurrencies might have changed
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
-		pthread_cond_signal(&fork_lock);
+		fork_lock.notify_one();
 	
-	pthread_mutex_unlock(&mutex);
+	llock.unlock();
 	
 	if(notify)
 	{
@@ -371,19 +350,17 @@ bool QueuePool::IsLocked(void)
 
 void QueuePool::Shutdown(void)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	is_shutting_down = true;
 	
 	if(fork_locked)
-		pthread_cond_signal(&fork_lock);
-	
-	pthread_mutex_unlock(&mutex);
+		fork_lock.notify_one();
 }
 
 void QueuePool::SendStatistics(QueryResponse *response)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	DOMDocument *xmldoc = response->GetDOM();
 	
@@ -401,46 +378,32 @@ void QueuePool::SendStatistics(QueryResponse *response)
 		
 		statistics_node.appendChild(queue_node);
 	}
-	
-	pthread_mutex_unlock(&mutex);
 }
 
 void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
 {
 	QueuePool *qp = QueuePool::GetInstance();
 	
-	pthread_mutex_lock(&qp->mutex);
+	unique_lock<mutex> llock(qp->lock);
 	
 	Queue *q = qp->get_queue(id);
 	if(!q)
-	{
-		pthread_mutex_unlock(&qp->mutex);
-		
 		throw Exception("QueuePool","Unable to find queue");
-	}
 	
 	DOMElement node = (DOMElement)response->AppendXML("<queue />");
 	node.setAttribute("id",to_string(q->GetID()));
 	node.setAttribute("name",q->GetName());
 	node.setAttribute("concurrency",to_string(q->GetConcurrency()));
 	node.setAttribute("scheduler",q->GetWantedScheduler());
-	
-	pthread_mutex_unlock(&qp->mutex);
 }
 
 bool QueuePool::Exists(unsigned int id)
 {
-	pthread_mutex_lock(&mutex);
+	unique_lock<mutex> llock(lock);
 	
 	Queue *q = get_queue(id);
 	if(!q)
-	{
-		pthread_mutex_unlock(&mutex);
-		
 		return false;
-	}
-	
-	pthread_mutex_unlock(&mutex);
 	
 	return true;
 }
@@ -456,7 +419,7 @@ bool QueuePool::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 	
 	if(action=="list")
 	{
-		pthread_mutex_lock(&qp->mutex);
+		unique_lock<mutex> llock(qp->lock);
 		
 		for(auto it = qp->queues_name.begin(); it!=qp->queues_name.end(); it++)
 		{
@@ -466,8 +429,6 @@ bool QueuePool::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			node.setAttribute("concurrency",to_string(it->second->GetConcurrency()));
 			node.setAttribute("scheduler",it->second->GetWantedScheduler());
 		}
-		
-		pthread_mutex_unlock(&qp->mutex);
 		
 		return true;
 	}

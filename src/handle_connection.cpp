@@ -43,11 +43,8 @@
 
 using namespace std;
 
-void *handle_connection(void *sp)
+void handle_connection(int s)
 {
-	int s  = *((int *)sp);
-	delete (int *)sp;
-	
 	// Configure socket
 	Configuration *config = Configuration::GetInstance();
 	struct timeval tv;
@@ -148,9 +145,9 @@ void *handle_connection(void *sp)
 		mysql_thread_end();
 		
 		// Notify that we exit
-		ActiveConnections::GetInstance()->EndConnection(pthread_self());
+		ActiveConnections::GetInstance()->EndConnection(this_thread::get_id());
 		
-		return 0;
+		return;
 		
 	}
 	
@@ -158,7 +155,7 @@ void *handle_connection(void *sp)
 	mysql_thread_end();
 	
 	// Notify that we exit
-	ActiveConnections::GetInstance()->EndConnection(pthread_self());
+	ActiveConnections::GetInstance()->EndConnection(this_thread::get_id());
 	
-	return 0;
+	return;
 }

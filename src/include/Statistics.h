@@ -20,7 +20,7 @@
 #ifndef _STATISTICS_H_
 #define _STATISTICS_H_
 
-#include <pthread.h>
+#include <mutex>
 
 class SocketQuerySAX2Handler;
 class QueryResponse;
@@ -43,7 +43,7 @@ class Statistics
 		unsigned int workflow_instance_errors;
 		unsigned int waiting_threads;
 		
-		pthread_mutex_t lock;
+		std::mutex lock;
 	
 	public:
 		Statistics(void);

@@ -49,8 +49,6 @@ Git *Git::instance = 0;
 
 Git::Git()
 {
-	pthread_mutex_init(&lock, NULL);
-	
 	Configuration *config = Configuration::GetInstance();
 	
 	repo_path = config->Get("git.repository");
@@ -72,304 +70,184 @@ Git::~Git()
 
 void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		// Get workflow form its ID
-		Workflow workflow = Workflows::GetInstance()->Get(name);
-		
-		// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
-		string db_lastcommit = workflow.GetLastCommit();
-		
-		// Prepare XML
-		string workflow_xml = workflow.SaveToXML();
-		
-		// Write file to repo
-		string commit_id = save_file(workflows_subdirectory+"/"+name+".xml", workflow_xml, db_lastcommit, commit_log, force);
-		
-		// Update workflow 'lastcommit' to new commit and reload configuration
-		workflow.SetLastCommit(commit_id);
-		Workflows::GetInstance()->Reload();
-	}
-	catch(Exception  &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	// Get workflow form its ID
+	Workflow workflow = Workflows::GetInstance()->Get(name);
 	
-	pthread_mutex_unlock(&lock);
+	// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
+	string db_lastcommit = workflow.GetLastCommit();
+	
+	// Prepare XML
+	string workflow_xml = workflow.SaveToXML();
+	
+	// Write file to repo
+	string commit_id = save_file(workflows_subdirectory+"/"+name+".xml", workflow_xml, db_lastcommit, commit_log, force);
+	
+	// Update workflow 'lastcommit' to new commit and reload configuration
+	workflow.SetLastCommit(commit_id);
+	Workflows::GetInstance()->Reload();
 }
 
 void Git::SaveTask(const string &name, const string &commit_log, bool force)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		// Get workflow form its ID
-		Task task = Tasks::GetInstance()->Get(name);
-		
-		// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
-		string db_lastcommit = task.GetLastCommit();
-		
-		// Prepare XML
-		string task_xml = task.SaveToXML();
-		
-		// Write file to repo
-		string commit_id = save_file(tasks_subdirectory+"/"+name+".xml", task_xml, db_lastcommit, commit_log, force);
-		
-		// Update workflow 'lastcommit' to new commit and reload configuration
-		task.SetLastCommit(commit_id);
-		Tasks::GetInstance()->Reload();
-	}
-	catch(Exception  &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	// Get workflow form its ID
+	Task task = Tasks::GetInstance()->Get(name);
 	
-	pthread_mutex_unlock(&lock);
+	// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
+	string db_lastcommit = task.GetLastCommit();
+	
+	// Prepare XML
+	string task_xml = task.SaveToXML();
+	
+	// Write file to repo
+	string commit_id = save_file(tasks_subdirectory+"/"+name+".xml", task_xml, db_lastcommit, commit_log, force);
+	
+	// Update workflow 'lastcommit' to new commit and reload configuration
+	task.SetLastCommit(commit_id);
+	Tasks::GetInstance()->Reload();
 }
 
 void Git::LoadWorkflow(const string &name)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		string filename = workflows_subdirectory+"/"+name+".xml";
-		
-		// Load XML from file
-		unique_ptr<DOMDocument> xmldoc(load_file(filename));
-		
-		// Read repository lastcommit
-		string repo_lastcommit = repo->GetFileLastCommit(filename);
-		if(!repo_lastcommit.length())
-			throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
-		
-		// Create/Edit workflow
-		Workflow::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	string filename = workflows_subdirectory+"/"+name+".xml";
 	
-	pthread_mutex_unlock(&lock);
+	// Load XML from file
+	unique_ptr<DOMDocument> xmldoc(load_file(filename));
+	
+	// Read repository lastcommit
+	string repo_lastcommit = repo->GetFileLastCommit(filename);
+	if(!repo_lastcommit.length())
+		throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
+	
+	// Create/Edit workflow
+	Workflow::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
 }
 
 void Git::LoadTask(const string &name)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		string filename = tasks_subdirectory+"/"+name+".xml";
-		
-		// Load XML from file
-		unique_ptr<DOMDocument> xmldoc(load_file(filename));
-		
-		// Read repository lastcommit
-		string repo_lastcommit = repo->GetFileLastCommit(filename);
-		if(!repo_lastcommit.length())
-			throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
-		
-		// Create/Edit workflow
-		Task::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	string filename = tasks_subdirectory+"/"+name+".xml";
 	
-	pthread_mutex_unlock(&lock);
+	// Load XML from file
+	unique_ptr<DOMDocument> xmldoc(load_file(filename));
+	
+	// Read repository lastcommit
+	string repo_lastcommit = repo->GetFileLastCommit(filename);
+	if(!repo_lastcommit.length())
+		throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
+	
+	// Create/Edit workflow
+	Task::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
 }
 
 void Git::GetWorkflow(const string &name, QueryResponse *response)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		string filename = workflows_subdirectory+"/"+name+".xml";
-		
-		// Load XML from file
-		unique_ptr<DOMDocument> xmldoc(load_file(filename));
-		
-		DOMDocument *response_xmldoc = response->GetDOM();
-		DOMNode node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
-		response_xmldoc->getDocumentElement().appendChild(node);
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	string filename = workflows_subdirectory+"/"+name+".xml";
 	
-	pthread_mutex_unlock(&lock);
+	// Load XML from file
+	unique_ptr<DOMDocument> xmldoc(load_file(filename));
+	
+	DOMDocument *response_xmldoc = response->GetDOM();
+	DOMNode node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
+	response_xmldoc->getDocumentElement().appendChild(node);
 }
 
 void Git::GetTask(const string &name, QueryResponse *response)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
+
+	string filename = tasks_subdirectory+"/"+name+".xml";
 	
-	try
-	{
-		string filename = tasks_subdirectory+"/"+name+".xml";
-		
-		// Load XML from file
-		unique_ptr<DOMDocument> xmldoc(load_file(filename));
-		
-		DOMDocument *response_xmldoc = response->GetDOM();
-		DOMNode node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
-		response_xmldoc->getDocumentElement().appendChild(node);
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	// Load XML from file
+	unique_ptr<DOMDocument> xmldoc(load_file(filename));
 	
-	pthread_mutex_unlock(&lock);
+	DOMDocument *response_xmldoc = response->GetDOM();
+	DOMNode node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
+	response_xmldoc->getDocumentElement().appendChild(node);
 }
 
 string Git::GetWorkflowHash(const string &name)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	string hash = get_file_hash(workflows_subdirectory+"/"+name+".xml");
-	
-	pthread_mutex_unlock(&lock);
-	
-	return hash;
-	
+	return get_file_hash(workflows_subdirectory+"/"+name+".xml");
 }
 
 string Git::GetTaskHash(const string &name)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	string hash = get_file_hash(tasks_subdirectory+"/"+name+".xml");
-	
-	pthread_mutex_unlock(&lock);
-	
-	return hash;
-	
+	return get_file_hash(tasks_subdirectory+"/"+name+".xml");
 }
 
 void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		string filename = workflows_subdirectory+"/"+name+".xml";
-		string full_filename = repo_path+"/"+filename;
-		
-		repo->Pull();
-		repo->RemoveFile(filename);
-		repo->Commit(commit_log);
-		repo->Push();
-		
-		if(unlink(full_filename.c_str())!=0)
-			throw Exception("Git","Unable to remove file "+full_filename);
-		
-		if(Workflows::GetInstance()->Exists(name))
-		{
-			Workflow workflow = Workflows::GetInstance()->Get(name);
-			workflow.SetLastCommit("");
-			
-			Workflows::GetInstance()->Reload();
-		}
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	string filename = workflows_subdirectory+"/"+name+".xml";
+	string full_filename = repo_path+"/"+filename;
 	
-	pthread_mutex_unlock(&lock);
+	repo->Pull();
+	repo->RemoveFile(filename);
+	repo->Commit(commit_log);
+	repo->Push();
+	
+	if(unlink(full_filename.c_str())!=0)
+		throw Exception("Git","Unable to remove file "+full_filename);
+	
+	if(Workflows::GetInstance()->Exists(name))
+	{
+		Workflow workflow = Workflows::GetInstance()->Get(name);
+		workflow.SetLastCommit("");
+		
+		Workflows::GetInstance()->Reload();
+	}
 }
 
 void Git::RemoveTask(const std::string &name, const string &commit_log)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		string filename = tasks_subdirectory+"/"+name+".xml";
-		string full_filename = repo_path+"/"+filename;
-		
-		repo->Pull();
-		repo->RemoveFile(filename);
-		repo->Commit(commit_log);
-		repo->Push();
-		
-		if(unlink(full_filename.c_str())!=0)
-			throw Exception("Git","Unable to remove file "+full_filename);
-		
-		if(Tasks::GetInstance()->Exists(name))
-		{
-			Task task = Tasks::GetInstance()->Get(name);
-			task.SetLastCommit("");
-			
-			Tasks::GetInstance()->Reload();
-		}
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
+	string filename = tasks_subdirectory+"/"+name+".xml";
+	string full_filename = repo_path+"/"+filename;
 	
-	pthread_mutex_unlock(&lock);
+	repo->Pull();
+	repo->RemoveFile(filename);
+	repo->Commit(commit_log);
+	repo->Push();
+	
+	if(unlink(full_filename.c_str())!=0)
+		throw Exception("Git","Unable to remove file "+full_filename);
+	
+	if(Tasks::GetInstance()->Exists(name))
+	{
+		Task task = Tasks::GetInstance()->Get(name);
+		task.SetLastCommit("");
+		
+		Tasks::GetInstance()->Reload();
+	}
 }
 
 void Git::ListWorkflows(QueryResponse *response)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		list_files(workflows_subdirectory,response);
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
-	
-	pthread_mutex_unlock(&lock);
+	list_files(workflows_subdirectory,response);
 }
 
 void Git::ListTasks(QueryResponse *response)
 {
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
-	try
-	{
-		list_files(tasks_subdirectory,response);
-	}
-	catch(Exception &e)
-	{
-		pthread_mutex_unlock(&lock);
-		
-		throw e;
-	}
-	
-	pthread_mutex_unlock(&lock);
+	list_files(tasks_subdirectory,response);
 }
 
 bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)

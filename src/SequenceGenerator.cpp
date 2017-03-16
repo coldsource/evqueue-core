@@ -21,13 +21,13 @@
 #include <Configuration.h>
 #include <DB.h>
 
+using namespace std;
+
 SequenceGenerator *SequenceGenerator::instance = 0;
 
 SequenceGenerator::SequenceGenerator()
 {
 	instance = this;
-	
-	pthread_mutex_init(&lock, NULL);
 	
 	DB db;
 	db.Query("SELECT MAX(workflow_instance_id) FROM t_workflow_instance");
@@ -44,9 +44,6 @@ unsigned int SequenceGenerator::GetInc()
 {
 	unsigned int cur_seq;
 	
-	pthread_mutex_lock(&lock);
-	cur_seq = seq++;
-	pthread_mutex_unlock(&lock);
-	
-	return cur_seq;
+	unique_lock<mutex> llock(lock);
+	return seq++;
 }

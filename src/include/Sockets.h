@@ -20,9 +20,8 @@
 #ifndef _SOCKETS_H_
 #define _SOCKETS_H_
 
-#include <pthread.h>
-
 #include <set>
+#include <mutex>
 
 class Sockets
 {
@@ -30,7 +29,7 @@ class Sockets
 	
 	static Sockets *instance;
 	
-	pthread_mutex_t lock;
+	std::mutex lock;
 	
 	public:
 		Sockets();

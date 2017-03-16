@@ -46,7 +46,7 @@ void WorkflowSchedules::Reload(bool notify)
 {
 	Logger::Log(LOG_NOTICE,"Reloading workflow schedules definitions");
 	
-	pthread_mutex_lock(&lock);
+	unique_lock<mutex> llock(lock);
 	
 	try
 	{
@@ -72,11 +72,8 @@ void WorkflowSchedules::Reload(bool notify)
 	{
 		Logger::Log(LOG_ERR,"[ WorkflowSchedules ] Unexpected exception trying to reload configuration : [ "+e.context+" ] "+e.error);
 		Logger::Log(LOG_ERR,"[ WorkflowSchedules ] Configuration reload failed");
-		pthread_mutex_unlock(&lock);
 		return;
 	}
-	
-	pthread_mutex_unlock(&lock);
 }
 
 const vector<WorkflowSchedule *> &WorkflowSchedules::GetActiveWorkflowSchedules()

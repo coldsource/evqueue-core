@@ -23,6 +23,7 @@
 #include <Scheduler.h>
 
 #include <string>
+#include <mutex>
 
 class WorkflowSchedule;
 class WorkflowParameters;
@@ -46,7 +47,7 @@ class WorkflowScheduler:public Scheduler
 		WorkflowSchedule **wfs_executing_instances;
 		int num_wfs;
 		
-		pthread_mutex_t wfs_mutex;
+		std::recursive_mutex wfs_mutex;
 		
 	public:
 		WorkflowScheduler();

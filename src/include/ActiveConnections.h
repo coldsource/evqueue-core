@@ -20,9 +20,10 @@
 #ifndef _ACTIVECONNECTIONS_H_
 #define _ACTIVECONNECTIONS_H_
 
-#include <pthread.h>
+#include <thread>
+#include <mutex>
 
-#include <set>
+#include <map>
 
 class ActiveConnections
 {
@@ -30,9 +31,9 @@ class ActiveConnections
 	
 	bool is_shutting_down;
 	
-	std::set<pthread_t> active_threads;
+	std::map<std::thread::id,std::thread> active_threads;
 	
-	pthread_mutex_t lock;
+	std::mutex lock;
 	
 	public:
 		ActiveConnections();
@@ -40,7 +41,7 @@ class ActiveConnections
 		static ActiveConnections *GetInstance() { return  instance; }
 		
 		void StartConnection(int s);
-		void EndConnection(pthread_t thread);
+		void EndConnection(std::thread::id thread_id);
 		
 		unsigned int GetNumber();
 		
