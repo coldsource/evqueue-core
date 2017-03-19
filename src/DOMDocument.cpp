@@ -1,5 +1,27 @@
+/*
+ * This file is part of evQueue
+ * 
+ * evQueue is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * evQueue is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with evQueue. If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * Author: Thibault Kummer <bob@coldsource.net>
+ */
+
 #include <DOMDocument.h>
+#include <DOMXPath.h>
 #include <DOMXPathResult.h>
+#include <DOMElement.h>
+#include <DOMText.h>
 #include <Exception.h>
 
 #include <pcrecpp.h>
@@ -14,6 +36,7 @@ DOMDocument::DOMDocument(void)
 {
 	xercesc::DOMImplementation *xqillaImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
 	xmldoc = xqillaImplementation->createDocument();
+	xpath = new DOMXPath(this);
 	parser = 0;
 	serializer = xqillaImplementation->createLSSerializer();;
 	resolver = xmldoc->createNSResolver(xmldoc->getDocumentElement());
@@ -25,6 +48,7 @@ DOMDocument::DOMDocument(void)
 DOMDocument::DOMDocument(xercesc::DOMDocument *xmldoc):DOMNode(xmldoc)
 {
 	this->xmldoc = xmldoc;
+	xpath = new DOMXPath(this);
 	parser = 0;
 	serializer = 0;
 	resolver = 0;
@@ -35,6 +59,9 @@ DOMDocument::~DOMDocument(void)
 	// Document has not been parsed, we have to relase xmldoc explicitly
 	if(!parser && xmldoc)
 		xmldoc->release();
+	
+	if(xpath)
+		delete xpath;
 	
 	// Releaseing parser will free xmldoc for parsed documents
 	if(parser)
@@ -60,6 +87,7 @@ DOMDocument *DOMDocument::Parse(const string &xml_str)
 	
 	input->setStringData(xml);
 	doc->xmldoc = doc->parser->parse(input);
+	doc->node = doc->xmldoc;
 	input->release();
 	
 	xercesc::XMLString::release(&xml);
@@ -150,6 +178,11 @@ DOMElement DOMDocument::getDocumentElement()
 	return xmldoc->getDocumentElement();
 }
 
+DOMXPath *DOMDocument::getXPath()
+{
+	return xpath;
+}
+
 DOMElement DOMDocument::createElement(const string &name)
 {
 	return xmldoc->createElement(X(name.c_str()));
@@ -165,18 +198,14 @@ DOMNode DOMDocument::importNode(DOMNode importedNode, bool deep)
 	return xmldoc->importNode(importedNode.node,deep);
 }
 
-DOMXPathResult *DOMDocument::evaluate(const string &xpath,DOMNode node,DOMXPathResult::ResultType result_type)
+DOMXPathResult *DOMDocument::evaluate(const string &xpath_str,DOMNode node,DOMXPathResult::ResultType result_type)
 {
-	xercesc::DOMXPathResult *xqresult;
-	DOMXPathResult *result;
 	try
 	{
-		xqresult = xmldoc->evaluate(X(xpath.c_str()),node.node,resolver,(xercesc_3_1::DOMXPathResult::ResultType)result_type,0);
+		return xpath->evaluate(xpath_str,node,result_type);
 	}
-	catch(XQillaException &xqe)
+	catch(Exception &e)
 	{
-		throw Exception("DOMDocument","Error evaluating XPath expression : "+xpath);
+		throw Exception("DOMDocument","Error evaluating XPath expression : "+xpath_str+". XPath returned error :"+e.error+" in context "+e.context);
 	}
-	
-	return new DOMXPathResult(xqresult);
 }

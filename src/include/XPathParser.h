@@ -17,9 +17,27 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMText.h>
+#ifndef _XPATHPARSER_H_
+#define _XPATHPARSER_H_
 
-DOMText::DOMText(xercesc::DOMText *text):DOMNode(text)
+#include <vector>
+#include <string>
+
+class Token;
+class TokenExpr;
+
+class XPathParser
 {
-	this->text = text;
-}
+	Token *parse_token(const std::string &s, int *pos);
+	std::vector<Token *> parse_expr(const std::string expr);
+	TokenExpr *resolve_parenthesis(const std::vector<Token *> &v, int *current_pos);
+	void prepare_functions(TokenExpr *expr);
+	void prepare_filters(TokenExpr *expr);
+	void disambiguish_mult(TokenExpr *expr);
+	void disambiguish_operators(TokenExpr *expr);
+	
+	public:
+		TokenExpr *Parse(std::string xpath_expression);
+};
+
+#endif

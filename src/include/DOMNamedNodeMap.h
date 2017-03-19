@@ -17,9 +17,24 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMText.h>
+#ifndef _DOMNAMEDNODEMAP_H_
+#define _DOMNAMEDNODEMAP_H_
 
-DOMText::DOMText(xercesc::DOMText *text):DOMNode(text)
+#include <xercesc/dom/DOM.hpp>
+
+#include <string>
+
+class DOMNode;
+
+class DOMNamedNodeMap
 {
-	this->text = text;
-}
+	xercesc::DOMNamedNodeMap *map;
+	
+public:
+	DOMNamedNodeMap(xercesc::DOMNamedNodeMap *map);
+	
+	int getLength() const;
+	DOMNode item(int index);
+};
+
+#endif

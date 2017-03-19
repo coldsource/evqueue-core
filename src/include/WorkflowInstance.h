@@ -104,6 +104,8 @@ class WorkflowInstance
 		std::string format_datetime();
 		int open_log_file(int tid, int fileno);
 		void update_statistics();
+		
+		static Token *evqGetWorkflowParameter(XPathEval::func_context context,const std::vector<Token *> &args);
 };
 
 #endif

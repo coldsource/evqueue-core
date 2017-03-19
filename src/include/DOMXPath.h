@@ -17,9 +17,27 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMText.h>
+#ifndef _DOMXPATH_H_
+#define _DOMXPATH_H_
 
-DOMText::DOMText(xercesc::DOMText *text):DOMNode(text)
+#include <DOMXPathResult.h>
+#include <XPathEval.h>
+
+#include <string>
+
+class DOMDocument;
+
+class DOMXPath
 {
-	this->text = text;
-}
+	DOMDocument *xmldoc;
+	XPathEval eval;
+	
+public:
+	DOMXPath(DOMDocument *xmldoc);
+	
+	void RegisterFunction(std::string name,XPathEval::func_desc f);
+	
+	DOMXPathResult *evaluate(const std::string &xpath,DOMNode node,DOMXPathResult::ResultType result_type);
+};
+
+#endif

@@ -214,6 +214,8 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 	{
 		this->workflow_instance_id = SequenceGenerator::GetInstance()->GetInc();
 	}
+	
+	xmldoc->getXPath()->RegisterFunction("evqGetWorkflowParameter",{WorkflowInstance::evqGetWorkflowParameter,xmldoc->getXPath()});
 
 	// Save workflow
 	record_savepoint();
@@ -1006,7 +1008,7 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 				continue;
 			}
 		}
-
+		
 		// Check for looped tasks (must expand them before execution)
 		if(task.hasAttribute("loop"))
 		{
@@ -1449,4 +1451,15 @@ void WorkflowInstance::update_statistics()
 	xmldoc->getDocumentElement().setAttribute("queued_tasks",to_string(queued_tasks));
 	xmldoc->getDocumentElement().setAttribute("retrying_tasks",to_string(retrying_tasks));
 	xmldoc->getDocumentElement().setAttribute("error_tasks",to_string(error_tasks));
+}
+
+#include <XPathTokens.h>
+Token *WorkflowInstance::evqGetWorkflowParameter(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=1)
+		throw Exception("evqGetWorkflowParameter()","Expecting 1 parameter");
+	
+	DOMXPath *xpath = (DOMXPath *)context.custom_context;
+	unique_ptr<DOMXPathResult> res(xpath->evaluate("/workflow/parameters/parameter[@name = '"+(string)(*args.at(0))+"']",context.context->nodes.at(0),DOMXPathResult::FIRST_RESULT_TYPE));
+	return new TokenString(res->getStringValue());
 }

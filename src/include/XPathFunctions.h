@@ -17,9 +17,24 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMText.h>
+#ifndef _XPATHFUNCTIONS_H_
+#define _XPATHFUNCTIONS_H_
 
-DOMText::DOMText(xercesc::DOMText *text):DOMNode(text)
+#include <XPathEval.h>
+
+#include <vector>
+
+class TokenNodeList;
+class Token;
+
+class XPathFunctions
 {
-	this->text = text;
-}
+	public:
+		static Token *count(XPathEval::func_context context,const std::vector<Token *> &args);
+		
+		static Token *substring(XPathEval::func_context context,const std::vector<Token *> &args);
+		
+		static Token *current(XPathEval::func_context context,const std::vector<Token *> &args);
+};
+
+#endif

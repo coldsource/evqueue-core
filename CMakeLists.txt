@@ -22,7 +22,9 @@ add_executable(evqueue
 	src/NotificationType.cpp src/NotificationTypes.cpp src/sha1.c src/WorkflowInstanceAPI.cpp src/SocketSAX2Handler.cpp
 	src/hmac.cpp src/AuthHandler.cpp src/User.cpp src/Users.cpp src/Logs.cpp src/ClientBase.cpp src/Client.cpp
 	src/ActiveConnections.cpp src/LibGit2.cpp src/Git.cpp src/Sha1String.cpp src/pbkdf2.cpp src/Random.cpp
-	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp src/DOMDocument.cpp)
+	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp
+	src/DOMDocument.cpp src/DOMNamedNodeMap.cpp src/XPathTokens.cpp src/XPathParser.cpp src/XPathEval.cpp
+	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -37,7 +39,7 @@ endif()
 
 include_directories(include /usr/include)
 
-target_link_libraries(evqueue libgit2.a)
+target_link_libraries(evqueue git2)
 target_link_libraries(evqueue z)
 target_link_libraries(evqueue mysqlclient)
 target_link_libraries(evqueue pthread)
