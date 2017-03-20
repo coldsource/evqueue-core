@@ -105,8 +105,13 @@ Token::operator string() const
 		return to_string(((TokenFloat *)this)->d);
 	else if(GetType()==LIT_BOOL)
 		return to_string(((TokenBool *)this)->b);
-	else if(GetType()==NODELIST && ((TokenNodeList *)this)->nodes.size()==1)
-		return ((TokenNodeList *)this)->nodes.at(0).getNodeValue();
+	else if(GetType()==NODELIST)
+	{
+		if(((TokenNodeList *)this)->nodes.size()==0)
+			return "";
+		else if(((TokenNodeList *)this)->nodes.size()==1)
+			return ((TokenNodeList *)this)->nodes.at(0).getNodeValue();
+	}
 	throw Exception("XPath","Incompatible type for operand");
 }
 
