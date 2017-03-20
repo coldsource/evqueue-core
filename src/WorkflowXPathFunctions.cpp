@@ -66,7 +66,8 @@ Token *WorkflowXPathFunctions::evqGetOutput(XPathEval::func_context context, con
 	if(context.left_context->nodes.size()>0)
 		context_node = context.left_context->nodes.at(0);
 	else
+
 		context_node = *((DOMNode *)context.custom_context);
 	
-	return context.eval->Evaluate("tasks/task[@name='"+task_name+"']/output",context.current_context);
+	return context.eval->Evaluate("tasks/task[@name='"+task_name+"']/output",context_node);
 }
