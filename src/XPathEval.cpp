@@ -410,6 +410,7 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	// Initialize functions
 	funcs_desc.insert(pair<string,func_desc>("count",{XPathFunctions::count,0}));
 	funcs_desc.insert(pair<string,func_desc>("substring",{XPathFunctions::substring,0}));
+	funcs_desc.insert(pair<string,func_desc>("contains",{XPathFunctions::contains,0}));
 }
 
 void XPathEval::RegisterFunction(string name,func_desc f)

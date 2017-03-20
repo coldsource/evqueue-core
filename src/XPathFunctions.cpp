@@ -48,6 +48,17 @@ Token *XPathFunctions::substring(XPathEval::func_context context, const vector<T
 		return new TokenString(s.substr((int)(*args.at(1)),(int)(*args.at(2))));
 }
 
+Token *XPathFunctions::contains(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=2)
+		throw Exception("contains()","Expecting 2 parameters");
+	
+	string s1 = (string)(*args.at(0));
+	string s2 = (string)(*args.at(1));
+	
+	return new TokenBool(s1.find(s2)!=string::npos);
+}
+
 Token *XPathFunctions::current(XPathEval::func_context context, const vector<Token *> &args)
 {
 	if(args.size()!=0)

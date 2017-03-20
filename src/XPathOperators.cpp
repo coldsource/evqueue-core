@@ -188,10 +188,10 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 	// Compute or on the nodelist set
 	if((t1->GetType()==LIT_STR || t1->GetType()==LIT_INT || t1->GetType()==LIT_FLOAT) && t2->GetType()==NODELIST)
 	{
-		try
+		TokenNodeList *list = (TokenNodeList *)t2;
+		for(int i=0;i<list->nodes.size();i++)
 		{
-			TokenNodeList *list = (TokenNodeList *)t2;
-			for(int i=0;i<list->nodes.size();i++)
+			try
 			{
 				if(t1->GetType()==LIT_STR && list->nodes.at(i).getNodeValue()==((TokenString *)t1)->s)
 					return new TokenBool(true);
@@ -200,8 +200,8 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 				else if(t1->GetType()==LIT_FLOAT && cast_string_to_double(list->nodes.at(i).getNodeValue())==((TokenFloat *)t1)->d)
 					return new TokenBool(true);
 			}
+			catch(...) {}
 		}
-		catch(...) {}
 		return new TokenBool(false);
 	}
 	
