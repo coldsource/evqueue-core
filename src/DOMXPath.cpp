@@ -19,7 +19,6 @@
 
 #include <DOMXPath.h>
 #include <DOMXPathResult.h>
-#include <XPathParser.h>
 #include <XPathEval.h>
 
 DOMXPath::DOMXPath(DOMDocument *xmldoc):eval(xmldoc)
@@ -34,10 +33,7 @@ void DOMXPath::RegisterFunction(std::string name,XPathEval::func_desc f)
 
 DOMXPathResult *DOMXPath::evaluate(const std::string &xpath,DOMNode node,DOMXPathResult::ResultType result_type)
 {
-	XPathParser parser;
-	TokenExpr *parsed_expr = parser.Parse(xpath);
-	
-	Token *result = eval.Evaluate((Token *)parsed_expr,node);
+	Token *result = eval.Evaluate(xpath,node);
 	
 	if(result_type==DOMXPathResult::FIRST_RESULT_TYPE)
 	{
