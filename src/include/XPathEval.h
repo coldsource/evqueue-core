@@ -20,6 +20,8 @@
 #ifndef _XPATHEVAL_H_
 #define _XPATHEVAL_H_
 
+#include <DOMNode.h>
+
 #include <string>
 #include <vector>
 #include <map>
@@ -27,7 +29,6 @@
 class TokenNodeList;
 class TokenExpr;
 class Token;
-class DOMNode;
 class DOMDocument;
 
 class XPathEval
@@ -41,7 +42,8 @@ class XPathEval
 public:
 	struct func_context
 	{
-		TokenNodeList *context;
+		DOMNode current_context;
+		TokenNodeList *left_context;
 		void *custom_context;
 		XPathEval *eval;
 	};
@@ -59,24 +61,27 @@ private:
 	
 	DOMDocument *xmldoc;
 	
-	TokenNodeList *get_child_nodes(std::string name,DOMNode context,TokenNodeList *node_list);
-	TokenNodeList *get_child_nodes(std::string name,TokenNodeList *context,TokenNodeList *node_list);
-	TokenNodeList *get_child_attributes(std::string name,DOMNode context,TokenNodeList *node_list);
-	TokenNodeList *get_child_attributes(std::string name,TokenNodeList *context,TokenNodeList *node_list);
+	TokenNodeList *get_child_nodes(std::string name,TokenNodeList *context,TokenNodeList *node_list,bool depth);
+	TokenNodeList *get_child_attributes(std::string name,TokenNodeList *context,TokenNodeList *node_list,bool depth);
+	
 	TokenNodeList *get_all_child_nodes(std::string name,DOMNode context,TokenNodeList *node_list);
 	TokenNodeList *get_all_child_nodes(std::string name,TokenNodeList *context,TokenNodeList *node_list);
 	
-	void filter_token_node_list(TokenNodeList *list,TokenExpr *filter,DOMDocument *xmldoc,DOMNode context);
-	void get_nth_token_node_list(TokenNodeList *list,int n,DOMDocument *xmldoc,DOMNode context);
+	void filter_token_node_list(TokenNodeList *list,TokenExpr *filter);
+	void get_nth_token_node_list(TokenNodeList *list,int n);
 	
-	Token *evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context);
+	Token *evaluate_func(const std::vector<Token *> &expr_tokens, int i,DOMNode current_context,TokenNodeList *left_context);
+	Token *evaluate_node(const std::vector<Token *> &expr_tokens, int i,TokenNodeList *context,bool depth);
+	Token *evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,TokenNodeList *context,bool depth);
+	
+	Token *evaluate_expr(Token *token,DOMNode context);
 	
 public:
 	XPathEval(DOMDocument *xmldoc);
 	
 	void RegisterFunction(std::string name,func_desc f);
 	
-	Token *Evaluate(Token *token,DOMNode context);
+	Token *Evaluate(const std::string &xpath,DOMNode context);
 };
 
 #endif
