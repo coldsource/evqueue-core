@@ -30,6 +30,7 @@
 
 using namespace std;
 
+// Return filtered child nodes of context node ('node name' operator)
 TokenNodeList *XPathEval::get_child_nodes(string name,DOMNode context,TokenNodeList *node_list)
 {
 	DOMNode node = context.getFirstChild();
@@ -61,6 +62,7 @@ TokenNodeList *XPathEval::get_child_nodes(string name,DOMNode context,TokenNodeL
 	return node_list;
 }
 
+// Same as preceding function but on node list (the / operator)
 TokenNodeList *XPathEval::get_child_nodes(string name,TokenNodeList *context,TokenNodeList *node_list)
 {
 	if(node_list==0)
@@ -72,6 +74,7 @@ TokenNodeList *XPathEval::get_child_nodes(string name,TokenNodeList *context,Tok
 	return node_list;
 }
 
+// Return filtered attribute names of context node (the 'attribute name' operator)
 TokenNodeList *XPathEval::get_child_attributes(string name,DOMNode context,TokenNodeList *node_list)
 {
 	DOMNamedNodeMap map = context.getAttributes();
@@ -88,6 +91,7 @@ TokenNodeList *XPathEval::get_child_attributes(string name,DOMNode context,Token
 	return node_list;
 }
 
+// Same as preceding function but on node list (the / operator between node name and attribute name)
 TokenNodeList *XPathEval::get_child_attributes(string name,TokenNodeList *context,TokenNodeList *node_list)
 {
 	if(node_list==0)
@@ -99,6 +103,7 @@ TokenNodeList *XPathEval::get_child_attributes(string name,TokenNodeList *contex
 	return node_list;
 }
 
+// The // operator
 TokenNodeList *XPathEval::get_all_child_nodes(string name,DOMNode context,TokenNodeList *node_list)
 {
 	DOMNode node = context.getFirstChild();
@@ -118,6 +123,7 @@ TokenNodeList *XPathEval::get_all_child_nodes(string name,DOMNode context,TokenN
 	return node_list;
 }
 
+// The // operator
 TokenNodeList *XPathEval::get_all_child_nodes(string name,TokenNodeList *context,TokenNodeList *node_list)
 {
 	if(node_list==0)
@@ -129,6 +135,8 @@ TokenNodeList *XPathEval::get_all_child_nodes(string name,TokenNodeList *context
 	return node_list;
 }
 
+// Evaluate a node filter to see if it must be keept or node
+// Xpath syntax : /node[<filter expression>]
 void XPathEval::filter_token_node_list(TokenNodeList *list,TokenExpr *filter,DOMDocument *xmldoc,DOMNode context)
 {
 	for(int i=0;i<list->nodes.size();i++)
@@ -144,6 +152,8 @@ void XPathEval::filter_token_node_list(TokenNodeList *list,TokenExpr *filter,DOM
 	}
 }
 
+// Get nth node from a node list
+// Xpath syntax : /node[<integer>]
 void XPathEval::get_nth_token_node_list(TokenNodeList *list,int n,DOMDocument *xmldoc,DOMNode context)
 {
 	for(int i=0;i<list->nodes.size();i++)
@@ -156,6 +166,7 @@ void XPathEval::get_nth_token_node_list(TokenNodeList *list,int n,DOMDocument *x
 	}
 }
 
+// Evaluate a fully parsed expression
 Token *XPathEval::evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context)
 {
 	if(token->GetType()!=EXPR)
@@ -214,10 +225,12 @@ Token *XPathEval::evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context
 		}
 		else if(token_type==NODENAME)
 		{
+			// Single node name (not precedeed by / or //). Compute based on current context (relative path)
 			TokenNodeName *node_name = (TokenNodeName *)expr->expr_tokens.at(i);
 			
 			val = get_child_nodes(node_name->name,context,0);
 			
+			// Apply node filter if present
 			if(node_name->filter)
 			{
 				if(((TokenExpr *)node_name->filter)->expr_tokens.size()==1 && ((TokenExpr *)node_name->filter)->expr_tokens.at(0)->GetType()==LIT_INT)
@@ -230,6 +243,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context
 		}
 		else if(token_type==ATTRNAME)
 		{
+			// Single attribute name (not precedeed by / or //). Compute based on current context (relative path)
 			TokenAttrName *attr_name = (TokenAttrName *)expr->expr_tokens.at(i);
 			
 			val = get_child_attributes(attr_name->name,context,0);
@@ -237,6 +251,8 @@ Token *XPathEval::evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context
 		}
 		else if(token_type==SLASH)
 		{
+			// Node name precedeed by '/'. Compute based on preceding node list.
+			// XPath syntext : node1/node2 (node 1 has already been resolved to DOM node list)
 			if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==NODENAME)
 			{
 				TokenNodeName *node_name = (TokenNodeName *)expr->expr_tokens.at(i+1);
@@ -252,6 +268,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context
 					replace_from = i;
 				}
 				
+				// Apply node filter if present
 				if(node_name->filter)
 				{
 					if(((TokenExpr *)node_name->filter)->expr_tokens.size()==1 && ((TokenExpr *)node_name->filter)->expr_tokens.at(0)->GetType()==LIT_INT)
@@ -260,6 +277,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context
 						filter_token_node_list((TokenNodeList *)val,node_name->filter,xmldoc,context);
 				}
 			}
+			// Same but for attribute name
 			else if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==ATTRNAME)
 			{
 				TokenNodeName *node_name = (TokenNodeName *)expr->expr_tokens.at(i+1);
@@ -282,6 +300,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMDocument *xmldoc,DOMNode context
 		}
 		else if(token_type==DSLASH)
 		{
+			// Same as / operator but for // (lookup for nodes in all childs)
 			if(i+1>=expr->expr_tokens.size() || expr->expr_tokens.at(i+1)->GetType()!=NODENAME)
 				throw Exception("XPath","Missing node name after dslash");
 			

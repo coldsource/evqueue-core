@@ -25,44 +25,47 @@
 
 class DOMNode;
 
+// Token types that can be found in XPath expression
 enum TOKEN_TYPE
 {
-	LIT_STR,
-	LIT_INT,
-	LIT_FLOAT,
-	LIT_BOOL,
-	NODENAME,
-	ATTRNAME,
-	FUNC,
-	OP,
-	LPAR,
-	RPAR,
-	LSQ,
-	RSQ,
-	COMMA,
-	SLASH,
-	DSLASH,
-	EXPR,
-	NODELIST
+	LIT_STR, // Literal string
+	LIT_INT, // Literal integer
+	LIT_FLOAT, // Literal float or double
+	LIT_BOOL, // Literal boolean
+	NODENAME, // Node name to match with DOM
+	ATTRNAME, // Attribute name to match with DOM
+	FUNC, // Function
+	OP, // Operator
+	LPAR, // Left parenthesis
+	RPAR, // Right parenthesis
+	LSQ, // Left square bracket
+	RSQ, // Right square bracket
+	COMMA, // Comma
+	SLASH, // Slash path separator
+	DSLASH, // Double slash path separator
+	EXPR, // Expression, a complex XPath expression, full or partial
+	NODELIST // Resolved node list that points to dom elements
 };
 
+// Operators types
 enum OPERATOR
 {
-	MULT,
-	DIV,
-	MOD,
-	PLUS,
-	MINUS,
-	LT,
-	LEQ,
-	GT,
-	GEQ,
-	EQ,
-	NEQ,
-	AND,
-	OR
+	MULT, // *
+	DIV, // div
+	MOD, // mod
+	PLUS, // +
+	MINUS, // -
+	LT, // <
+	LEQ, // <=
+	GT, // >
+	GEQ, // >=
+	EQ, // =
+	NEQ, // !=
+	AND, // and
+	OR// or
 };
 
+// Definition of tokens
 class Token
 {
 	static int cast_string_to_int(const std::string &s);

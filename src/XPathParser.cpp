@@ -24,13 +24,15 @@
 
 using namespace std;
 
+// Parse one token from the XPath expression
+// It might not be possible to exactly define token type now, disambiguish will do the rest
 Token *XPathParser::parse_token(const string &s, int *pos)
 {
 	// Skip spaces
 	while(s[*pos]==' ' && *pos<s.length())
 		(*pos)++;
 	
-	// Match single characters
+	// Match single characters syntax
 	if(s[*pos]=='(')
 	{
 		*pos= *pos+1;
@@ -75,7 +77,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		*pos = *pos+1;
 		return new TokenOP(PLUS);
 	}
-	else if(s[*pos]=='-' && (*pos+1>=s.length() || !isdigit(s[*pos+1])))
+	else if(s[*pos]=='-' && (*pos+1>=s.length() || !isdigit(s[*pos+1]))) // Not not confuse - 1 (OP + LIT_INT) and -1 (LIT_INT)
 	{
 		*pos = *pos+1;
 		return new TokenOP(MINUS);
@@ -83,7 +85,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	else if(s[*pos]=='*')
 	{
 		*pos = *pos+1;
-		return new TokenOP(MULT);
+		return new TokenOP(MULT); // Could also be a wildcard, see disambiguish_mult()
 	}
 	else if(s[*pos]=='=')
 	{
@@ -116,7 +118,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		return new TokenOP(GEQ);
 	}
 	
-	// Match string
+	// Match strings
 	if(s[*pos]=='\'' || s[*pos]=='\"')
 	{
 		string buf;
@@ -170,6 +172,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	}
 	
 	// At this point we can only have Node name, Attribute or Function.
+	// Text operators can be confused with node or function names, see disambiguish_operators()
 	string buf;
 	int i = *pos;
 	
@@ -206,6 +209,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	while(s[i]==' ' && i<s.length())
 		i++;
 	
+	// Function names only differ from node names because they have parenthesis
 	*pos = i;
 	if(s[i]=='(')
 		return new TokenFunc(buf);
@@ -215,6 +219,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		return new TokenAttrName(buf);
 }
 
+// Create a TokenExpr from a string by calling parse_token
 vector<Token *> XPathParser::parse_expr(const string expr)
 {
 	vector<Token *> v;
@@ -228,6 +233,7 @@ vector<Token *> XPathParser::parse_expr(const string expr)
 	}
 	catch(Exception &e)
 	{
+		// Free already created tokens
 		for(int i=0;i<v.size();i++)
 			delete v.at(i);
 		throw e;
@@ -236,18 +242,23 @@ vector<Token *> XPathParser::parse_expr(const string expr)
 	return v;
 }
 
+// Create sub expressions with each group of parenthesis
+// Functions arguments are treated as expressions
 TokenExpr *XPathParser::resolve_parenthesis(const vector<Token *> &v, int *current_pos)
 {
 	TokenExpr *expr_token = new TokenExpr();
 	
 	int i;
+	// Loop until end of document or end of expression (ie right parenthesis)
 	for(i=*current_pos;i<v.size() && v.at(i)->GetType()!=RPAR;i++)
 	{
+		// Left parenthesis, we have a sub expression
 		if(v.at(i)->GetType()==LPAR)
 		{
 			delete v.at(i);
 			i++;
 			
+			// Recursively build sub expression
 			expr_token->expr_tokens.push_back(resolve_parenthesis(v,&i));
 			if(i>=v.size() || v.at(i)->GetType()!=RPAR)
 			{
@@ -259,34 +270,42 @@ TokenExpr *XPathParser::resolve_parenthesis(const vector<Token *> &v, int *curre
 			delete v.at(i);
 		}
 		else
-			expr_token->expr_tokens.push_back(v.at(i));
+			expr_token->expr_tokens.push_back(v.at(i)); // Simply push token to current expression
 	}
 	
 	*current_pos = i;
 	return expr_token;
 }
 
+// Look for expressions after function names and parse arguments
+// Function arguments are treated as arrays of expressions, one expression for each argument
 void XPathParser::prepare_functions(TokenExpr *expr)
 {
 	TokenFunc *func;
 	
 	for(int i=0;i<expr->expr_tokens.size();i++)
 	{
+		// Loof for a function name
 		if(expr->expr_tokens.at(i)->GetType()==FUNC)
 		{
 			func = (TokenFunc *)expr->expr_tokens.at(i);
 			
+			// Function names must by followed by an expression (ie the parameters)
 			if(i+1>=expr->expr_tokens.size() || expr->expr_tokens.at(i+1)->GetType()!=EXPR)
 				throw Exception("XPath","Missing function parameters");
 			
 			TokenExpr *parameters = ((TokenExpr *)expr->expr_tokens.at(i+1));
 			TokenExpr *parameter = 0;
+			
 			if(parameters->expr_tokens.size()>0)
 				parameter = new TokenExpr();
+			
+			// Split parameters expression on comma to separate parameters
 			for(int j=0;j<parameters->expr_tokens.size();)
 			{
 				if(parameters->expr_tokens.at(j)->GetType()==COMMA)
 				{
+					// Store last found parameters and prepare for new one
 					if(parameter->expr_tokens.size()==0)
 					{
 						delete parameter;
@@ -308,6 +327,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 				parameters->expr_tokens.erase(parameters->expr_tokens.begin()+j);
 			}
 			
+			// Store last found parameter
 			if(parameter)
 			{
 				if(parameter->expr_tokens.size()==0)
@@ -329,19 +349,24 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 	}
 }
 
+// Create expressions from filters (expressions between square brackets)
+// Filters are removed from XPath expression and directly attached to node names
 void XPathParser::prepare_filters(TokenExpr *expr)
 {
 	TokenNodeName *node;
 	
 	for(int i=0;i<expr->expr_tokens.size();i++)
 	{
+		// Look for node names as ony them can have filters
 		if(expr->expr_tokens.at(i)->GetType()==NODENAME)
 		{
 			node = (TokenNodeName *)expr->expr_tokens.at(i);
 			
+			// Look for a left square bracket ('filter begin')
 			if(i+1>=expr->expr_tokens.size() || expr->expr_tokens.at(i+1)->GetType()!=LSQ)
 				continue;
 			
+			// Catch filter expression until right bracket ('filter end')
 			TokenExpr *filter = new TokenExpr();
 			int j = i+2;
 			while(j<expr->expr_tokens.size() && expr->expr_tokens.at(j)->GetType()!=RSQ)
@@ -362,6 +387,7 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 				throw Exception("XPath","Empty filter");
 			}
 			
+			// Store filter expression in node name
 			node->filter = filter;
 			delete expr->expr_tokens.at(i+1);
 			delete expr->expr_tokens.at(j);
@@ -370,21 +396,31 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 		}
 		else if(expr->expr_tokens.at(i)->GetType()==FUNC)
 		{
+			// Parse function parameters as they contains expressions
 			TokenFunc *func = (TokenFunc *)expr->expr_tokens.at(i);
 			for(int j=0;j<func->args.size();j++)
 				prepare_filters(func->args.at(j));
 		}
-		else if(expr->expr_tokens.at(i)->GetType()==EXPR)
+		else if(expr->expr_tokens.at(i)->GetType()==EXPR) // Parse sub expresionns
 			prepare_filters((TokenExpr *)expr->expr_tokens.at(i));
 	}
 }
 
+// Mult operator (1 * 1) can be confused with node wildcard (/node/*/node)
+// On parsing '*' is always resolved as operator, transform to node name when needed
 void XPathParser::disambiguish_mult(TokenExpr *expr)
 {
 	for(int i=0;i<expr->expr_tokens.size();i++)
 	{
+		// Look for operator MULT
 		if(expr->expr_tokens.at(i)->GetType()==OP && ((TokenOP *)expr->expr_tokens.at(i))->op==MULT)
 		{
+			// When found as first token, we have a node name
+			// When preceding token is /, // or an operator we have a node name
+			// Case 1 : '*' (expression begin)
+			// Case 2 : 'node/* (after /)
+			// Case 3 : //* (after //)
+			// Case 4 : 2 * * (after an operator)
 			if(i==0 || expr->expr_tokens.at(i-1)->GetType()==SLASH || expr->expr_tokens.at(i-1)->GetType()==DSLASH || expr->expr_tokens.at(i-1)->GetType()==OP)
 			{
 				delete expr->expr_tokens.at(i);
@@ -393,7 +429,7 @@ void XPathParser::disambiguish_mult(TokenExpr *expr)
 			}
 		}
 		else if(expr->expr_tokens.at(i)->GetType()==EXPR)
-			disambiguish_mult((TokenExpr *)expr->expr_tokens.at(i));
+			disambiguish_mult((TokenExpr *)expr->expr_tokens.at(i)); // Recursively parse sub expressions
 	}
 }
 
@@ -405,12 +441,16 @@ void XPathParser::disambiguish_operators(TokenExpr *expr)
 		// Operators can be mistaken for Node names of Function names
 		if(expr->expr_tokens.at(i)->GetType()==NODENAME || expr->expr_tokens.at(i)->GetType()==FUNC)
 		{
+			// Get potential operator name
 			string opname;
 			if(expr->expr_tokens.at(i)->GetType()==NODENAME)
 				opname = ((TokenNodeName *)expr->expr_tokens.at(i))->name;
 			else if(expr->expr_tokens.at(i)->GetType()==FUNC)
 				opname = ((TokenFunc *)expr->expr_tokens.at(i))->name;
 			
+			// This an operator if :
+			// 1. Name matches a potential operator
+			// 2. It is preceded by the below tokens
 			if(i>0 && (opname=="and" || opname=="or" || opname=="div" || opname=="mod"))
 			{
 				Token *prec = expr->expr_tokens.at(i-1);
@@ -427,6 +467,7 @@ void XPathParser::disambiguish_operators(TokenExpr *expr)
 					|| prec->GetType()==EXPR
 				)
 				{
+					// Replace token with operator
 					delete expr->expr_tokens.at(i);
 					expr->expr_tokens.erase(expr->expr_tokens.begin()+i);
 					if(opname=="and")
@@ -445,6 +486,7 @@ void XPathParser::disambiguish_operators(TokenExpr *expr)
 	}
 }
 
+// Parse the whole XPath expression and return the corresponding expression
 TokenExpr *XPathParser::Parse(std::string xpath_expression)
 {
 	vector<Token *> v;

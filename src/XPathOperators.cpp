@@ -56,6 +56,7 @@ double XPathOperators::cast_string_to_double(string s)
 	}
 }
 
+// Used for computation operators that operates on numbers (+ - div mul mod)
 Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 {
 	bool type_int = false,type_double = false;
@@ -64,12 +65,14 @@ Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 	
 	try
 	{
+		// Try to cas as integers
 		left_i = (int)(*left);
 		right_i = (int)(*right);
 		type_int = true;
 	}
 	catch(...)
 	{
+		// Casting as integers failed, try float
 		if(op==MOD)
 			throw Exception("XPath","Modulus operator can only operate on integers");
 		
@@ -80,6 +83,7 @@ Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 	
 	if(type_int)
 	{
+		// Computation on integers
 		if(op==PLUS)
 			return new TokenInt(left_i+right_i);
 		else if(op==MINUS)
@@ -93,6 +97,7 @@ Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 	}
 	else if(type_double)
 	{
+		// Computation on float
 		if(op==PLUS)
 			return new TokenFloat(left_d+right_d);
 		else if(op==MINUS)
@@ -101,8 +106,10 @@ Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 			return new TokenFloat(left_d*right_d);
 		else if(op==DIV)
 			return new TokenFloat(left_d/right_d);
+		// Modulus can only be computed on integers
 	}
 	
+	// Could not cast operands as numbers
 	throw Exception("XPath","Error evaluating operator");
 }
 
@@ -131,24 +138,30 @@ Token* XPathOperators::Operator_MOD(Token* left, Token* right)
 	return operator_calc(MOD,left,right);
 }
 
+// Operator =
 Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 {
 	Token *t1 = left->GetType()<right->GetType()?left:right;
 	Token *t2 = left->GetType()<right->GetType()?right:left;
 	
+	// Same type : string
 	if(t1->GetType()==LIT_STR && t2->GetType()==LIT_STR)
 		return new TokenBool(((TokenString *)t1)->s == ((TokenString *)t2)->s);
 	
+	// Same type : integer
 	if(t1->GetType()==LIT_INT && t2->GetType()==LIT_INT)
 		return new TokenBool(((TokenInt *)t1)->i == ((TokenInt *)t2)->i);
 	
+	// Same type : float
 	if(t1->GetType()==LIT_FLOAT && t2->GetType()==LIT_FLOAT)
 		return new TokenBool(((TokenFloat *)t1)->d == ((TokenFloat *)t2)->d);
 	
+	// Integer compared to something else (but not an integer)
 	if(left->GetType()==LIT_INT || right->GetType()==LIT_INT)
 	{
 		try
 		{
+			// Try to cast as integer and compare
 			return new TokenBool((int)(*left) == (int)(*right));
 		}
 		catch(...)
@@ -157,10 +170,12 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 		}
 	}
 	
+	// Float compared to something else (but not a float)
 	if(left->GetType()==LIT_FLOAT || right->GetType()==LIT_FLOAT)
 	{
 		try
 		{
+			// Try to cast as float and compare
 			return new TokenBool((double)(*left) == (double)(*right));
 		}
 		catch(...)
@@ -169,6 +184,8 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 		}
 	}
 	
+	// Literal comparted to node list
+	// Compute or on the nodelist set
 	if((t1->GetType()==LIT_STR || t1->GetType()==LIT_INT || t1->GetType()==LIT_FLOAT) && t2->GetType()==NODELIST)
 	{
 		try
@@ -188,6 +205,8 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 		return new TokenBool(false);
 	}
 	
+	// Two nodesets compared
+	// TRUE if any of the elements of set1 is found in set2
 	if(t1->GetType()==NODELIST && t2->GetType()==NODELIST)
 	{
 		TokenNodeList *list1 = (TokenNodeList *)t1;
@@ -201,9 +220,11 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 		return new TokenBool(false);
 	}
 	
+	// Operator could not be computed
 	throw Exception("XPath","Unable to evaluate operator '='");
 }
 
+// The exact reverse or Operator_EQ
 Token* XPathOperators::Operator_NEQ(Token* left, Token* right)
 {
 	TokenBool *res = (TokenBool *)Operator_EQ(left,right);
@@ -211,6 +232,7 @@ Token* XPathOperators::Operator_NEQ(Token* left, Token* right)
 	return res;
 }
 
+// Comparison operators can always be computed on float
 Token* XPathOperators::Operator_LT(Token* left, Token* right)
 {
 	return new TokenBool((double)(*left)<(double)(*right));
@@ -231,6 +253,7 @@ Token* XPathOperators::Operator_GEQ(Token* left, Token* right)
 	return new TokenBool((double)(*left)>=(double)(*right));
 }
 
+// Logical AND
 Token* XPathOperators::Operator_AND(Token* left, Token* right)
 {
 	if(left->GetType()==LIT_BOOL && right->GetType()==LIT_BOOL)
@@ -239,6 +262,7 @@ Token* XPathOperators::Operator_AND(Token* left, Token* right)
 	throw Exception("XPath","Logical operator 'and' can  only operate on boolean values");
 }
 
+// Logical OR
 Token* XPathOperators::Operator_OR(Token* left, Token* right)
 {
 	if(left->GetType()==LIT_BOOL && right->GetType()==LIT_BOOL)
