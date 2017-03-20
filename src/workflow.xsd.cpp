@@ -76,6 +76,8 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		</xs:sequence> \
 		<xs:attribute name=\"name\" type=\"xs:string\" use=\"required\" /> \
 		<xs:attribute name=\"queue\" type=\"xs:string\" use=\"required\" /> \
+		<xs:attribute name=\"host\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"queue_host\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"retry_delay\" type=\"xs:positiveInteger\" use=\"optional\" /> \
 		<xs:attribute name=\"retry_times\" type=\"xs:positiveInteger\" use=\"optional\" /> \
 		<xs:attribute name=\"retry_schedule\" type=\"xs:string\" use=\"optional\" /> \
