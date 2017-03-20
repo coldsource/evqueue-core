@@ -237,7 +237,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		}
 		else if(token_type==FUNC)
 		{
-			TokenNodeList lcontext(context);
+			TokenNodeList lcontext;
 			val = evaluate_func(expr->expr_tokens,i,context,&lcontext);
 			replace_from = replace_to = i;
 		}
