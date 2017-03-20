@@ -24,7 +24,7 @@ add_executable(evqueue
 	src/ActiveConnections.cpp src/LibGit2.cpp src/Git.cpp src/Sha1String.cpp src/pbkdf2.cpp src/Random.cpp
 	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp
 	src/DOMDocument.cpp src/DOMNamedNodeMap.cpp src/XPathTokens.cpp src/XPathParser.cpp src/XPathEval.cpp
-	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp)
+	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp src/WorkflowXPathFunctions.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
