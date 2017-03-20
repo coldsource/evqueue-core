@@ -23,6 +23,7 @@
 #include <WorkflowScheduler.h>
 #include <Workflows.h>
 #include <Workflow.h>
+#include <WorkflowXPathFunctions.h>
 #include <QueuePool.h>
 #include <DB.h>
 #include <Exception.h>
@@ -111,6 +112,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 
 	// Load workflow XML
 	xmldoc = DOMDocument::Parse(workflow.GetXML());
+	xmldoc->getXPath()->RegisterFunction("evqGetWorkflowParameter",{WorkflowXPathFunctions::evqGetWorkflowParameter,0});
 	
 	// Set workflow name for front-office display
 	xmldoc->getDocumentElement().setAttribute("name",workflow_name);
@@ -215,8 +217,6 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 		this->workflow_instance_id = SequenceGenerator::GetInstance()->GetInc();
 	}
 	
-	xmldoc->getXPath()->RegisterFunction("evqGetWorkflowParameter",{WorkflowInstance::evqGetWorkflowParameter,xmldoc->getXPath()});
-
 	// Save workflow
 	record_savepoint();
 
@@ -248,6 +248,7 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 
 	// Load workflow XML
 	xmldoc = DOMDocument::Parse(db.GetField(0));
+	xmldoc->getXPath()->RegisterFunction("evqGetWorkflowParameter",{WorkflowXPathFunctions::evqGetWorkflowParameter,xmldoc->getXPath()});
 
 	// Load workflow schedule if necessary
 	workflow_schedule_id = db.GetFieldInt(1);
@@ -985,38 +986,38 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 
 	while(tasks->snapshotItem(tasks_index++))
 	{
-		task = (DOMElement)tasks->getNodeValue();
-
-		// Get task status (if present)
-		string task_status;
-		if(task.hasAttribute("status"))
-			task_status = task.getAttribute("status");
-
-		if(task_status=="TERMINATED")
-			continue; // Skip tasks that are already terminated (can happen on resume)
-
-		// Check for conditional tasks
-		if(task.hasAttribute("condition"))
+		try
 		{
-			unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(task.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-			
-			if(!test_expr->getIntegerValue())
+			task = (DOMElement)tasks->getNodeValue();
+
+			// Get task status (if present)
+			string task_status;
+			if(task.hasAttribute("status"))
+				task_status = task.getAttribute("status");
+
+			if(task_status=="TERMINATED")
+				continue; // Skip tasks that are already terminated (can happen on resume)
+
+			// Check for conditional tasks
+			if(task.hasAttribute("condition"))
 			{
-				task.setAttribute("status","SKIPPED");
-				task.setAttribute("details","Condition evaluates to false");
-				count_tasks_skipped++;
-				continue;
+				unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(task.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
+				
+				if(!test_expr->getIntegerValue())
+				{
+					task.setAttribute("status","SKIPPED");
+					task.setAttribute("details","Condition evaluates to false");
+					count_tasks_skipped++;
+					continue;
+				}
 			}
-		}
-		
-		// Check for looped tasks (must expand them before execution)
-		if(task.hasAttribute("loop"))
-		{
-			string loop_xpath = task.getAttribute("loop");
-			task.removeAttribute("loop");
-
-			try
+			
+			// Check for looped tasks (must expand them before execution)
+			if(task.hasAttribute("loop"))
 			{
+				string loop_xpath = task.getAttribute("loop");
+				task.removeAttribute("loop");
+				
 				// This is unchecked user input, try evaluation
 				DOMNode matching_node;
 				unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
@@ -1036,20 +1037,20 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 
 				task.getParentNode().removeChild(task);
 			}
-			catch(Exception &e)
+			else
 			{
-				task.setAttribute("status","ABORTED");
-				task.setAttribute("details","Error while evaluating loop");
-
-				// XPath expression error
-				throw Exception("WorkflowInstance","Exception in workflow instance");
+				// Enqueue task
+				replace_value(task,context_node);
+				enqueue_task(task);
 			}
 		}
-		else
+		catch(Exception &e)
 		{
-			// Enqueue task
-			replace_value(task,context_node);
-			enqueue_task(task);
+			task.setAttribute("status","ABORTED");
+			task.setAttribute("details",e.context+" : "+e.error);
+
+			// XPath expression error
+			throw Exception("WorkflowInstance","Exception in workflow instance");
 		}
 	}
 	// If all task of job is skipped goto child job :
@@ -1063,6 +1064,9 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	// Loop on subjobs
 	unique_ptr<DOMXPathResult> subjobs(xmldoc->evaluate("subjobs/job",job,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 	DOMElement subjob;
+	
+	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&job});
+	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
 
 	try
 	{
@@ -1093,9 +1097,7 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 				DOMNode matching_node;
 				DOMXPathResult *matching_nodes;
 
-				try
 				{
-					// This is unchecked user input, try evaluation
 					unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,job,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 					
 					int matching_nodes_index = 0;
@@ -1111,11 +1113,6 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 
 					subjob.getParentNode().removeChild(subjob);
 				}
-				catch(Exception &e)
-				{
-					// XPath expression error
-					throw Exception("WorkflowInstance","Error while evaluating loop");
-				}
 			}
 			else
 				run(subjob,job);
@@ -1125,7 +1122,7 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	{
 		// Set error on job
 		subjob.setAttribute("status","ABORTED");
-		subjob.setAttribute("details",e.error);
+		subjob.setAttribute("details",e.context+" : "+e.error);
 
 		// Terminate workflow
 		error_tasks++;
@@ -1451,15 +1448,4 @@ void WorkflowInstance::update_statistics()
 	xmldoc->getDocumentElement().setAttribute("queued_tasks",to_string(queued_tasks));
 	xmldoc->getDocumentElement().setAttribute("retrying_tasks",to_string(retrying_tasks));
 	xmldoc->getDocumentElement().setAttribute("error_tasks",to_string(error_tasks));
-}
-
-#include <XPathTokens.h>
-Token *WorkflowInstance::evqGetWorkflowParameter(XPathEval::func_context context, const vector<Token *> &args)
-{
-	if(args.size()!=1)
-		throw Exception("evqGetWorkflowParameter()","Expecting 1 parameter");
-	
-	DOMXPath *xpath = (DOMXPath *)context.custom_context;
-	unique_ptr<DOMXPathResult> res(xpath->evaluate("/workflow/parameters/parameter[@name = '"+(string)(*args.at(0))+"']",context.context->nodes.at(0),DOMXPathResult::FIRST_RESULT_TYPE));
-	return new TokenString(res->getStringValue());
 }
