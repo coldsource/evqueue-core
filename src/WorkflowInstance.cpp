@@ -1145,23 +1145,15 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 		{
 			value = (DOMElement)values->getNodeValue();
 
-			try
+			// This is unchecked user input. We have to try evaluation
+			unique_ptr<DOMXPathResult> value_nodes(xmldoc->evaluate(value.getAttribute("select"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
+			
+			DOMNode value_node;
+			DOMNode old_node;
+			if(value_nodes->isNode())
 			{
-				// This is unchecked user input. We have to try evaluation
-				unique_ptr<DOMXPathResult> value_nodes(xmldoc->evaluate(value.getAttribute("select"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-				
-				DOMNode value_node;
-				DOMNode old_node;
-				if(value_nodes->isNode())
-				{
-					value_node = value_nodes->getNodeValue();
-					value.getParentNode().replaceChild(xmldoc->createTextNode(value_node.getTextContent()),value);
-				}
-			}
-			catch(Exception &e)
-			{
-				// XPath expression error
-				throw Exception("WorkflowInstance","Error computing input values");
+				value_node = value_nodes->getNodeValue();
+				value.getParentNode().replaceChild(xmldoc->createTextNode(value_node.getTextContent()),value);
 			}
 		}
 	}
