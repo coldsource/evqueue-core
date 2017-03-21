@@ -32,90 +32,95 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	while(s[*pos]==' ' && *pos<s.length())
 		(*pos)++;
 	
+	int base_pos = *pos + 1; // For human position use 1 as base
+	
+	if(*pos>=s.length())
+		return 0;
+	
 	// Match single characters syntax
 	if(s[*pos]=='(')
 	{
 		*pos= *pos+1;
-		return new TokenSyntax(LPAR);
+		return (new TokenSyntax(LPAR))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]==')')
 	{
 		*pos = *pos+1;
-		return new TokenSyntax(RPAR);
+		return (new TokenSyntax(RPAR))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]=='[')
 	{
 		*pos = *pos+1;
-		return new TokenSyntax(LSQ);
+		return (new TokenSyntax(LSQ))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]==']')
 	{
 		*pos = *pos+1;
-		return new TokenSyntax(RSQ);
+		return (new TokenSyntax(RSQ))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]==',')
 	{
 		*pos = *pos+1;
-		return new TokenSyntax(COMMA);
+		return (new TokenSyntax(COMMA))->SetInitialPosition(base_pos);
 	}
 	
 	// Match path delimiters
 	if(s.substr(*pos,2)=="//")
 	{
 		*pos = *pos+2;
-		return new TokenSyntax(DSLASH);
+		return (new TokenSyntax(DSLASH))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]=='/')
 	{
 		*pos = *pos+1;
-		return new TokenSyntax(SLASH);
+		return (new TokenSyntax(SLASH))->SetInitialPosition(base_pos);
 	}
 	
 	// Match operators
 	if(s[*pos]=='+')
 	{
 		*pos = *pos+1;
-		return new TokenOP(PLUS);
+		return (new TokenOP(PLUS))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]=='-' && (*pos+1>=s.length() || !isdigit(s[*pos+1]))) // Not not confuse - 1 (OP + LIT_INT) and -1 (LIT_INT)
 	{
 		*pos = *pos+1;
-		return new TokenOP(MINUS);
+		return (new TokenOP(MINUS))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]=='*')
 	{
 		*pos = *pos+1;
-		return new TokenOP(MULT); // Could also be a wildcard, see disambiguish_mult()
+		return (new TokenOP(MULT))->SetInitialPosition(base_pos); // Could also be a wildcard, see disambiguish_mult()
 	}
 	else if(s[*pos]=='=')
 	{
 		*pos = *pos+1;
-		return new TokenOP(EQ);
+		return (new TokenOP(EQ))->SetInitialPosition(base_pos);
 	}
 	else if(s.substr(*pos,2)=="!=")
 	{
 		*pos = *pos+2;
-		return new TokenOP(NEQ);
+		return (new TokenOP(NEQ))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]=='<')
 	{
 		*pos = *pos+1;
-		return new TokenOP(LT);
+		return (new TokenOP(LT))->SetInitialPosition(base_pos);
 	}
 	else if(s.substr(*pos,2)=="<=")
 	{
 		*pos = *pos+2;
-		return new TokenOP(LEQ);
+		return (new TokenOP(LEQ))->SetInitialPosition(base_pos);
 	}
 	else if(s[*pos]=='>')
 	{
 		*pos = *pos+1;
-		return new TokenOP(GT);
+		return (new TokenOP(GT))->SetInitialPosition(base_pos);
 	}
 	else if(s.substr(*pos,2)==">=")
 	{
 		*pos = *pos+2;
-		return new TokenOP(GEQ);
+		return (new TokenOP(GEQ))->SetInitialPosition(base_pos);
 	}
 	
 	// Match strings
@@ -132,10 +137,10 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 				buf += s[i++];
 		
 		if(i>=s.length() || (s[i]!='\'' && s[i]!='\"'))
-			throw Exception("XPath Parser","Invalid string : end delimiter expected");
+			throw Exception("XPath Parser","Invalid string : end delimiter expected for token at character "+to_string(base_pos));
 		
 		*pos = i + 1;
-		return new TokenString(buf);
+		return (new TokenString(buf))->SetInitialPosition(base_pos);
 	}
 	
 	// Match Integer or Float
@@ -156,7 +161,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 			if(s[i]=='.')
 			{
 				if(is_float)
-					throw Exception("XPath Parser","Invalid float : only one dot is allowed");
+					throw Exception("XPath Parser","Invalid float : only one dot is allowed for token at character "+to_string(base_pos));
 				else
 					is_float = true;
 			}
@@ -166,9 +171,9 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		
 		*pos = i;
 		if(is_float)
-			return new TokenFloat(stod(buf));
+			return (new TokenFloat(stod(buf)))->SetInitialPosition(base_pos);
 		else
-			return new TokenInt(stoi(buf));
+			return (new TokenInt(stoi(buf)))->SetInitialPosition(base_pos);
 	}
 	
 	// At this point we can only have Node name, Attribute or Function.
@@ -179,19 +184,19 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	if(s.substr(i,2)=="..")
 	{
 		*pos+=2;
-		return new TokenNodeName("..");
+		return (new TokenNodeName(".."))->SetInitialPosition(base_pos);
 	}
 	else if(s[i]=='.')
 	{
 		*pos+=1;
-		return new TokenNodeName(".");
+		return (new TokenNodeName("."))->SetInitialPosition(base_pos);
 	}
 	
 	bool is_attribute = false;
 	if(s.substr(i,2)=="@*")
 	{
 		*pos+=2;
-		return new TokenAttrName("*");
+		return (new TokenAttrName("*"))->SetInitialPosition(base_pos);
 	}
 	else if(s[i]=='@')
 	{
@@ -203,7 +208,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		buf += s[i++];
 	
 	if(buf=="")
-		throw Exception("XPath Parser","Invalid node or function name");
+		throw Exception("XPath Parser","Invalid node or function name at character "+to_string(base_pos));
 	
 	// Skip spaces
 	while(s[i]==' ' && i<s.length())
@@ -212,11 +217,11 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	// Function names only differ from node names because they have parenthesis
 	*pos = i;
 	if(s[i]=='(')
-		return new TokenFunc(buf);
+		return (new TokenFunc(buf))->SetInitialPosition(base_pos);
 	else if(!is_attribute)
-		return new TokenNodeName(buf);
+		return (new TokenNodeName(buf))->SetInitialPosition(base_pos);
 	else
-		return new TokenAttrName(buf);
+		return (new TokenAttrName(buf))->SetInitialPosition(base_pos);
 }
 
 // Create a TokenExpr from a string by calling parse_token
@@ -228,8 +233,9 @@ vector<Token *> XPathParser::parse_expr(const string expr)
 	{
 		// Parse tokens
 		int current_pos = 0;
-		while(current_pos!=expr.length())
-			v.push_back(parse_token(expr,&current_pos));
+		Token *token;
+		while(current_pos!=expr.length() && (token = parse_token(expr,&current_pos)))
+			v.push_back(token);
 	}
 	catch(Exception &e)
 	{
@@ -292,7 +298,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 			
 			// Function names must by followed by an expression (ie the parameters)
 			if(i+1>=expr->expr_tokens.size() || expr->expr_tokens.at(i+1)->GetType()!=EXPR)
-				throw Exception("XPath Parser","Missing function parameters");
+				throw Exception("XPath Parser","Missing function parameters"+func->LogInitialPosition());
 			
 			TokenExpr *parameters = ((TokenExpr *)expr->expr_tokens.at(i+1));
 			TokenExpr *parameter = 0;
@@ -309,7 +315,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 					if(parameter->expr_tokens.size()==0)
 					{
 						delete parameter;
-						throw Exception("XPath Parser","Empty function parameter");
+						throw Exception("XPath Parser","Empty function parameter"+func->LogInitialPosition());
 					}
 					
 					prepare_functions(parameter);
@@ -333,7 +339,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 				if(parameter->expr_tokens.size()==0)
 				{
 					delete parameter;
-					throw Exception("XPath Parser","Empty function parameter");
+					throw Exception("XPath Parser","Empty function parameter"+func->LogInitialPosition());
 				}
 			
 				prepare_functions(parameter);
@@ -423,9 +429,10 @@ void XPathParser::disambiguish_mult(TokenExpr *expr)
 			// Case 4 : 2 * * (after an operator)
 			if(i==0 || expr->expr_tokens.at(i-1)->GetType()==SLASH || expr->expr_tokens.at(i-1)->GetType()==DSLASH || expr->expr_tokens.at(i-1)->GetType()==OP)
 			{
+				int pos = expr->expr_tokens.at(i)->GetInitialPosition();
 				delete expr->expr_tokens.at(i);
 				expr->expr_tokens.erase(expr->expr_tokens.begin()+i);
-				expr->expr_tokens.insert(expr->expr_tokens.begin()+i,new TokenNodeName("*"));
+				expr->expr_tokens.insert(expr->expr_tokens.begin()+i,(new TokenNodeName("*"))->SetInitialPosition(pos));
 			}
 		}
 		else if(expr->expr_tokens.at(i)->GetType()==EXPR)
@@ -468,16 +475,17 @@ void XPathParser::disambiguish_operators(TokenExpr *expr)
 				)
 				{
 					// Replace token with operator
+					int pos = expr->expr_tokens.at(i)->GetInitialPosition();
 					delete expr->expr_tokens.at(i);
 					expr->expr_tokens.erase(expr->expr_tokens.begin()+i);
 					if(opname=="and")
-						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,new TokenOP(AND));
+						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,(new TokenOP(AND))->SetInitialPosition(pos));
 					else if(opname=="or")
-						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,new TokenOP(OR));
+						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,(new TokenOP(OR))->SetInitialPosition(pos));
 					else if(opname=="div")
-						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,new TokenOP(DIV));
+						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,(new TokenOP(DIV))->SetInitialPosition(pos));
 					else if(opname=="mod")
-						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,new TokenOP(MOD));
+						expr->expr_tokens.insert(expr->expr_tokens.begin()+i,(new TokenOP(MOD))->SetInitialPosition(pos));
 				}
 			}
 		}

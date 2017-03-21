@@ -143,7 +143,7 @@ Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,D
 	TokenFunc *func = (TokenFunc *)expr_tokens.at(i);
 	auto it = funcs_desc.find(func->name);
 	if(it==funcs_desc.end())
-		throw Exception("XPath Eval","Unknown function : "+func->name);
+		throw Exception("XPath Eval","Unknown function : "+func->name+func->LogInitialPosition());
 	
 	Token *ret;
 	vector<Token *>args;
@@ -279,7 +279,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 			else if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==FUNC)
 				val = evaluate_func(expr->expr_tokens,i+1,context,left_context);
 			else
-				throw Exception("XPath Eval","Missing node, attribute or function name after slash");
+				throw Exception("XPath Eval","Missing node, attribute or function name after slash"+expr->expr_tokens.at(i)->LogInitialPosition());
 			
 			replace_to = i+1;
 		}
@@ -287,8 +287,11 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		if(val)
 		{
 			if(token_type!=EXPR)
+			{
+				val->SetInitialPosition(expr->expr_tokens.at(replace_to)->GetInitialPosition());
 				for(int j=replace_from;j<=replace_to;j++)
 					delete expr->expr_tokens.at(j);
+			}
 			expr->expr_tokens.erase(expr->expr_tokens.begin()+replace_from,expr->expr_tokens.begin()+replace_to+1);
 			expr->expr_tokens.insert(expr->expr_tokens.begin()+replace_from,val);
 			i = replace_from;
@@ -316,16 +319,25 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		
 		// Get left operand
 		if(minop_index-1<0)
-			throw Exception("XPath Eval","Missing left operand of operator "+Token::ToString(op->op));
+			throw Exception("XPath Eval","Missing left operand of operator "+Token::ToString(op->op)+op->LogInitialPosition());
 		Token *left = expr->expr_tokens.at(minop_index-1);
 		
 		//  Get right operand
 		if(minop_index+1>=expr->expr_tokens.size())
-			throw Exception("XPath Eval","Missing right operand of operator "+Token::ToString(op->op));
+			throw Exception("XPath Eval","Missing right operand of operator "+Token::ToString(op->op)+op->LogInitialPosition());
 		Token *right = expr->expr_tokens.at(minop_index+1);
 		
 		// Compute operator result
-		Token *new_token = ops_desc.at(op->op).impl(left,right);
+		Token *new_token;
+		try
+		{
+			new_token = ops_desc.at(op->op).impl(left,right);
+		}
+		catch(Exception &e)
+		{
+			e.error += op->LogInitialPosition();
+			throw e;
+		}
 		
 		// Replace value in expression
 		delete op;

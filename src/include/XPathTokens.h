@@ -68,15 +68,23 @@ enum OPERATOR
 // Definition of tokens
 class Token
 {
-	static int cast_string_to_int(const std::string &s);
-	static double cast_string_to_double(const std::string &s);
+	int cast_string_to_int(const std::string &s) const;
+	double cast_string_to_double(const std::string &s) const;
 	
-	static int cast_token_to_int(const Token *token);
-	static double cast_token_to_double(const Token *token);
-	static std::string cast_token_to_string(const Token *token);
+	int cast_token_to_int(const Token *token) const;
+	double cast_token_to_double(const Token *token) const;
+	std::string cast_token_to_string(const Token *token) const;
+	
+	int initial_position = -1;
 	
 public:
+	Token();
+	Token(const Token &t);
 	virtual ~Token() {};
+	
+	Token *SetInitialPosition(int pos);
+	int GetInitialPosition() { return initial_position; }
+	std::string LogInitialPosition() const;
 	
 	virtual TOKEN_TYPE GetType() const = 0;
 	virtual Token *clone() = 0;
@@ -97,7 +105,7 @@ public:
 	TOKEN_TYPE type;
 	
 	TokenSyntax(TOKEN_TYPE type) { this->type = type; }
-	TokenSyntax(TokenSyntax &t) { type = t.type; }
+	TokenSyntax(const TokenSyntax &t):Token(t) { type = t.type; }
 	
 	TOKEN_TYPE GetType() const { return type; }
 	Token *clone() { return new TokenSyntax(*this); }
@@ -111,7 +119,7 @@ public:
 	OPERATOR op;
 	
 	TokenOP(OPERATOR op) { this->op = op; }
-	TokenOP(TokenOP &o) { op=o.op; }
+	TokenOP(const TokenOP &o):Token(o) { op=o.op; }
 	
 	TOKEN_TYPE GetType() const { return OP; }
 	Token *clone() { return new TokenOP(*this); }
@@ -125,7 +133,7 @@ public:
 	std::string s;
 	
 	TokenString(std::string s) { this->s = s; }
-	TokenString(TokenString &ts) { s = ts.s; }
+	TokenString(const TokenString &ts):Token(ts) { s = ts.s; }
 	
 	TOKEN_TYPE GetType() const { return LIT_STR; }
 	Token *clone() { return new TokenString(*this); }
@@ -139,7 +147,7 @@ public:
 	double d;
 	
 	TokenFloat(double d) { this->d = d; }
-	TokenFloat(TokenFloat &tf) { d = tf.d; }
+	TokenFloat(const TokenFloat &tf):Token(tf) { d = tf.d; }
 	
 	TOKEN_TYPE GetType() const { return LIT_FLOAT; }
 	Token *clone() { return new TokenFloat(*this); }
@@ -153,7 +161,7 @@ public:
 	int i;
 	
 	TokenInt(int i) { this->i = i; }
-	TokenInt(TokenInt &tf) { i = tf.i; }
+	TokenInt(const TokenInt &tf):Token(tf) { i = tf.i; }
 	
 	TOKEN_TYPE GetType() const { return LIT_INT; }
 	Token *clone() { return new TokenInt(*this); }
@@ -167,7 +175,7 @@ public:
 	bool b;
 	
 	TokenBool(bool b) { this->b = b; }
-	TokenBool(TokenBool &tb) { b = tb.b; }
+	TokenBool(const TokenBool &tb):Token(tb) { b = tb.b; }
 	
 	TOKEN_TYPE GetType() const { return LIT_BOOL; }
 	Token *clone() { return new TokenBool(*this); }
@@ -181,7 +189,7 @@ public:
 	std::vector<Token *> expr_tokens;
 	
 	TokenExpr() { }
-	TokenExpr(TokenExpr &expr);
+	TokenExpr(const TokenExpr &expr);
 	~TokenExpr();
 	
 	TOKEN_TYPE GetType() const { return EXPR; }
@@ -197,7 +205,7 @@ public:
 	TokenExpr *filter = 0;
 	
 	TokenNodeName(std::string name) { this->name = name; }
-	TokenNodeName(TokenNodeName &node_name);
+	TokenNodeName(const TokenNodeName &node_name);
 	~TokenNodeName();
 	
 	TOKEN_TYPE GetType() const { return NODENAME; }
@@ -213,7 +221,7 @@ public:
 	TokenExpr *filter = 0;
 	
 	TokenAttrName(std::string name) { this->name = name; }
-	TokenAttrName(TokenAttrName &attr_name);
+	TokenAttrName(const TokenAttrName &attr_name);
 	~TokenAttrName();
 	
 	TOKEN_TYPE GetType() const { return ATTRNAME; }
@@ -229,7 +237,7 @@ public:
 	std::vector<TokenExpr *> args;
 	
 	TokenFunc(std::string name) { this->name = name; }
-	TokenFunc(TokenFunc &f);
+	TokenFunc(const TokenFunc &f);
 	~TokenFunc();
 	
 	TOKEN_TYPE GetType() const { return FUNC; }
@@ -245,7 +253,7 @@ public:
 	
 	TokenNodeList() { }
 	TokenNodeList(DOMNode node);
-	TokenNodeList(TokenNodeList &list);
+	TokenNodeList(const TokenNodeList &list);
 	
 	TOKEN_TYPE GetType() const { return NODELIST; }
 	Token *clone() { return new TokenNodeList(*this); }
