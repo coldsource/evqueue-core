@@ -316,12 +316,12 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		
 		// Get left operand
 		if(minop_index-1<0)
-			throw Exception("XPath Eval","Missing left operand");
+			throw Exception("XPath Eval","Missing left operand of operator "+Token::ToString(op->op));
 		Token *left = expr->expr_tokens.at(minop_index-1);
 		
 		//  Get right operand
 		if(minop_index+1>=expr->expr_tokens.size())
-			throw Exception("XPath Eval","Missing right operand");
+			throw Exception("XPath Eval","Missing right operand of operator "+Token::ToString(op->op));
 		Token *right = expr->expr_tokens.at(minop_index+1);
 		
 		// Compute operator result
@@ -381,7 +381,7 @@ Token *XPathEval::Evaluate(const string &xpath,DOMNode context)
 	RegisterFunction("current",{XPathFunctions::current,lcontext.get()});
 	
 	XPathParser parser;
-	TokenExpr *parsed_expr;
+	TokenExpr *parsed_expr = 0;
 	try
 	{
 		parsed_expr = parser.Parse(xpath);
@@ -389,7 +389,8 @@ Token *XPathEval::Evaluate(const string &xpath,DOMNode context)
 	}
 	catch(Exception &e)
 	{
-		delete parsed_expr;
+		if(parsed_expr)
+			delete parsed_expr;
 		throw e;
 	}
 }
