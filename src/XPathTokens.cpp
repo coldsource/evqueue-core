@@ -139,19 +139,19 @@ string Token::ToString(TOKEN_TYPE type)
 
 string Token::ToString(OPERATOR op)
 {
-	if(op==MULT) return "MULT";
-	if(op==DIV) return "DIV";
-	if(op==MOD) return "MOD";
-	if(op==PLUS) return "PLUS";
-	if(op==MINUS) return "MINUS";
-	if(op==LT) return "LT";
-	if(op==LEQ) return "LEQ";
-	if(op==GT) return "GT";
-	if(op==GEQ) return "GEQ";
-	if(op==EQ) return "EQ";
-	if(op==NEQ) return "NEQ";
-	if(op==AND) return "AND";
-	if(op==OR) return "OR";
+	if(op==MULT) return "*";
+	if(op==DIV) return "div";
+	if(op==MOD) return "mod";
+	if(op==PLUS) return "+";
+	if(op==MINUS) return "-";
+	if(op==LT) return "<";
+	if(op==LEQ) return "<=";
+	if(op==GT) return ">";
+	if(op==GEQ) return ">=";
+	if(op==EQ) return "=";
+	if(op==NEQ) return "!=";
+	if(op==AND) return "and";
+	if(op==OR) return "or";
 	return "UNKNOWN";
 }
 
