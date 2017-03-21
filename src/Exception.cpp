@@ -18,7 +18,7 @@
  */
 
 #include <Exception.h>
-#include <string.h>
+#include <ExceptionManager.h>
 
 using namespace std;
 
@@ -26,4 +26,11 @@ Exception::Exception(const string &context, const string &error)
 {
 	this->context = context;
 	this->error = error;
+	
+	ExceptionManager::RegisterException(this);
+}
+
+Exception::~Exception()
+{
+	ExceptionManager::UnregisterException(this);
 }

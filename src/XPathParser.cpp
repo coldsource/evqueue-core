@@ -132,7 +132,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 				buf += s[i++];
 		
 		if(i>=s.length() || (s[i]!='\'' && s[i]!='\"'))
-			throw Exception("XPath","Invalid string : end delimiter expected");
+			throw Exception("XPath Parser","Invalid string : end delimiter expected");
 		
 		*pos = i + 1;
 		return new TokenString(buf);
@@ -156,7 +156,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 			if(s[i]=='.')
 			{
 				if(is_float)
-					throw Exception("XPath","Invalid float : only one dot is allowed");
+					throw Exception("XPath Parser","Invalid float : only one dot is allowed");
 				else
 					is_float = true;
 			}
@@ -203,7 +203,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		buf += s[i++];
 	
 	if(buf=="")
-		throw Exception("XPath","Invalid node or function name");
+		throw Exception("XPath Parser","Invalid node or function name");
 	
 	// Skip spaces
 	while(s[i]==' ' && i<s.length())
@@ -264,7 +264,7 @@ TokenExpr *XPathParser::resolve_parenthesis(const vector<Token *> &v, int *curre
 			{
 				*current_pos = i;
 				delete expr_token;
-				throw Exception("XPath","Missing closing parenthesis");
+				throw Exception("XPath Parser","Missing closing parenthesis");
 			}
 			
 			delete v.at(i);
@@ -292,7 +292,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 			
 			// Function names must by followed by an expression (ie the parameters)
 			if(i+1>=expr->expr_tokens.size() || expr->expr_tokens.at(i+1)->GetType()!=EXPR)
-				throw Exception("XPath","Missing function parameters");
+				throw Exception("XPath Parser","Missing function parameters");
 			
 			TokenExpr *parameters = ((TokenExpr *)expr->expr_tokens.at(i+1));
 			TokenExpr *parameter = 0;
@@ -309,7 +309,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 					if(parameter->expr_tokens.size()==0)
 					{
 						delete parameter;
-						throw Exception("XPath","Empty function parameter");
+						throw Exception("XPath Parser","Empty function parameter");
 					}
 					
 					prepare_functions(parameter);
@@ -333,7 +333,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 				if(parameter->expr_tokens.size()==0)
 				{
 					delete parameter;
-					throw Exception("XPath","Empty function parameter");
+					throw Exception("XPath Parser","Empty function parameter");
 				}
 			
 				prepare_functions(parameter);
@@ -378,13 +378,13 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 			if(j>=expr->expr_tokens.size() || expr->expr_tokens.at(j)->GetType()!=RSQ)
 			{
 				delete filter;
-				throw Exception("XPath","Missing closing square on filter");
+				throw Exception("XPath Parser","Missing closing square on filter");
 			}
 			
 			if(expr->expr_tokens.size()==0)
 			{
 				delete filter;
-				throw Exception("XPath","Empty filter");
+				throw Exception("XPath Parser","Empty filter");
 			}
 			
 			// Store filter expression in node name
@@ -500,7 +500,7 @@ TokenExpr *XPathParser::Parse(std::string xpath_expression)
 		parsed_expr = resolve_parenthesis(v,&current_pos);
 		
 		if(current_pos!=v.size())
-			throw Exception("XPath","Unexpected closing parenthesis");
+			throw Exception("XPath Parser","Unexpected closing parenthesis");
 		
 		disambiguish_mult(parsed_expr);
 		disambiguish_operators(parsed_expr);

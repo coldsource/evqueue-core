@@ -143,7 +143,7 @@ Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,D
 	TokenFunc *func = (TokenFunc *)expr_tokens.at(i);
 	auto it = funcs_desc.find(func->name);
 	if(it==funcs_desc.end())
-		throw Exception("XPath","Unknown function : "+func->name);
+		throw Exception("XPath Eval","Unknown function : "+func->name);
 	
 	Token *ret;
 	vector<Token *>args;
@@ -168,7 +168,7 @@ Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,D
 	{
 		for(int j=0;j<args.size();j++)
 			delete args.at(j);
-		throw Exception("XPath",e.context+" : "+e.error);
+		throw Exception("XPath Eval",e.context+" : "+e.error);
 	}
 	catch(...)
 	{
@@ -279,7 +279,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 			else if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==FUNC)
 				val = evaluate_func(expr->expr_tokens,i+1,context,left_context);
 			else
-				throw Exception("XPath","Missing node, attribute or function name after slash");
+				throw Exception("XPath Eval","Missing node, attribute or function name after slash");
 			
 			replace_to = i+1;
 		}
@@ -316,12 +316,12 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		
 		// Get left operand
 		if(minop_index-1<0)
-			throw Exception("XPath","Missing left operand");
+			throw Exception("XPath Eval","Missing left operand");
 		Token *left = expr->expr_tokens.at(minop_index-1);
 		
 		//  Get right operand
 		if(minop_index+1>=expr->expr_tokens.size())
-			throw Exception("XPath","Missing right operand");
+			throw Exception("XPath Eval","Missing right operand");
 		Token *right = expr->expr_tokens.at(minop_index+1);
 		
 		// Compute operator result
@@ -336,7 +336,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 	}
 	
 	if(expr->expr_tokens.size()!=1)
-		throw Exception("XPath","Error evaluating expression");
+		throw Exception("XPath Eval","Error evaluating expression");
 	
 	Token *ret = expr->expr_tokens.at(0)->clone();
 	delete expr;

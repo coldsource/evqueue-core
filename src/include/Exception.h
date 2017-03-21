@@ -29,6 +29,7 @@ class Exception
 		std::string error;
 		
 		Exception(const std::string &context,const std::string &error);
+		~Exception();
 };
 
 

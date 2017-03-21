@@ -206,6 +206,6 @@ DOMXPathResult *DOMDocument::evaluate(const string &xpath_str,DOMNode node,DOMXP
 	}
 	catch(Exception &e)
 	{
-		throw Exception("DOMDocument","Error evaluating XPath expression : "+xpath_str+". XPath returned error :"+e.error+" in context "+e.context);
+		throw Exception("DOMDocument","XPath expression error in '"+xpath_str+"'. XPath returned error :"+e.error+" in "+e.context);
 	}
 }

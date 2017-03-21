@@ -30,12 +30,12 @@ int Token::cast_string_to_int(const string &s)
 		size_t pos;
 		int n = stoi(s,&pos);
 		if(pos!=s.length())
-			throw Exception("XPath","Could not cast string to int");
+			throw Exception("Type Cast","Could not cast string to int");
 		return  n;
 	}
 	catch(...)
 	{
-		throw Exception("XPath","Could not cast string to int");
+		throw Exception("Type Cast","Could not cast string to int");
 	}
 }
 
@@ -46,12 +46,12 @@ double Token::cast_string_to_double(const string &s)
 		size_t pos;
 		int d = stod(s,&pos);
 		if(pos!=s.length())
-			throw Exception("XPath","Could not cast string to float");
+			throw Exception("Type Cast","Could not cast string to float");
 		return d;
 	}
 	catch(...)
 	{
-		throw Exception("XPath","Could not cast string to float");
+		throw Exception("Type Cast","Could not cast string to float");
 	}
 }
 
@@ -67,7 +67,7 @@ int Token::cast_token_to_int(const Token *token)
 		return cast_string_to_int(((TokenString *)token)->s);
 	else if(token->GetType()==NODELIST && ((TokenNodeList *)token)->nodes.size()==1)
 		return cast_string_to_int(((TokenNodeList *)token)->nodes.at(0).getNodeValue());
-	throw Exception("XPath","Incompatible type for operand");
+	throw Exception("Type Cast","Incompatible type for operand");
 }
 
 double Token::cast_token_to_double(const Token *token)
@@ -82,7 +82,7 @@ double Token::cast_token_to_double(const Token *token)
 		return cast_string_to_double(((TokenString *)token)->s);
 	else if(token->GetType()==NODELIST && ((TokenNodeList *)token)->nodes.size()==1)
 		return cast_string_to_double(((TokenNodeList *)token)->nodes.at(0).getNodeValue());
-	throw Exception("XPath","Incompatible type for operand");
+	throw Exception("Type Cast","Incompatible type for operand");
 }
 
 Token::operator int() const
@@ -112,7 +112,47 @@ Token::operator string() const
 		else if(((TokenNodeList *)this)->nodes.size()==1)
 			return ((TokenNodeList *)this)->nodes.at(0).getNodeValue();
 	}
-	throw Exception("XPath","Incompatible type for operand");
+	throw Exception("Type Cast","Incompatible type for operand");
+}
+
+string Token::ToString(TOKEN_TYPE type)
+{
+	if(type==LIT_STR) return "LIT_STR";
+	if(type==LIT_INT) return "LIT_INT";
+	if(type==LIT_FLOAT) return "LIT_FLOAT";
+	if(type==LIT_BOOL) return "LIT_BOOL";
+	if(type==NODENAME) return "NODENAME";
+	if(type==ATTRNAME) return "ATTRNAME";
+	if(type==FUNC) return "FUNC";
+	if(type==OP) return "OP";
+	if(type==LPAR) return "LPAR";
+	if(type==RPAR) return "RPAR";
+	if(type==LSQ) return "LSQ";
+	if(type==RSQ) return "RSQ";
+	if(type==COMMA) return "COMMA";
+	if(type==SLASH) return "SLASH";
+	if(type==DSLASH) return "DSLASH";
+	if(type==EXPR) return "EXPR";
+	if(type==NODELIST) return "NODELIST";
+	return "UNKNOWN";
+}
+
+string Token::ToString(OPERATOR op)
+{
+	if(op==MULT) return "MULT";
+	if(op==DIV) return "DIV";
+	if(op==MOD) return "MOD";
+	if(op==PLUS) return "PLUS";
+	if(op==MINUS) return "MINUS";
+	if(op==LT) return "LT";
+	if(op==LEQ) return "LEQ";
+	if(op==GT) return "GT";
+	if(op==GEQ) return "GEQ";
+	if(op==EQ) return "EQ";
+	if(op==NEQ) return "NEQ";
+	if(op==AND) return "AND";
+	if(op==OR) return "OR";
+	return "UNKNOWN";
 }
 
 TokenExpr::TokenExpr(TokenExpr &expr)

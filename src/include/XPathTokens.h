@@ -86,6 +86,9 @@ public:
 	operator int() const;
 	operator double() const;
 	operator std::string() const;
+	
+	static std::string ToString(TOKEN_TYPE type);
+	static std::string ToString(OPERATOR op);
 };
 
 class TokenSyntax:public Token

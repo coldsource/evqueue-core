@@ -27,6 +27,7 @@
 #include <QueuePool.h>
 #include <DB.h>
 #include <Exception.h>
+#include <ExceptionWorkflowContext.h>
 #include <Retrier.h>
 #include <Statistics.h>
 #include <Configuration.h>
@@ -445,13 +446,11 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 
 		try
 		{
+			ExceptionWorkflowContext ctx(task_node,"Task has vanished");
 			task = Tasks::GetInstance()->Get(task_node.getAttribute("name"));
 		}
 		catch(Exception e)
 		{
-			task_node.setAttribute("status","ABORTED");
-			task_node.setAttribute("error","Task has vanished");
-
 			error_tasks++;
 		}
 
@@ -978,6 +977,7 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 	int jobs_index = 0;
 
 	// Loop for tasks
+	ExceptionWorkflowContext ctx(job,"Corrupted workflow");
 	unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("tasks/task",job,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 
 	DOMElement task;
@@ -986,71 +986,64 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 
 	while(tasks->snapshotItem(tasks_index++))
 	{
-		try
+		task = (DOMElement)tasks->getNodeValue();
+
+		// Get task status (if present)
+		string task_status;
+		if(task.hasAttribute("status"))
+			task_status = task.getAttribute("status");
+
+		if(task_status=="TERMINATED")
+			continue; // Skip tasks that are already terminated (can happen on resume)
+
+		// Check for conditional tasks
+		if(task.hasAttribute("condition"))
 		{
-			task = (DOMElement)tasks->getNodeValue();
-
-			// Get task status (if present)
-			string task_status;
-			if(task.hasAttribute("status"))
-				task_status = task.getAttribute("status");
-
-			if(task_status=="TERMINATED")
-				continue; // Skip tasks that are already terminated (can happen on resume)
-
-			// Check for conditional tasks
-			if(task.hasAttribute("condition"))
-			{
-				unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(task.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-				
-				if(!test_expr->getIntegerValue())
-				{
-					task.setAttribute("status","SKIPPED");
-					task.setAttribute("details","Condition evaluates to false");
-					count_tasks_skipped++;
-					continue;
-				}
-			}
+			ExceptionWorkflowContext ctx(task,"Error evaluating condition");
 			
-			// Check for looped tasks (must expand them before execution)
-			if(task.hasAttribute("loop"))
+			unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(task.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
+			
+			if(!test_expr->getIntegerValue())
 			{
-				string loop_xpath = task.getAttribute("loop");
-				task.removeAttribute("loop");
-				
-				// This is unchecked user input, try evaluation
-				DOMNode matching_node;
-				unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-				
-				int matching_nodes_index = 0;
-				while(matching_nodes->snapshotItem(matching_nodes_index++))
-				{
-					matching_node = matching_nodes->getNodeValue();
-
-					DOMNode task_clone = task.cloneNode(true);
-					task.getParentNode().appendChild(task_clone);
-
-					// Enqueue task
-					replace_value(task_clone,matching_node);
-					enqueue_task(task_clone);
-				}
-
-				task.getParentNode().removeChild(task);
-			}
-			else
-			{
-				// Enqueue task
-				replace_value(task,context_node);
-				enqueue_task(task);
+				task.setAttribute("status","SKIPPED");
+				task.setAttribute("details","Condition evaluates to false");
+				count_tasks_skipped++;
+				continue;
 			}
 		}
-		catch(Exception &e)
+		
+		// Check for looped tasks (must expand them before execution)
+		if(task.hasAttribute("loop"))
 		{
-			task.setAttribute("status","ABORTED");
-			task.setAttribute("details",e.context+" : "+e.error);
+			ExceptionWorkflowContext ctx(task,"Error evaluating loop");
+			
+			string loop_xpath = task.getAttribute("loop");
+			task.removeAttribute("loop");
+			
+			// This is unchecked user input, try evaluation
+			DOMNode matching_node;
+			unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			
+			int matching_nodes_index = 0;
+			while(matching_nodes->snapshotItem(matching_nodes_index++))
+			{
+				matching_node = matching_nodes->getNodeValue();
 
-			// XPath expression error
-			throw Exception("WorkflowInstance","Exception in workflow instance");
+				DOMNode task_clone = task.cloneNode(true);
+				task.getParentNode().appendChild(task_clone);
+
+				// Enqueue task
+				replace_value(task_clone,matching_node);
+				enqueue_task(task_clone);
+			}
+
+			task.getParentNode().removeChild(task);
+		}
+		else
+		{
+			// Enqueue task
+			replace_value(task,context_node);
+			enqueue_task(task);
 		}
 	}
 	// If all task of job is skipped goto child job :
@@ -1062,6 +1055,8 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 void WorkflowInstance::run_subjobs(DOMElement job)
 {
 	// Loop on subjobs
+	ExceptionWorkflowContext ctx(job,"Corrupted workflow");
+	
 	unique_ptr<DOMXPathResult> subjobs(xmldoc->evaluate("subjobs/job",job,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 	DOMElement subjob;
 	
@@ -1078,6 +1073,8 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 			// Check for conditional jobs
 			if(subjob.hasAttribute("condition"))
 			{
+				ExceptionWorkflowContext ctx(subjob,"Error evaluationg condition");
+				
 				unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(subjob.getAttribute("condition"),job,DOMXPathResult::FIRST_RESULT_TYPE));
 
 				if(!test_expr->getIntegerValue())
@@ -1091,6 +1088,8 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 			// Check for looped jobs (must expand them before execution)
 			if(subjob.hasAttribute("loop"))
 			{
+				ExceptionWorkflowContext ctx(subjob,"Error evaluationg loop");
+				
 				string loop_xpath = subjob.getAttribute("loop");
 				subjob.removeAttribute("loop");
 
@@ -1120,13 +1119,8 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	}
 	catch(Exception &e)
 	{
-		// Set error on job
-		subjob.setAttribute("status","ABORTED");
-		subjob.setAttribute("details",e.context+" : "+e.error);
-
 		// Terminate workflow
 		error_tasks++;
-
 		throw e;
 	}
 }
@@ -1138,6 +1132,8 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 	int values_index;
 
 	{
+		ExceptionWorkflowContext ctx(task,"Error computing input value");
+		
 		// Replace <value> nodes par their literal value
 		unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//value",task,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 		values_index = 0;
@@ -1145,23 +1141,15 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 		{
 			value = (DOMElement)values->getNodeValue();
 
-			try
+			// This is unchecked user input. We have to try evaluation
+			unique_ptr<DOMXPathResult> value_nodes(xmldoc->evaluate(value.getAttribute("select"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
+			
+			DOMNode value_node;
+			DOMNode old_node;
+			if(value_nodes->isNode())
 			{
-				// This is unchecked user input. We have to try evaluation
-				unique_ptr<DOMXPathResult> value_nodes(xmldoc->evaluate(value.getAttribute("select"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-				
-				DOMNode value_node;
-				DOMNode old_node;
-				if(value_nodes->isNode())
-				{
-					value_node = value_nodes->getNodeValue();
-					value.getParentNode().replaceChild(xmldoc->createTextNode(value_node.getTextContent()),value);
-				}
-			}
-			catch(Exception &e)
-			{
-				// XPath expression error
-				throw Exception("WorkflowInstance","Error computing input values");
+				value_node = value_nodes->getNodeValue();
+				value.getParentNode().replaceChild(xmldoc->createTextNode(value_node.getTextContent()),value);
 			}
 		}
 	}
@@ -1169,6 +1157,8 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 	// Expand dynamic task host if needed
 	if(task.hasAttribute("host"))
 	{
+		ExceptionWorkflowContext ctx(task,"Error computing dynamic host");
+		
 		string attr_val = task.getAttribute("host");
 		string expanded_attr_val = xmldoc->ExpandXPathAttribute(attr_val,context_node);
 		task.setAttribute("host",expanded_attr_val);
@@ -1177,12 +1167,16 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 	// Expand dynamic task user if needed
 	if(task.hasAttribute("user"))
 	{
+		ExceptionWorkflowContext ctx(task,"Error computing dynamic user");
+		
 		string attr_val = task.getAttribute("user");
 		std::string expanded_attr_val = xmldoc->ExpandXPathAttribute(attr_val,context_node);
 		task.setAttribute("user",expanded_attr_val);
 	}
 	
 	{
+		ExceptionWorkflowContext ctx(task,"Error computing input values from copy node");
+		
 		// Replace <copy> nodes par their value
 		unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//copy",task,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 		values_index = 0;
@@ -1191,22 +1185,14 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 			value = (DOMElement)values->getNodeValue();
 			string xpath_select = value.getAttribute("select");
 
-			try
+			// This is unchecked user input. We have to try evaluation
+			unique_ptr<DOMXPathResult> result_nodes(xmldoc->evaluate(xpath_select,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			
+			int result_index = 0;
+			while(result_nodes->snapshotItem(result_index++))
 			{
-				// This is unchecked user input. We have to try evaluation
-				unique_ptr<DOMXPathResult> result_nodes(xmldoc->evaluate(xpath_select,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-				
-				int result_index = 0;
-				while(result_nodes->snapshotItem(result_index++))
-				{
-					DOMNode result_node = result_nodes->getNodeValue();
-					value.getParentNode().insertBefore(result_node.cloneNode(true),value);
-				}
-			}
-			catch(Exception &e)
-			{
-				// XPath expression error
-				throw Exception("WorkflowInstance","Error computing input values from copy node");
+				DOMNode result_node = result_nodes->getNodeValue();
+				value.getParentNode().insertBefore(result_node.cloneNode(true),value);
 			}
 
 			value.getParentNode().removeChild(value);
@@ -1241,7 +1227,7 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 	if(!pool->EnqueueTask(queue_name,task_host,this,task))
 	{
 		task.setAttribute("status","ABORTED");
-		task.setAttribute("error","Unknown queue name");
+		task.setAttribute("error","");
 
 		error_tasks++;
 
