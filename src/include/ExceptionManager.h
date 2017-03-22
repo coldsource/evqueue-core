@@ -17,20 +17,24 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Exception.h>
-#include <ExceptionManager.h>
+#ifndef _EXCEPTIONMANAGER_H_
+#define _EXCEPTIONMANAGER_H_
 
-using namespace std;
+class Exception;
 
-Exception::Exception(const string &context, const string &error)
+class ExceptionManager
 {
-	this->context = context;
-	this->error = error;
+	static thread_local Exception *current_exception;
+	static thread_local bool exception_logged;
 	
-	ExceptionManager::RegisterException(this);
-}
+public:
+	static void RegisterException(Exception *e);
+	static void UnregisterException(Exception *e);
+	
+	static Exception *GetCurrentException() { return current_exception; }
+	
+	static bool IsExceptionLogged() { return exception_logged; }
+	static void SetExceptionLogged() { exception_logged = true; }
+};
 
-Exception::~Exception()
-{
-	ExceptionManager::UnregisterException(this);
-}
+#endif

@@ -17,20 +17,31 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Exception.h>
+#include <ExceptionWorkflowContext.h>
 #include <ExceptionManager.h>
+#include <Exception.h>
+#include <DOMElement.h>
+
+#include <exception>
 
 using namespace std;
 
-Exception::Exception(const string &context, const string &error)
+ExceptionWorkflowContext::ExceptionWorkflowContext(DOMNode node,const string &log_message)
 {
-	this->context = context;
-	this->error = error;
-	
-	ExceptionManager::RegisterException(this);
+	this->node = node;
+	this->log_message = log_message;
 }
 
-Exception::~Exception()
+ExceptionWorkflowContext::~ExceptionWorkflowContext()
 {
-	ExceptionManager::UnregisterException(this);
+	if(uncaught_exception())
+	{
+		Exception *e = ExceptionManager::GetCurrentException();
+		if(e && !ExceptionManager::IsExceptionLogged())
+		{
+			node.setAttribute("status","ABORTED");
+			node.setAttribute("details",log_message+" : "+e->error);
+			ExceptionManager::SetExceptionLogged();
+		}
+	}
 }

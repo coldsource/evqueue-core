@@ -17,20 +17,21 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Exception.h>
-#include <ExceptionManager.h>
+#ifndef _EXCEPTIONWORKFLOWCONTEXT_H_
+#define _EXCEPTIONWORKFLOWCONTEXT_H_
 
-using namespace std;
+#include <DOMElement.h>
 
-Exception::Exception(const string &context, const string &error)
+#include <string>
+
+class ExceptionWorkflowContext
 {
-	this->context = context;
-	this->error = error;
+	DOMElement node;
+	std::string log_message;
 	
-	ExceptionManager::RegisterException(this);
-}
+public:
+	ExceptionWorkflowContext(DOMNode node,const std::string &log_message);
+	~ExceptionWorkflowContext();
+};
 
-Exception::~Exception()
-{
-	ExceptionManager::UnregisterException(this);
-}
+#endif

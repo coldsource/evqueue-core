@@ -31,12 +31,12 @@ int XPathOperators::cast_string_to_int(string s)
 		size_t pos;
 		int n = stoi(s,&pos);
 		if(pos!=s.length())
-			throw Exception("XPath","Could not cast string to int");
+			throw Exception("Type Cast","Could not cast string to int");
 		return  n;
 	}
 	catch(...)
 	{
-		throw Exception("XPath","Could not cast string to int");
+		throw Exception("Type Cast","Could not cast string to int");
 	}
 }
 
@@ -47,12 +47,12 @@ double XPathOperators::cast_string_to_double(string s)
 		size_t pos;
 		int d = stod(s,&pos);
 		if(pos!=s.length())
-			throw Exception("XPath","Could not cast string to float");
+			throw Exception("Type Cast","Could not cast string to float");
 		return d;
 	}
 	catch(...)
 	{
-		throw Exception("XPath","Could not cast string to float");
+		throw Exception("Type Cast","Could not cast string to float");
 	}
 }
 
@@ -74,7 +74,7 @@ Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 	{
 		// Casting as integers failed, try float
 		if(op==MOD)
-			throw Exception("XPath","Modulus operator can only operate on integers");
+			throw Exception("Operator MOD","Modulus operator can only operate on integers");
 		
 		left_d = (double)(*left);
 		right_d = double(*right);
@@ -110,7 +110,7 @@ Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 	}
 	
 	// Could not cast operands as numbers
-	throw Exception("XPath","Error evaluating operator");
+	throw Exception("Operator "+Token::ToString(op),"Error evaluating operator");
 }
 
 Token* XPathOperators::Operator_PLUS(Token* left, Token* right)
@@ -221,7 +221,7 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 	}
 	
 	// Operator could not be computed
-	throw Exception("XPath","Unable to evaluate operator '='");
+	throw Exception("Operator EQ","Unable to evaluate operator '='");
 }
 
 // The exact reverse or Operator_EQ
@@ -259,7 +259,7 @@ Token* XPathOperators::Operator_AND(Token* left, Token* right)
 	if(left->GetType()==LIT_BOOL && right->GetType()==LIT_BOOL)
 		return new TokenBool(((TokenBool *)left)->b && ((TokenBool *)right)->b);
 	
-	throw Exception("XPath","Logical operator 'and' can  only operate on boolean values");
+	throw Exception("Operator AND","Logical operator 'and' can  only operate on boolean values");
 }
 
 // Logical OR
@@ -268,5 +268,5 @@ Token* XPathOperators::Operator_OR(Token* left, Token* right)
 	if(left->GetType()==LIT_BOOL && right->GetType()==LIT_BOOL)
 		return new TokenBool(((TokenBool *)left)->b || ((TokenBool *)right)->b);
 	
-	throw Exception("XPath","Logical operator 'or' can  only operate on boolean values");
+	throw Exception("Operator OR","Logical operator 'or' can  only operate on boolean values");
 }

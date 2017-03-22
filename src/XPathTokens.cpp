@@ -23,42 +23,42 @@
 
 using namespace std;
 
-int Token::cast_string_to_int(const string &s)
+int Token::cast_string_to_int(const string &s) const
 {
 	try
 	{
 		size_t pos;
 		int n = stoi(s,&pos);
 		if(pos!=s.length())
-			throw Exception("XPath","Could not cast string to int");
+			throw Exception("Type Cast","Could not cast string to int"+LogInitialPosition());
 		return  n;
 	}
 	catch(...)
 	{
-		throw Exception("XPath","Could not cast string to int");
+		throw Exception("Type Cast","Could not cast string to int"+LogInitialPosition());
 	}
 }
 
-double Token::cast_string_to_double(const string &s)
+double Token::cast_string_to_double(const string &s) const
 {
 	try
 	{
 		size_t pos;
 		int d = stod(s,&pos);
 		if(pos!=s.length())
-			throw Exception("XPath","Could not cast string to float");
+			throw Exception("Type Cast","Could not cast string to float"+LogInitialPosition());
 		return d;
 	}
 	catch(...)
 	{
-		throw Exception("XPath","Could not cast string to float");
+		throw Exception("Type Cast","Could not cast string to float"+LogInitialPosition());
 	}
 }
 
-int Token::cast_token_to_int(const Token *token)
+int Token::cast_token_to_int(const Token *token) const
 {
 	if(token->GetType()==LIT_FLOAT)
-		throw Exception("XPath","Could not cast float to int");
+		throw Exception("XPath","Could not cast float to int"+LogInitialPosition());
 	else if(token->GetType()==LIT_INT)
 		return ((TokenInt *)token)->i;
 	else if(token->GetType()==LIT_BOOL)
@@ -67,10 +67,10 @@ int Token::cast_token_to_int(const Token *token)
 		return cast_string_to_int(((TokenString *)token)->s);
 	else if(token->GetType()==NODELIST && ((TokenNodeList *)token)->nodes.size()==1)
 		return cast_string_to_int(((TokenNodeList *)token)->nodes.at(0).getNodeValue());
-	throw Exception("XPath","Incompatible type for operand");
+	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
 }
 
-double Token::cast_token_to_double(const Token *token)
+double Token::cast_token_to_double(const Token *token) const
 {
 	if(token->GetType()==LIT_FLOAT)
 		return ((TokenFloat *)token)->d;
@@ -82,7 +82,29 @@ double Token::cast_token_to_double(const Token *token)
 		return cast_string_to_double(((TokenString *)token)->s);
 	else if(token->GetType()==NODELIST && ((TokenNodeList *)token)->nodes.size()==1)
 		return cast_string_to_double(((TokenNodeList *)token)->nodes.at(0).getNodeValue());
-	throw Exception("XPath","Incompatible type for operand");
+	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
+}
+
+Token::Token()
+{
+	initial_position = -1;
+}
+
+Token::Token(const Token &t)
+{
+	initial_position = t.initial_position;
+}
+
+Token *Token::SetInitialPosition(int pos)
+{
+	initial_position = pos;
+	return this;
+}
+string Token::LogInitialPosition() const
+{
+	if(initial_position==-1)
+		return "";
+	return " at character "+to_string(initial_position);
 }
 
 Token::operator int() const
@@ -112,10 +134,50 @@ Token::operator string() const
 		else if(((TokenNodeList *)this)->nodes.size()==1)
 			return ((TokenNodeList *)this)->nodes.at(0).getNodeValue();
 	}
-	throw Exception("XPath","Incompatible type for operand");
+	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
 }
 
-TokenExpr::TokenExpr(TokenExpr &expr)
+string Token::ToString(TOKEN_TYPE type)
+{
+	if(type==LIT_STR) return "LIT_STR";
+	if(type==LIT_INT) return "LIT_INT";
+	if(type==LIT_FLOAT) return "LIT_FLOAT";
+	if(type==LIT_BOOL) return "LIT_BOOL";
+	if(type==NODENAME) return "NODENAME";
+	if(type==ATTRNAME) return "ATTRNAME";
+	if(type==FUNC) return "FUNC";
+	if(type==OP) return "OP";
+	if(type==LPAR) return "LPAR";
+	if(type==RPAR) return "RPAR";
+	if(type==LSQ) return "LSQ";
+	if(type==RSQ) return "RSQ";
+	if(type==COMMA) return "COMMA";
+	if(type==SLASH) return "SLASH";
+	if(type==DSLASH) return "DSLASH";
+	if(type==EXPR) return "EXPR";
+	if(type==NODELIST) return "NODELIST";
+	return "UNKNOWN";
+}
+
+string Token::ToString(OPERATOR op)
+{
+	if(op==MULT) return "*";
+	if(op==DIV) return "div";
+	if(op==MOD) return "mod";
+	if(op==PLUS) return "+";
+	if(op==MINUS) return "-";
+	if(op==LT) return "<";
+	if(op==LEQ) return "<=";
+	if(op==GT) return ">";
+	if(op==GEQ) return ">=";
+	if(op==EQ) return "=";
+	if(op==NEQ) return "!=";
+	if(op==AND) return "and";
+	if(op==OR) return "or";
+	return "UNKNOWN";
+}
+
+TokenExpr::TokenExpr(const TokenExpr &expr):Token(expr)
 {
 	for(int i=0;i<expr.expr_tokens.size();i++)
 		expr_tokens.push_back(expr.expr_tokens.at(i)->clone());
@@ -127,7 +189,7 @@ TokenExpr::~TokenExpr()
 		delete expr_tokens.at(i);
 }
 
-TokenNodeName::TokenNodeName(TokenNodeName &node_name)
+TokenNodeName::TokenNodeName(const TokenNodeName &node_name):Token(node_name)
 {
 	name = node_name.name;
 	if(filter)
@@ -142,7 +204,7 @@ TokenNodeName::~TokenNodeName()
 		delete filter;
 }
 
-TokenAttrName::TokenAttrName(TokenAttrName &attr_name)
+TokenAttrName::TokenAttrName(const TokenAttrName &attr_name):Token(attr_name)
 {
 	name = attr_name.name;
 	if(filter)
@@ -157,7 +219,7 @@ TokenAttrName::~TokenAttrName()
 		delete filter;
 }
 
-TokenFunc::TokenFunc(TokenFunc &f)
+TokenFunc::TokenFunc(const TokenFunc &f):Token(f)
 {
 	name = f.name;
 	for(int i=0;i<args.size();i++)
@@ -175,7 +237,7 @@ TokenNodeList::TokenNodeList(DOMNode node)
 	nodes.push_back(node);
 }
 
-TokenNodeList::TokenNodeList(TokenNodeList &list)
+TokenNodeList::TokenNodeList(const TokenNodeList &list):Token(list)
 {
 	nodes = list.nodes;
 }

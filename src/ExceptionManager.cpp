@@ -17,20 +17,20 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Exception.h>
 #include <ExceptionManager.h>
+#include <Exception.h>
 
-using namespace std;
+thread_local Exception *ExceptionManager::current_exception = 0;
+thread_local bool ExceptionManager::exception_logged = false;
 
-Exception::Exception(const string &context, const string &error)
+void ExceptionManager::RegisterException(Exception *e)
 {
-	this->context = context;
-	this->error = error;
-	
-	ExceptionManager::RegisterException(this);
+	current_exception = e;
+	exception_logged = false;
 }
 
-Exception::~Exception()
+void ExceptionManager::UnregisterException(Exception *e)
 {
-	ExceptionManager::UnregisterException(this);
+	if(current_exception==e)
+		current_exception = 0;
 }
