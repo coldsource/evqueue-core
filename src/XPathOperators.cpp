@@ -116,6 +116,10 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 	if(t1->GetType()==LIT_STR && t2->GetType()==LIT_STR)
 		return new TokenBool(((TokenString *)t1)->s == ((TokenString *)t2)->s);
 	
+	// Same type : bool
+	if(t1->GetType()==LIT_BOOL && t2->GetType()==LIT_BOOL)
+		return new TokenBool(((TokenBool *)t1)->b == ((TokenBool *)t2)->b);
+	
 	// Same type : integer
 	if(t1->GetType()==LIT_INT && t2->GetType()==LIT_INT)
 		return new TokenBool(((TokenInt *)t1)->i == ((TokenInt *)t2)->i);
