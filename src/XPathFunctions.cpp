@@ -29,10 +29,10 @@ Token *XPathFunctions::count(XPathEval::func_context context, const vector<Token
 	if(args.size()!=1)
 		throw Exception("count()","Expecting 1 parameter");
 	
-	if(args.at(0)->GetType()!=NODELIST)
+	if(args.at(0)->GetType()!=SEQ)
 		return 0;
 	
-	return new TokenInt(((TokenNodeList *)args.at(0))->nodes.size());
+	return new TokenInt(((TokenSeq *)args.at(0))->items.size());
 }
 
 Token *XPathFunctions::substring(XPathEval::func_context context, const vector<Token *> &args)
@@ -64,5 +64,5 @@ Token *XPathFunctions::current(XPathEval::func_context context, const vector<Tok
 	if(args.size()!=0)
 		throw Exception("current()","Expecting no parameters");
 	
-	return new TokenNodeList(*((TokenNodeList *)context.custom_context));
+	return new TokenSeq(*((TokenSeq *)context.custom_context));
 }

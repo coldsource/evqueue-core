@@ -36,10 +36,10 @@ DOMXPathResult::~DOMXPathResult()
 
 bool DOMXPathResult::snapshotItem(int index)
 {
-	if(result->GetType()==NODELIST)
+	if(result->GetType()==SEQ)
 	{
-		TokenNodeList *list = (TokenNodeList *)result;
-		if(index<list->nodes.size())
+		TokenSeq *seq = (TokenSeq *)result;
+		if(index<seq->items.size())
 		{
 			idx = index;
 			return true;
@@ -64,10 +64,10 @@ bool DOMXPathResult::isNode()
 
 DOMNode DOMXPathResult::getNodeValue()
 {
-	if(result->GetType()==NODELIST)
+	if(result->GetType()==SEQ)
 	{
-		TokenNodeList *list = (TokenNodeList *)result;
-		return list->nodes.at(idx);
+		TokenSeq *seq = (TokenSeq *)result;
+		return *seq->items.at(idx);
 	}
 	
 	throw Exception("DOMXPathResult","Evaluation result is not a node");
@@ -75,36 +75,22 @@ DOMNode DOMXPathResult::getNodeValue()
 
 int DOMXPathResult::getIntegerValue()
 {
-	if(result->GetType()==NODELIST)
+	if(result->GetType()==SEQ)
 	{
-		TokenNodeList *list = (TokenNodeList *)result;
-		try
-		{
-			return stoi(list->nodes.at(idx).getNodeValue());
-		}
-		catch(...)
-		{
-			throw Exception("DOMXPathResult","Could not cast result to integer");
-		}
+		TokenSeq *seq = (TokenSeq *)result;
+		return *seq->items.at(idx);
 	}
 	else
-		return (int)(*result);
+		return *result;
 }
 
 string DOMXPathResult::getStringValue()
 {
-	if(result->GetType()==NODELIST)
+	if(result->GetType()==SEQ)
 	{
-		TokenNodeList *list = (TokenNodeList *)result;
-		try
-		{
-			return list->nodes.at(idx).getNodeValue();
-		}
-		catch(...)
-		{
-			throw Exception("DOMXPathResult","Could not cast result to integer");
-		}
+		TokenSeq *list = (TokenSeq *)result;
+		return *list->items.at(idx);
 	}
 	else
-		return (string)(*result);
+		return *result;
 }

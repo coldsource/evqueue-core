@@ -28,9 +28,6 @@ class Token;
 
 class XPathOperators
 {
-	static int cast_string_to_int(std::string s);
-	static double cast_string_to_double(std::string s);
-	
 	static Token *operator_calc(OPERATOR op,Token *left, Token *right);
 	
 	public:

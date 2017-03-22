@@ -32,39 +32,39 @@
 using namespace std;
 
 // Return filtered child nodes of context node
-TokenNodeList *XPathEval::get_child_nodes(string name,TokenNodeList *context,TokenNodeList *node_list,bool depth)
+TokenSeq *XPathEval::get_child_nodes(string name,TokenSeq *context,TokenSeq *node_list,bool depth)
 {
 	if(node_list==0)
-		node_list = new TokenNodeList();
+		node_list = new TokenSeq();
 	
-	for(int i=0;i<context->nodes.size();i++)
+	for(int i=0;i<context->items.size();i++)
 	{
 		if(name==".")
 		{
-			node_list->nodes.push_back(context->nodes.at(i));
+			node_list->items.push_back(new TokenNode(*context->items.at(i)));
 			continue;
 		}
 		else if(name=="..")
 		{
-			DOMNode parent = context->nodes.at(i).getParentNode();
+			DOMNode parent = ((DOMNode)(*context->items.at(i))).getParentNode();
 			if(parent)
-				node_list->nodes.push_back(parent);
+				node_list->items.push_back(new TokenNode(parent));
 			continue;
 		}
 		
-		DOMNode node = context->nodes.at(i).getFirstChild();
+		DOMNode node = ((DOMNode)*context->items.at(i)).getFirstChild();
 		while(node)
 		{
 			if(node.getNodeType()==DOMNode::ELEMENT_NODE)
 			{
 				if(depth)
 				{
-					TokenNodeList lcontext(node);
+					TokenSeq lcontext(new TokenNode(node));
 					get_child_nodes(name,&lcontext,node_list,depth);
 				}
 				
 				if(node.getNodeName()==name || name=="*")
-					node_list->nodes.push_back(node);
+					node_list->items.push_back(new TokenNode(node));
 			}
 			node = node.getNextSibling();
 		}
@@ -74,19 +74,19 @@ TokenNodeList *XPathEval::get_child_nodes(string name,TokenNodeList *context,Tok
 }
 
 // Return filtered attribute names of context node
-TokenNodeList *XPathEval::get_child_attributes(string name,TokenNodeList *context,TokenNodeList *node_list,bool depth)
+TokenSeq *XPathEval::get_child_attributes(string name,TokenSeq *context,TokenSeq *node_list,bool depth)
 {
 	if(node_list==0)
-		node_list = new TokenNodeList();
+		node_list = new TokenSeq();
 	
-	for(int i=0;i<context->nodes.size();i++)
+	for(int i=0;i<context->items.size();i++)
 	{
-		DOMNode node = context->nodes.at(i);
+		DOMNode node = *context->items.at(i);
 		if(node.getNodeType()==DOMNode::ELEMENT_NODE)
 		{
 			if(depth)
 			{
-				TokenNodeList lcontext(node);
+				TokenSeq lcontext(new TokenNode(node));
 				get_child_attributes(name,&lcontext,node_list,depth);
 			}
 			
@@ -94,7 +94,7 @@ TokenNodeList *XPathEval::get_child_attributes(string name,TokenNodeList *contex
 			for(int j=0;j<map.getLength();j++)
 			{
 				if(name=="*" || map.item(j).getNodeName()==name)
-					node_list->nodes.push_back((DOMNode)map.item(j));
+					node_list->items.push_back(new TokenNode((DOMNode)map.item(j)));
 			}
 		}
 	}
@@ -104,15 +104,15 @@ TokenNodeList *XPathEval::get_child_attributes(string name,TokenNodeList *contex
 
 // Evaluate a node filter to see if it must be keept or node
 // Xpath syntax : /node[<filter expression>]
-void XPathEval::filter_token_node_list(TokenNodeList *list,TokenExpr *filter)
+void XPathEval::filter_token_node_list(TokenSeq *list,TokenExpr *filter)
 {
-	for(int i=0;i<list->nodes.size();i++)
+	for(int i=0;i<list->items.size();i++)
 	{
 		TokenExpr *filter_copy = new TokenExpr(*filter);
-		Token *token = evaluate_expr(filter_copy,list->nodes.at(i));
+		Token *token = evaluate_expr(filter_copy,*list->items.at(i));
 		if(!(bool)(*token))
 		{
-			list->nodes.erase(list->nodes.begin()+i);
+			list->items.erase(list->items.begin()+i);
 			i--;
 		}
 		delete token;
@@ -121,23 +121,23 @@ void XPathEval::filter_token_node_list(TokenNodeList *list,TokenExpr *filter)
 
 // Get nth node from a node list
 // Xpath syntax : /node[<integer>]
-void XPathEval::get_nth_token_node_list(TokenNodeList *list,int n)
+void XPathEval::get_nth_token_node_list(TokenSeq *list,int n)
 {
-	int list_size = list->nodes.size();
+	int list_size = list->items.size();
 	// Out of range
 	if(n<=0 || n>list_size)
 		return;
 	
 	// Remove elements before
 	for(int i=0;i<n-1;i++)
-		list->nodes.erase(list->nodes.begin());
+		list->items.erase(list->items.begin());
 	
 	// Remove elements after
 	for(int i=n;i<list_size;i++)
-		list->nodes.erase(list->nodes.begin()+1);
+		list->items.erase(list->items.begin()+1);
 }
 
-Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,DOMNode current_context,TokenNodeList *left_context)
+Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,DOMNode current_context,TokenSeq *left_context)
 {
 	// Lookup funcion name
 	TokenFunc *func = (TokenFunc *)expr_tokens.at(i);
@@ -178,7 +178,7 @@ Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,D
 	}
 }
 
-Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,TokenNodeList *context,bool depth)
+Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
 {
 	TokenNodeName *node_name = (TokenNodeName *)expr_tokens.at(i);
 	
@@ -188,15 +188,15 @@ Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,T
 	if(node_name->filter)
 	{
 		if(((TokenExpr *)node_name->filter)->expr_tokens.size()==1 && ((TokenExpr *)node_name->filter)->expr_tokens.at(0)->GetType()==LIT_INT)
-			get_nth_token_node_list((TokenNodeList *)ret,((TokenInt *)((TokenExpr *)node_name->filter)->expr_tokens.at(0))->i);
+			get_nth_token_node_list((TokenSeq *)ret,((TokenInt *)((TokenExpr *)node_name->filter)->expr_tokens.at(0))->i);
 		else
-			filter_token_node_list((TokenNodeList *)ret,node_name->filter);
+			filter_token_node_list((TokenSeq *)ret,node_name->filter);
 	}
 	
 	return ret;
 }
 
-Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,TokenNodeList *context,bool depth)
+Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
 {
 	TokenNodeName *node_name = (TokenNodeName *)expr_tokens.at(i);
 	
@@ -206,9 +206,9 @@ Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, in
 	if(node_name->filter)
 	{
 		if(((TokenExpr *)node_name->filter)->expr_tokens.size()==1 && ((TokenExpr *)node_name->filter)->expr_tokens.at(0)->GetType()==LIT_INT)
-			get_nth_token_node_list((TokenNodeList *)ret,((TokenInt *)((TokenExpr *)node_name->filter)->expr_tokens.at(0))->i);
+			get_nth_token_node_list((TokenSeq *)ret,((TokenInt *)((TokenExpr *)node_name->filter)->expr_tokens.at(0))->i);
 		else
-			filter_token_node_list((TokenNodeList *)ret,node_name->filter);
+			filter_token_node_list((TokenSeq *)ret,node_name->filter);
 	}
 	
 	return ret;
@@ -237,21 +237,21 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		}
 		else if(token_type==FUNC)
 		{
-			TokenNodeList lcontext;
+			TokenSeq lcontext;
 			val = evaluate_func(expr->expr_tokens,i,context,&lcontext);
 			replace_from = replace_to = i;
 		}
 		else if(token_type==NODENAME)
 		{
 			// Single node name (not precedeed by / or //). Compute based on current context (relative path)
-			TokenNodeList lcontext(context);
+			TokenSeq lcontext(new TokenNode(context));
 			val = evaluate_node(expr->expr_tokens,i,&lcontext,false);
 			replace_from = replace_to = i;
 		}
 		else if(token_type==ATTRNAME)
 		{
 			// Single attribute name (not precedeed by / or //). Compute based on current context (relative path)
-			TokenNodeList lcontext(context);
+			TokenSeq lcontext(new TokenNode(context));
 			val = evaluate_attribute(expr->expr_tokens,i,&lcontext,false);
 			replace_from = replace_to = i;
 		}
@@ -259,11 +259,11 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		{
 			// Node or attribute name precedeed by '/' or '//'
 			bool depth = (token_type==DSLASH?true:false);
-			TokenNodeList abs_context((DOMNode)(*xmldoc));
-			TokenNodeList *left_context;
-			if(i>0 && expr->expr_tokens.at(i-1)->GetType()==NODELIST)
+			TokenSeq abs_context(new TokenNode((DOMNode)(*xmldoc)));
+			TokenSeq *left_context;
+			if(i>0 && expr->expr_tokens.at(i-1)->GetType()==SEQ)
 			{
-				left_context = (TokenNodeList *)expr->expr_tokens.at(i-1); // Compute based on preceding node list.
+				left_context = (TokenSeq *)expr->expr_tokens.at(i-1); // Compute based on preceding node list.
 				replace_from = i-1;
 			}
 			else
@@ -389,7 +389,7 @@ void XPathEval::RegisterFunction(string name,func_desc f)
 
 Token *XPathEval::Evaluate(const string &xpath,DOMNode context)
 {
-	unique_ptr<TokenNodeList> lcontext(new TokenNodeList(context));
+	unique_ptr<TokenSeq> lcontext(new TokenSeq(new TokenNode(context)));
 	RegisterFunction("current",{XPathFunctions::current,lcontext.get()});
 	
 	XPathParser parser;

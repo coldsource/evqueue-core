@@ -55,36 +55,6 @@ double Token::cast_string_to_double(const string &s) const
 	}
 }
 
-int Token::cast_token_to_int(const Token *token) const
-{
-	if(token->GetType()==LIT_FLOAT)
-		throw Exception("XPath","Could not cast float to int"+LogInitialPosition());
-	else if(token->GetType()==LIT_INT)
-		return ((TokenInt *)token)->i;
-	else if(token->GetType()==LIT_BOOL)
-		return ((TokenBool *)token)->b?1:0;
-	else if(token->GetType()==LIT_STR)
-		return cast_string_to_int(((TokenString *)token)->s);
-	else if(token->GetType()==NODELIST && ((TokenNodeList *)token)->nodes.size()==1)
-		return cast_string_to_int(((TokenNodeList *)token)->nodes.at(0).getNodeValue());
-	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
-}
-
-double Token::cast_token_to_double(const Token *token) const
-{
-	if(token->GetType()==LIT_FLOAT)
-		return ((TokenFloat *)token)->d;
-	else if(token->GetType()==LIT_INT)
-		return ((TokenInt *)token)->i;
-	else if(token->GetType()==LIT_BOOL)
-		return ((TokenBool *)token)->b?1:0;
-	else if(token->GetType()==LIT_STR)
-		return cast_string_to_double(((TokenString *)token)->s);
-	else if(token->GetType()==NODELIST && ((TokenNodeList *)token)->nodes.size()==1)
-		return cast_string_to_double(((TokenNodeList *)token)->nodes.at(0).getNodeValue());
-	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
-}
-
 Token::Token()
 {
 	initial_position = -1;
@@ -109,12 +79,56 @@ string Token::LogInitialPosition() const
 
 Token::operator int() const
 {
-	return cast_token_to_int(this);
+	if(this->GetType()==LIT_FLOAT)
+		throw Exception("XPath","Could not cast float to int"+LogInitialPosition());
+	else if(this->GetType()==LIT_INT)
+		return ((TokenInt *)this)->i;
+	else if(this->GetType()==LIT_BOOL)
+		return ((TokenBool *)this)->b?1:0;
+	else if(this->GetType()==LIT_STR)
+		return cast_string_to_int(((TokenString *)this)->s);
+	else if(this->GetType()==NODE)
+		return cast_string_to_int(((TokenNode *)this)->node.getNodeValue());
+	else if(this->GetType()==SEQ && ((TokenSeq *)this)->items.size()==1)
+	{
+		try
+		{
+			return (int)*(((TokenSeq *)this)->items.at(0));
+		}
+		catch(Exception &e)
+		{
+			e.error+=LogInitialPosition();
+			throw e;
+		}
+	}
+	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
 }
 
 Token::operator double() const
 {
-	return cast_token_to_double(this);
+	if(this->GetType()==LIT_FLOAT)
+		return ((TokenFloat *)this)->d;
+	else if(this->GetType()==LIT_INT)
+		return ((TokenInt *)this)->i;
+	else if(this->GetType()==LIT_BOOL)
+		return ((TokenBool *)this)->b?1:0;
+	else if(this->GetType()==LIT_STR)
+		return cast_string_to_double(((TokenString *)this)->s);
+	else if(this->GetType()==NODE)
+		return cast_string_to_double(((TokenNode *)this)->node.getNodeValue());
+	else if(this->GetType()==SEQ && ((TokenSeq *)this)->items.size()==1)
+	{
+		try
+		{
+			(double)*(((TokenSeq *)this)->items.at(0));
+		}
+		catch(Exception &e)
+		{
+			e.error+=LogInitialPosition();
+			throw e;
+		}
+	}
+	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
 }
 
 Token::operator string() const
@@ -127,13 +141,34 @@ Token::operator string() const
 		return to_string(((TokenFloat *)this)->d);
 	else if(GetType()==LIT_BOOL)
 		return to_string(((TokenBool *)this)->b);
-	else if(GetType()==NODELIST)
+	else if(this->GetType()==NODE)
+		return ((TokenNode *)this)->node.getNodeValue();
+	else if(GetType()==SEQ)
 	{
-		if(((TokenNodeList *)this)->nodes.size()==0)
+		if(((TokenSeq *)this)->items.size()==0)
 			return "";
-		else if(((TokenNodeList *)this)->nodes.size()==1)
-			return ((TokenNodeList *)this)->nodes.at(0).getNodeValue();
+		else if(((TokenSeq *)this)->items.size()==1)
+		{
+			try
+			{
+				return (string)*(((TokenSeq *)this)->items.at(0));
+			}
+			catch(Exception &e)
+			{
+				e.error+=LogInitialPosition();
+				throw e;
+			}
+		}
 	}
+	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
+}
+
+Token::operator DOMNode() const
+{
+	if(GetType()==NODE)
+		return ((TokenNode *)this)->node;
+	else if(this->GetType()==SEQ && ((TokenSeq *)this)->items.size()==1)
+		return (DOMNode)*(((TokenSeq *)this)->items.at(0));
 	throw Exception("Type Cast","Incompatible type for operand"+LogInitialPosition());
 }
 
@@ -155,7 +190,8 @@ string Token::ToString(TOKEN_TYPE type)
 	if(type==SLASH) return "SLASH";
 	if(type==DSLASH) return "DSLASH";
 	if(type==EXPR) return "EXPR";
-	if(type==NODELIST) return "NODELIST";
+	if(type==NODE) return "NODE";
+	if(type==SEQ) return "SEQ";
 	return "UNKNOWN";
 }
 
@@ -232,12 +268,19 @@ TokenFunc::~TokenFunc()
 		delete args.at(i);
 }
 
-TokenNodeList::TokenNodeList(DOMNode node)
+TokenSeq::TokenSeq(Token *token)
 {
-	nodes.push_back(node);
+	items.push_back(token);
 }
 
-TokenNodeList::TokenNodeList(const TokenNodeList &list):Token(list)
+TokenSeq::TokenSeq(const TokenSeq &list):Token(list)
 {
-	nodes = list.nodes;
+	for(int i=0;i<list.items.size();i++)
+		items.push_back(list.items.at(i)->clone());
+}
+
+TokenSeq::~TokenSeq()
+{
+	for(int i=0;i<items.size();i++)
+		delete items.at(i);
 }

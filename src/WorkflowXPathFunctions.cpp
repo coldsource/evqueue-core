@@ -53,7 +53,7 @@ Token *WorkflowXPathFunctions::evqGetParentJob(XPathEval::func_context context, 
 			throw Exception("evqGeParentJob()","Not enough parents");
 	}
 	
-	return new TokenNodeList(node);
+	return new TokenSeq(new TokenNode(node));
 }
 
 Token *WorkflowXPathFunctions::evqGetOutput(XPathEval::func_context context, const vector<Token *> &args)
@@ -63,8 +63,8 @@ Token *WorkflowXPathFunctions::evqGetOutput(XPathEval::func_context context, con
 	
 	string task_name = (string)(*args.at(0));
 	DOMNode context_node;
-	if(context.left_context->nodes.size()>0)
-		context_node = context.left_context->nodes.at(0);
+	if(context.left_context->items.size()>0)
+		context_node = *context.left_context->items.at(0);
 	else
 		context_node = *((DOMNode *)context.custom_context);
 	

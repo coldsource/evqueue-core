@@ -24,38 +24,6 @@
 
 using namespace std;
 
-int XPathOperators::cast_string_to_int(string s)
-{
-	try
-	{
-		size_t pos;
-		int n = stoi(s,&pos);
-		if(pos!=s.length())
-			throw Exception("Type Cast","Could not cast string to int");
-		return  n;
-	}
-	catch(...)
-	{
-		throw Exception("Type Cast","Could not cast string to int");
-	}
-}
-
-double XPathOperators::cast_string_to_double(string s)
-{
-	try
-	{
-		size_t pos;
-		int d = stod(s,&pos);
-		if(pos!=s.length())
-			throw Exception("Type Cast","Could not cast string to float");
-		return d;
-	}
-	catch(...)
-	{
-		throw Exception("Type Cast","Could not cast string to float");
-	}
-}
-
 // Used for computation operators that operates on numbers (+ - div mul mod)
 Token *XPathOperators::operator_calc(OPERATOR op,Token *left, Token *right)
 {
@@ -184,20 +152,19 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 		}
 	}
 	
-	// Literal comparted to node list
-	// Compute or on the nodelist set
-	if((t1->GetType()==LIT_STR || t1->GetType()==LIT_INT || t1->GetType()==LIT_FLOAT) && t2->GetType()==NODELIST)
+	// Literal comparted to sequence
+	if((t1->GetType()==LIT_STR || t1->GetType()==LIT_INT || t1->GetType()==LIT_FLOAT) && t2->GetType()==SEQ)
 	{
-		TokenNodeList *list = (TokenNodeList *)t2;
-		for(int i=0;i<list->nodes.size();i++)
+		TokenSeq *list = (TokenSeq *)t2;
+		for(int i=0;i<list->items.size();i++)
 		{
 			try
 			{
-				if(t1->GetType()==LIT_STR && list->nodes.at(i).getNodeValue()==((TokenString *)t1)->s)
+				if(t1->GetType()==LIT_STR && (string)(*list->items.at(i))==((TokenString *)t1)->s)
 					return new TokenBool(true);
-				else if(t1->GetType()==LIT_INT && cast_string_to_int(list->nodes.at(i).getNodeValue())==((TokenInt *)t1)->i)
+				else if(t1->GetType()==LIT_INT && (int)(*list->items.at(i))==((TokenInt *)t1)->i)
 					return new TokenBool(true);
-				else if(t1->GetType()==LIT_FLOAT && cast_string_to_double(list->nodes.at(i).getNodeValue())==((TokenFloat *)t1)->d)
+				else if(t1->GetType()==LIT_FLOAT && (double)(*list->items.at(i))==((TokenFloat *)t1)->d)
 					return new TokenBool(true);
 			}
 			catch(...) {}
@@ -207,14 +174,14 @@ Token* XPathOperators::Operator_EQ(Token* left, Token* right)
 	
 	// Two nodesets compared
 	// TRUE if any of the elements of set1 is found in set2
-	if(t1->GetType()==NODELIST && t2->GetType()==NODELIST)
+	if(t1->GetType()==SEQ && t2->GetType()==SEQ)
 	{
-		TokenNodeList *list1 = (TokenNodeList *)t1;
-		TokenNodeList *list2 = (TokenNodeList *)t2;
-		for(int i=0;i<list1->nodes.size();i++)
+		TokenSeq *list1 = (TokenSeq *)t1;
+		TokenSeq *list2 = (TokenSeq *)t2;
+		for(int i=0;i<list1->items.size();i++)
 		{
-			for(int j=0;j<list2->nodes.size();j++)
-				if(list1->nodes.at(i).getNodeValue()==list2->nodes.at(j).getNodeValue())
+			for(int j=0;j<list2->items.size();j++)
+				if((string)(*list1->items.at(i))==(string)(*list2->items.at(j)))
 					return new TokenBool(true);
 		}
 		return new TokenBool(false);

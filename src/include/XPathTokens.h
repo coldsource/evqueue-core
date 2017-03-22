@@ -20,10 +20,10 @@
 #ifndef _XPATHTOKENS_H_
 #define _XPATHTOKENS_H_
 
+#include <DOMNode.h>
+
 #include <string>
 #include <vector>
-
-class DOMNode;
 
 // Token types that can be found in XPath expression
 enum TOKEN_TYPE
@@ -44,7 +44,8 @@ enum TOKEN_TYPE
 	SLASH, // Slash path separator
 	DSLASH, // Double slash path separator
 	EXPR, // Expression, a complex XPath expression, full or partial
-	NODELIST // Resolved node list that points to dom elements
+	NODE, // Resolved node hat points to dom elements
+	SEQ // XPath sequence
 };
 
 // Operators types
@@ -71,10 +72,6 @@ class Token
 	int cast_string_to_int(const std::string &s) const;
 	double cast_string_to_double(const std::string &s) const;
 	
-	int cast_token_to_int(const Token *token) const;
-	double cast_token_to_double(const Token *token) const;
-	std::string cast_token_to_string(const Token *token) const;
-	
 	int initial_position = -1;
 	
 public:
@@ -94,6 +91,7 @@ public:
 	operator int() const;
 	operator double() const;
 	operator std::string() const;
+	operator DOMNode() const;
 	
 	static std::string ToString(TOKEN_TYPE type);
 	static std::string ToString(OPERATOR op);
@@ -246,19 +244,34 @@ public:
 	operator bool() const { return false; }
 };
 
-class TokenNodeList:public Token
+class TokenNode:public Token
 {
 public:
-	std::vector<DOMNode> nodes;
+	DOMNode node;
 	
-	TokenNodeList() { }
-	TokenNodeList(DOMNode node);
-	TokenNodeList(const TokenNodeList &list);
+	TokenNode(DOMNode node) { this->node = node; }
+	TokenNode(const TokenNode &tn):Token(tn) { node = tn.node; }
 	
-	TOKEN_TYPE GetType() const { return NODELIST; }
-	Token *clone() { return new TokenNodeList(*this); }
+	TOKEN_TYPE GetType() const { return NODE; }
+	Token *clone() { return new TokenNode(*this); }
 	
-	operator bool() const { return nodes.size(); }
+	operator bool() const { return node; }
+};
+
+class TokenSeq:public Token
+{
+public:
+	std::vector<Token *> items;
+	
+	TokenSeq() { }
+	TokenSeq(Token *token);
+	TokenSeq(const TokenSeq &list);
+	~TokenSeq();
+	
+	TOKEN_TYPE GetType() const { return SEQ; }
+	Token *clone() { return new TokenSeq(*this); }
+	
+	operator bool() const { return items.size(); }
 };
 
 #endif
