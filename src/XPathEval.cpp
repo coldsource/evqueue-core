@@ -335,7 +335,7 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		}
 		catch(Exception &e)
 		{
-			e.error += op->LogInitialPosition();
+			e.error += " while evaluating operator" + op->LogInitialPosition();
 			throw e;
 		}
 		
