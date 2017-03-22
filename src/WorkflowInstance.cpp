@@ -1048,6 +1048,7 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 	}
 	// If all task of job is skipped goto child job :
 	if (count_tasks_skipped == tasks_index-1){
+		printf("Oups\n");
 		run_subjobs(job);
 	}
 }
@@ -1060,14 +1061,14 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	unique_ptr<DOMXPathResult> subjobs(xmldoc->evaluate("subjobs/job",job,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 	DOMElement subjob;
 	
-	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&job});
-	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
-
 	try
 	{
 		int subjobs_index = 0;
 		while(subjobs->snapshotItem(subjobs_index++))
 		{
+			xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&job});
+			xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
+			
 			subjob = (DOMElement)subjobs->getNodeValue();
 
 			// Check for conditional jobs
@@ -1144,13 +1145,8 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 			// This is unchecked user input. We have to try evaluation
 			unique_ptr<DOMXPathResult> value_nodes(xmldoc->evaluate(value.getAttribute("select"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
 			
-			DOMNode value_node;
-			DOMNode old_node;
 			if(value_nodes->isNode())
-			{
-				value_node = value_nodes->getNodeValue();
-				value.getParentNode().replaceChild(xmldoc->createTextNode(value_node.getTextContent()),value);
-			}
+				value.getParentNode().replaceChild(xmldoc->createTextNode(value_nodes->getStringValue()),value);
 		}
 	}
 	
