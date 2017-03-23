@@ -1048,7 +1048,6 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 	}
 	// If all task of job is skipped goto child job :
 	if (count_tasks_skipped == tasks_index-1){
-		printf("Oups\n");
 		run_subjobs(job);
 	}
 }
