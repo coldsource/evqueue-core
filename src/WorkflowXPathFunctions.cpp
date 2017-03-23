@@ -31,7 +31,7 @@ Token *WorkflowXPathFunctions::evqGetWorkflowParameter(XPathEval::func_context c
 	if(args.size()!=1)
 		throw Exception("evqGetWorkflowParameter()","Expecting 1 parameter");
 	
-	unique_ptr<Token> ret(context.eval->Evaluate("/workflow/parameters/parameter[@name = '"+(string)(*args.at(0))+"']",context.current_context));
+	unique_ptr<Token> ret(context.eval->Evaluate("/workflow/parameters/parameter[@name = '"+(string)(*args.at(0))+"']",*context.current_context));
 	return new TokenString((string)(*ret));
 }
 

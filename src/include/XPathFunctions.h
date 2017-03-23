@@ -30,6 +30,11 @@ class Token;
 class XPathFunctions
 {
 	public:
+		static Token *fntrue(XPathEval::func_context context,const std::vector<Token *> &args);
+		static Token *fnfalse(XPathEval::func_context context,const std::vector<Token *> &args);
+		
+		static Token *name(XPathEval::func_context context,const std::vector<Token *> &args);
+		
 		static Token *count(XPathEval::func_context context,const std::vector<Token *> &args);
 		
 		static Token *substring(XPathEval::func_context context,const std::vector<Token *> &args);

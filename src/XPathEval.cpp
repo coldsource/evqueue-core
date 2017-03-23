@@ -109,7 +109,8 @@ void XPathEval::filter_token_node_list(TokenSeq *list,TokenExpr *filter)
 	for(int i=0;i<list->items.size();i++)
 	{
 		TokenExpr *filter_copy = new TokenExpr(*filter);
-		Token *token = evaluate_expr(filter_copy,*list->items.at(i));
+		TokenSeq context(list->items.at(i)->clone());
+		Token *token = evaluate_expr(filter_copy,&context);
 		if(!(bool)(*token))
 		{
 			list->items.erase(list->items.begin()+i);
@@ -137,7 +138,7 @@ void XPathEval::get_nth_token_node_list(TokenSeq *list,int n)
 		list->items.erase(list->items.begin()+1);
 }
 
-Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,DOMNode current_context,TokenSeq *left_context)
+Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,TokenSeq *current_context,TokenSeq *left_context)
 {
 	// Lookup funcion name
 	TokenFunc *func = (TokenFunc *)expr_tokens.at(i);
@@ -215,7 +216,7 @@ Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, in
 }
 
 // Evaluate a fully parsed expression
-Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
+Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
 {
 	if(token->GetType()!=EXPR)
 		return token; // Nothing to do
@@ -237,22 +238,20 @@ Token *XPathEval::evaluate_expr(Token *token,DOMNode context)
 		}
 		else if(token_type==FUNC)
 		{
-			TokenSeq lcontext;
-			val = evaluate_func(expr->expr_tokens,i,context,&lcontext);
+			TokenSeq left_context;
+			val = evaluate_func(expr->expr_tokens,i,context,&left_context);
 			replace_from = replace_to = i;
 		}
 		else if(token_type==NODENAME)
 		{
 			// Single node name (not precedeed by / or //). Compute based on current context (relative path)
-			TokenSeq lcontext(new TokenNode(context));
-			val = evaluate_node(expr->expr_tokens,i,&lcontext,false);
+			val = evaluate_node(expr->expr_tokens,i,context,false);
 			replace_from = replace_to = i;
 		}
 		else if(token_type==ATTRNAME)
 		{
 			// Single attribute name (not precedeed by / or //). Compute based on current context (relative path)
-			TokenSeq lcontext(new TokenNode(context));
-			val = evaluate_attribute(expr->expr_tokens,i,&lcontext,false);
+			val = evaluate_attribute(expr->expr_tokens,i,context,false);
 			replace_from = replace_to = i;
 		}
 		else if(token_type==SLASH || token_type==DSLASH)
@@ -376,6 +375,9 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	ops_desc.insert(ops_desc.begin()+OPERATOR::OR,{5,XPathOperators::Operator_OR});
 	
 	// Initialize functions
+	funcs_desc.insert(pair<string,func_desc>("true",{XPathFunctions::fntrue,0}));
+	funcs_desc.insert(pair<string,func_desc>("false",{XPathFunctions::fnfalse,0}));
+	funcs_desc.insert(pair<string,func_desc>("name",{XPathFunctions::name,0}));
 	funcs_desc.insert(pair<string,func_desc>("count",{XPathFunctions::count,0}));
 	funcs_desc.insert(pair<string,func_desc>("substring",{XPathFunctions::substring,0}));
 	funcs_desc.insert(pair<string,func_desc>("contains",{XPathFunctions::contains,0}));
@@ -389,15 +391,15 @@ void XPathEval::RegisterFunction(string name,func_desc f)
 
 Token *XPathEval::Evaluate(const string &xpath,DOMNode context)
 {
-	unique_ptr<TokenSeq> lcontext(new TokenSeq(new TokenNode(context)));
-	RegisterFunction("current",{XPathFunctions::current,lcontext.get()});
+	unique_ptr<TokenSeq> current_context(new TokenSeq(new TokenNode(context)));
+	RegisterFunction("current",{XPathFunctions::current,current_context.get()});
 	
 	XPathParser parser;
 	TokenExpr *parsed_expr = 0;
 	try
 	{
 		parsed_expr = parser.Parse(xpath);
-		return evaluate_expr(parsed_expr,context);
+		return evaluate_expr(parsed_expr,current_context.get());
 	}
 	catch(Exception &e)
 	{

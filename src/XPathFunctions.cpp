@@ -24,13 +24,51 @@
 
 using namespace std;
 
+Token *XPathFunctions::fntrue(XPathEval::func_context context,const std::vector<Token *> &args)
+{
+	return new TokenBool(true);
+}
+
+Token *XPathFunctions::fnfalse(XPathEval::func_context context,const std::vector<Token *> &args)
+{
+	return new TokenBool(false);
+}
+
+Token *XPathFunctions::name(XPathEval::func_context context,const std::vector<Token *> &args)
+{
+	if(args.size()>1)
+		throw Exception("substring()","Expecting 0 or 1 parameters");
+	
+	TokenSeq *seq;
+	if(args.size()==1)
+	{
+		if(args.at(0)->GetType()!=SEQ)
+			throw Exception("count()","Expecting sequence as parameter");
+		
+		seq = (TokenSeq *)args.at(0);
+	}
+	else
+	{
+		if(context.left_context->items.size()>0)
+			seq = context.left_context;
+		else
+			seq = context.current_context;
+	}
+	
+	TokenSeq *result_seq = new TokenSeq();
+	for(int i=0;i<seq->items.size();i++)
+		result_seq->items.push_back(new TokenString(((DOMNode)*seq->items.at(i)).getNodeName()));
+	
+	return result_seq;
+}
+
 Token *XPathFunctions::count(XPathEval::func_context context, const vector<Token *> &args)
 {
 	if(args.size()!=1)
 		throw Exception("count()","Expecting 1 parameter");
 	
 	if(args.at(0)->GetType()!=SEQ)
-		return 0;
+		throw Exception("count()","Expecting sequence as parameter");
 	
 	return new TokenInt(((TokenSeq *)args.at(0))->items.size());
 }
