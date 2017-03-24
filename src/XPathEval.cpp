@@ -169,7 +169,7 @@ Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,T
 	{
 		for(int j=0;j<args.size();j++)
 			delete args.at(j);
-		throw Exception("XPath Eval",e.context+" : "+e.error);
+		throw Exception("XPath Eval",e.context+" : "+e.error+" in function "+func->name+"()"+func->LogInitialPosition());
 	}
 	catch(...)
 	{

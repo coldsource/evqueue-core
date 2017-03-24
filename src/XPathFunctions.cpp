@@ -37,13 +37,13 @@ Token *XPathFunctions::fnfalse(XPathEval::func_context context,const std::vector
 Token *XPathFunctions::name(XPathEval::func_context context,const std::vector<Token *> &args)
 {
 	if(args.size()>1)
-		throw Exception("substring()","Expecting 0 or 1 parameters");
+		throw Exception("name()","Expecting 0 or 1 parameters");
 	
 	TokenSeq *seq;
 	if(args.size()==1)
 	{
 		if(args.at(0)->GetType()!=SEQ)
-			throw Exception("count()","Expecting sequence as parameter");
+			throw Exception("name()","Expecting sequence as parameter");
 		
 		seq = (TokenSeq *)args.at(0);
 	}
