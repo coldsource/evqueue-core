@@ -42,6 +42,7 @@
 #include <Sockets.h>
 #include <QueryResponse.h>
 #include <XMLUtils.h>
+#include <ProcessManager.h>
 #include <tools.h>
 #include <global.h>
 
@@ -60,9 +61,7 @@ using namespace std;
 
 WorkflowInstance::WorkflowInstance(void):
 	logs_directory(Configuration::GetInstance()->Get("processmanager.logs.directory")),
-	errlogs_directory(Configuration::GetInstance()->Get("processmanager.errlogs.directory")),
-	tasks_directory(Configuration::GetInstance()->Get("processmanager.tasks.directory")),
-	monitor_path(Configuration::GetInstance()->Get("processmanager.monitor.path"))
+	errlogs_directory(Configuration::GetInstance()->Get("processmanager.errlogs.directory"))
 {
 	workflow_instance_id = 0;
 	workflow_schedule_id = 0;
@@ -576,276 +575,102 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 
 	// As we arrive here, the task is queued. Whatever comes, its status will not be queued anymore (will be executing or aborted)
 	queued_tasks--;
-
-	if(is_cancelling)
-	{
-		// We are in cancelling state, we won't execute anything more
-		task_node.setAttribute("status","ABORTED");
-		task_node.setAttribute("error","Aborted on user request");
-
-		error_tasks++;
-		running_tasks--;
-
-		*workflow_terminated = workflow_ended();
-
-		record_savepoint();
-
-		return -1;
-	}
-
-	// Get task informations
-	string task_name = task_node.getAttribute("name");
-
+	
 	try
 	{
-		task = Tasks::GetInstance()->Get(task_name);
-	}
-	catch(Exception e)
-	{
-		// Task not found, abort and set error message
-		task_node.setAttribute("status","ABORTED");
-		task_node.setAttribute("error","Unknown task name");
+		ExceptionWorkflowContext ctx(task_node,"Task execution");
+		
+		if(is_cancelling)
+			throw Exception("WorkflowInstance","Aborted on user request");
+		
+		// Get task informations
+		string task_name = task_node.getAttribute("name");
+		
+		// Prepare parameters
+		// This must be done before fork() because xerces Transcode() can deadlock on fork (xerces bug...)
+		vector<string> parameters_name;
+		vector<string> parameters_value;
+		{
+			unique_ptr<DOMXPathResult> parameters(xmldoc->evaluate("input",task_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			DOMElement parameter;
+			int parameters_index = 0;
 
+			while(parameters->snapshotItem(parameters_index))
+			{
+				parameter = (DOMElement)parameters->getNodeValue();
+
+				if(parameter.hasAttribute("name"))
+					parameters_name.push_back(parameter.getAttribute("name"));
+				else
+					parameters_name.push_back("");
+
+				parameters_value.push_back(parameter.getTextContent());
+
+				parameters_index++;
+			}
+		}
+		
+		// Prepare pipe for SDTIN
+		string stdin_parameter;
+		{
+			unique_ptr<DOMXPathResult> parameters(xmldoc->evaluate("stdin",task_node,DOMXPathResult::FIRST_RESULT_TYPE));
+
+			if(parameters->isNode())
+			{
+				DOMElement stdin_node = (DOMElement)parameters->getNodeValue();
+				if(stdin_node.hasAttribute("mode") && stdin_node.getAttribute("mode")=="text")
+					stdin_parameter = stdin_node.getTextContent();
+				else
+					stdin_parameter = xmldoc->Serialize(stdin_node);
+			}
+		}
+		
+		// Get user/host informations
+		string user;
+		string host;
+		if(task_node.hasAttribute("host"))
+		{
+			host = task_node.getAttribute("host");
+			if(task_node.hasAttribute("user"))
+				user = task_node.getAttribute("user");
+		}
+		else if(xmldoc->getDocumentElement().hasAttribute("host"))
+		{
+			host = xmldoc->getDocumentElement().getAttribute("host");
+			if(xmldoc->getDocumentElement().hasAttribute("user"))
+				user = xmldoc->getDocumentElement().getAttribute("user");
+		}
+		
+		Logger::Log(LOG_INFO,"[WID %d] Executing %s",workflow_instance_id,task_name.c_str());
+		
+		// Execute task
+		pid_t pid = ProcessManager::ExecuteTask(task_name,parameters_name,parameters_value,stdin_parameter,tid,host,user);
+		
+		// Update task node
+		task_node.setAttribute("status","EXECUTING");
+		task_node.setAttribute("pid",to_string(pid));
+		task_node.setAttribute("tid",to_string(tid));
+		task_node.setAttribute("execution_time",format_datetime());
+		
+		*workflow_terminated = workflow_ended();
+
+		record_savepoint();
+
+		return pid;
+	}
+	catch(Exception &e)
+	{
 		error_tasks++;
 		running_tasks--;
 
 		*workflow_terminated = workflow_ended();
 
 		record_savepoint();
-
-		Logger::Log(LOG_WARNING,"[WID %d] Unknown task name '%s'",workflow_instance_id,task_name.c_str());
+		
+		Logger::Log(LOG_WARNING,"[WID %d] '%s'",workflow_instance_id,e.error.c_str());
 
 		return -1;
 	}
-
-	Logger::Log(LOG_INFO,"[WID %d] Executing %s",workflow_instance_id,task_name.c_str());
-
-	// Prepare parameters
-	// This must be done before fork() because xerces Transcode() can deadlock on fork (xerces bug...)
-	unsigned int parameters_count,parameters_index;
-	{
-		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("count(input)",task_node,DOMXPathResult::FIRST_RESULT_TYPE));
-		parameters_count = res->getIntegerValue();
-	}
-
-	vector<string> parameters_name;
-	vector<string> parameters_value;
-
-	{
-		unique_ptr<DOMXPathResult> parameters(xmldoc->evaluate("input",task_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-		DOMElement parameter;
-		parameters_index = 0;
-
-		while(parameters->snapshotItem(parameters_index))
-		{
-			parameter = (DOMElement)parameters->getNodeValue();
-
-			if(parameter.hasAttribute("name"))
-				parameters_name.push_back(parameter.getAttribute("name"));
-			else
-				parameters_name.push_back("");
-
-			parameters_value.push_back(parameter.getTextContent());
-
-			parameters_index++;
-		}
-	}
-
-	// Prepare pipe for SDTIN
-	string stdin_parameter;
-
-	{
-		unique_ptr<DOMXPathResult> parameters(xmldoc->evaluate("stdin",task_node,DOMXPathResult::FIRST_RESULT_TYPE));
-
-		if(parameters->isNode())
-		{
-			DOMElement stdin_node = (DOMElement)parameters->getNodeValue();
-			if(stdin_node.hasAttribute("mode") && stdin_node.getAttribute("mode")=="text")
-				stdin_parameter = stdin_node.getTextContent();
-			else
-				stdin_parameter = xmldoc->Serialize(stdin_node);
-		}
-	}
-
-	if(stdin_parameter!="")
-	{
-		// Prepare pipe before fork() since we have STDIN input
-		parameters_pipe[0] = -1;
-		if(pipe(parameters_pipe)!=0)
-		{
-			Logger::Log(LOG_WARNING,"[ WorkflowInstance ] Unable to execute task : could not create pipe");
-
-			task_node.setAttribute("status","ABORTED");
-			task_node.setAttribute("error","Unable to create pipe");
-
-			error_tasks++;
-			running_tasks--;
-		}
-	}
-
-	pid_t pid;
-	if(stdin_parameter=="" || parameters_pipe[0]!=-1)
-	{
-		// Fork child
-		pid = fork();
-
-		if(pid==0)
-		{
-			setsid(); // This is used to avoid CTRL+C killing all child processes
-
-			pid = getpid();
-			sprintf(tid_str,"%d",tid);
-
-			// Send QID to monitor
-			Configuration *config = Configuration::GetInstance();
-			setenv("EVQUEUE_IPC_QID",config->Get("core.ipc.qid").c_str(),true);
-
-			// Compute task filename
-			string task_filename;
-			if(task.IsAbsolutePath())
-				task_filename = task.GetBinary();
-			else
-				task_filename = tasks_directory+"/"+task.GetBinary();
-
-			if(!task.GetWorkingDirectory().empty())
-				setenv("EVQUEUE_WORKING_DIRECTORY",task.GetWorkingDirectory().c_str(),true);
-
-			// Set SSH variables for remote execution if needed by task
-			if(!task.GetHost().empty())
-			{
-				// Task is configured as distant
-				setenv("EVQUEUE_SSH_HOST",task.GetHost().c_str(),true);
-
-				if(!task.GetUser().empty())
-					setenv("EVQUEUE_SSH_USER",task.GetUser().c_str(),true);
-			}
-			else if(task_node.hasAttribute("host"))
-			{
-				// Dynamic task execution is enabled
-				setenv("EVQUEUE_SSH_HOST",task_node.getAttribute("host").c_str(),true);
-				
-				if(task_node.hasAttribute("user"))
-					setenv("EVQUEUE_SSH_USER",task_node.getAttribute("user").c_str(),true);
-			}
-			else if(xmldoc->getDocumentElement().hasAttribute("host"))
-			{
-				// Set SSH variables for remote execution if needed by workflow instance
-				setenv("EVQUEUE_SSH_HOST",xmldoc->getDocumentElement().getAttribute("host").c_str(),true);
-
-				if(xmldoc->getDocumentElement().hasAttribute("user"))
-					setenv("EVQUEUE_SSH_USER",xmldoc->getDocumentElement().getAttribute("user").c_str(),true);
-			}
-
-			if(getenv("EVQUEUE_SSH_HOST"))
-			{
-				// Set SSH config variables if SSH execution is asked
-				setenv("EVQUEUE_SSH_PATH",config->Get("processmanager.monitor.ssh_path").c_str(),true);
-
-				if(config->Get("processmanager.monitor.ssh_key").length()>0)
-					setenv("EVQUEUE_SSH_KEY",config->Get("processmanager.monitor.ssh_key").c_str(),true);
-
-				// Send agent path if needed
-				if(task.GetUseAgent())
-					setenv("EVQUEUE_SSH_AGENT",config->Get("processmanager.agent.path").c_str(),true);
-			}
-
-			if(stdin_parameter!="")
-			{
-				dup2(parameters_pipe[0],STDIN_FILENO);
-				close(parameters_pipe[1]);
-			}
-
-			// Redirect output to log files
-			int fno;
-
-			fno = open_log_file(tid,LOG_FILENO);
-			dup2(fno,LOG_FILENO);
-
-			fno = open_log_file(tid,STDOUT_FILENO);
-			dup2(fno,STDOUT_FILENO);
-
-			if(!task.GetMergeStderr())
-				fno = open_log_file(tid,STDERR_FILENO);
-
-			dup2(fno,STDERR_FILENO);
-
-			if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
-			{
-				const char *args[parameters_count+4];
-
-				args[0] = monitor_path.c_str();
-				args[1] = task_filename.c_str();
-				args[2] = tid_str;
-
-				for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
-					args[parameters_index+3] = parameters_value[parameters_index].c_str();
-
-				args[parameters_index+3] = (char *)0;
-
-				execv(monitor_path.c_str(),(char * const *)args);
-
-				Logger::Log(LOG_ERR,"Could not execute task monitor");
-				tools_send_exit_msg(1,tid,-1);
-				exit(-1);
-			}
-			else if(task.GetParametersMode()==task_parameters_mode::ENV)
-			{
-				for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
-				{
-					if(parameters_name[parameters_index]!="")
-						setenv(parameters_name[parameters_index].c_str(),parameters_value[parameters_index].c_str(),1);
-					else
-						setenv("DEFAULT_PARAMETER_NAME",parameters_value[parameters_index].c_str(),1);
-				}
-
-				execl(monitor_path.c_str(),monitor_path.c_str(),task_filename.c_str(),tid_str,(char *)0);
-
-				Logger::Log(LOG_ERR,"Could not execute task monitor");
-				tools_send_exit_msg(1,tid,-1);
-				exit(-1);
-			}
-
-			tools_send_exit_msg(1,tid,-1);
-			exit(-1);
-		}
-
-		if(pid>0)
-		{
-			if(stdin_parameter!="")
-			{
-				// We have STDIN data
-				if(write(parameters_pipe[1],stdin_parameter.c_str(),stdin_parameter.length())!=stdin_parameter.length())
-					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
-
-				close(parameters_pipe[0]);
-				close(parameters_pipe[1]);
-			}
-
-			// Update task node
-			task_node.setAttribute("status","EXECUTING");
-			task_node.setAttribute("pid",to_string(pid));
-			task_node.setAttribute("tid",to_string(tid));
-			task_node.setAttribute("execution_time",format_datetime());
-		}
-
-
-		if(pid<0)
-		{
-			Logger::Log(LOG_WARNING,"[ WorkflowInstance ] Unable to execute task : could not fork");
-
-			task_node.setAttribute("status","ABORTED");
-			task_node.setAttribute("error","Unable to fork");
-
-			error_tasks++;
-			running_tasks--;
-		}
-	}
-
-	*workflow_terminated = workflow_ended();
-
-	record_savepoint();
-
-	return pid;
 }
 
 void WorkflowInstance::TaskUpdateProgression(DOMElement task, int prct)
@@ -972,7 +797,7 @@ void WorkflowInstance::retry_task(DOMElement task)
 	retrying_tasks++;
 }
 
-void WorkflowInstance::run(DOMElement job,DOMElement context_node)
+void WorkflowInstance::run_tasks(DOMElement job,DOMElement context_node)
 {
 	int jobs_index = 0;
 
@@ -987,69 +812,76 @@ void WorkflowInstance::run(DOMElement job,DOMElement context_node)
 	while(tasks->snapshotItem(tasks_index++))
 	{
 		task = (DOMElement)tasks->getNodeValue();
-
-		// Get task status (if present)
-		string task_status;
-		if(task.hasAttribute("status"))
-			task_status = task.getAttribute("status");
-
-		if(task_status=="TERMINATED")
-			continue; // Skip tasks that are already terminated (can happen on resume)
-
-		// Check for conditional tasks
-		if(task.hasAttribute("condition"))
-		{
-			ExceptionWorkflowContext ctx(task,"Error evaluating condition");
-			
-			unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(task.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-			
-			if(!test_expr->getIntegerValue())
-			{
-				task.setAttribute("status","SKIPPED");
-				task.setAttribute("details","Condition evaluates to false");
-				count_tasks_skipped++;
-				continue;
-			}
-		}
 		
-		// Check for looped tasks (must expand them before execution)
-		if(task.hasAttribute("loop"))
-		{
-			ExceptionWorkflowContext ctx(task,"Error evaluating loop");
-			
-			string loop_xpath = task.getAttribute("loop");
-			task.removeAttribute("loop");
-			
-			// This is unchecked user input, try evaluation
-			DOMNode matching_node;
-			unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-			
-			int matching_nodes_index = 0;
-			while(matching_nodes->snapshotItem(matching_nodes_index++))
-			{
-				matching_node = matching_nodes->getNodeValue();
-
-				DOMNode task_clone = task.cloneNode(true);
-				task.getParentNode().appendChild(task_clone);
-
-				// Enqueue task
-				replace_value(task_clone,matching_node);
-				enqueue_task(task_clone);
-			}
-
-			task.getParentNode().removeChild(task);
-		}
-		else
-		{
-			// Enqueue task
-			replace_value(task,context_node);
-			enqueue_task(task);
-		}
+		if(!run_task(task,context_node))
+			count_tasks_skipped++;
 	}
 	// If all task of job is skipped goto child job :
 	if (count_tasks_skipped == tasks_index-1){
 		run_subjobs(job);
 	}
+}
+
+bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
+{
+	// Get task status (if present)
+	string task_status;
+	if(task.hasAttribute("status"))
+		task_status = task.getAttribute("status");
+
+	if(task_status=="TERMINATED")
+		return false; // Skip tasks that are already terminated (can happen on resume)
+
+	// Check for conditional tasks
+	if(task.hasAttribute("condition"))
+	{
+		ExceptionWorkflowContext ctx(task,"Error evaluating condition");
+		
+		unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(task.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
+		
+		if(!test_expr->getIntegerValue())
+		{
+			task.setAttribute("status","SKIPPED");
+			task.setAttribute("details","Condition evaluates to false");
+			return false;
+		}
+	}
+	
+	// Check for looped tasks (must expand them before execution)
+	if(task.hasAttribute("loop"))
+	{
+		ExceptionWorkflowContext ctx(task,"Error evaluating loop");
+		
+		string loop_xpath = task.getAttribute("loop");
+		task.removeAttribute("loop");
+		
+		// This is unchecked user input, try evaluation
+		DOMNode matching_node;
+		unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		
+		int matching_nodes_index = 0;
+		while(matching_nodes->snapshotItem(matching_nodes_index++))
+		{
+			matching_node = matching_nodes->getNodeValue();
+
+			DOMNode task_clone = task.cloneNode(true);
+			task.getParentNode().appendChild(task_clone);
+
+			// Enqueue task
+			replace_value(task_clone,matching_node);
+			enqueue_task(task_clone);
+		}
+
+		task.getParentNode().removeChild(task);
+	}
+	else
+	{
+		// Enqueue task
+		replace_value(task,context_node);
+		enqueue_task(task);
+	}
+	
+	return true;
 }
 
 void WorkflowInstance::run_subjobs(DOMElement job)
@@ -1069,52 +901,6 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 			xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
 			
 			subjob = (DOMElement)subjobs->getNodeValue();
-
-			// Check for conditional jobs
-			if(subjob.hasAttribute("condition"))
-			{
-				ExceptionWorkflowContext ctx(subjob,"Error evaluationg condition");
-				
-				unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(subjob.getAttribute("condition"),job,DOMXPathResult::FIRST_RESULT_TYPE));
-
-				if(!test_expr->getIntegerValue())
-				{
-					subjob.setAttribute("status","SKIPPED");
-					subjob.setAttribute("details","Condition evaluates to false");
-					continue;
-				}
-			}
-
-			// Check for looped jobs (must expand them before execution)
-			if(subjob.hasAttribute("loop"))
-			{
-				ExceptionWorkflowContext ctx(subjob,"Error evaluationg loop");
-				
-				string loop_xpath = subjob.getAttribute("loop");
-				subjob.removeAttribute("loop");
-
-				DOMNode matching_node;
-				DOMXPathResult *matching_nodes;
-
-				{
-					unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,job,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-					
-					int matching_nodes_index = 0;
-					while(matching_nodes->snapshotItem(matching_nodes_index++))
-					{
-						matching_node = matching_nodes->getNodeValue();
-
-						DOMNode subjob_clone = subjob.cloneNode(true);
-						subjob.getParentNode().appendChild(subjob_clone);
-
-						run(subjob_clone,matching_node);
-					}
-
-					subjob.getParentNode().removeChild(subjob);
-				}
-			}
-			else
-				run(subjob,job);
 		}
 	}
 	catch(Exception &e)
@@ -1125,6 +911,56 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	}
 }
 
+bool WorkflowInstance::run_subjob(DOMElement subjob)
+{
+	// Check for conditional jobs
+	if(subjob.hasAttribute("condition"))
+	{
+		ExceptionWorkflowContext ctx(subjob,"Error evaluationg condition");
+		
+		unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(subjob.getAttribute("condition"),subjob.getParentNode(),DOMXPathResult::FIRST_RESULT_TYPE));
+
+		if(!test_expr->getIntegerValue())
+		{
+			subjob.setAttribute("status","SKIPPED");
+			subjob.setAttribute("details","Condition evaluates to false");
+			return false;
+		}
+	}
+
+	// Check for looped jobs (must expand them before execution)
+	if(subjob.hasAttribute("loop"))
+	{
+		ExceptionWorkflowContext ctx(subjob,"Error evaluationg loop");
+		
+		string loop_xpath = subjob.getAttribute("loop");
+		subjob.removeAttribute("loop");
+
+		DOMNode matching_node;
+		DOMXPathResult *matching_nodes;
+
+		{
+			unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,subjob.getParentNode(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			
+			int matching_nodes_index = 0;
+			while(matching_nodes->snapshotItem(matching_nodes_index++))
+			{
+				matching_node = matching_nodes->getNodeValue();
+
+				DOMNode subjob_clone = subjob.cloneNode(true);
+				subjob.getParentNode().appendChild(subjob_clone);
+
+				run_tasks(subjob_clone,matching_node);
+			}
+
+			subjob.getParentNode().removeChild(subjob);
+		}
+	}
+	else
+		run_tasks(subjob,subjob.getParentNode());
+	
+	return true;
+}
 
 void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 {
@@ -1222,7 +1058,7 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 	if(!pool->EnqueueTask(queue_name,task_host,this,task))
 	{
 		task.setAttribute("status","ABORTED");
-		task.setAttribute("error","");
+		task.setAttribute("error","Unknown queue name");
 
 		error_tasks++;
 
@@ -1395,32 +1231,6 @@ string WorkflowInstance::format_datetime()
 	char str[64];
 	sprintf(str,"%d-%02d-%02d %02d:%02d:%02d",1900+t_desc.tm_year,t_desc.tm_mon+1,t_desc.tm_mday,t_desc.tm_hour,t_desc.tm_min,t_desc.tm_sec);
 	return string(str);
-}
-
-int WorkflowInstance::open_log_file(int tid, int fileno)
-{
-	char *log_filename = new char[logs_directory.length()+32];
-
-	if(fileno==STDOUT_FILENO)
-		sprintf(log_filename,"%s/%d.stdout",logs_directory.c_str(),tid);
-	else if(fileno==STDERR_FILENO)
-		sprintf(log_filename,"%s/%d.stderr",logs_directory.c_str(),tid);
-	else
-		sprintf(log_filename,"%s/%d.log",logs_directory.c_str(),tid);
-
-	int fno;
-	fno=open(log_filename,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
-
-	delete[] log_filename;
-
-	if(fno==-1)
-	{
-		Logger::Log(LOG_ERR,"Unable to open task output log file (%d)",fileno);
-		tools_send_exit_msg(1,tid,-1);
-		exit(-1);
-	}
-
-	return fno;
 }
 
 void WorkflowInstance::update_statistics()

@@ -23,6 +23,7 @@
 #include <sys/types.h>
 
 #include <string>
+#include <vector>
 #include <thread>
 
 class ProcessManager
@@ -42,14 +43,24 @@ class ProcessManager
 		ProcessManager();
 		~ProcessManager();
 		
-		pid_t ExecuteTask(const char *binary);
 		static void *Fork(ProcessManager *pm);
 		static void *Gather(ProcessManager *pm);
 		
 		void Shutdown(void);
 		void WaitForShutdown(void);
+		
+		static pid_t ExecuteTask(
+			const std::string &task_name,
+			const std::vector<std::string> &parameters_name,
+			const std::vector<std::string> &parameters_value,
+			const std::string &stdin_parameter,
+			pid_t tid,
+			const std::string &host,
+			const std::string &user
+			);
 	
 	private:
+		static int open_log_file(int tid, int fileno);
 		static char *read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno);
 };
 

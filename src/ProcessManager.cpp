@@ -27,6 +27,9 @@
 #include <Retrier.h>
 #include <Statistics.h>
 #include <Logger.h>
+#include <Tasks.h>
+#include <Task.h>
+#include <tools.h>
 #include <tools_ipc.h>
 
 #include <mysql/mysql.h>
@@ -256,6 +259,199 @@ void ProcessManager::WaitForShutdown(void)
 {
 	forker_thread_handle.join();
 	gatherer_thread_handle.join();
+}
+
+pid_t ProcessManager::ExecuteTask(
+	const string &task_name,
+	const vector<string> &parameters_name,
+	const vector<string> &parameters_value,
+	const string &stdin_parameter,
+	pid_t tid,
+	const string &host,
+	const string &user
+	)
+{
+	char buf[32],tid_str[16];
+	char *task_name_c;
+	int parameters_pipe[2];
+	Task task;
+	
+	static const string tasks_directory = Configuration::GetInstance()->Get("processmanager.tasks.directory");
+	static const string monitor_path = Configuration::GetInstance()->Get("processmanager.monitor.path");
+
+	task = Tasks::GetInstance()->Get(task_name);
+
+	if(stdin_parameter!="")
+	{
+		// Prepare pipe before fork() since we have STDIN input
+		parameters_pipe[0] = -1;
+		if(pipe(parameters_pipe)!=0)
+			throw Exception("ProcessManager","Unable to execute task : could not create pipe");
+	}
+
+	pid_t pid;
+	// Fork child
+	pid = fork();
+
+	if(pid==0)
+	{
+		setsid(); // This is used to avoid CTRL+C killing all child processes
+
+		pid = getpid();
+		sprintf(tid_str,"%d",tid);
+
+		// Send QID to monitor
+		Configuration *config = Configuration::GetInstance();
+		setenv("EVQUEUE_IPC_QID",config->Get("core.ipc.qid").c_str(),true);
+
+		// Compute task filename
+		string task_filename;
+		if(task.IsAbsolutePath())
+			task_filename = task.GetBinary();
+		else
+			task_filename = tasks_directory+"/"+task.GetBinary();
+
+		if(!task.GetWorkingDirectory().empty())
+			setenv("EVQUEUE_WORKING_DIRECTORY",task.GetWorkingDirectory().c_str(),true);
+
+		// Set SSH variables for remote execution if needed by task
+		if(!task.GetHost().empty())
+		{
+			// Task is configured as distant
+			setenv("EVQUEUE_SSH_HOST",task.GetHost().c_str(),true);
+
+			if(!task.GetUser().empty())
+				setenv("EVQUEUE_SSH_USER",task.GetUser().c_str(),true);
+		}
+		else if(host!="")
+		{
+			// Dynamic task execution is enabled
+			setenv("EVQUEUE_SSH_HOST",host.c_str(),true);
+			
+			if(user!="")
+				setenv("EVQUEUE_SSH_USER",user.c_str(),true);
+		}
+
+		if(getenv("EVQUEUE_SSH_HOST"))
+		{
+			// Set SSH config variables if SSH execution is asked
+			setenv("EVQUEUE_SSH_PATH",config->Get("processmanager.monitor.ssh_path").c_str(),true);
+
+			if(config->Get("processmanager.monitor.ssh_key").length()>0)
+				setenv("EVQUEUE_SSH_KEY",config->Get("processmanager.monitor.ssh_key").c_str(),true);
+
+			// Send agent path if needed
+			if(task.GetUseAgent())
+				setenv("EVQUEUE_SSH_AGENT",config->Get("processmanager.agent.path").c_str(),true);
+		}
+
+		if(stdin_parameter!="")
+		{
+			dup2(parameters_pipe[0],STDIN_FILENO);
+			close(parameters_pipe[1]);
+		}
+
+		// Redirect output to log files
+		int fno;
+
+		fno = open_log_file(tid,LOG_FILENO);
+		dup2(fno,LOG_FILENO);
+
+		fno = open_log_file(tid,STDOUT_FILENO);
+		dup2(fno,STDOUT_FILENO);
+
+		if(!task.GetMergeStderr())
+			fno = open_log_file(tid,STDERR_FILENO);
+
+		dup2(fno,STDERR_FILENO);
+		
+		int parameters_count = parameters_name.size();
+		int parameters_index;
+
+		if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
+		{
+			const char *args[parameters_count+4];
+
+			args[0] = monitor_path.c_str();
+			args[1] = task_filename.c_str();
+			args[2] = tid_str;
+
+			for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
+				args[parameters_index+3] = parameters_value[parameters_index].c_str();
+
+			args[parameters_index+3] = (char *)0;
+
+			execv(monitor_path.c_str(),(char * const *)args);
+
+			Logger::Log(LOG_ERR,"Could not execute task monitor");
+			tools_send_exit_msg(1,tid,-1);
+			exit(-1);
+		}
+		else if(task.GetParametersMode()==task_parameters_mode::ENV)
+		{
+			for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
+			{
+				if(parameters_name[parameters_index]!="")
+					setenv(parameters_name[parameters_index].c_str(),parameters_value[parameters_index].c_str(),1);
+				else
+					setenv("DEFAULT_PARAMETER_NAME",parameters_value[parameters_index].c_str(),1);
+			}
+
+			execl(monitor_path.c_str(),monitor_path.c_str(),task_filename.c_str(),tid_str,(char *)0);
+
+			Logger::Log(LOG_ERR,"Could not execute task monitor");
+			tools_send_exit_msg(1,tid,-1);
+			exit(-1);
+		}
+
+		tools_send_exit_msg(1,tid,-1);
+		exit(-1);
+	}
+
+	if(pid>0)
+	{
+		if(stdin_parameter!="")
+		{
+			// We have STDIN data
+			if(write(parameters_pipe[1],stdin_parameter.c_str(),stdin_parameter.length())!=stdin_parameter.length())
+				Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+
+			close(parameters_pipe[0]);
+			close(parameters_pipe[1]);
+		}
+	}
+
+	if(pid<0)
+		throw Exception("ProcessManager","Unable to execute task '"+task_name+"' : could not fork");
+
+	return pid;
+}
+
+int ProcessManager::open_log_file(int tid, int fileno)
+{
+	static const string logs_directory = Configuration::GetInstance()->Get("processmanager.logs.directory");
+	char *log_filename = new char[logs_directory.length()+32];
+
+	if(fileno==STDOUT_FILENO)
+		sprintf(log_filename,"%s/%d.stdout",logs_directory.c_str(),tid);
+	else if(fileno==STDERR_FILENO)
+		sprintf(log_filename,"%s/%d.stderr",logs_directory.c_str(),tid);
+	else
+		sprintf(log_filename,"%s/%d.log",logs_directory.c_str(),tid);
+
+	int fno;
+	fno=open(log_filename,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+
+	delete[] log_filename;
+
+	if(fno==-1)
+	{
+		Logger::Log(LOG_ERR,"Unable to open task output log file (%d)",fileno);
+		tools_send_exit_msg(1,tid,-1);
+		exit(-1);
+	}
+
+	return fno;
 }
 
 char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno)

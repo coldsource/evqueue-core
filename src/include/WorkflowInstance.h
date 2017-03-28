@@ -50,9 +50,6 @@ class WorkflowInstance
 		bool errlogs;
 		const std::string &errlogs_directory;
 		
-		const std::string &tasks_directory;
-		const std::string &monitor_path;
-		
 		bool saveparameters;
 		
 		int savepoint_level;
@@ -92,8 +89,10 @@ class WorkflowInstance
 	private:
 		WorkflowInstance();
 		
-		void run(DOMElement job,DOMElement context_node);
-		void run_subjobs(DOMElement context_node);
+		void run_tasks(DOMElement job,DOMElement context_node);
+		bool run_task(DOMElement task,DOMElement context_node);
+		void run_subjobs(DOMElement job);
+		bool run_subjob(DOMElement subjob);
 		void enqueue_task(DOMElement task);
 		void retry_task(DOMElement task);
 		void schedule_update(DOMElement task,const std::string &schedule_name,int *retry_delay,int *retry_times);
@@ -102,7 +101,6 @@ class WorkflowInstance
 		void record_savepoint(bool force=false);
 		void replace_value(DOMElement task,DOMElement context_node);
 		std::string format_datetime();
-		int open_log_file(int tid, int fileno);
 		void update_statistics();
 };
 
