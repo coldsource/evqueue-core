@@ -541,6 +541,26 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("count(../task[(@status='TERMINATED' and @retval = 0) or (@status='SKIPPED')])",task_node,DOMXPathResult::FIRST_RESULT_TYPE));
 		tasks_successful = res->getIntegerValue();
 	}
+	
+	// Reevaluate waiting conditions as state might have changed
+	vector<DOMElement> waiting_nodes_copy = waiting_nodes;
+	vector<DOMElement> waiting_nodes_contexts_copy = waiting_nodes_contexts;
+	
+	 // Clear waiting conditions. They will be re-inserted if they still evaluate to false
+	waiting_nodes.clear();
+	waiting_nodes_contexts.clear();
+	for(int i=0;i<waiting_nodes_copy.size();i++)
+	{
+		// Remove previous status and details as condition will be re-evaluated
+		waiting_nodes_copy.at(i).removeAttribute("status");
+		waiting_nodes_copy.at(i).removeAttribute("details");
+		
+		// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
+		if(waiting_nodes_copy.at(i).getNodeName()=="task")
+			run_task(waiting_nodes_copy.at(i),waiting_nodes_contexts_copy.at(i));
+		else if(waiting_nodes_copy.at(i).getNodeName()=="job")
+			run_subjob(waiting_nodes_copy.at(i));
+	}
 
 	if(tasks_count==tasks_successful)
 	{
@@ -724,77 +744,79 @@ bool WorkflowInstance::KillTask(pid_t pid)
 	return found;
 }
 
-void WorkflowInstance::retry_task(DOMElement task)
+bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
 {
-	unsigned int task_instance_id;
-	int retry_delay,retry_times, schedule_level;
-	char buf[32];
-	char *retry_schedule_c;
+	if(!node.hasAttribute("condition"))
+		return true;
 
-	// Check if we have a retry_schedule
-	string retry_schedule ;
-	if(task.hasAttribute("retry_schedule"))
-		retry_schedule = task.getAttribute("retry_schedule");
-
-	if(task.hasAttribute("retry_schedule_level"))
-		schedule_level = XMLUtils::GetAttributeInt(task,"retry_schedule_level");
-	else
-		schedule_level = 0;
-
-	if(retry_schedule!="" && schedule_level==0)
+	ExceptionWorkflowContext ctx(node,"Error evaluating condition");
+	
+	bool needs_wait = false;
+	xmldoc->getXPath()->RegisterFunction("evqWait",{WorkflowXPathFunctions::evqWait,&needs_wait});
+	
+	try
 	{
-		// Retry schedule has not yet begun, so init sequence
-		schedule_update(task,retry_schedule,&retry_delay,&retry_times);
-	}
-	else
-	{
-		// Check retry parameters (retry_delay and retry_times) allow at least one retry
-		if(!task.hasAttribute("retry_delay"))
+		unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(node.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
+		
+		if(!test_expr->getIntegerValue())
 		{
-			error_tasks++; // We won't retry this task, set error
-			return;
+			node.setAttribute("status","SKIPPED");
+			node.setAttribute("details","Condition evaluates to false");
+			return false;
 		}
-
-		retry_delay = XMLUtils::GetAttributeInt(task,"retry_delay");
-
-		if(!task.hasAttribute("retry_times"))
+		
+		return true;
+	}
+	catch(Exception &e)
+	{
+		if(needs_wait)
 		{
-			error_tasks++; // We won't retry this task, set error
-			return;
+			// evqWait() has thrown exception because it needs to wait
+			waiting_nodes.push_back(node);
+			waiting_nodes_contexts.push_back(context_node);
+			node.setAttribute("status","WAITING");
+			node.setAttribute("details","Waiting for condition to become true");
+			return false;
 		}
-
-		retry_times = XMLUtils::GetAttributeInt(task,"retry_times");
+		else
+			throw e; // Syntax or dynamic exception (ie real error)
 	}
+}
 
-	if(retry_schedule!="" && retry_times==0)
+bool WorkflowInstance::handle_loop(DOMElement node,DOMElement context_node,vector<DOMElement> &nodes, vector<DOMElement> &contexts)
+{
+	// Check for loop (must expand them before execution)
+	if(!node.hasAttribute("loop"))
 	{
-		// We have reached end of the schedule level, update
-		schedule_update(task,retry_schedule,&retry_delay,&retry_times);
+		nodes.push_back(node);
+		contexts.push_back(context_node);
+		return false;
 	}
 
-	if(retry_delay==0 || retry_times==0)
+	ExceptionWorkflowContext ctx(node,"Error evaluating loop");
+	
+	string loop_xpath = node.getAttribute("loop");
+	node.removeAttribute("loop");
+	
+	// This is unchecked user input, try evaluation
+	DOMNode matching_node;
+	unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+	
+	int matching_nodes_index = 0;
+	while(matching_nodes->snapshotItem(matching_nodes_index++))
 	{
-		error_tasks++; // No more retry for this task, set error
-		return;
+		matching_node = matching_nodes->getNodeValue();
+
+		DOMNode node_clone = node.cloneNode(true);
+		node.getParentNode().appendChild(node_clone);
+		
+		nodes.push_back(node_clone);
+		contexts.push_back(matching_node);
 	}
 
-	// If retry_retval is specified, only retry on specified retval
-	if(task.hasAttribute("retry_retval") && task.getAttribute("retry_retval")!=task.getAttribute("retval"))
-		return;
-
-	// Retry task
-	time_t t;
-	time(&t);
-	t += retry_delay;
-	strftime(buf,32,"%Y-%m-%d %H:%M:%S",localtime(&t));
-	task.setAttribute("retry_at",buf);
-
-	task.setAttribute("retry_times",to_string(retry_times-1));
-
-	Retrier *retrier = Retrier::GetInstance();
-	retrier->InsertTask(this,task,time(0)+retry_delay);
-
-	retrying_tasks++;
+	node.getParentNode().removeChild(node);
+	
+	return true;
 }
 
 void WorkflowInstance::run_tasks(DOMElement job,DOMElement context_node)
@@ -807,17 +829,19 @@ void WorkflowInstance::run_tasks(DOMElement job,DOMElement context_node)
 
 	DOMElement task;
 	int tasks_index = 0;
-	int count_tasks_skipped = 0;
 
 	while(tasks->snapshotItem(tasks_index++))
 	{
 		task = (DOMElement)tasks->getNodeValue();
 		
-		if(!run_task(task,context_node))
-			count_tasks_skipped++;
+		run_task(task,context_node);
 	}
+	
+	unique_ptr<DOMXPathResult> res(xmldoc->evaluate("count(tasks/task[(@status='TERMINATED' and @retval = 0) or (@status='SKIPPED')])",job,DOMXPathResult::FIRST_RESULT_TYPE));
+	int tasks_successful = res->getIntegerValue();
+	
 	// If all task of job is skipped goto child job :
-	if (count_tasks_skipped == tasks_index-1){
+	if (tasks_successful == tasks_index-1){
 		run_subjobs(job);
 	}
 }
@@ -826,61 +850,22 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 {
 	// Get task status (if present)
 	string task_status;
-	if(task.hasAttribute("status"))
-		task_status = task.getAttribute("status");
-
-	if(task_status=="TERMINATED")
+	if(task.hasAttribute("status") && task.getAttribute("status")=="TERMINATED")
 		return false; // Skip tasks that are already terminated (can happen on resume)
 
-	// Check for conditional tasks
-	if(task.hasAttribute("condition"))
-	{
-		ExceptionWorkflowContext ctx(task,"Error evaluating condition");
-		
-		unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(task.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-		
-		if(!test_expr->getIntegerValue())
-		{
-			task.setAttribute("status","SKIPPED");
-			task.setAttribute("details","Condition evaluates to false");
-			return false;
-		}
-	}
+	if(!handle_condition(task,context_node))
+		return false;
 	
-	// Check for looped tasks (must expand them before execution)
-	if(task.hasAttribute("loop"))
-	{
-		ExceptionWorkflowContext ctx(task,"Error evaluating loop");
-		
-		string loop_xpath = task.getAttribute("loop");
-		task.removeAttribute("loop");
-		
-		// This is unchecked user input, try evaluation
-		DOMNode matching_node;
-		unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-		
-		int matching_nodes_index = 0;
-		while(matching_nodes->snapshotItem(matching_nodes_index++))
-		{
-			matching_node = matching_nodes->getNodeValue();
-
-			DOMNode task_clone = task.cloneNode(true);
-			task.getParentNode().appendChild(task_clone);
-
-			// Enqueue task
-			replace_value(task_clone,matching_node);
-			enqueue_task(task_clone);
-		}
-
-		task.getParentNode().removeChild(task);
-	}
-	else
-	{
-		// Enqueue task
-		replace_value(task,context_node);
-		enqueue_task(task);
-	}
+	vector<DOMElement> tasks;
+	vector<DOMElement> contexts;
+	handle_loop(task,context_node,tasks,contexts);
 	
+	for(int i=0;i<tasks.size();i++)
+	{
+		replace_value(tasks.at(i),contexts.at(i));
+		enqueue_task(tasks.at(i));
+	}
+
 	return true;
 }
 
@@ -901,6 +886,7 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 			xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
 			
 			subjob = (DOMElement)subjobs->getNodeValue();
+			run_subjob(subjob);
 		}
 	}
 	catch(Exception &e)
@@ -913,51 +899,16 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 
 bool WorkflowInstance::run_subjob(DOMElement subjob)
 {
-	// Check for conditional jobs
-	if(subjob.hasAttribute("condition"))
-	{
-		ExceptionWorkflowContext ctx(subjob,"Error evaluationg condition");
-		
-		unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(subjob.getAttribute("condition"),subjob.getParentNode(),DOMXPathResult::FIRST_RESULT_TYPE));
+	DOMElement context = subjob.getParentNode().getParentNode();
+	if(!handle_condition(subjob,context))
+		return false;
 
-		if(!test_expr->getIntegerValue())
-		{
-			subjob.setAttribute("status","SKIPPED");
-			subjob.setAttribute("details","Condition evaluates to false");
-			return false;
-		}
-	}
-
-	// Check for looped jobs (must expand them before execution)
-	if(subjob.hasAttribute("loop"))
-	{
-		ExceptionWorkflowContext ctx(subjob,"Error evaluationg loop");
-		
-		string loop_xpath = subjob.getAttribute("loop");
-		subjob.removeAttribute("loop");
-
-		DOMNode matching_node;
-		DOMXPathResult *matching_nodes;
-
-		{
-			unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,subjob.getParentNode(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-			
-			int matching_nodes_index = 0;
-			while(matching_nodes->snapshotItem(matching_nodes_index++))
-			{
-				matching_node = matching_nodes->getNodeValue();
-
-				DOMNode subjob_clone = subjob.cloneNode(true);
-				subjob.getParentNode().appendChild(subjob_clone);
-
-				run_tasks(subjob_clone,matching_node);
-			}
-
-			subjob.getParentNode().removeChild(subjob);
-		}
-	}
-	else
-		run_tasks(subjob,subjob.getParentNode());
+	vector<DOMElement> jobs;
+	vector<DOMElement> contexts;
+	handle_loop(subjob,context,jobs,contexts);
+	
+	for(int i=0;i<jobs.size();i++)
+		run_tasks(jobs.at(i),contexts.at(i));
 	
 	return true;
 }
@@ -1071,6 +1022,79 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 
 	Logger::Log(LOG_INFO,"[WID %d] Added task %s to queue %s\n",workflow_instance_id,task_name.c_str(),queue_name.c_str());
 	return;
+}
+
+void WorkflowInstance::retry_task(DOMElement task)
+{
+	unsigned int task_instance_id;
+	int retry_delay,retry_times, schedule_level;
+	char buf[32];
+	char *retry_schedule_c;
+
+	// Check if we have a retry_schedule
+	string retry_schedule ;
+	if(task.hasAttribute("retry_schedule"))
+		retry_schedule = task.getAttribute("retry_schedule");
+
+	if(task.hasAttribute("retry_schedule_level"))
+		schedule_level = XMLUtils::GetAttributeInt(task,"retry_schedule_level");
+	else
+		schedule_level = 0;
+
+	if(retry_schedule!="" && schedule_level==0)
+	{
+		// Retry schedule has not yet begun, so init sequence
+		schedule_update(task,retry_schedule,&retry_delay,&retry_times);
+	}
+	else
+	{
+		// Check retry parameters (retry_delay and retry_times) allow at least one retry
+		if(!task.hasAttribute("retry_delay"))
+		{
+			error_tasks++; // We won't retry this task, set error
+			return;
+		}
+
+		retry_delay = XMLUtils::GetAttributeInt(task,"retry_delay");
+
+		if(!task.hasAttribute("retry_times"))
+		{
+			error_tasks++; // We won't retry this task, set error
+			return;
+		}
+
+		retry_times = XMLUtils::GetAttributeInt(task,"retry_times");
+	}
+
+	if(retry_schedule!="" && retry_times==0)
+	{
+		// We have reached end of the schedule level, update
+		schedule_update(task,retry_schedule,&retry_delay,&retry_times);
+	}
+
+	if(retry_delay==0 || retry_times==0)
+	{
+		error_tasks++; // No more retry for this task, set error
+		return;
+	}
+
+	// If retry_retval is specified, only retry on specified retval
+	if(task.hasAttribute("retry_retval") && task.getAttribute("retry_retval")!=task.getAttribute("retval"))
+		return;
+
+	// Retry task
+	time_t t;
+	time(&t);
+	t += retry_delay;
+	strftime(buf,32,"%Y-%m-%d %H:%M:%S",localtime(&t));
+	task.setAttribute("retry_at",buf);
+
+	task.setAttribute("retry_times",to_string(retry_times-1));
+
+	Retrier *retrier = Retrier::GetInstance();
+	retrier->InsertTask(this,task,time(0)+retry_delay);
+
+	retrying_tasks++;
 }
 
 void WorkflowInstance::schedule_update(DOMElement task,const string &schedule_name,int *retry_delay,int *retry_times)

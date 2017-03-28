@@ -33,6 +33,7 @@ public:
 	static Token *evqGetWorkflowParameter(XPathEval::func_context context,const std::vector<Token *> &args);
 	static Token *evqGetParentJob(XPathEval::func_context context,const std::vector<Token *> &args);
 	static Token *evqGetOutput(XPathEval::func_context context,const std::vector<Token *> &args);
+	static Token *evqWait(XPathEval::func_context context,const std::vector<Token *> &args);
 };
 
 #endif

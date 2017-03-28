@@ -70,3 +70,19 @@ Token *WorkflowXPathFunctions::evqGetOutput(XPathEval::func_context context, con
 	
 	return context.eval->Evaluate("tasks/task[@name='"+task_name+"']/output",context_node);
 }
+
+Token *WorkflowXPathFunctions::evqWait(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=1)
+		throw Exception("evqWait()","Expecting 1 parameter");
+	
+	bool *needs_wait = (bool *)context.custom_context;
+	if((bool)(*args.at(0)))
+	{
+		*needs_wait = false;
+		return new TokenBool(true);
+	}
+	
+	*needs_wait = true;
+	throw Exception("evqWait()","Waiting for condition to become true");
+}
