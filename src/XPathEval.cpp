@@ -113,6 +113,7 @@ void XPathEval::filter_token_node_list(TokenSeq *list,TokenExpr *filter)
 		Token *token = evaluate_expr(filter_copy,&context);
 		if(!(bool)(*token))
 		{
+			delete list->items.at(i);
 			list->items.erase(list->items.begin()+i);
 			i--;
 		}
