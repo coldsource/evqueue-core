@@ -56,6 +56,7 @@ public:
 	
 	DOMNode getParentNode();
 	DOMNode getFirstChild();
+	DOMNode getPreviousSibling();
 	DOMNode getNextSibling();
 	DOMNode appendChild(DOMNode newChild);
 	DOMNode removeChild(DOMNode oldChild);

@@ -180,7 +180,9 @@ string Token::ToString(TOKEN_TYPE type)
 	if(type==LIT_BOOL) return "LIT_BOOL";
 	if(type==NODENAME) return "NODENAME";
 	if(type==ATTRNAME) return "ATTRNAME";
+	if(type==AXIS) return "AXIS";
 	if(type==FUNC) return "FUNC";
+	if(type==FILTER) return "FILTER";
 	if(type==OP) return "OP";
 	if(type==LPAR) return "LPAR";
 	if(type==RPAR) return "RPAR";
@@ -228,28 +230,28 @@ TokenExpr::~TokenExpr()
 TokenNodeName::TokenNodeName(const TokenNodeName &node_name):Token(node_name)
 {
 	name = node_name.name;
-	if(filter)
-		filter = new TokenExpr(*(node_name.filter));
-	else
-		filter = 0;
-}
-
-TokenNodeName::~TokenNodeName()
-{
-	if(filter)
-		delete filter;
 }
 
 TokenAttrName::TokenAttrName(const TokenAttrName &attr_name):Token(attr_name)
 {
 	name = attr_name.name;
+}
+
+TokenAxis::TokenAxis(const TokenAxis &axis):Token(axis)
+{
+	name = axis.name;
+	node_name = axis.node_name;
+}
+
+TokenFilter::TokenFilter(const TokenFilter &tf):Token(tf)
+{
 	if(filter)
-		filter = new TokenExpr(*(attr_name.filter));
+		filter = new TokenExpr(*(tf.filter));
 	else
 		filter = 0;
 }
 
-TokenAttrName::~TokenAttrName()
+TokenFilter::~TokenFilter()
 {
 	if(filter)
 		delete filter;

@@ -32,11 +32,8 @@
 using namespace std;
 
 // Return filtered child nodes of context node
-TokenSeq *XPathEval::get_child_nodes(string name,TokenSeq *context,TokenSeq *node_list,bool depth)
+TokenSeq *XPathEval::get_child_nodes(const string &name,TokenSeq *context,TokenSeq *node_list,bool depth)
 {
-	if(node_list==0)
-		node_list = new TokenSeq();
-	
 	for(int i=0;i<context->items.size();i++)
 	{
 		if(name==".")
@@ -74,11 +71,8 @@ TokenSeq *XPathEval::get_child_nodes(string name,TokenSeq *context,TokenSeq *nod
 }
 
 // Return filtered attribute names of context node
-TokenSeq *XPathEval::get_child_attributes(string name,TokenSeq *context,TokenSeq *node_list,bool depth)
+TokenSeq *XPathEval::get_child_attributes(const string &name,TokenSeq *context,TokenSeq *node_list,bool depth)
 {
-	if(node_list==0)
-		node_list = new TokenSeq();
-	
 	for(int i=0;i<context->items.size();i++)
 	{
 		DOMNode node = *context->items.at(i);
@@ -97,6 +91,48 @@ TokenSeq *XPathEval::get_child_attributes(string name,TokenSeq *context,TokenSeq
 					node_list->items.push_back(new TokenNode((DOMNode)map.item(j)));
 			}
 		}
+	}
+	
+	return node_list;
+}
+
+TokenSeq *XPathEval::get_axis(const string &axis_name,const string &node_name,TokenSeq *context,TokenSeq *node_list,bool depth)
+{
+	for(int i=0;i<context->items.size();i++)
+	{
+		DOMNode node = (DOMNode)(*context->items.at(i));
+		
+		if((node.getNodeType()==DOMNode::ELEMENT_NODE || node.getNodeType()==DOMNode::DOCUMENT_NODE) && depth)
+		{
+			if(node.getFirstChild())
+			{
+				DOMNode subnode = node.getFirstChild();
+				while(subnode)
+				{
+					TokenSeq lcontext(new TokenNode(subnode));
+					get_axis(axis_name,node_name,&lcontext,node_list,depth);
+					subnode = subnode.getNextSibling();
+				}
+			}
+		}
+		
+		if(axis_name=="preceding-sibling")
+		{
+			while(node = node.getPreviousSibling())
+			{
+				if(node_name=="*" || node.getNodeName()==node_name)
+					node_list->items.push_back(new TokenNode(node));
+			}
+		}
+		else if(axis_name=="following-sibling")
+		{
+			while(node = node.getNextSibling())
+			{
+				if(node_name=="*" || node.getNodeName()==node_name)
+					node_list->items.push_back(new TokenNode(node));
+			}
+		}
+		else throw Exception("XPath Eval","Unknown axis : "+axis_name);
 	}
 	
 	return node_list;
@@ -132,11 +168,17 @@ void XPathEval::get_nth_token_node_list(TokenSeq *list,int n)
 	
 	// Remove elements before
 	for(int i=0;i<n-1;i++)
+	{
+		delete list->items.at(0);
 		list->items.erase(list->items.begin());
+	}
 	
 	// Remove elements after
 	for(int i=n;i<list_size;i++)
+	{
+		delete list->items.at(1);
 		list->items.erase(list->items.begin()+1);
+	}
 }
 
 Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,TokenSeq *current_context,TokenSeq *left_context)
@@ -183,16 +225,32 @@ Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,T
 Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
 {
 	TokenNodeName *node_name = (TokenNodeName *)expr_tokens.at(i);
+	TokenSeq *ret = new TokenSeq();
 	
-	Token *ret = get_child_nodes(node_name->name,context,0,depth);
-	
-	// Apply node filter if present
-	if(node_name->filter)
+	try
 	{
-		if(((TokenExpr *)node_name->filter)->expr_tokens.size()==1 && ((TokenExpr *)node_name->filter)->expr_tokens.at(0)->GetType()==LIT_INT)
-			get_nth_token_node_list((TokenSeq *)ret,((TokenInt *)((TokenExpr *)node_name->filter)->expr_tokens.at(0))->i);
-		else
-			filter_token_node_list((TokenSeq *)ret,node_name->filter);
+		return get_child_nodes(node_name->name,context,ret,depth);
+	}
+	catch(Exception &e)
+	{
+		delete ret;
+		throw Exception("XPath Eval",e.context+" : "+e.error+" in node name "+node_name->name+node_name->LogInitialPosition());
+	}
+}
+
+Token *XPathEval::evaluate_axis(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
+{
+	TokenAxis *axis= (TokenAxis *)expr_tokens.at(i);
+	TokenSeq *ret = new TokenSeq();
+	
+	try
+	{
+		return get_axis(axis->name,axis->node_name,context,ret,depth);
+	}
+	catch(Exception &e)
+	{
+		delete ret;
+		throw Exception("XPath Eval",e.context+" : "+e.error+" in axis "+axis->name+axis->LogInitialPosition());
 	}
 	
 	return ret;
@@ -200,20 +258,18 @@ Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,T
 
 Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
 {
-	TokenNodeName *node_name = (TokenNodeName *)expr_tokens.at(i);
+	TokenAttrName *attr_name = (TokenAttrName *)expr_tokens.at(i);
+	TokenSeq *ret = new TokenSeq();
 	
-	Token *ret = get_child_attributes(node_name->name,context,0,depth);
-	
-	// Apply node filter if present
-	if(node_name->filter)
+	try
 	{
-		if(((TokenExpr *)node_name->filter)->expr_tokens.size()==1 && ((TokenExpr *)node_name->filter)->expr_tokens.at(0)->GetType()==LIT_INT)
-			get_nth_token_node_list((TokenSeq *)ret,((TokenInt *)((TokenExpr *)node_name->filter)->expr_tokens.at(0))->i);
-		else
-			filter_token_node_list((TokenSeq *)ret,node_name->filter);
+		return get_child_attributes(attr_name->name,context,ret,depth);
 	}
-	
-	return ret;
+	catch(Exception &e)
+	{
+		delete ret;
+		throw Exception("XPath Eval",e.context+" : "+e.error+" in attribute "+attr_name->name+attr_name->LogInitialPosition());
+	}
 }
 
 // Evaluate a fully parsed expression
@@ -249,6 +305,12 @@ Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
 			val = evaluate_node(expr->expr_tokens,i,context,false);
 			replace_from = replace_to = i;
 		}
+		else if(token_type==AXIS)
+		{
+			// Single node name (not precedeed by / or //). Compute based on current context (relative path)
+			val = evaluate_axis(expr->expr_tokens,i,context,false);
+			replace_from = replace_to = i;
+		}
 		else if(token_type==ATTRNAME)
 		{
 			// Single attribute name (not precedeed by / or //). Compute based on current context (relative path)
@@ -274,6 +336,8 @@ Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
 			
 			if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==NODENAME)
 				val = evaluate_node(expr->expr_tokens,i+1,left_context,depth);
+			else if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==AXIS)
+				val = evaluate_axis(expr->expr_tokens,i+1,left_context,depth);
 			else if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==ATTRNAME)
 				val = evaluate_attribute(expr->expr_tokens,i+1,left_context,depth);
 			else if(i+1<expr->expr_tokens.size() && expr->expr_tokens.at(i+1)->GetType()==FUNC)
@@ -282,6 +346,23 @@ Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
 				throw Exception("XPath Eval","Missing node, attribute or function name after slash"+expr->expr_tokens.at(i)->LogInitialPosition());
 			
 			replace_to = i+1;
+		}
+		else if(token_type==FILTER)
+		{
+			if(i<=0 || expr->expr_tokens.at(i-1)->GetType()!=SEQ)
+				throw Exception("XPath Eval","Filters can only be applied on sequences");
+			
+			TokenSeq *seq = (TokenSeq *)expr->expr_tokens.at(i-1);
+			TokenFilter *filter = (TokenFilter *)expr->expr_tokens.at(i);
+			
+			if(filter->filter->expr_tokens.size()==1 && filter->filter->expr_tokens.at(0)->GetType()==LIT_INT)
+				get_nth_token_node_list(seq,((TokenInt *)filter->filter->expr_tokens.at(0))->i);
+			else
+				filter_token_node_list(seq,filter->filter);
+			
+			delete  expr->expr_tokens.at(i);
+			expr->expr_tokens.erase(expr->expr_tokens.begin()+i);
+			i--;
 		}
 		
 		if(val)

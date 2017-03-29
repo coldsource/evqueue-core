@@ -34,7 +34,9 @@ enum TOKEN_TYPE
 	LIT_BOOL, // Literal boolean
 	NODENAME, // Node name to match with DOM
 	ATTRNAME, // Attribute name to match with DOM
+	AXIS, // Axis to match with DOM
 	FUNC, // Function
+	FILTER, // Filter
 	OP, // Operator
 	LPAR, // Left parenthesis
 	RPAR, // Right parenthesis
@@ -200,11 +202,9 @@ class TokenNodeName:public Token
 {
 public:
 	std::string name;
-	TokenExpr *filter = 0;
 	
-	TokenNodeName(std::string name) { this->name = name; }
+	TokenNodeName(const std::string &name) { this->name = name; }
 	TokenNodeName(const TokenNodeName &node_name);
-	~TokenNodeName();
 	
 	TOKEN_TYPE GetType() const { return NODENAME; }
 	Token *clone() { return new TokenNodeName(*this); }
@@ -216,14 +216,42 @@ class TokenAttrName:public Token
 {
 public:
 	std::string name;
-	TokenExpr *filter = 0;
 	
-	TokenAttrName(std::string name) { this->name = name; }
+	TokenAttrName(const std::string &name) { this->name = name; }
 	TokenAttrName(const TokenAttrName &attr_name);
-	~TokenAttrName();
 	
 	TOKEN_TYPE GetType() const { return ATTRNAME; }
 	Token *clone() { return new TokenAttrName(*this); }
+	
+	operator bool() const { return false; }
+};
+
+class TokenAxis:public Token
+{
+public:
+	std::string name;
+	std::string node_name;
+	
+	TokenAxis(const std::string &name,const std::string &node_name) { this->name = name; this->node_name = node_name; }
+	TokenAxis(const TokenAxis &axis);
+	
+	TOKEN_TYPE GetType() const { return AXIS; }
+	Token *clone() { return new TokenAxis(*this); }
+	
+	operator bool() const { return false; }
+};
+
+class TokenFilter:public Token
+{
+public:
+	TokenExpr *filter = 0;
+	
+	TokenFilter(TokenExpr *filter) { this->filter = filter; }
+	TokenFilter(const TokenFilter &tf);
+	~TokenFilter();
+	
+	TOKEN_TYPE GetType() const { return FILTER; }
+	Token *clone() { return new TokenFilter(*this); }
 	
 	operator bool() const { return false; }
 };
@@ -234,7 +262,7 @@ public:
 	std::string name;
 	std::vector<TokenExpr *> args;
 	
-	TokenFunc(std::string name) { this->name = name; }
+	TokenFunc(const std::string &name) { this->name = name; }
 	TokenFunc(const TokenFunc &f);
 	~TokenFunc();
 	
@@ -249,7 +277,7 @@ class TokenNode:public Token
 public:
 	DOMNode node;
 	
-	TokenNode(DOMNode node) { this->node = node; }
+	TokenNode(const DOMNode &node) { this->node = node; }
 	TokenNode(const TokenNode &tn):Token(tn) { node = tn.node; }
 	
 	TOKEN_TYPE GetType() const { return NODE; }

@@ -49,6 +49,11 @@ DOMNode DOMNode::getFirstChild()
 	return node->getFirstChild();
 }
 
+DOMNode DOMNode::getPreviousSibling()
+{
+	return node->getPreviousSibling();
+}
+
 DOMNode DOMNode::getNextSibling()
 {
 	return node->getNextSibling();

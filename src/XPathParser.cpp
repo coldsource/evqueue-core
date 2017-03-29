@@ -179,6 +179,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	// At this point we can only have Node name, Attribute or Function.
 	// Text operators can be confused with node or function names, see disambiguish_operators()
 	string buf;
+	string buf2;
 	int i = *pos;
 	
 	if(s.substr(i,2)=="..")
@@ -193,6 +194,7 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	}
 	
 	bool is_attribute = false;
+	bool is_axis = false;
 	if(s.substr(i,2)=="@*")
 	{
 		*pos+=2;
@@ -204,11 +206,38 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		i++;
 	}
 	
-	while(i<s.length() && (isalnum(s[i]) || s[i]=='_' || s[i]=='-'))
-		buf += s[i++];
+	while(i<s.length() && (isalnum(s[i]) || s[i]=='_' || s[i]=='-' || s[i]==':'))
+	{
+		if(s[i]==':')
+		{
+			if(is_axis)
+				throw Exception("XPath Parser","Unexpected ':' in axis name at character "+to_string(base_pos));
+			
+			is_axis = true;
+			if(s.substr(i,3)=="::*")
+			{
+				buf2 = "*";
+				i+=3;
+				break;
+			}
+			else if(s.substr(i,2)=="::")
+			{
+				i+=2;
+				continue;
+			}
+		}
+		
+		if(!is_axis)
+			buf += s[i++];
+		else
+			buf2 += s[i++];
+	}
 	
 	if(buf=="")
 		throw Exception("XPath Parser","Invalid node or function name at character "+to_string(base_pos));
+	
+	if(is_axis && buf2=="")
+		throw Exception("XPath Parser","Invalid axis filter node at character "+to_string(base_pos));
 	
 	// Skip spaces
 	while(s[i]==' ' && i<s.length())
@@ -216,12 +245,14 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 	
 	// Function names only differ from node names because they have parenthesis
 	*pos = i;
-	if(s[i]=='(')
-		return (new TokenFunc(buf))->SetInitialPosition(base_pos);
-	else if(!is_attribute)
-		return (new TokenNodeName(buf))->SetInitialPosition(base_pos);
-	else
+	if(is_attribute)
 		return (new TokenAttrName(buf))->SetInitialPosition(base_pos);
+	else if(is_axis)
+		return (new TokenAxis(buf,buf2))->SetInitialPosition(base_pos);
+	else if(s[i]=='(')
+		return (new TokenFunc(buf))->SetInitialPosition(base_pos);
+	else
+		return (new TokenNodeName(buf))->SetInitialPosition(base_pos);
 }
 
 // Create a TokenExpr from a string by calling parse_token
@@ -364,17 +395,11 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 	for(int i=0;i<expr->expr_tokens.size();i++)
 	{
 		// Look for node names as ony them can have filters
-		if(expr->expr_tokens.at(i)->GetType()==NODENAME)
+		if(expr->expr_tokens.at(i)->GetType()==LSQ)
 		{
-			node = (TokenNodeName *)expr->expr_tokens.at(i);
-			
-			// Look for a left square bracket ('filter begin')
-			if(i+1>=expr->expr_tokens.size() || expr->expr_tokens.at(i+1)->GetType()!=LSQ)
-				continue;
-			
 			// Catch filter expression until right bracket ('filter end')
 			TokenExpr *filter = new TokenExpr();
-			int j = i+2;
+			int j = i+1;
 			while(j<expr->expr_tokens.size() && expr->expr_tokens.at(j)->GetType()!=RSQ)
 			{
 				filter->expr_tokens.push_back(expr->expr_tokens.at(j));
@@ -393,11 +418,10 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 				throw Exception("XPath Parser","Empty filter");
 			}
 			
-			// Store filter expression in node name
-			node->filter = filter;
-			delete expr->expr_tokens.at(i+1);
+			delete expr->expr_tokens.at(i);
 			delete expr->expr_tokens.at(j);
-			expr->expr_tokens.erase(expr->expr_tokens.begin()+i+1,expr->expr_tokens.begin()+j+1);
+			expr->expr_tokens.erase(expr->expr_tokens.begin()+i,expr->expr_tokens.begin()+j+1);
+			expr->expr_tokens.insert(expr->expr_tokens.begin()+i,new TokenFilter(filter));
 			
 		}
 		else if(expr->expr_tokens.at(i)->GetType()==FUNC)
