@@ -779,7 +779,7 @@ bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
 			return false;
 		}
 		else
-			throw e; // Syntax or dynamic exception (ie real error)
+			throw; // Syntax or dynamic exception (ie real error)
 	}
 }
 
@@ -893,12 +893,14 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	{
 		// Terminate workflow
 		error_tasks++;
-		throw e;
+		throw;
 	}
 }
 
 bool WorkflowInstance::run_subjob(DOMElement subjob)
 {
+	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&subjob});
+	
 	DOMElement context = subjob.getParentNode().getParentNode();
 	if(!handle_condition(subjob,context))
 		return false;
