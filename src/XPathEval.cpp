@@ -146,7 +146,18 @@ void XPathEval::filter_token_node_list(TokenSeq *list,TokenExpr *filter)
 	{
 		TokenExpr *filter_copy = new TokenExpr(*filter);
 		TokenSeq context(list->items.at(i)->clone());
-		Token *token = evaluate_expr(filter_copy,&context);
+		Token *token;
+		
+		try
+		{
+			token = evaluate_expr(filter_copy,&context);
+		}
+		catch(Exception &e)
+		{
+			delete filter_copy;
+			throw;
+		}
+		
 		if(!(bool)(*token))
 		{
 			delete list->items.at(i);
