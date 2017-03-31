@@ -559,7 +559,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		if(waiting_nodes_copy.at(i).getNodeName()=="task")
 			run_task(waiting_nodes_copy.at(i),waiting_nodes_contexts_copy.at(i));
 		else if(waiting_nodes_copy.at(i).getNodeName()=="job")
-			run_subjob(waiting_nodes_copy.at(i));
+			run_subjob(waiting_nodes_copy.at(i),waiting_nodes_contexts_copy.at(i));
 	}
 
 	if(tasks_count==tasks_successful)
@@ -798,6 +798,13 @@ bool WorkflowInstance::handle_loop(DOMElement node,DOMElement context_node,vecto
 	string loop_xpath = node.getAttribute("loop");
 	node.removeAttribute("loop");
 	
+	string iteration_condition;
+	if(node.hasAttribute("iteration-condition"))
+	{
+		iteration_condition = node.getAttribute("iteration-condition");
+		node.removeAttribute("iteration-condition");
+	}
+	
 	// This is unchecked user input, try evaluation
 	DOMNode matching_node;
 	unique_ptr<DOMXPathResult> matching_nodes(xmldoc->evaluate(loop_xpath,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
@@ -808,6 +815,10 @@ bool WorkflowInstance::handle_loop(DOMElement node,DOMElement context_node,vecto
 		matching_node = matching_nodes->getNodeValue();
 
 		DOMNode node_clone = node.cloneNode(true);
+		
+		if(iteration_condition!="")
+			((DOMElement)node_clone).setAttribute("condition",iteration_condition);
+		
 		node.getParentNode().appendChild(node_clone);
 		
 		nodes.push_back(node_clone);
@@ -886,7 +897,7 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 			xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
 			
 			subjob = (DOMElement)subjobs->getNodeValue();
-			run_subjob(subjob);
+			run_subjob(subjob,job);
 		}
 	}
 	catch(Exception &e)
@@ -897,20 +908,26 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	}
 }
 
-bool WorkflowInstance::run_subjob(DOMElement subjob)
+bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 {
 	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&subjob});
 	
-	DOMElement context = subjob.getParentNode().getParentNode();
-	if(!handle_condition(subjob,context))
+	if(!handle_condition(subjob,context_node))
 		return false;
 
 	vector<DOMElement> jobs;
 	vector<DOMElement> contexts;
-	handle_loop(subjob,context,jobs,contexts);
+	handle_loop(subjob,context_node,jobs,contexts);
 	
 	for(int i=0;i<jobs.size();i++)
+	{
+		DOMElement current_job = jobs.at(i);
+		xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&current_job});
+		if(!handle_condition(jobs.at(i),contexts.at(i)))
+					continue;
+		
 		run_tasks(jobs.at(i),contexts.at(i));
+	}
 	
 	return true;
 }

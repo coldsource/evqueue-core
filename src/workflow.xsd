@@ -37,6 +37,7 @@
 		<xs:attribute name="name" type="xs:string" use="optional" />
 		<xs:attribute name="loop" type="xs:string" use="optional" />
 		<xs:attribute name="condition" type="xs:string" use="optional" />
+		<xs:attribute name="iteration-condition" type="xs:string" use="optional" />
 		<xs:attribute name="on_error" type="onErrorType" use="optional" />
 	</xs:complexType>
 	

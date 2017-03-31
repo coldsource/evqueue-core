@@ -97,7 +97,7 @@ class WorkflowInstance
 		void run_tasks(DOMElement job,DOMElement context_node);
 		bool run_task(DOMElement task,DOMElement context_node);
 		void run_subjobs(DOMElement job);
-		bool run_subjob(DOMElement subjob);
+		bool run_subjob(DOMElement subjob,DOMElement context_node);
 		void enqueue_task(DOMElement task);
 		void retry_task(DOMElement task);
 		void schedule_update(DOMElement task,const std::string &schedule_name,int *retry_delay,int *retry_times);

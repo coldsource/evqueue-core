@@ -58,6 +58,7 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		<xs:attribute name=\"name\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"loop\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"condition\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"iteration-condition\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"on_error\" type=\"onErrorType\" use=\"optional\" /> \
 	</xs:complexType> \
 	 \
