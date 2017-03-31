@@ -33,6 +33,7 @@ class XPathParser
 	TokenExpr *resolve_parenthesis(const std::vector<Token *> &v, int *current_pos);
 	void prepare_functions(TokenExpr *expr);
 	void prepare_filters(TokenExpr *expr);
+	void prepare_paths(TokenExpr *expr);
 	void disambiguish_mult(TokenExpr *expr);
 	void disambiguish_operators(TokenExpr *expr);
 	

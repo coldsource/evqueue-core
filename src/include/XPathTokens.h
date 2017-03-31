@@ -47,7 +47,8 @@ enum TOKEN_TYPE
 	DSLASH, // Double slash path separator
 	EXPR, // Expression, a complex XPath expression, full or partial
 	NODE, // Resolved node hat points to dom elements
-	SEQ // XPath sequence
+	SEQ, // XPath sequence
+	ENDLINE // Special token to identify line end
 };
 
 // Operators types

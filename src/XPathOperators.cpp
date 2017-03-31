@@ -230,7 +230,7 @@ Token* XPathOperators::Operator_AND(Token* left, Token* right)
 	if(left->GetType()==LIT_BOOL && right->GetType()==LIT_BOOL)
 		return new TokenBool(((TokenBool *)left)->b && ((TokenBool *)right)->b);
 	
-	throw Exception("Operator AND","Logical operator 'and' can  only operate on boolean values");
+	throw Exception("Operator AND","Logical operator 'and' can only operate on boolean values");
 }
 
 // Logical OR
@@ -239,5 +239,5 @@ Token* XPathOperators::Operator_OR(Token* left, Token* right)
 	if(left->GetType()==LIT_BOOL && right->GetType()==LIT_BOOL)
 		return new TokenBool(((TokenBool *)left)->b || ((TokenBool *)right)->b);
 	
-	throw Exception("Operator OR","Logical operator 'or' can  only operate on boolean values");
+	throw Exception("Operator OR","Logical operator 'or' can only operate on boolean values");
 }

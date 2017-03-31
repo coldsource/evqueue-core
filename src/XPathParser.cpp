@@ -390,11 +390,9 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 // Filters are removed from XPath expression and directly attached to node names
 void XPathParser::prepare_filters(TokenExpr *expr)
 {
-	TokenNodeName *node;
-	
 	for(int i=0;i<expr->expr_tokens.size();i++)
 	{
-		// Look for node names as ony them can have filters
+		// Look for node names as only them can have filters
 		if(expr->expr_tokens.at(i)->GetType()==LSQ)
 		{
 			// Catch filter expression until right bracket ('filter end')
@@ -433,6 +431,49 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 		}
 		else if(expr->expr_tokens.at(i)->GetType()==EXPR) // Parse sub expresionns
 			prepare_filters((TokenExpr *)expr->expr_tokens.at(i));
+	}
+}
+
+void XPathParser::prepare_paths(TokenExpr *expr)
+{
+	TokenExpr *subexpr = 0;
+	int replace_from;
+	
+	for(int i=0;i<=expr->expr_tokens.size();i++)
+	{
+		// Look for paths items and create subexpression
+		TOKEN_TYPE token_type = i<expr->expr_tokens.size()?expr->expr_tokens.at(i)->GetType():ENDLINE;
+		if(token_type==SLASH || token_type==DSLASH || token_type==NODENAME || token_type==ATTRNAME || token_type==AXIS || token_type==FUNC)
+		{
+			if(token_type==FUNC)
+			{
+				// Parse function parameters as they can contain paths
+				TokenFunc *func = (TokenFunc *)expr->expr_tokens.at(i);
+				for(int j=0;j<func->args.size();j++)
+					prepare_paths(func->args.at(j));
+			}
+			
+			if(subexpr==0)
+			{
+				replace_from = i;
+				subexpr = new TokenExpr();
+			}
+			
+			subexpr->expr_tokens.push_back(expr->expr_tokens.at(i));
+		}
+		else
+		{
+			if(token_type==EXPR) // Parse sub expresionns
+				prepare_paths((TokenExpr *)expr->expr_tokens.at(i));
+			
+			if(subexpr)
+			{
+				expr->expr_tokens.erase(expr->expr_tokens.begin()+replace_from,expr->expr_tokens.begin()+i);
+				i = replace_from;
+				expr->expr_tokens.insert(expr->expr_tokens.begin()+i,subexpr);
+				subexpr = 0;
+			}
+		}
 	}
 }
 
@@ -538,6 +579,7 @@ TokenExpr *XPathParser::Parse(std::string xpath_expression)
 		disambiguish_operators(parsed_expr);
 		prepare_functions(parsed_expr);
 		prepare_filters(parsed_expr);
+		prepare_paths(parsed_expr);
 	}
 	catch(Exception &e)
 	{

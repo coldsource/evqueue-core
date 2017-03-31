@@ -280,6 +280,92 @@ Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
 	
 	TokenExpr *expr = (TokenExpr *)token;
 	
+	// Compute operators
+	while(true)
+	{
+		// Find oprator with lower priority
+		int minop = 500,minop_index = -1;
+		for(int i=0;i<expr->expr_tokens.size();i++)
+		{
+			if(expr->expr_tokens.at(i)->GetType()==OP && ops_desc.at(((TokenOP *)expr->expr_tokens.at(i))->op).prio<minop)
+			{
+				minop = ops_desc.at(((TokenOP *)expr->expr_tokens.at(i))->op).prio;
+				minop_index = i;
+			}
+		}
+		
+		if(minop_index==-1)
+			break; // No operators left
+		
+		Token *left = 0, *right = 0, *new_token = 0;
+		
+		// Get operator
+		TokenOP *op = (TokenOP *)expr->expr_tokens.at(minop_index);
+		
+		try
+		{
+			// Check left and right operands
+			if(minop_index-1<0)
+				throw Exception("XPath Eval","Missing left operand of operator "+Token::ToString(op->op)+op->LogInitialPosition());
+			
+			if(minop_index+1>=expr->expr_tokens.size())
+				throw Exception("XPath Eval","Missing right operand of operator "+Token::ToString(op->op)+op->LogInitialPosition());
+			
+			// Get operands
+			left = expr->expr_tokens.at(minop_index-1),context;
+			right = expr->expr_tokens.at(minop_index+1),context;
+			expr->expr_tokens.erase(expr->expr_tokens.begin()+minop_index-1,expr->expr_tokens.begin()+minop_index+2);
+			
+			// Evaluate left operand
+			left = evaluate_expr(left,context);
+			
+			// Lazy logical operators
+			if(op->op==OR)
+			{
+				TokenBool right(false);
+				new_token = ops_desc.at(op->op).impl(left,&right);
+				if((bool)(*new_token)==false)
+				{
+					delete new_token;
+					new_token = 0;
+				}
+			}
+			else if(op->op==AND)
+			{
+				TokenBool right(true);
+				new_token = ops_desc.at(op->op).impl(left,&right);
+				if((bool)(*new_token)==true)
+				{
+					delete new_token;
+					new_token = 0;
+				}
+			}
+			
+			if(new_token==0)
+			{
+				//  Evaluate right operand
+				right = evaluate_expr(right,context);
+				
+				// Compute operator result
+				new_token = ops_desc.at(op->op).impl(left,right);
+			}
+		}
+		catch(Exception &e)
+		{
+			e.error += " while evaluating operator" + op->LogInitialPosition();
+			delete op;
+			delete left;
+			delete right;
+			throw e;
+		}
+		
+		// Replace value in expression
+		delete op;
+		delete left;
+		delete right;
+		expr->expr_tokens.insert(expr->expr_tokens.begin()+minop_index-1,new_token);
+	}
+	
 	// Resolve expressions, functions, node names and attribute names
 	for(int i=0;i<expr->expr_tokens.size();i++)
 	{
@@ -377,55 +463,6 @@ Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
 			expr->expr_tokens.insert(expr->expr_tokens.begin()+replace_from,val);
 			i = replace_from;
 		}
-	}
-	
-	// Compute operators
-	while(true)
-	{
-		// Find oprator with lower priority
-		int minop = 500,minop_index = -1;
-		for(int i=0;i<expr->expr_tokens.size();i++)
-		{
-			if(expr->expr_tokens.at(i)->GetType()==OP && ops_desc.at(((TokenOP *)expr->expr_tokens.at(i))->op).prio<minop)
-			{
-				minop = ops_desc.at(((TokenOP *)expr->expr_tokens.at(i))->op).prio;
-				minop_index = i;
-			}
-		}
-		
-		if(minop_index==-1)
-			break; // No operators left
-		
-		TokenOP *op = (TokenOP *)expr->expr_tokens.at(minop_index);
-		
-		// Get left operand
-		if(minop_index-1<0)
-			throw Exception("XPath Eval","Missing left operand of operator "+Token::ToString(op->op)+op->LogInitialPosition());
-		Token *left = expr->expr_tokens.at(minop_index-1);
-		
-		//  Get right operand
-		if(minop_index+1>=expr->expr_tokens.size())
-			throw Exception("XPath Eval","Missing right operand of operator "+Token::ToString(op->op)+op->LogInitialPosition());
-		Token *right = expr->expr_tokens.at(minop_index+1);
-		
-		// Compute operator result
-		Token *new_token;
-		try
-		{
-			new_token = ops_desc.at(op->op).impl(left,right);
-		}
-		catch(Exception &e)
-		{
-			e.error += " while evaluating operator" + op->LogInitialPosition();
-			throw e;
-		}
-		
-		// Replace value in expression
-		delete op;
-		delete left;
-		delete right;
-		expr->expr_tokens.erase(expr->expr_tokens.begin()+minop_index-1,expr->expr_tokens.begin()+minop_index+2);
-		expr->expr_tokens.insert(expr->expr_tokens.begin()+minop_index-1,new_token);
 	}
 	
 	if(expr->expr_tokens.size()!=1)
