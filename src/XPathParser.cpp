@@ -443,7 +443,7 @@ void XPathParser::prepare_paths(TokenExpr *expr)
 	{
 		// Look for paths items and create subexpression
 		TOKEN_TYPE token_type = i<expr->expr_tokens.size()?expr->expr_tokens.at(i)->GetType():ENDLINE;
-		if(token_type==SLASH || token_type==DSLASH || token_type==NODENAME || token_type==ATTRNAME || token_type==AXIS || token_type==FUNC)
+		if(token_type==SLASH || token_type==DSLASH || token_type==NODENAME || token_type==ATTRNAME || token_type==AXIS || token_type==FUNC || token_type==FILTER)
 		{
 			if(token_type==FUNC)
 			{
@@ -451,6 +451,11 @@ void XPathParser::prepare_paths(TokenExpr *expr)
 				TokenFunc *func = (TokenFunc *)expr->expr_tokens.at(i);
 				for(int j=0;j<func->args.size();j++)
 					prepare_paths(func->args.at(j));
+			}
+			else if(token_type==FILTER)
+			{
+				TokenFilter *filter = (TokenFilter *)expr->expr_tokens.at(i);
+				prepare_paths(filter->filter);
 			}
 			
 			if(subexpr==0)
