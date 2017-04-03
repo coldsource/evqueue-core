@@ -779,6 +779,9 @@ bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
 			return false;
 		}
 		
+		node.removeAttribute("condition");
+		node.setAttribute("details","Condition evaluates to true");
+		
 		return true;
 	}
 	catch(Exception &e)
