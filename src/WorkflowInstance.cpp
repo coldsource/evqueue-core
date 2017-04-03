@@ -551,12 +551,25 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 	
 	running_tasks--;
 	update_job_statistics("running_tasks",-1,task_node);
+
+	if(tasks_count==tasks_successful)
+	{
+		DOMNode job = task_node.getParentNode().getParentNode();
+		try
+		{
+			run_subjobs(job);
+		}
+		catch(Exception &e)
+		{
+			// Nothing to do on error, just let the workflow end itself since tasks might still be running
+		}
+	}
 	
 	// Reevaluate waiting conditions as state might have changed
 	vector<DOMElement> waiting_nodes_copy = waiting_nodes;
 	vector<DOMElement> waiting_nodes_contexts_copy = waiting_nodes_contexts;
 	
-	 // Clear waiting conditions. They will be re-inserted if they still evaluate to false
+	// Clear waiting conditions. They will be re-inserted if they still evaluate to false
 	waiting_nodes.clear();
 	waiting_nodes_contexts.clear();
 	waiting_conditions = 0;
@@ -572,19 +585,6 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 			run_task(waiting_nodes_copy.at(i),waiting_nodes_contexts_copy.at(i));
 		else if(waiting_nodes_copy.at(i).getNodeName()=="job")
 			run_subjob(waiting_nodes_copy.at(i),waiting_nodes_contexts_copy.at(i));
-	}
-
-	if(tasks_count==tasks_successful)
-	{
-		DOMNode job = task_node.getParentNode().getParentNode();
-		try
-		{
-			run_subjobs(job);
-		}
-		catch(Exception &e)
-		{
-			// Nothing to do on error, just let the workflow end itself since tasks might still be running
-		}
 	}
 
 	*workflow_terminated = workflow_ended();
