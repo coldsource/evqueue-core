@@ -106,7 +106,6 @@ class WorkflowInstance
 		void record_savepoint(bool force=false);
 		void replace_value(DOMElement task,DOMElement context_node);
 		std::string format_datetime();
-		void update_statistics();
 		void update_job_statistics(const std::string &name,int delta,DOMElement node);
 };
 

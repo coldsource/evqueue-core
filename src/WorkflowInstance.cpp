@@ -1212,9 +1212,6 @@ bool WorkflowInstance::workflow_ended(void)
 
 void WorkflowInstance::record_savepoint(bool force)
 {
-	// Always update XML statistics
-	update_statistics();
-
 	// Also workflow XML attributes if necessary
 	if(xmldoc->getDocumentElement().getAttribute("status")=="TERMINATED")
 	{
@@ -1300,14 +1297,6 @@ string WorkflowInstance::format_datetime()
 	char str[64];
 	sprintf(str,"%d-%02d-%02d %02d:%02d:%02d",1900+t_desc.tm_year,t_desc.tm_mon+1,t_desc.tm_mday,t_desc.tm_hour,t_desc.tm_min,t_desc.tm_sec);
 	return string(str);
-}
-
-void WorkflowInstance::update_statistics()
-{
-	/*xmldoc->getDocumentElement().setAttribute("running_tasks",to_string(running_tasks));
-	xmldoc->getDocumentElement().setAttribute("queued_tasks",to_string(queued_tasks));
-	xmldoc->getDocumentElement().setAttribute("retrying_tasks",to_string(retrying_tasks));
-	xmldoc->getDocumentElement().setAttribute("error_tasks",to_string(error_tasks));*/
 }
 
 void WorkflowInstance::update_job_statistics(const string &name,int delta,DOMElement node)
