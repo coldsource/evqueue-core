@@ -35,7 +35,7 @@ class WorkflowInstance
 	private:
 		unsigned int workflow_id;
 		unsigned int workflow_instance_id;
-		unsigned int running_tasks,queued_tasks,retrying_tasks,error_tasks;
+		unsigned int running_tasks,queued_tasks,retrying_tasks,error_tasks,waiting_conditions;
 		
 		unsigned int workflow_schedule_id;
 		
@@ -107,6 +107,7 @@ class WorkflowInstance
 		void replace_value(DOMElement task,DOMElement context_node);
 		std::string format_datetime();
 		void update_statistics();
+		void update_job_statistics(const std::string &name,int delta,DOMElement node);
 };
 
 #endif

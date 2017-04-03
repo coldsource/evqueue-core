@@ -90,6 +90,7 @@ WorkflowInstance::WorkflowInstance(void):
 	queued_tasks = 0;
 	retrying_tasks = 0;
 	error_tasks = 0;
+	waiting_conditions = 0;
 
 	is_shutting_down = false;
 }
@@ -342,6 +343,7 @@ void WorkflowInstance::Resume(bool *workflow_terminated)
 			qp->ExecuteTask(this,task,queue_name,task_id);
 
 			running_tasks++;
+			update_job_statistics("running_tasks",1,task);
 		}
 		else if(task.getAttribute("status")=="TERMINATED")
 		{
@@ -375,6 +377,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 		{
 			// Fake task ending with generic error code
 			running_tasks++; // Inc running_tasks before calling TaskStop
+			update_job_statistics("running_tasks",1,task);
 			TaskStop(task,-1,"Task migrated",0,0,workflow_terminated);
 		}
 		else if(task.getAttribute("status")=="TERMINATED")
@@ -416,6 +419,7 @@ void WorkflowInstance::TaskRestart(DOMElement task, bool *workflow_terminated)
 
 	enqueue_task(task);
 	retrying_tasks--;
+	update_job_statistics("retrying_tasks",-1,task);
 
 	*workflow_terminated = workflow_ended();
 
@@ -451,6 +455,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		catch(Exception e)
 		{
 			error_tasks++;
+			update_job_statistics("error_tasks",1,task_node);
 		}
 
 		if(task.GetOutputMethod()==task_output_method::XML)
@@ -487,6 +492,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 				task_node.setAttribute("error","Invalid XML returned");
 
 				error_tasks++;
+				update_job_statistics("error_tasks",1,task_node);
 			}
 		}
 		else if(task.GetOutputMethod()==task_output_method::TEXT)
@@ -509,6 +515,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 			// We are in cancelling state, we won't execute anything more
 			task_node.setAttribute("error","Won't retry because workflow is cancelling");
 			error_tasks++;
+			update_job_statistics("error_tasks",1,task_node);
 		}
 		else
 			retry_task(task_node);
@@ -549,11 +556,13 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 	 // Clear waiting conditions. They will be re-inserted if they still evaluate to false
 	waiting_nodes.clear();
 	waiting_nodes_contexts.clear();
+	waiting_conditions = 0;
 	for(int i=0;i<waiting_nodes_copy.size();i++)
 	{
 		// Remove previous status and details as condition will be re-evaluated
 		waiting_nodes_copy.at(i).removeAttribute("status");
 		waiting_nodes_copy.at(i).removeAttribute("details");
+		update_job_statistics("waiting_conditions",-1,waiting_nodes_copy.at(i));
 		
 		// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
 		if(waiting_nodes_copy.at(i).getNodeName()=="task")
@@ -576,6 +585,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 	}
 
 	running_tasks--;
+	update_job_statistics("running_tasks",-1,task_node);
 
 	*workflow_terminated = workflow_ended();
 
@@ -595,6 +605,7 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 
 	// As we arrive here, the task is queued. Whatever comes, its status will not be queued anymore (will be executing or aborted)
 	queued_tasks--;
+	update_job_statistics("queued_tasks",-1,task_node);
 	
 	try
 	{
@@ -681,7 +692,10 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 	catch(Exception &e)
 	{
 		error_tasks++;
+		update_job_statistics("error_tasks",1,task_node);
+		
 		running_tasks--;
+		update_job_statistics("running_tasks",-1,task_node);
 
 		*workflow_terminated = workflow_ended();
 
@@ -776,6 +790,8 @@ bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
 			waiting_nodes_contexts.push_back(context_node);
 			node.setAttribute("status","WAITING");
 			node.setAttribute("details","Waiting for condition to become true");
+			waiting_conditions++;
+			update_job_statistics("waiting_conditions",1,node);
 			return false;
 		}
 		else
@@ -904,6 +920,7 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	{
 		// Terminate workflow
 		error_tasks++;
+		update_job_statistics("error_tasks",1,job);
 		throw;
 	}
 }
@@ -1010,6 +1027,7 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 		task.setAttribute("error","Aborted on user request");
 
 		error_tasks++;
+		update_job_statistics("error_tasks",1,task);
 
 		return;
 	}
@@ -1031,13 +1049,17 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 		task.setAttribute("error","Unknown queue name");
 
 		error_tasks++;
+		update_job_statistics("error_tasks",1,task);
 
 		Logger::Log(LOG_WARNING,"[WID %d] Unknown queue name '%s'",workflow_instance_id,queue_name.c_str());
 		return;
 	}
 
 	running_tasks++;
+	update_job_statistics("running_tasks",1,task);
+	
 	queued_tasks++;
+	update_job_statistics("queued_tasks",1,task);
 
 	Logger::Log(LOG_INFO,"[WID %d] Added task %s to queue %s\n",workflow_instance_id,task_name.c_str(),queue_name.c_str());
 	return;
@@ -1071,6 +1093,7 @@ void WorkflowInstance::retry_task(DOMElement task)
 		if(!task.hasAttribute("retry_delay"))
 		{
 			error_tasks++; // We won't retry this task, set error
+			update_job_statistics("error_tasks",1,task);
 			return;
 		}
 
@@ -1079,6 +1102,7 @@ void WorkflowInstance::retry_task(DOMElement task)
 		if(!task.hasAttribute("retry_times"))
 		{
 			error_tasks++; // We won't retry this task, set error
+			update_job_statistics("error_tasks",1,task);
 			return;
 		}
 
@@ -1094,6 +1118,7 @@ void WorkflowInstance::retry_task(DOMElement task)
 	if(retry_delay==0 || retry_times==0)
 	{
 		error_tasks++; // No more retry for this task, set error
+		update_job_statistics("error_tasks",1,task);
 		return;
 	}
 
@@ -1114,6 +1139,7 @@ void WorkflowInstance::retry_task(DOMElement task)
 	retrier->InsertTask(this,task,time(0)+retry_delay);
 
 	retrying_tasks++;
+	update_job_statistics("retrying_tasks",1,task);
 }
 
 void WorkflowInstance::schedule_update(DOMElement task,const string &schedule_name,int *retry_delay,int *retry_times)
@@ -1278,8 +1304,25 @@ string WorkflowInstance::format_datetime()
 
 void WorkflowInstance::update_statistics()
 {
-	xmldoc->getDocumentElement().setAttribute("running_tasks",to_string(running_tasks));
+	/*xmldoc->getDocumentElement().setAttribute("running_tasks",to_string(running_tasks));
 	xmldoc->getDocumentElement().setAttribute("queued_tasks",to_string(queued_tasks));
 	xmldoc->getDocumentElement().setAttribute("retrying_tasks",to_string(retrying_tasks));
-	xmldoc->getDocumentElement().setAttribute("error_tasks",to_string(error_tasks));
+	xmldoc->getDocumentElement().setAttribute("error_tasks",to_string(error_tasks));*/
+}
+
+void WorkflowInstance::update_job_statistics(const string &name,int delta,DOMElement node)
+{
+	DOMElement job;
+	string node_name = node.getNodeName();
+	if(node_name=="task")
+		job = node.getParentNode().getParentNode();
+	else if(node_name=="job" || node_name=="workflow")
+		job = node;
+	else
+		return;
+	
+	int oldval = job.hasAttribute(name)?stoi(job.getAttribute(name)):0;
+	job.setAttribute(name,to_string(oldval+delta));
+	if(job.getParentNode() && job.getParentNode().getParentNode())
+		update_job_statistics(name,delta,job.getParentNode().getParentNode());
 }
