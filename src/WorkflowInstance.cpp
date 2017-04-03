@@ -549,6 +549,9 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		tasks_successful = res->getIntegerValue();
 	}
 	
+	running_tasks--;
+	update_job_statistics("running_tasks",-1,task_node);
+	
 	// Reevaluate waiting conditions as state might have changed
 	vector<DOMElement> waiting_nodes_copy = waiting_nodes;
 	vector<DOMElement> waiting_nodes_contexts_copy = waiting_nodes_contexts;
@@ -583,9 +586,6 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 			// Nothing to do on error, just let the workflow end itself since tasks might still be running
 		}
 	}
-
-	running_tasks--;
-	update_job_statistics("running_tasks",-1,task_node);
 
 	*workflow_terminated = workflow_ended();
 
