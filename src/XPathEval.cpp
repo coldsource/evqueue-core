@@ -175,7 +175,12 @@ void XPathEval::get_nth_token_node_list(TokenSeq *list,int n)
 	int list_size = list->items.size();
 	// Out of range
 	if(n<=0 || n>list_size)
+	{
+		for(int i=0;i<list_size;i++)
+			delete list->items.at(i);
+		list->items.clear();
 		return;
+	}
 	
 	// Remove elements before
 	for(int i=0;i<n-1;i++)
