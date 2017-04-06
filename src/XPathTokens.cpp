@@ -260,8 +260,8 @@ TokenFilter::~TokenFilter()
 TokenFunc::TokenFunc(const TokenFunc &f):Token(f)
 {
 	name = f.name;
-	for(int i=0;i<args.size();i++)
-		args.push_back(new TokenExpr(*args.at(i)));
+	for(int i=0;i<f.args.size();i++)
+		args.push_back(new TokenExpr(*f.args.at(i)));
 }
 
 TokenFunc::~TokenFunc()
