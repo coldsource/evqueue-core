@@ -92,7 +92,10 @@ Token *WorkflowXPathFunctions::evqGetContext(XPathEval::func_context context, co
 	else
 		context_node = *((DOMNode *)context.custom_context);
 	
-	int context_id = (int)(*context.eval->Evaluate("@context-id",context_node));
+	Token *ret = context.eval->Evaluate("@context-id",context_node);
+	int context_id = (int)(*ret);
+	delete ret;
+	
 	return new TokenSeq(new TokenNode(context.eval->GetXMLDoc()->getNodeFromEvqID(context_id)));
 }
 
