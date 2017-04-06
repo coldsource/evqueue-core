@@ -322,7 +322,7 @@ void XPathParser::prepare_functions(TokenExpr *expr)
 	
 	for(int i=0;i<expr->expr_tokens.size();i++)
 	{
-		// Loof for a function name
+		// Look for a function name
 		if(expr->expr_tokens.at(i)->GetType()==FUNC)
 		{
 			func = (TokenFunc *)expr->expr_tokens.at(i);
