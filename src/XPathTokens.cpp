@@ -80,7 +80,7 @@ string Token::LogInitialPosition() const
 Token::operator int() const
 {
 	if(this->GetType()==LIT_FLOAT)
-		throw Exception("XPath","Could not cast float to int"+LogInitialPosition());
+		return (int)((TokenFloat *)this)->d;
 	else if(this->GetType()==LIT_INT)
 		return ((TokenInt *)this)->i;
 	else if(this->GetType()==LIT_BOOL)
