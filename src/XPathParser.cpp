@@ -408,14 +408,14 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 			{
 				filter->expr_tokens.clear();
 				delete filter;
-				throw Exception("XPath Parser","Missing closing square on filter");
+				throw Exception("XPath Parser","Missing closing square on filter"+expr->expr_tokens.at(i)->LogInitialPosition());
 			}
 			
-			if(expr->expr_tokens.size()==0)
+			if(filter->expr_tokens.size()==0)
 			{
 				filter->expr_tokens.clear();
 				delete filter;
-				throw Exception("XPath Parser","Empty filter");
+				throw Exception("XPath Parser","Empty filter"+expr->expr_tokens.at(i)->LogInitialPosition());
 			}
 			
 			delete expr->expr_tokens.at(i);
