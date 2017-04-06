@@ -406,21 +406,23 @@ void XPathParser::prepare_filters(TokenExpr *expr)
 			
 			if(j>=expr->expr_tokens.size() || expr->expr_tokens.at(j)->GetType()!=RSQ)
 			{
+				filter->expr_tokens.clear();
 				delete filter;
 				throw Exception("XPath Parser","Missing closing square on filter");
 			}
 			
 			if(expr->expr_tokens.size()==0)
 			{
+				filter->expr_tokens.clear();
 				delete filter;
 				throw Exception("XPath Parser","Empty filter");
 			}
 			
 			delete expr->expr_tokens.at(i);
 			delete expr->expr_tokens.at(j);
+			
 			expr->expr_tokens.erase(expr->expr_tokens.begin()+i,expr->expr_tokens.begin()+j+1);
 			expr->expr_tokens.insert(expr->expr_tokens.begin()+i,new TokenFilter(filter));
-			
 		}
 		else if(expr->expr_tokens.at(i)->GetType()==FUNC)
 		{
