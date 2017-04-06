@@ -31,7 +31,7 @@
 
 using namespace std;
 
-// Return filtered child nodes of context node
+// Return child nodes of context node
 TokenSeq *XPathEval::get_child_nodes(const string &name,TokenSeq *context,TokenSeq *node_list,bool depth)
 {
 	for(int i=0;i<context->items.size();i++)
@@ -70,20 +70,26 @@ TokenSeq *XPathEval::get_child_nodes(const string &name,TokenSeq *context,TokenS
 	return node_list;
 }
 
-// Return filtered attribute names of context node
+// Return attributes of context node
 TokenSeq *XPathEval::get_child_attributes(const string &name,TokenSeq *context,TokenSeq *node_list,bool depth)
 {
 	for(int i=0;i<context->items.size();i++)
 	{
 		DOMNode node = *context->items.at(i);
+		
+		if((node.getNodeType()==DOMNode::ELEMENT_NODE || node.getNodeType()==DOMNode::DOCUMENT_NODE) && depth)
+		{
+			DOMNode child = node.getFirstChild();
+			while(child)
+			{
+				TokenSeq lcontext(new TokenNode(child));
+				get_child_attributes(name,&lcontext,node_list,depth);
+				child = child.getNextSibling();
+			}
+		}
+		
 		if(node.getNodeType()==DOMNode::ELEMENT_NODE)
 		{
-			if(depth)
-			{
-				TokenSeq lcontext(new TokenNode(node));
-				get_child_attributes(name,&lcontext,node_list,depth);
-			}
-			
 			DOMNamedNodeMap map = node.getAttributes();
 			for(int j=0;j<map.getLength();j++)
 			{
@@ -514,6 +520,8 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	funcs_desc.insert(pair<string,func_desc>("false",{XPathFunctions::fnfalse,0}));
 	funcs_desc.insert(pair<string,func_desc>("name",{XPathFunctions::name,0}));
 	funcs_desc.insert(pair<string,func_desc>("count",{XPathFunctions::count,0}));
+	funcs_desc.insert(pair<string,func_desc>("min",{XPathFunctions::min,0}));
+	funcs_desc.insert(pair<string,func_desc>("max",{XPathFunctions::max,0}));
 	funcs_desc.insert(pair<string,func_desc>("substring",{XPathFunctions::substring,0}));
 	funcs_desc.insert(pair<string,func_desc>("contains",{XPathFunctions::contains,0}));
 }

@@ -36,6 +36,8 @@ class XPathFunctions
 		static Token *name(XPathEval::func_context context,const std::vector<Token *> &args);
 		
 		static Token *count(XPathEval::func_context context,const std::vector<Token *> &args);
+		static Token *min(XPathEval::func_context context,const std::vector<Token *> &args);
+		static Token *max(XPathEval::func_context context,const std::vector<Token *> &args);
 		
 		static Token *substring(XPathEval::func_context context,const std::vector<Token *> &args);
 		static Token *contains(XPathEval::func_context context,const std::vector<Token *> &args);

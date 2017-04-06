@@ -73,6 +73,46 @@ Token *XPathFunctions::count(XPathEval::func_context context, const vector<Token
 	return new TokenInt(((TokenSeq *)args.at(0))->items.size());
 }
 
+Token *XPathFunctions::min(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=1)
+		throw Exception("max()","Expecting 1 parameter");
+	
+	if(args.at(0)->GetType()!=SEQ)
+		throw Exception("count()","Expecting sequence as parameter");
+	
+	TokenSeq *seq = (TokenSeq *)args.at(0);
+	if(seq->items.size()==0)
+		return new TokenSeq();
+	
+	int min = (double)(*seq->items.at(0));
+	for(int i=1;i<seq->items.size();i++)
+		if((double)(*seq->items.at(i))<min)
+			min = (double)(*seq->items.at(i));
+	
+	return new TokenFloat(min);
+}
+
+Token *XPathFunctions::max(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=1)
+		throw Exception("max()","Expecting 1 parameter");
+	
+	if(args.at(0)->GetType()!=SEQ)
+		throw Exception("count()","Expecting sequence as parameter");
+	
+	TokenSeq *seq = (TokenSeq *)args.at(0);
+	if(seq->items.size()==0)
+		return new TokenSeq();
+	
+	int max = (double)(*seq->items.at(0));
+	for(int i=1;i<seq->items.size();i++)
+		if((double)(*seq->items.at(i))>max)
+			max = (double)(*seq->items.at(i));
+	
+	return new TokenFloat(max);
+}
+
 Token *XPathFunctions::substring(XPathEval::func_context context, const vector<Token *> &args)
 {
 	if(args.size()!=2 && args.size()!=3)
