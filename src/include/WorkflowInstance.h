@@ -42,7 +42,6 @@ class WorkflowInstance
 		std::vector<unsigned int> notifications;
 		
 		std::vector<DOMElement> waiting_nodes;
-		std::vector<DOMElement> waiting_nodes_contexts;
 		
 		bool is_cancelling;
 		

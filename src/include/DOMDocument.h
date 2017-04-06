@@ -28,6 +28,7 @@
 #include <DOMText.h>
 
 #include <string>
+#include <map>
 
 class DOMDocument:public DOMNode
 {
@@ -37,6 +38,9 @@ private:
 	xercesc::DOMLSSerializer *serializer;
 	xercesc::DOMXPathNSResolver *resolver;
 	DOMXPath *xpath;
+	
+	std::map<int,DOMElement> id_node;
+	int current_id = -1;
 	
 public:
 	DOMDocument(void);
@@ -55,6 +59,12 @@ public:
 	DOMNode importNode(DOMNode importedNode, bool deep);
 	
 	DOMXPathResult *evaluate(const std::string &xpath_str,DOMNode node,DOMXPathResult::ResultType result_type);
+	
+	int getNodeEvqID(DOMElement node);
+	DOMElement getNodeFromEvqID(int evqid);
+	
+private:
+	void initialize_evqid();
 };
 
 #endif

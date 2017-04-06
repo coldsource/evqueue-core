@@ -322,6 +322,33 @@ void WorkflowInstance::Resume(bool *workflow_terminated)
 	QueuePool *qp = QueuePool::GetInstance();
 
 	unique_lock<recursive_mutex> llock(lock);
+	
+	// Clear statistics
+	{
+		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("//*[name() = 'job' or name() = 'task' or name() = 'workflow']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		int i = 0;
+		while(res->snapshotItem(i++))
+		{
+			DOMElement node = (DOMElement)res->getNodeValue();
+			node.removeAttribute("running_tasks");
+			node.removeAttribute("queued_tasks");
+			node.removeAttribute("retrying_tasks");
+			node.removeAttribute("error_tasks");
+			node.removeAttribute("waiting_conditions");
+		}
+	}
+	
+	// Look for tasks or job that have conditions waiting for a new evaluation (via evqWait() function)
+	{
+		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("//*[(name() = 'job' or name() = 'task') and @status='WAITING']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		int i = 0;
+		while(res->snapshotItem(i++))
+		{
+			waiting_nodes.push_back((DOMElement)res->getNodeValue());
+			waiting_conditions++;
+			update_job_statistics("waiting_conditions",1,(DOMElement)res->getNodeValue());
+		}
+	}
 
 	// Look for EXECUTING tasks (they might be still in execution or terminated)
 	// Also look for TERMINATED tasks because we might have to retry them
@@ -567,11 +594,9 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 	
 	// Reevaluate waiting conditions as state might have changed
 	vector<DOMElement> waiting_nodes_copy = waiting_nodes;
-	vector<DOMElement> waiting_nodes_contexts_copy = waiting_nodes_contexts;
 	
 	// Clear waiting conditions. They will be re-inserted if they still evaluate to false
 	waiting_nodes.clear();
-	waiting_nodes_contexts.clear();
 	waiting_conditions = 0;
 	for(int i=0;i<waiting_nodes_copy.size();i++)
 	{
@@ -580,11 +605,16 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		waiting_nodes_copy.at(i).removeAttribute("details");
 		update_job_statistics("waiting_conditions",-1,waiting_nodes_copy.at(i));
 		
-		// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
-		if(waiting_nodes_copy.at(i).getNodeName()=="task")
-			run_task(waiting_nodes_copy.at(i),waiting_nodes_contexts_copy.at(i));
-		else if(waiting_nodes_copy.at(i).getNodeName()=="job")
-			run_subjob(waiting_nodes_copy.at(i),waiting_nodes_contexts_copy.at(i));
+		if(waiting_nodes_copy.at(i).hasAttribute("context-id"))
+		{
+			DOMElement context_node = xmldoc->getNodeFromEvqID(stoi(waiting_nodes_copy.at(i).getAttribute("context-id")));
+		
+			// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
+			if(waiting_nodes_copy.at(i).getNodeName()=="task")
+				run_task(waiting_nodes_copy.at(i),context_node);
+			else if(waiting_nodes_copy.at(i).getNodeName()=="job")
+				run_subjob(waiting_nodes_copy.at(i),context_node);
+		}
 	}
 
 	*workflow_terminated = workflow_ended();
@@ -790,7 +820,6 @@ bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
 		{
 			// evqWait() has thrown exception because it needs to wait
 			waiting_nodes.push_back(node);
-			waiting_nodes_contexts.push_back(context_node);
 			node.setAttribute("status","WAITING");
 			node.setAttribute("details","Waiting for condition to become true");
 			waiting_conditions++;
@@ -892,6 +921,9 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 	
 	for(int i=0;i<tasks.size();i++)
 	{
+		// Set context node ID
+		tasks.at(i).setAttribute("context-id",to_string(xmldoc->getNodeEvqID(contexts.at(i))));
+		
 		replace_value(tasks.at(i),contexts.at(i));
 		enqueue_task(tasks.at(i));
 	}
@@ -914,6 +946,7 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 		{
 			xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&job});
 			xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
+			xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&job});
 			
 			subjob = (DOMElement)subjobs->getNodeValue();
 			run_subjob(subjob,job);
@@ -932,6 +965,9 @@ bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 {
 	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&subjob});
 	
+	// Set context node ID
+	subjob.setAttribute("context-id",to_string(xmldoc->getNodeEvqID(context_node)));
+	
 	if(!handle_condition(subjob,context_node))
 		return false;
 
@@ -941,6 +977,9 @@ bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 	
 	for(int i=0;i<jobs.size();i++)
 	{
+		// Set new context node ID (based on loop expanding)
+		jobs.at(i).setAttribute("context-id",to_string(xmldoc->getNodeEvqID(contexts.at(i))));
+		
 		DOMElement current_job = jobs.at(i);
 		xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&current_job});
 		if(!handle_condition(jobs.at(i),contexts.at(i)))

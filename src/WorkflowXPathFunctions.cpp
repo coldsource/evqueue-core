@@ -21,6 +21,7 @@
 #include <XPathTokens.h>
 #include <Exception.h>
 #include <DOMXPathResult.h>
+#include <DOMDocument.h>
 
 #include <memory>
 
@@ -78,6 +79,21 @@ Token *WorkflowXPathFunctions::evqGetOutput(XPathEval::func_context context, con
 		context_node = *((DOMNode *)context.custom_context);
 	
 	return context.eval->Evaluate("tasks/task[@name='"+task_name+"']/output",context_node);
+}
+
+Token *WorkflowXPathFunctions::evqGetContext(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=0)
+		throw Exception("evqGetContext()","Expecting 0 parameters");
+	
+	DOMNode context_node;
+	if(context.left_context->items.size()>0)
+		context_node = *context.left_context->items.at(0);
+	else
+		context_node = *((DOMNode *)context.custom_context);
+	
+	int context_id = (int)(*context.eval->Evaluate("@context-id",context_node));
+	return new TokenSeq(new TokenNode(context.eval->GetXMLDoc()->getNodeFromEvqID(context_id)));
 }
 
 Token *WorkflowXPathFunctions::evqWait(XPathEval::func_context context, const vector<Token *> &args)

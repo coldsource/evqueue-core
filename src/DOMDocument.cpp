@@ -209,3 +209,50 @@ DOMXPathResult *DOMDocument::evaluate(const string &xpath_str,DOMNode node,DOMXP
 		throw Exception("DOMDocument","XPath expression error in '"+xpath_str+"'. XPath returned error :"+e.error+" in "+e.context);
 	}
 }
+
+int DOMDocument::getNodeEvqID(DOMElement node)
+{
+	if(current_id==-1)
+		initialize_evqid();
+	
+	if(node.hasAttribute("evqid"))
+		return stoi(node.getAttribute("evqid"));
+	else
+	{
+		node.setAttribute("evqid",to_string(++current_id));
+		id_node[current_id] = node;
+		return current_id;
+	}
+}
+
+DOMElement DOMDocument::getNodeFromEvqID(int evqid)
+{
+	if(current_id==-1)
+		initialize_evqid();
+	
+	auto it = id_node.find(evqid);
+	if(it==id_node.end())
+		return DOMElement();
+	
+	return it->second;
+}
+
+void DOMDocument::initialize_evqid()
+{
+	current_id = 0;
+	
+	// Look for nodes hyaving an evqid attribute
+	unique_ptr<DOMXPathResult> res(evaluate("//*[count(@evqid) = 1]",getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+	int i = 0;
+	while(res->snapshotItem(i++))
+	{
+		DOMElement node = (DOMElement)res->getNodeValue();
+		int val = stoi(node.getAttribute("evqid"));
+		
+		// Update map and current_id
+		id_node[val] = node;
+		
+		if(val>current_id)
+			current_id = val;
+	}
+}

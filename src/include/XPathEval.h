@@ -78,6 +78,8 @@ private:
 public:
 	XPathEval(DOMDocument *xmldoc);
 	
+	DOMDocument *GetXMLDoc() { return xmldoc; }
+	
 	void RegisterFunction(std::string name,func_desc f);
 	
 	Token *Evaluate(const std::string &xpath,DOMNode context);
