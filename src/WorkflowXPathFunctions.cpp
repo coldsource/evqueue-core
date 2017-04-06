@@ -50,18 +50,37 @@ Token *WorkflowXPathFunctions::evqGetParentJob(XPathEval::func_context context, 
 	if(args.size()>1)
 		throw Exception("evqGetParentJob()","Expecting 0 or 1 parameter");
 	
-	int nparents = 0;
-	if(args.size()==1)
-		nparents = (int)(*args.at(0));
-	
 	DOMNode node = *((DOMNode *)context.custom_context);
-	for(int i=0;i<nparents;i++)
+	if(args.at(0)->GetType()==LIT_INT)
 	{
-		if(node.getParentNode() && node.getParentNode().getParentNode())
-			node = node.getParentNode().getParentNode();
-		else
-			throw Exception("evqGeParentJob()","Not enough parents");
+		int nparents = 0;
+		if(args.size()==1)
+			nparents = (int)(*args.at(0));
+		
+		for(int i=0;i<nparents;i++)
+		{
+			if(node.getParentNode() && node.getParentNode().getParentNode())
+				node = node.getParentNode().getParentNode();
+			else
+				throw Exception("evqGeParentJob()","Not enough parents");
+		}
 	}
+	else if(args.at(0)->GetType()==LIT_STR)
+	{
+		string name = string(*args.at(0));
+		while(true)
+		{
+			if(((DOMElement)node).hasAttribute("name") && ((DOMElement)node).getAttribute("name")==name)
+				break;
+			
+			if(node.getParentNode() && node.getParentNode().getParentNode())
+				node = node.getParentNode().getParentNode();
+			else
+				throw Exception("evqGeParentJob()","Could not find job '"+name+"' in parents");
+		}
+	}
+	else
+		throw Exception("evqGeParentJob()","Expecting integer or string parameter");
 	
 	return new TokenSeq(new TokenNode(node));
 }
