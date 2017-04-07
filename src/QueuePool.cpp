@@ -111,7 +111,7 @@ bool QueuePool::EnqueueTask(const string &queue_name,const string &queue_host,Wo
 	if(!q)
 		return false;
 	
-	if(queue_host=="")
+	if(!q->GetIsDynamic() || queue_host=="")
 		q->EnqueueTask(workflow_instance,task);
 	else
 	{
@@ -119,7 +119,7 @@ bool QueuePool::EnqueueTask(const string &queue_name,const string &queue_host,Wo
 		Queue *dyn_q = get_queue(dynamic_queue_name);
 		if(!dyn_q)
 		{
-			dyn_q = new Queue(q->GetID(),dynamic_queue_name,q->GetConcurrency(),q->GetScheduler(),q->GetWantedScheduler());
+			dyn_q = new Queue(q->GetID(),dynamic_queue_name,q->GetConcurrency(),q->GetScheduler(),q->GetWantedScheduler(),false);
 			dyn_q->Remove();
 			queues_name[dynamic_queue_name] = dyn_q;
 		}
@@ -307,14 +307,14 @@ void QueuePool::Reload(bool notify)
 	}
 	
 	// Reload new parameters or re-create removed queues
-	db.Query("SELECT queue_id,queue_name,queue_concurrency,queue_scheduler FROM t_queue");
+	db.Query("SELECT queue_id,queue_name,queue_concurrency,queue_scheduler,queue_dynamic FROM t_queue");
 	
 	while(db.FetchRow())
 	{
 		Queue *q = get_queue(db.GetField(1));
 		if(!q)
 		{
-			q = new Queue(db.GetFieldInt(0),db.GetField(1),db.GetFieldInt(2),get_scheduler_from_string(db.GetField(3)),db.GetField(3));
+			q = new Queue(db.GetFieldInt(0),db.GetField(1),db.GetFieldInt(2),get_scheduler_from_string(db.GetField(3)),db.GetField(3),db.GetFieldInt(4));
 			queues_id[db.GetFieldInt(0)] = q;
 			queues_name[db.GetField(1)] = q;
 		}
@@ -395,6 +395,7 @@ void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
 	node.setAttribute("name",q->GetName());
 	node.setAttribute("concurrency",to_string(q->GetConcurrency()));
 	node.setAttribute("scheduler",q->GetWantedScheduler());
+	node.setAttribute("dynamic",q->GetIsDynamic()?"yes":"no");
 }
 
 bool QueuePool::Exists(unsigned int id)
@@ -428,6 +429,7 @@ bool QueuePool::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			node.setAttribute("name",it->second->GetName());
 			node.setAttribute("concurrency",to_string(it->second->GetConcurrency()));
 			node.setAttribute("scheduler",it->second->GetWantedScheduler());
+			node.setAttribute("dynamic",it->second->GetIsDynamic()?"yes":"no");
 		}
 		
 		return true;

@@ -34,7 +34,7 @@
 
 using namespace std;
 
-Queue::Queue(unsigned int id,const string &name, int concurrency, int scheduler, const string &wanted_scheduler)
+Queue::Queue(unsigned int id,const string &name, int concurrency, int scheduler, const string &wanted_scheduler, bool dynamic)
 {
 	if(!CheckQueueName(name))
 		throw Exception("Queue","Invalid queue name");
@@ -44,6 +44,7 @@ Queue::Queue(unsigned int id,const string &name, int concurrency, int scheduler,
 	this->concurrency = concurrency;
 	this->scheduler = scheduler;
 	this->wanted_scheduler = wanted_scheduler;
+	this->dynamic = dynamic;
 	
 	size = 0;
 	running_tasks = 0;
@@ -189,6 +190,12 @@ void Queue::SetConcurrency(unsigned int concurrency)
 	removed = false;
 }
 
+void Queue::SetDynamic(bool dynamic)
+{
+	this->dynamic = dynamic;
+	removed = false;
+}
+
 void Queue::SetScheduler(unsigned int new_scheduler)
 {
 	if(new_scheduler==scheduler)
@@ -227,15 +234,15 @@ void Queue::Get(unsigned int id, QueryResponse *response)
 	QueuePool::GetInstance()->GetQueue(id,response);
 }
 
-void Queue::Create(const string &name, int concurrency, const string &scheduler)
+void Queue::Create(const string &name, int concurrency, const string &scheduler, int dynamic)
 {
 	create_edit_check(name,concurrency,scheduler);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler) VALUES(%s,%i,%s)",&name,&concurrency,&scheduler);
+	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler,queue_dynamic) VALUES(%s,%i,%s,%i)",&name,&concurrency,&scheduler,&dynamic);
 }
 
-void Queue::Edit(unsigned int id,const string &name, int concurrency, const string &scheduler)
+void Queue::Edit(unsigned int id,const string &name, int concurrency, const string &scheduler, int dynamic)
 {
 	if(!QueuePool::GetInstance()->Exists(id))
 		throw Exception("Queue","Unable to find queue");
@@ -243,7 +250,7 @@ void Queue::Edit(unsigned int id,const string &name, int concurrency, const stri
 	create_edit_check(name,concurrency,scheduler);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_queue SET queue_name=%s, queue_concurrency=%i, queue_scheduler=%s WHERE queue_id=%i",&name,&concurrency,&scheduler,&id);
+	db.QueryPrintf("UPDATE t_queue SET queue_name=%s, queue_concurrency=%i, queue_scheduler=%s, queue_dynamic=%i WHERE queue_id=%i",&name,&concurrency,&scheduler,&dynamic,&id);
 }
 
 void Queue::Delete(unsigned int id)
@@ -284,14 +291,15 @@ bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		string name = saxh->GetRootAttribute("name");
 		int iconcurrency = saxh->GetRootAttributeInt("concurrency");
 		string scheduler = saxh->GetRootAttribute("scheduler");
+		bool dynamic = saxh->GetRootAttributeBool("dynamic");
 		
 		if(action=="create")
-			Create(name, iconcurrency, scheduler);
+			Create(name, iconcurrency, scheduler, dynamic);
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			Edit(id,name, iconcurrency, scheduler);
+			Edit(id,name, iconcurrency, scheduler, dynamic);
 		}
 		
 		QueuePool::GetInstance()->Reload();

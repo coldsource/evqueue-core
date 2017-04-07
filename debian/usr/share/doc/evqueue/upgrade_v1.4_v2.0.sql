@@ -18,6 +18,7 @@ ALTER TABLE t_notification_type ADD COLUMN notification_type_conf_content LONGBL
 ALTER TABLE t_notification_type ADD UNIQUE KEY `notification_type_name` (`notification_type_name`);
 
 ALTER TABLE t_queue ADD COLUMN queue_scheduler VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT 'default' AFTER queue_concurrency;
+ALTER TABLE t_queue ADD COLUMN queue_dynamic TINYINT NOT NULL DEFAULT 0 AFTER queue_scheduler;
 
 ALTER TABLE t_workflow_schedule_parameters MODIFY workflow_schedule_parameter varchar(64) COLLATE utf8_unicode_ci NOT NULL;
 ALTER TABLE t_workflow_instance_parameters MODIFY workflow_instance_parameter varchar(64) COLLATE utf8_unicode_ci NOT NULL;

@@ -53,6 +53,7 @@ class Queue
 		
 		unsigned int id;
 		std::string name;
+		bool dynamic;
 		
 		unsigned int concurrency;
 		unsigned int size;
@@ -69,7 +70,7 @@ class Queue
 		bool removed;
 		
 	public:
-		Queue(unsigned int id,const std::string &name, int concurrency, int scheduler, const std::string &wanted_scheduler);
+		Queue(unsigned int id,const std::string &name, int concurrency, int scheduler, const std::string &wanted_scheduler, bool dynamic);
 		~Queue();
 		
 		inline unsigned int GetID() { return id; }
@@ -89,6 +90,9 @@ class Queue
 		void SetConcurrency(unsigned int concurrency);
 		inline unsigned int GetConcurrency(void) { return concurrency; }
 		
+		void SetDynamic(bool dynamic);
+		inline unsigned int GetIsDynamic(void) { return dynamic; }
+		
 		void SetScheduler(unsigned int new_scheduler);
 		inline unsigned int GetScheduler(void) { return scheduler; }
 		const std::string &GetWantedScheduler(void) { return wanted_scheduler; }
@@ -99,8 +103,8 @@ class Queue
 		bool IsLocked(void);
 		
 		static void Get(unsigned int id, QueryResponse *response);
-		static void Create(const std::string &name, int concurrency, const std::string &scheduler);
-		static void Edit(unsigned int id,const std::string &name, int concurrency, const std::string &scheduler);
+		static void Create(const std::string &name, int concurrency, const std::string &scheduler, int dynamic);
+		static void Edit(unsigned int id,const std::string &name, int concurrency, const std::string &scheduler, int dynamic);
 		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);

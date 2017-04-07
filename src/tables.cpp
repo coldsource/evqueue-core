@@ -57,6 +57,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `queue_name` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `queue_concurrency` int(10) unsigned NOT NULL, \
   `queue_scheduler` VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT 'default', \
+  `queue_dynamic` TINYINT NOT NULL DEFAULT 0, \
   PRIMARY KEY (`queue_id`), \
   UNIQUE KEY `queue_name` (`queue_name`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='v2.0'; \
