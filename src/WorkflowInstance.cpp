@@ -1024,6 +1024,16 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 		task.setAttribute("host",expanded_attr_val);
 	}
 	
+	// Expand dynamic queue host if needed
+	if(task.hasAttribute("queue_host"))
+	{
+		ExceptionWorkflowContext ctx(task,"Error computing dynamic host");
+		
+		string attr_val = task.getAttribute("queue_host");
+		string expanded_attr_val = xmldoc->ExpandXPathAttribute(attr_val,context_node);
+		task.setAttribute("queue_host",expanded_attr_val);
+	}
+	
 	// Expand dynamic task user if needed
 	if(task.hasAttribute("user"))
 	{
@@ -1079,13 +1089,19 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 
 	// Get queue name (if present) and update task node
 	string queue_name = task.getAttribute("queue");
-	string task_host = task.getAttribute("host");
+	
+	// Compute dynamic queue host
+	string queue_host;
+	if(task.hasAttribute("queue_host"))
+		queue_host = task.getAttribute("queue_host");
+	else if(task.hasAttribute("host"))
+		queue_host = task.getAttribute("host");
 
 	task.setAttribute("status","QUEUED");
 
 	QueuePool *pool = QueuePool::GetInstance();
 
-	if(!pool->EnqueueTask(queue_name,task_host,this,task))
+	if(!pool->EnqueueTask(queue_name,queue_host,this,task))
 	{
 		task.setAttribute("status","ABORTED");
 		task.setAttribute("error","Unknown queue name");
