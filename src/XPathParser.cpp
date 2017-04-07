@@ -169,11 +169,18 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 			buf += s[i++];
 		}
 		
-		*pos = i;
-		if(is_float)
-			return (new TokenFloat(stod(buf)))->SetInitialPosition(base_pos);
-		else
-			return (new TokenInt(stoi(buf)))->SetInitialPosition(base_pos);
+		try
+		{
+			*pos = i;
+			if(is_float)
+				return (new TokenFloat(stod(buf)))->SetInitialPosition(base_pos);
+			else
+				return (new TokenInt(stoi(buf)))->SetInitialPosition(base_pos);
+		}
+		catch(...)
+		{
+			throw Exception("XPath Parser","Invalid int or float at character "+to_string(base_pos));
+		}
 	}
 	
 	// At this point we can only have Node name, Attribute or Function.

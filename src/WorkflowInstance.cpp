@@ -607,7 +607,16 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		
 		if(waiting_nodes_copy.at(i).hasAttribute("context-id"))
 		{
-			DOMElement context_node = xmldoc->getNodeFromEvqID(stoi(waiting_nodes_copy.at(i).getAttribute("context-id")));
+			int context_id;
+			try
+			{
+				context_id = stoi(waiting_nodes_copy.at(i).getAttribute("context-id"));
+			}
+			catch(...)
+			{
+				throw Exception("WorkflowInstance","Invalid context ID");
+			}
+			DOMElement context_node = xmldoc->getNodeFromEvqID(context_id);
 		
 			// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
 			if(waiting_nodes_copy.at(i).getNodeName()=="task")
