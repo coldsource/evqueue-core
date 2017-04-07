@@ -84,6 +84,7 @@
 #include <Filesystem.h>
 #include <handle_connection.h>
 #include <tools.h>
+#include <tools_ipc.h>
 #include <tools_db.h>
 #include <ping.h>
 
@@ -150,6 +151,7 @@ int main(int argc,const char **argv)
 	
 	bool ipcq_remove = false;
 	bool ipcq_stats = false;
+	int ipc_terminate_tid = -1;
 	
 	for(int i=1;i<argc;i++)
 	{
@@ -168,6 +170,11 @@ int main(int argc,const char **argv)
 		else if(strcmp(argv[i],"--ipcq-stats")==0)
 		{
 			ipcq_stats = true;
+			break;
+		}
+		else if(strcmp(argv[i],"--ipc-terminate-tid")==0 && i+1<argc)
+		{
+			ipc_terminate_tid = atoi(argv[i+1]);
 			break;
 		}
 		else if(strcmp(argv[i],"--version")==0)
@@ -228,6 +235,8 @@ int main(int argc,const char **argv)
 			return tools_queue_destroy();
 		else if(ipcq_stats)
 			return tools_queue_stats();
+		else if(ipc_terminate_tid!=-1)
+			return tools_send_exit_msg(1,ipc_terminate_tid,-1);
 		
 		// Create logger as soon as possible
 		Logger *logger = new Logger();

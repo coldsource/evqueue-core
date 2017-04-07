@@ -48,52 +48,13 @@
 
 using namespace std;
 
-int tools_queue_destroy()
-{
-	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
-	if(msgqid==-1)
-		return -1;
-	
-	int re = msgctl(msgqid,IPC_RMID,0);
-	if(re!=0)
-	{
-		if(errno==EPERM)
-			fprintf(stderr,"Permission refused while trying to remove message queue\n");
-		else
-			fprintf(stderr,"Unknown error trying to remove message queue : %d\n",errno);
-		
-		return -1;
-	}
-	
-	printf("Message queue successfully removed\n");
-	
-	return 0;
-}
-
-int tools_queue_stats()
-{
-int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
-	if(msgqid==-1)
-		return -1;
-	
-	struct msqid_ds ipcq_stats;
-	int re = msgctl(msgqid,IPC_STAT,&ipcq_stats);
-	if(re!=0)
-	{
-		fprintf(stderr,"Unknown error trying to get message queue statistics: %d\n",errno);
-		return -1;
-	}
-	
-	printf("Queue size : %ld\n",ipcq_stats.msg_qbytes);
-	printf("Pending messages : %ld\n",ipcq_stats.msg_qnum);
-}
-
 void tools_print_usage()
 {
 	fprintf(stderr,"Usage :\n");
 	fprintf(stderr,"  Launch evqueue      : evqueue (--daemon) --config <path to config file>\n");
 	fprintf(stderr,"  Clean IPC queue     : evqueue --config <path to config file> --ipcq-remove\n");
 	fprintf(stderr,"  Get IPC queue stats : evqueue --config <path to config file> --ipcq-stats\n");
+	fprintf(stderr,"  Send IPC TERM-TID   : evqueue --config <path to config file> --ipc-terminate-tid <tid>\n");
 	fprintf(stderr,"  Show version        : evqueue --version\n");
 }
 
@@ -158,21 +119,6 @@ void tools_flush_retrier(void)
 	Logger::Log(LOG_NOTICE,"Flushing retrier");
 	Retrier *retrier = Retrier::GetInstance();
 	retrier->Flush();
-}
-
-int tools_send_exit_msg(int type,int tid,char retcode)
-{
-	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
-	if(msgqid==-1)
-		return -1;
-	
-	st_msgbuf msgbuf;
-	msgbuf.type = type;
-	memset(&msgbuf.mtext,0,sizeof(st_msgbuf::mtext));
-	msgbuf.mtext.pid = getpid();
-	msgbuf.mtext.tid = tid;
-	msgbuf.mtext.retcode = retcode;
-	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }
 
 bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -265,4 +211,59 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 	}
 	
 	return false;
+}
+
+int tools_queue_destroy()
+{
+	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
+	if(msgqid==-1)
+		return -1;
+	
+	int re = msgctl(msgqid,IPC_RMID,0);
+	if(re!=0)
+	{
+		if(errno==EPERM)
+			fprintf(stderr,"Permission refused while trying to remove message queue\n");
+		else
+			fprintf(stderr,"Unknown error trying to remove message queue : %d\n",errno);
+		
+		return -1;
+	}
+	
+	printf("Message queue successfully removed\n");
+	
+	return 0;
+}
+
+int tools_queue_stats()
+{
+	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
+	if(msgqid==-1)
+		return -1;
+	
+	struct msqid_ds ipcq_stats;
+	int re = msgctl(msgqid,IPC_STAT,&ipcq_stats);
+	if(re!=0)
+	{
+		fprintf(stderr,"Unknown error trying to get message queue statistics: %d\n",errno);
+		return -1;
+	}
+	
+	printf("Queue size : %ld\n",ipcq_stats.msg_qbytes);
+	printf("Pending messages : %ld\n",ipcq_stats.msg_qnum);
+}
+
+int tools_send_exit_msg(int type,int tid,char retcode)
+{
+	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
+	if(msgqid==-1)
+		return -1;
+	
+	st_msgbuf msgbuf;
+	msgbuf.type = type;
+	memset(&msgbuf.mtext,0,sizeof(st_msgbuf::mtext));
+	msgbuf.mtext.pid = getpid();
+	msgbuf.mtext.tid = tid;
+	msgbuf.mtext.retcode = retcode;
+	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }
