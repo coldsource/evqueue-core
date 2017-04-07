@@ -51,7 +51,7 @@ Token *WorkflowXPathFunctions::evqGetParentJob(XPathEval::func_context context, 
 		throw Exception("evqGetParentJob()","Expecting 0 or 1 parameter");
 	
 	DOMNode node = *((DOMNode *)context.custom_context);
-	if(args.at(0)->GetType()==LIT_INT)
+	if(args.size()==0 || args.at(0)->GetType()==LIT_INT)
 	{
 		int nparents = 0;
 		if(args.size()==1)
