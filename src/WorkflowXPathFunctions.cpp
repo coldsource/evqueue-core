@@ -62,7 +62,7 @@ Token *WorkflowXPathFunctions::evqGetParentJob(XPathEval::func_context context, 
 			if(node.getParentNode() && node.getParentNode().getParentNode())
 				node = node.getParentNode().getParentNode();
 			else
-				throw Exception("evqGeParentJob()","Not enough parents");
+				throw Exception("evqGetParentJob()","Not enough parents");
 		}
 	}
 	else if(args.at(0)->GetType()==LIT_STR)
@@ -76,7 +76,7 @@ Token *WorkflowXPathFunctions::evqGetParentJob(XPathEval::func_context context, 
 			if(node.getParentNode() && node.getParentNode().getParentNode())
 				node = node.getParentNode().getParentNode();
 			else
-				throw Exception("evqGeParentJob()","Could not find job '"+name+"' in parents");
+				throw Exception("evqGetParentJob()","Could not find job '"+name+"' in parents");
 		}
 	}
 	else
