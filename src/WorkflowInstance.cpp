@@ -933,7 +933,7 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 		// Set context node ID
 		tasks.at(i).setAttribute("context-id",to_string(xmldoc->getNodeEvqID(contexts.at(i))));
 		
-		replace_value(tasks.at(i),contexts.at(i));
+		replace_values(tasks.at(i),contexts.at(i));
 		enqueue_task(tasks.at(i));
 	}
 
@@ -1000,29 +1000,8 @@ bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 	return true;
 }
 
-void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
+void WorkflowInstance::replace_values(DOMElement task,DOMElement context_node)
 {
-	DOMElement value;
-	int values_index;
-
-	{
-		ExceptionWorkflowContext ctx(task,"Error computing input value");
-		
-		// Replace <value> nodes par their literal value
-		unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//value",task,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-		values_index = 0;
-		while(values->snapshotItem(values_index++))
-		{
-			value = (DOMElement)values->getNodeValue();
-
-			// This is unchecked user input. We have to try evaluation
-			unique_ptr<DOMXPathResult> value_nodes(xmldoc->evaluate(value.getAttribute("select"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-			
-			if(value_nodes->isNode())
-				value.getParentNode().replaceChild(xmldoc->createTextNode(value_nodes->getStringValue()),value);
-		}
-	}
-	
 	// Expand dynamic task host if needed
 	if(task.hasAttribute("host"))
 	{
@@ -1036,7 +1015,7 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 	// Expand dynamic queue host if needed
 	if(task.hasAttribute("queue_host"))
 	{
-		ExceptionWorkflowContext ctx(task,"Error computing dynamic host");
+		ExceptionWorkflowContext ctx(task,"Error computing dynamic queue host");
 		
 		string attr_val = task.getAttribute("queue_host");
 		string expanded_attr_val = xmldoc->ExpandXPathAttribute(attr_val,context_node);
@@ -1053,28 +1032,70 @@ void WorkflowInstance::replace_value(DOMElement task,DOMElement context_node)
 		task.setAttribute("user",expanded_attr_val);
 	}
 	
+	unique_ptr<DOMXPathResult> inputs(xmldoc->evaluate("./input",task,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+	int inputs_index = 0;
+	DOMElement input;
+	while(inputs->snapshotItem(inputs_index++))
 	{
-		ExceptionWorkflowContext ctx(task,"Error computing input values from copy node");
-		
-		// Replace <copy> nodes par their value
-		unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//copy",task,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-		values_index = 0;
-		while(values->snapshotItem(values_index++))
+		input = (DOMElement)inputs->getNodeValue();
+		replace_value(input,context_node);
+	}
+}
+
+void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
+{
+	DOMElement value;
+	int values_index;
+	
+	vector<DOMElement> inputs;
+	vector<DOMElement> contexts;
+	handle_loop(input,context_node,inputs,contexts);
+	
+	for(int i=0;i<inputs.size();i++)
+	{
+		DOMElement current_input = inputs.at(i);
+	
 		{
-			value = (DOMElement)values->getNodeValue();
-			string xpath_select = value.getAttribute("select");
-
-			// This is unchecked user input. We have to try evaluation
-			unique_ptr<DOMXPathResult> result_nodes(xmldoc->evaluate(xpath_select,context_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			ExceptionWorkflowContext ctx(current_input,"Error computing input value");
 			
-			int result_index = 0;
-			while(result_nodes->snapshotItem(result_index++))
+			// Replace <value> nodes par their literal value
+			unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//value",current_input,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			values_index = 0;
+			while(values->snapshotItem(values_index++))
 			{
-				DOMNode result_node = result_nodes->getNodeValue();
-				value.getParentNode().insertBefore(result_node.cloneNode(true),value);
-			}
+				value = (DOMElement)values->getNodeValue();
 
-			value.getParentNode().removeChild(value);
+				// This is unchecked user input. We have to try evaluation
+				unique_ptr<DOMXPathResult> value_nodes(xmldoc->evaluate(value.getAttribute("select"),contexts.at(i),DOMXPathResult::FIRST_RESULT_TYPE));
+				
+				if(value_nodes->isNode())
+					value.getParentNode().replaceChild(xmldoc->createTextNode(value_nodes->getStringValue()),value);
+			}
+		}
+		
+		{
+			ExceptionWorkflowContext ctx(current_input,"Error computing input values from copy node");
+			
+			// Replace <copy> nodes par their value
+			unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//copy",current_input,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			values_index = 0;
+			while(values->snapshotItem(values_index++))
+			{
+				value = (DOMElement)values->getNodeValue();
+				string xpath_select = value.getAttribute("select");
+
+				// This is unchecked user input. We have to try evaluation
+				unique_ptr<DOMXPathResult> result_nodes(xmldoc->evaluate(xpath_select,contexts.at(i),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+				
+				int result_index = 0;
+				while(result_nodes->snapshotItem(result_index++))
+				{
+					DOMNode result_node = result_nodes->getNodeValue();
+					value.getParentNode().insertBefore(result_node.cloneNode(true),value);
+				}
+
+				value.getParentNode().removeChild(value);
+			}
 		}
 	}
 }

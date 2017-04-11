@@ -88,11 +88,12 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 	 \
 	 \
 	<xs:complexType name=\"inputType\" mixed=\"true\"> \
-    <xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\"> \
-      <xs:element name=\"value\" type=\"valueType\" /> \
+		<xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\"> \
+			<xs:element name=\"value\" type=\"valueType\" /> \
 			<xs:element name=\"copy\" type=\"valueType\" /> \
-    </xs:choice>       \
+		</xs:choice>       \
 		<xs:attribute name=\"name\" type=\"StrNonEmpty\" use=\"optional\" /> \
+		<xs:attribute name=\"loop\" type=\"xs:string\" use=\"optional\" /> \
 	</xs:complexType> \
 	 \
 	<xs:complexType name=\"stdinType\" mixed=\"true\"> \
