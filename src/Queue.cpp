@@ -37,7 +37,7 @@ using namespace std;
 Queue::Queue(unsigned int id,const string &name, int concurrency, int scheduler, const string &wanted_scheduler, bool dynamic)
 {
 	if(!CheckQueueName(name))
-		throw Exception("Queue","Invalid queue name");
+		throw Exception("Queue","Invalid queue name '"+name+"'");
 	
 	this->id = id;
 	this->name =name;
