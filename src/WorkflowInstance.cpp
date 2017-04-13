@@ -965,7 +965,14 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 	{
 		// Terminate workflow
 		error_tasks++;
-		update_job_statistics("error_tasks",1,job);
+		
+		if(subjob)
+		{
+			subjob.setAttribute("status","ABORTED");
+			update_job_statistics("error_tasks",1,subjob);
+		}
+		else
+			update_job_statistics("error_tasks",1,job);
 		throw;
 	}
 }
