@@ -19,6 +19,7 @@
 
 #include <global.h>
 #include <tools_ipc.h>
+#include <tools_env.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,70 +117,11 @@ int main(int argc,char ** argv)
 			close(log_pipe[0]);
 			
 			// Register ENV parameters
-			int read_size;
-			char buf[4096];
-			
-			FILE *fd_stdin = fdopen(dup(STDIN_FILENO),"r");
-			
-			// Read the number of arguments
-			read_size = fread(buf,1,3,fd_stdin);
-			if(read_size!=3)
+			if(!prepare_env())
 			{
-				fprintf(stderr,"Corrupted data received for ENV  parameters\n");
+				fprintf(stderr,"Corrupted data received from evqueue agent\n");
 				exit(-1);
 			}
-				
-			buf[read_size] = '\0';
-			int nparameters = atoi(buf);
-			
-			for(int i=0;i<nparameters;i++)
-			{
-				// Read the number of arguments
-				read_size = fread(buf,1,18,fd_stdin);
-				if(read_size!=18)
-				{
-					fprintf(stderr,"Corrupted data received for ENV  parameters\n");
-					exit(-1);
-				}
-					
-				buf[read_size] = '\0';
-				int value_len = atoi(buf+9);
-				
-				buf[9] = '\0';
-				int name_len = atoi(buf);
-				
-				if(value_len>4096 || name_len>4096)
-				{
-					fprintf(stderr,"Corrupted data received from evqueue agent\n");
-					exit(-1);
-				}
-				
-				char name[4097],value[4097];
-				read_size = fread(name,1,name_len,fd_stdin);
-				if(read_size!=name_len)
-				{
-					fprintf(stderr,"Corrupted data received from evqueue agent\n");
-					exit(-1);
-				}
-				
-				name[read_size] = '\0';
-				
-				read_size = fread(value,1,value_len,fd_stdin);
-				if(read_size!=value_len)
-				{
-					fprintf(stderr,"Corrupted data received from evqueue agent\n");
-					exit(-1);
-				}
-				
-				value[read_size] = '\0';
-				
-				if(name[0]!='\0')
-					setenv(name,value,1);
-				else
-					setenv("DEFAULT_PARAMETER_NAME",value,1);
-			}
-			
-			fclose(fd_stdin);
 		}
 		
 		if(ssh_nargs>0 && working_directory)
@@ -277,8 +219,6 @@ int main(int argc,char ** argv)
 				}
 				ptr[0] = '\'';
 				ptr[1] = '\0';
-				
-				printf("%s\n",task_argv[current_arg]);
 				
 				current_arg++;
 			}

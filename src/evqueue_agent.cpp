@@ -25,6 +25,7 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <sys/select.h> 
+#include <tools_env.h>
 
 int main(int argc,char ** argv)
 {
@@ -49,6 +50,12 @@ int main(int argc,char ** argv)
 	
 	if(pid==0)
 	{
+		if(!prepare_env())
+		{
+			fprintf(stderr,"evqueue_agent: Invalid environment\n");
+			return -1;
+		}
+		
 		for(int i=0;i<MAXFD_FORWARD;i++)
 		{
 			close(fd_pipe[i][0]);

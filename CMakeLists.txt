@@ -56,7 +56,7 @@ target_link_libraries(evqueue http_parser)
 
 project(evqueue_monitor)
 
-add_executable(evqueue_monitor src/evqueue_monitor.cpp src/tools_ipc.cpp)
+add_executable(evqueue_monitor src/evqueue_monitor.cpp src/tools_ipc.cpp src/tools_env.cpp)
 
 include_directories(src/include /usr/include)
 
@@ -99,7 +99,7 @@ target_link_libraries(evqueue_api xqilla)
 
 project(evqueue_agent)
 
-add_executable(evqueue_agent src/evqueue_agent.cpp)
+add_executable(evqueue_agent src/evqueue_agent.cpp src/tools_env.cpp)
 
 include_directories(src/include /usr/include)
 
