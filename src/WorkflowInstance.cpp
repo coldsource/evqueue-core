@@ -1047,6 +1047,10 @@ void WorkflowInstance::replace_values(DOMElement task,DOMElement context_node)
 		input = (DOMElement)inputs->getNodeValue();
 		replace_value(input,context_node);
 	}
+	
+	unique_ptr<DOMXPathResult> stdin(xmldoc->evaluate("./stdin",task,DOMXPathResult::FIRST_RESULT_TYPE));
+	if(stdin->isNode())
+		replace_value(stdin->getNodeValue(),context_node);
 }
 
 void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)

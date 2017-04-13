@@ -281,13 +281,10 @@ pid_t ProcessManager::ExecuteTask(
 
 	task = Tasks::GetInstance()->Get(task_name);
 
-	if(stdin_parameter!="")
-	{
-		// Prepare pipe before fork() since we have STDIN input
-		parameters_pipe[0] = -1;
-		if(pipe(parameters_pipe)!=0)
-			throw Exception("ProcessManager","Unable to execute task : could not create pipe");
-	}
+	// Prepare pipe for STDIN before fork()
+	parameters_pipe[0] = -1;
+	if(pipe(parameters_pipe)!=0)
+		throw Exception("ProcessManager","Unable to execute task : could not create pipe");
 
 	pid_t pid;
 	// Fork child
@@ -345,11 +342,9 @@ pid_t ProcessManager::ExecuteTask(
 				setenv("EVQUEUE_SSH_AGENT",config->Get("processmanager.agent.path").c_str(),true);
 		}
 
-		if(stdin_parameter!="")
-		{
-			dup2(parameters_pipe[0],STDIN_FILENO);
-			close(parameters_pipe[1]);
-		}
+		// Redirect STDIN
+		dup2(parameters_pipe[0],STDIN_FILENO);
+		close(parameters_pipe[1]);
 
 		// Redirect output to log files
 		int fno;
@@ -370,6 +365,10 @@ pid_t ProcessManager::ExecuteTask(
 
 		if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
 		{
+			// We have no ENV parameters
+			if(write(parameters_pipe[1],"000",3)!=3)
+				Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+			
 			const char *args[parameters_count+4];
 
 			args[0] = monitor_path.c_str();
@@ -389,14 +388,6 @@ pid_t ProcessManager::ExecuteTask(
 		}
 		else if(task.GetParametersMode()==task_parameters_mode::ENV)
 		{
-			for(parameters_index=0;parameters_index<parameters_count;parameters_index++)
-			{
-				if(parameters_name[parameters_index]!="")
-					setenv(parameters_name[parameters_index].c_str(),parameters_value[parameters_index].c_str(),1);
-				else
-					setenv("DEFAULT_PARAMETER_NAME",parameters_value[parameters_index].c_str(),1);
-			}
-
 			execl(monitor_path.c_str(),monitor_path.c_str(),task_filename.c_str(),tid_str,(char *)0);
 
 			Logger::Log(LOG_ERR,"Could not execute task monitor");
@@ -410,15 +401,32 @@ pid_t ProcessManager::ExecuteTask(
 
 	if(pid>0)
 	{
-		if(stdin_parameter!="")
+		if(task.GetParametersMode()==task_parameters_mode::ENV)
 		{
-			// We have STDIN data
-			if(write(parameters_pipe[1],stdin_parameter.c_str(),stdin_parameter.length())!=stdin_parameter.length())
+			// Pipe ENV parameters
+			char buf[32];
+			sprintf(buf,"%03ld",parameters_name.size());
+			if(write(parameters_pipe[1],buf,3)!=3)
 				Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
-
-			close(parameters_pipe[0]);
-			close(parameters_pipe[1]);
+			
+			for(int parameters_index=0;parameters_index<parameters_name.size();parameters_index++)
+			{
+				sprintf(buf,"%09ld%09ld",parameters_name[parameters_index].length(),parameters_value[parameters_index].length());
+				if(write(parameters_pipe[1],buf,18)!=18)
+					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+				if(write(parameters_pipe[1],parameters_name[parameters_index].c_str(),parameters_name[parameters_index].length())!=parameters_name[parameters_index].length())
+					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+				if(write(parameters_pipe[1],parameters_value[parameters_index].c_str(),parameters_value[parameters_index].length())!=parameters_value[parameters_index].length())
+					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+			}
 		}
+		
+		// Pipe STDIN data to the child
+		if(write(parameters_pipe[1],stdin_parameter.c_str(),stdin_parameter.length())!=stdin_parameter.length())
+			Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+
+		close(parameters_pipe[0]);
+		close(parameters_pipe[1]);
 	}
 
 	if(pid<0)
