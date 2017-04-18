@@ -34,11 +34,11 @@ class AuthHandler
 	public:
 		AuthHandler(int socket, const std::string &remote_host, int remote_port);
 		
-		User HandleAuth();
+		User HandleAuth() const;
 	
 	private:
-		std::string generate_challenge();
-		int time_constant_strcmp(const std::string &str1, const std::string &str2);
+		std::string generate_challenge() const;
+		int time_constant_strcmp(const std::string &str1, const std::string &str2) const;
 };
 
 #endif

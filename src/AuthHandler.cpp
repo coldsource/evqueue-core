@@ -48,7 +48,7 @@ AuthHandler::AuthHandler(int socket, const string &remote_host, int remote_port)
 	this->remote_port = remote_port;
 }
 
-User AuthHandler::HandleAuth()
+User AuthHandler::HandleAuth() const
 {
 	// Check if authentication is required
 	if(!Configuration::GetInstance()->GetBool("core.auth.enable"))
@@ -103,7 +103,7 @@ User AuthHandler::HandleAuth()
 	return user;
 }
 
-string AuthHandler::generate_challenge()
+string AuthHandler::generate_challenge() const
 {
 	Sha1String sha1;
 	sha1_ctx ctx;
@@ -142,7 +142,7 @@ string AuthHandler::generate_challenge()
 	return sha1.GetHex();
 }
 
-int AuthHandler::time_constant_strcmp(const std::string &str1, const std::string &str2)
+int AuthHandler::time_constant_strcmp(const std::string &str1, const std::string &str2) const
 {
 	if(str1.length()!=str2.length())
 		return 1;
