@@ -420,6 +420,11 @@ pid_t ProcessManager::ExecuteTask(
 					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
 			}
 		}
+		else
+		{
+			if(write(parameters_pipe[1],"000",3)!=3)
+					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
+		}
 		
 		// Pipe STDIN data to the child
 		if(write(parameters_pipe[1],stdin_parameter.c_str(),stdin_parameter.length())!=stdin_parameter.length())
