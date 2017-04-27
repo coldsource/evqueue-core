@@ -365,10 +365,6 @@ pid_t ProcessManager::ExecuteTask(
 
 		if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
 		{
-			// We have no ENV parameters
-			if(write(parameters_pipe[1],"000",3)!=3)
-				Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
-			
 			const char *args[parameters_count+4];
 
 			args[0] = monitor_path.c_str();
@@ -511,3 +507,4 @@ char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int f
 	
 	return output;
 }
+
