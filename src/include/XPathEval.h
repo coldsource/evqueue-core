@@ -26,6 +26,8 @@
 #include <vector>
 #include <map>
 
+#include <XPathTokens.h>
+
 class TokenSeq;
 class TokenExpr;
 class Token;
@@ -40,9 +42,21 @@ class XPathEval
 	};
 	
 public:
+	struct eval_context
+	{
+		TokenSeq *seq;
+		int index = 0;
+		
+		eval_context(TokenSeq *seq) { this->seq = seq; }
+		eval_context(TokenSeq *seq, int index) { this->seq = seq; this->index = index; }
+		
+		operator const TokenSeq*() const { return seq; }
+		const TokenSeq *operator ->() const { return seq; }
+	};
+	
 	struct func_context
 	{
-		TokenSeq *current_context;
+		eval_context current_context;
 		TokenSeq *left_context;
 		void *custom_context;
 		XPathEval *eval;
@@ -61,19 +75,19 @@ private:
 	
 	DOMDocument *xmldoc;
 	
-	TokenSeq *get_child_nodes(const std::string &name,TokenSeq *context,TokenSeq *node_list,bool depth);
-	TokenSeq *get_child_attributes(const std::string &name,TokenSeq *context,TokenSeq *node_list,bool depth);
-	TokenSeq *get_axis(const std::string &axis_name,const std::string &node_name,TokenSeq *context,TokenSeq *node_list,bool depth);
+	TokenSeq *get_child_nodes(const std::string &name,const eval_context &context,TokenSeq *node_list,bool depth);
+	TokenSeq *get_child_attributes(const std::string &name,const eval_context &context,TokenSeq *node_list,bool depth);
+	TokenSeq *get_axis(const std::string &axis_name,const std::string &node_name,const eval_context &context,TokenSeq *node_list,bool depth);
 	
 	void filter_token_node_list(TokenSeq *list,TokenExpr *filter);
 	void get_nth_token_node_list(TokenSeq *list,int n);
 	
-	Token *evaluate_func(const std::vector<Token *> &expr_tokens, int i,TokenSeq *current_context,TokenSeq *left_context);
-	Token *evaluate_node(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth);
-	Token *evaluate_axis(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth);
-	Token *evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth);
+	Token *evaluate_func(const std::vector<Token *> &expr_tokens, int i,const eval_context &current_context,TokenSeq *left_context);
+	Token *evaluate_node(const std::vector<Token *> &expr_tokens, int i,const eval_context &context,bool depth);
+	Token *evaluate_axis(const std::vector<Token *> &expr_tokens, int i,const eval_context &context,bool depth);
+	Token *evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,const eval_context &context,bool depth);
 	
-	Token *evaluate_expr(Token *token,TokenSeq *context);
+	Token *evaluate_expr(Token *token,const eval_context &context);
 	
 public:
 	XPathEval(DOMDocument *xmldoc);

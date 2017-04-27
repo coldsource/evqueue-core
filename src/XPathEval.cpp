@@ -32,7 +32,7 @@
 using namespace std;
 
 // Return child nodes of context node
-TokenSeq *XPathEval::get_child_nodes(const string &name,TokenSeq *context,TokenSeq *node_list,bool depth)
+TokenSeq *XPathEval::get_child_nodes(const string &name,const eval_context &context,TokenSeq *node_list,bool depth)
 {
 	for(int i=0;i<context->items.size();i++)
 	{
@@ -71,7 +71,7 @@ TokenSeq *XPathEval::get_child_nodes(const string &name,TokenSeq *context,TokenS
 }
 
 // Return attributes of context node
-TokenSeq *XPathEval::get_child_attributes(const string &name,TokenSeq *context,TokenSeq *node_list,bool depth)
+TokenSeq *XPathEval::get_child_attributes(const string &name,const eval_context &context,TokenSeq *node_list,bool depth)
 {
 	for(int i=0;i<context->items.size();i++)
 	{
@@ -102,7 +102,7 @@ TokenSeq *XPathEval::get_child_attributes(const string &name,TokenSeq *context,T
 	return node_list;
 }
 
-TokenSeq *XPathEval::get_axis(const string &axis_name,const string &node_name,TokenSeq *context,TokenSeq *node_list,bool depth)
+TokenSeq *XPathEval::get_axis(const string &axis_name,const string &node_name,const eval_context &context,TokenSeq *node_list,bool depth)
 {
 	for(int i=0;i<context->items.size();i++)
 	{
@@ -148,15 +148,17 @@ TokenSeq *XPathEval::get_axis(const string &axis_name,const string &node_name,To
 // Xpath syntax : /node[<filter expression>]
 void XPathEval::filter_token_node_list(TokenSeq *list,TokenExpr *filter)
 {
-	for(int i=0;i<list->items.size();i++)
+	int idx = 1; // XPath uses 1 based indexes
+	for(int i=0;i<list->items.size();i++,idx++)
 	{
 		TokenExpr *filter_copy = new TokenExpr(*filter);
-		TokenSeq context(list->items.at(i)->clone());
+		TokenSeq context_seq(list->items.at(i)->clone());
+		eval_context context(&context_seq,idx);
 		Token *token;
 		
 		try
 		{
-			token = evaluate_expr(filter_copy,&context);
+			token = evaluate_expr(filter_copy,context);
 		}
 		catch(Exception &e)
 		{
@@ -203,7 +205,7 @@ void XPathEval::get_nth_token_node_list(TokenSeq *list,int n)
 	}
 }
 
-Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,TokenSeq *current_context,TokenSeq *left_context)
+Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,const eval_context &current_context,TokenSeq *left_context)
 {
 	// Lookup funcion name
 	TokenFunc *func = (TokenFunc *)expr_tokens.at(i);
@@ -244,7 +246,7 @@ Token *XPathEval::evaluate_func(const std::vector<Token *> &expr_tokens, int i,T
 	}
 }
 
-Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
+Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,const eval_context &context,bool depth)
 {
 	TokenNodeName *node_name = (TokenNodeName *)expr_tokens.at(i);
 	TokenSeq *ret = new TokenSeq();
@@ -260,7 +262,7 @@ Token *XPathEval::evaluate_node(const std::vector<Token *> &expr_tokens, int i,T
 	}
 }
 
-Token *XPathEval::evaluate_axis(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
+Token *XPathEval::evaluate_axis(const std::vector<Token *> &expr_tokens, int i,const eval_context &context,bool depth)
 {
 	TokenAxis *axis= (TokenAxis *)expr_tokens.at(i);
 	TokenSeq *ret = new TokenSeq();
@@ -278,7 +280,7 @@ Token *XPathEval::evaluate_axis(const std::vector<Token *> &expr_tokens, int i,T
 	return ret;
 }
 
-Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,TokenSeq *context,bool depth)
+Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, int i,const eval_context &context,bool depth)
 {
 	TokenAttrName *attr_name = (TokenAttrName *)expr_tokens.at(i);
 	TokenSeq *ret = new TokenSeq();
@@ -295,7 +297,7 @@ Token *XPathEval::evaluate_attribute(const std::vector<Token *> &expr_tokens, in
 }
 
 // Evaluate a fully parsed expression
-Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
+Token *XPathEval::evaluate_expr(Token *token,const eval_context &context)
 {
 	if(token->GetType()!=EXPR)
 		return token; // Nothing to do
@@ -334,8 +336,8 @@ Token *XPathEval::evaluate_expr(Token *token,TokenSeq *context)
 				throw Exception("XPath Eval","Missing right operand of operator "+Token::ToString(op->op)+op->LogInitialPosition());
 			
 			// Get operands
-			left = expr->expr_tokens.at(minop_index-1),context;
-			right = expr->expr_tokens.at(minop_index+1),context;
+			left = expr->expr_tokens.at(minop_index-1);
+			right = expr->expr_tokens.at(minop_index+1);
 			expr->expr_tokens.erase(expr->expr_tokens.begin()+minop_index-1,expr->expr_tokens.begin()+minop_index+2);
 			
 			// Evaluate left operand
@@ -522,6 +524,7 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	funcs_desc.insert(pair<string,func_desc>("count",{XPathFunctions::count,0}));
 	funcs_desc.insert(pair<string,func_desc>("min",{XPathFunctions::min,0}));
 	funcs_desc.insert(pair<string,func_desc>("max",{XPathFunctions::max,0}));
+	funcs_desc.insert(pair<string,func_desc>("position",{XPathFunctions::position,0}));
 	funcs_desc.insert(pair<string,func_desc>("substring",{XPathFunctions::substring,0}));
 	funcs_desc.insert(pair<string,func_desc>("contains",{XPathFunctions::contains,0}));
 }
@@ -534,15 +537,16 @@ void XPathEval::RegisterFunction(string name,func_desc f)
 
 Token *XPathEval::Evaluate(const string &xpath,DOMNode context)
 {
-	unique_ptr<TokenSeq> current_context(new TokenSeq(new TokenNode(context)));
-	RegisterFunction("current",{XPathFunctions::current,current_context.get()});
+	unique_ptr<TokenSeq> current_context_seq(new TokenSeq(new TokenNode(context)));
+	eval_context current_context(current_context_seq.get());
+	RegisterFunction("current",{XPathFunctions::current,current_context_seq.get()});
 	
 	XPathParser parser;
 	TokenExpr *parsed_expr = 0;
 	try
 	{
 		parsed_expr = parser.Parse(xpath);
-		return evaluate_expr(parsed_expr,current_context.get());
+		return evaluate_expr(parsed_expr,current_context);
 	}
 	catch(Exception &e)
 	{

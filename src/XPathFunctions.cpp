@@ -39,7 +39,7 @@ Token *XPathFunctions::name(XPathEval::func_context context,const std::vector<To
 	if(args.size()>1)
 		throw Exception("name()","Expecting 0 or 1 parameters");
 	
-	TokenSeq *seq;
+	const TokenSeq *seq;
 	if(args.size()==1)
 	{
 		if(args.at(0)->GetType()!=SEQ)
@@ -72,6 +72,7 @@ Token *XPathFunctions::count(XPathEval::func_context context, const vector<Token
 	
 	return new TokenInt(((TokenSeq *)args.at(0))->items.size());
 }
+
 
 Token *XPathFunctions::min(XPathEval::func_context context, const vector<Token *> &args)
 {
@@ -111,6 +112,11 @@ Token *XPathFunctions::max(XPathEval::func_context context, const vector<Token *
 			max = (double)(*seq->items.at(i));
 	
 	return new TokenFloat(max);
+}
+
+Token *XPathFunctions::position(XPathEval::func_context context, const vector<Token *> &args)
+{
+	return new TokenInt(context.current_context.index);
 }
 
 Token *XPathFunctions::substring(XPathEval::func_context context, const vector<Token *> &args)
