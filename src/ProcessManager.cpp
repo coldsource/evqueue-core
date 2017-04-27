@@ -422,6 +422,7 @@ pid_t ProcessManager::ExecuteTask(
 		}
 		else
 		{
+			// We have no ENV parameters
 			if(write(parameters_pipe[1],"000",3)!=3)
 					Logger::Log(LOG_WARNING,"Unable to write parameters to pipe");
 		}
