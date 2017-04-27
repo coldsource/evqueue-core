@@ -46,9 +46,10 @@ public:
 	{
 		TokenSeq *seq;
 		int index = 0;
+		int size = 0;
 		
 		eval_context(TokenSeq *seq) { this->seq = seq; }
-		eval_context(TokenSeq *seq, int index) { this->seq = seq; this->index = index; }
+		eval_context(TokenSeq *seq, int index, int size) { this->seq = seq; this->index = index; this->size = size; }
 		
 		operator const TokenSeq*() const { return seq; }
 		const TokenSeq *operator ->() const { return seq; }

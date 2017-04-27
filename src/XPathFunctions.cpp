@@ -116,7 +116,28 @@ Token *XPathFunctions::max(XPathEval::func_context context, const vector<Token *
 
 Token *XPathFunctions::position(XPathEval::func_context context, const vector<Token *> &args)
 {
+	if(context.left_context->items.size()>0)
+	{
+		TokenSeq *seq = new TokenSeq();
+		for(int i=0;i<context.left_context->items.size();i++)
+			seq->items.push_back(new TokenInt(i+1));
+		return seq;
+	}
+	
 	return new TokenInt(context.current_context.index);
+}
+
+Token *XPathFunctions::last(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(context.left_context->items.size()>0)
+	{
+		TokenSeq *seq = new TokenSeq();
+		for(int i=0;i<context.left_context->items.size();i++)
+			seq->items.push_back(new TokenInt(context.left_context->items.size()));
+		return seq;
+	}
+	
+	return new TokenInt(context.current_context.size);
 }
 
 Token *XPathFunctions::substring(XPathEval::func_context context, const vector<Token *> &args)

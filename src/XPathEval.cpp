@@ -149,11 +149,12 @@ TokenSeq *XPathEval::get_axis(const string &axis_name,const string &node_name,co
 void XPathEval::filter_token_node_list(TokenSeq *list,TokenExpr *filter)
 {
 	int idx = 1; // XPath uses 1 based indexes
+	int size = list->items.size();
 	for(int i=0;i<list->items.size();i++,idx++)
 	{
 		TokenExpr *filter_copy = new TokenExpr(*filter);
 		TokenSeq context_seq(list->items.at(i)->clone());
-		eval_context context(&context_seq,idx);
+		eval_context context(&context_seq,idx,size);
 		Token *token;
 		
 		try
@@ -525,6 +526,7 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	funcs_desc.insert(pair<string,func_desc>("min",{XPathFunctions::min,0}));
 	funcs_desc.insert(pair<string,func_desc>("max",{XPathFunctions::max,0}));
 	funcs_desc.insert(pair<string,func_desc>("position",{XPathFunctions::position,0}));
+	funcs_desc.insert(pair<string,func_desc>("last",{XPathFunctions::last,0}));
 	funcs_desc.insert(pair<string,func_desc>("substring",{XPathFunctions::substring,0}));
 	funcs_desc.insert(pair<string,func_desc>("contains",{XPathFunctions::contains,0}));
 }
