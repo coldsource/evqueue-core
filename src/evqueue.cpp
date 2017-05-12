@@ -196,44 +196,6 @@ void dump_expr(TokenExpr *expr, int level)
 
 int main(int argc,const char **argv)
 {
-	/*int current_pos;
-	Token *ptr;
-	
-	XMLPlatformUtils::Initialize();
-	
-	DOMDocument *xmldoc = DOMDocument::Parse("<root><task evqid='1' /><task evqid='4' /><job evqid='3'><task evqid='2' /></job></root>");
-	//DOMDocument *xmldoc = DOMDocument::Parse("<output>3a</output>");
-	
-	//string expr = "count(/task[(@status='TERMINATED' and @retval = 0) and (@status='SKIPPED')])";
-	//string expr = "//job[@name = 'job1']/following-sibling::*[name() = 'job']";
-	string expr = "/root/task[position() = last() + 1]";
-	//string expr = "following-sibling::job";
-	//string expr = "/workflow/job[@name = 'job1']";
-	
-	try
-	{
-		XPathEval eval(xmldoc);
-		Token *result = eval.Evaluate(expr,xmldoc->getDocumentElement());
-		
-		dump_token(result,0);
-		//printf("%s\n",string(*result).c_str());
-		//printf("%d\n",(int)(*result));
-		
-		delete result;
-	}
-	catch(Exception &excpt)
-	{
-		printf("Except : %s\n",excpt.error.c_str());
-	}
-	
-	delete xmldoc;
-	
-	XMLPlatformUtils::Terminate();
-	
-	return 0;*/
-	
-	
-	
 	// Check parameters
 	const char *config_filename = 0;
 	bool daemonize = false;
