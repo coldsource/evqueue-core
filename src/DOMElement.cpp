@@ -18,8 +18,7 @@
  */
 
 #include <DOMElement.h>
-
-#include <xqilla/xqilla-dom3.hpp>
+#include <XMLString.h>
 
 using namespace std;
 
@@ -40,12 +39,12 @@ DOMElement::DOMElement(DOMNode node):DOMNode(node.node)
 
 bool DOMElement::hasAttribute(const string &name) const
 {
-	return element->hasAttribute(X(name.c_str()));
+	return element->hasAttribute(XMLString(name));
 }
 
 string DOMElement::getAttribute(const string &name) const
 {
-	char *str = xercesc::XMLString::transcode(element->getAttribute(X(name.c_str())));
+	char *str = xercesc::XMLString::transcode(element->getAttribute(XMLString(name)));
 	string s(str);
 	xercesc::XMLString::release(&str);
 	
@@ -54,10 +53,10 @@ string DOMElement::getAttribute(const string &name) const
 
 void DOMElement::setAttribute(const string &name, const string &value)
 {
-	element->setAttribute(X(name.c_str()),X(value.c_str()));
+	element->setAttribute(XMLString(name),XMLString(value));
 }
 
 void DOMElement::removeAttribute(const string &name)
 {
-	element->removeAttribute(X(name.c_str()));
+	element->removeAttribute(XMLString(name));
 }

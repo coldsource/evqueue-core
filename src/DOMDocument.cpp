@@ -23,24 +23,25 @@
 #include <DOMElement.h>
 #include <DOMText.h>
 #include <Exception.h>
+#include <XMLString.h>
 
 #include <pcrecpp.h>
 
 #include <memory>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
 
 DOMDocument::DOMDocument(void)
 {
-	xercesc::DOMImplementation *xqillaImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	xmldoc = xqillaImplementation->createDocument();
+	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
+	xmldoc = xercesImplementation->createDocument();
 	xpath = new DOMXPath(this);
 	parser = 0;
-	serializer = xqillaImplementation->createLSSerializer();;
+	serializer = xercesImplementation->createLSSerializer();;
 	resolver = xmldoc->createNSResolver(xmldoc->getDocumentElement());
-	resolver->addNamespaceBinding(X("xs"), X("http://www.w3.org/2001/XMLSchema"));
+	
+	
+	resolver->addNamespaceBinding(XMLString("xs"), XMLString("http://www.w3.org/2001/XMLSchema"));
 	
 	this->node = (xercesc::DOMNode *)xmldoc;
 }
@@ -75,11 +76,11 @@ DOMDocument *DOMDocument::Parse(const string &xml_str)
 {
 	DOMDocument *doc = new DOMDocument(0);
 	
-	xercesc::DOMImplementation *xqillaImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	doc->parser = xqillaImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
-	doc->serializer = xqillaImplementation->createLSSerializer();
+	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
+	doc->parser = xercesImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	doc->serializer = xercesImplementation->createLSSerializer();
 
-	xercesc::DOMLSInput *input = xqillaImplementation->createLSInput();
+	xercesc::DOMLSInput *input = xercesImplementation->createLSInput();
 
 	// Set XML content and parse document
 	XMLCh *xml;
@@ -93,7 +94,7 @@ DOMDocument *DOMDocument::Parse(const string &xml_str)
 	xercesc::XMLString::release(&xml);
 	
 	doc->resolver = doc->xmldoc->createNSResolver(doc->xmldoc->getDocumentElement());
-	doc->resolver->addNamespaceBinding(X("xs"), X("http://www.w3.org/2001/XMLSchema"));
+	doc->resolver->addNamespaceBinding(XMLString("xs"), XMLString("http://www.w3.org/2001/XMLSchema"));
 	
 	if(!doc->xmldoc->getDocumentElement())
 	{
@@ -109,16 +110,19 @@ DOMDocument *DOMDocument::ParseFile(const string &filename)
 {
 	DOMDocument *doc = new DOMDocument(0);
 	
-	xercesc::DOMImplementation *xqillaImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	doc->parser = xqillaImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
+	doc->parser = xercesImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
 	
 	// Load XML from file
+	XMLCh *xfilename = xercesc::XMLString::transcode(filename.c_str());
 	try
 	{
-		doc->xmldoc = doc->parser->parseURI(X(filename.c_str()));
+		doc->xmldoc = doc->parser->parseURI(xfilename);
+		xercesc::XMLString::release(&xfilename);
 	}
 	catch(...)
 	{
+		xercesc::XMLString::release(&xfilename);
 		delete doc;
 		return 0;
 	}
@@ -185,12 +189,12 @@ DOMXPath *DOMDocument::getXPath()
 
 DOMElement DOMDocument::createElement(const string &name)
 {
-	return xmldoc->createElement(X(name.c_str()));
+	return xmldoc->createElement(XMLString(name.c_str()));
 }
 
 DOMText DOMDocument::createTextNode(const string &data)
 {
-	return xmldoc->createTextNode(X(data.c_str()));
+	return xmldoc->createTextNode(XMLString(data.c_str()));
 }
 
 DOMNode DOMDocument::importNode(DOMNode importedNode, bool deep)

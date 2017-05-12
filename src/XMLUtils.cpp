@@ -18,9 +18,9 @@
  */
 
 #include <XMLUtils.h>
+#include <XMLString.h>
 #include <Exception.h>
 
-#include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
 
 #include <memory>
@@ -50,14 +50,14 @@ class XMLUtilsErrorHandler: public xercesc::DOMErrorHandler
 
 void XMLUtils::ValidateXML(const std::string &xml, const std::string &xsd)
 {
-	xercesc::DOMImplementation *xqillaImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	xercesc::DOMLSParser *parser = xqillaImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
+	xercesc::DOMLSParser *parser = xercesImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
 	
 	XMLUtilsErrorHandler eh;
 	parser->getDomConfig()->setParameter(xercesc::XMLUni::fgDOMErrorHandler, &eh);
 	
 	// Load grammar
-	xercesc::DOMLSInput *xsd_input = xqillaImplementation->createLSInput();
+	xercesc::DOMLSInput *xsd_input = xercesImplementation->createLSInput();
 	
 	XMLCh *xsd_xmlch;
 	xsd_xmlch = xercesc::XMLString::transcode(xsd.c_str());
@@ -69,7 +69,7 @@ void XMLUtils::ValidateXML(const std::string &xml, const std::string &xsd)
 	xercesc::XMLString::release(&xsd_xmlch);
 	
 	// Load and validate XML
-	xercesc::DOMLSInput *xml_input = xqillaImplementation->createLSInput();
+	xercesc::DOMLSInput *xml_input = xercesImplementation->createLSInput();
 	
 	parser->getDomConfig()->setParameter (xercesc::XMLUni::fgDOMValidate, true);
 	parser->getDomConfig()->setParameter (xercesc::XMLUni::fgXercesSchema, true);

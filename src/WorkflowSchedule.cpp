@@ -32,8 +32,6 @@
 
 #include <string.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
 
 WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)

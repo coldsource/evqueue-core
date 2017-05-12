@@ -19,8 +19,7 @@
 
 #include <DOMNode.h>
 #include <DOMNamedNodeMap.h>
-
-#include <xqilla/xqilla-dom3.hpp>
+#include <XMLString.h>
 
 using namespace std;
 
@@ -120,7 +119,7 @@ string DOMNode::getTextContent()
 
 void DOMNode::setTextContent(const string &textContent)
 {
-	node->setTextContent(X(textContent.c_str()));
+	node->setTextContent(XMLString(textContent));
 }
 
 DOMNamedNodeMap DOMNode::getAttributes()

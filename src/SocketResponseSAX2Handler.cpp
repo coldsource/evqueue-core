@@ -19,24 +19,23 @@
 
 #include <SocketResponseSAX2Handler.h>
 #include <Exception.h>
+#include <XMLString.h>
 
 #include <stdio.h>
 #include <ctype.h>
 
-#include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/dom/DOM.hpp>
 
 using namespace std;
-using namespace xercesc;
 
 SocketResponseSAX2Handler::SocketResponseSAX2Handler(const string &context, bool record):SocketSAX2HandlerInterface(context)
 {
 	this->record = record;
 	if(record)
 	{
-		DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-		xmldoc = xqillaImplementation->createDocument();
+		xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
+		xmldoc = xercesImplementation->createDocument();
 	}
 	
 	level = 0;
@@ -49,16 +48,16 @@ SocketResponseSAX2Handler::~SocketResponseSAX2Handler()
 		xmldoc->release();
 }
 
-void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const Attributes& attrs)
+void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes& attrs)
 {
-	char *node_name_c = XMLString::transcode(localname);
+	char *node_name_c = xercesc::XMLString::transcode(localname);
 	
 	level++;
 	
 	if(record)
 	{
 		// Store XML in DOM document, recreating all elements
-		DOMElement *node = xmldoc->createElement(localname);
+		xercesc::DOMElement *node = xmldoc->createElement(localname);
 		
 		for(int i=0;i<attrs.getLength();i++)
 		{
@@ -90,24 +89,24 @@ void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh
 				attr_value = attrs.getValue(i);
 				
 				char *attr_name_c, *attr_value_c;
-				attr_name_c = XMLString::transcode(attr_name);
-				attr_value_c = XMLString::transcode(attr_value);
+				attr_name_c = xercesc::XMLString::transcode(attr_name);
+				attr_value_c = xercesc::XMLString::transcode(attr_value);
 				
 				root_attributes[attr_name_c] = attr_value_c;
 				
-				XMLString::release(&attr_name_c);
-				XMLString::release(&attr_value_c);
+				xercesc::XMLString::release(&attr_name_c);
+				xercesc::XMLString::release(&attr_value_c);
 			}
 		}
 	}
 	catch(Exception e)
 	{
-		XMLString::release(&node_name_c);
+		xercesc::XMLString::release(&node_name_c);
 		
 		throw e;
 	}
 	
-	XMLString::release(&node_name_c);
+	xercesc::XMLString::release(&node_name_c);
 }
 
 void SocketResponseSAX2Handler::endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname)

@@ -19,11 +19,11 @@
 
 #include <SocketQuerySAX2Handler.h>
 #include <Exception.h>
+#include <XMLString.h>
 
 #include <stdio.h>
 #include <ctype.h>
 
-#include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/sax2/Attributes.hpp>
 
 using namespace std;
@@ -76,8 +76,8 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			if(strcmp(node_name_c,"parameter")!=0)
 				throw Exception("SocketQuerySAX2Handler","Expecting parameter node");
 			
-			const XMLCh *name = attrs.getValue(X("name"));
-			const XMLCh *value = attrs.getValue(X("value"));
+			const XMLCh *name = attrs.getValue(XMLString("name"));
+			const XMLCh *value = attrs.getValue(XMLString("value"));
 			
 			if (name==0 || value==0)
 				throw Exception("SocketQuerySAX2Handler","Invalue parameter node, missing name or value attributes");
@@ -104,7 +104,7 @@ void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* c
 			if(strcmp(node_name_c,"input")!=0)
 				throw Exception("SocketQuerySAX2Handler","Expecting input node");
 			
-			const XMLCh *value = attrs.getValue(X("value"));
+			const XMLCh *value = attrs.getValue(XMLString("value"));
 			value_c = xercesc::XMLString::transcode(value);
 			
 			inputs.push_back(value_c);

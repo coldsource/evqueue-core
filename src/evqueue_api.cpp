@@ -23,18 +23,18 @@
 #include <ClientBase.h>
 #include <Exception.h>
 #include <XMLFormatter.h>
+#include <XMLString.h>
 #include <sha1.h>
 
-#include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
 
 #include <map>
 #include <string>
 #include <iomanip>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
-using namespace xercesc;
 
 static void usage()
 {
@@ -141,26 +141,26 @@ int main(int argc, char  **argv)
 	}
 	
 	// Build API Query XML
-	XQillaPlatformUtils::initialize();
+	xercesc::XMLPlatformUtils::Initialize();
 	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
+	xercesc::DOMDocument *xmldoc = xercesImplementation->createDocument();
 	
-	DOMElement *root_node = xmldoc->createElement(X(group));
+	xercesc::DOMElement *root_node = xmldoc->createElement(XMLString(group));
 	xmldoc->appendChild(root_node);
 	
-	root_node->setAttribute(X("action"),X(action));
+	root_node->setAttribute(XMLString("action"),XMLString(action));
 	for(auto it=parameters.begin();it!=parameters.end();it++)
 	{
 		string name = it->first;
 		name = name.substr(2);
 		replace( name.begin(), name.end(), '-', '_');
-		root_node->setAttribute(X(name.c_str()),X(it->second.c_str()));
+		root_node->setAttribute(XMLString(name),XMLString(it->second));
 	}
 		
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
+	xercesc::DOMLSSerializer *serializer = xercesImplementation->createLSSerializer();
 	XMLCh *query_xml = serializer->writeToString(root_node);
-	char *query_xml_c = XMLString::transcode(query_xml);
+	char *query_xml_c = xercesc::XMLString::transcode(query_xml);
 	
 	// Send API command to evQueue
 	int exit_status = 0;
@@ -170,11 +170,11 @@ int main(int argc, char  **argv)
 		ClientBase client(connection_str,user,password);
 		client.Exec(query_xml_c,true);
 		
-		DOMDocument *xmldoc = client.GetResponseDOM();
+		xercesc::DOMDocument *xmldoc = client.GetResponseDOM();
 		
-		DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
+		xercesc::DOMLSSerializer *serializer = xercesImplementation->createLSSerializer();
 		XMLCh *response_xml = serializer->writeToString(xmldoc->getDocumentElement());
-		char *response_xml_c = XMLString::transcode(response_xml);
+		char *response_xml_c = xercesc::XMLString::transcode(response_xml);
 		
 		if(format)
 		{
@@ -185,8 +185,8 @@ int main(int argc, char  **argv)
 			printf("%s\n",response_xml_c);
 		
 		
-		XMLString::release(&response_xml);
-		XMLString::release(&response_xml_c);
+		xercesc::XMLString::release(&response_xml);
+		xercesc::XMLString::release(&response_xml_c);
 		serializer->release();
 	}
 	catch(Exception &e)
@@ -195,12 +195,12 @@ int main(int argc, char  **argv)
 		exit_status = -1;
 	}
 	
-	XMLString::release(&query_xml);
-	XMLString::release(&query_xml_c);
+	xercesc::XMLString::release(&query_xml);
+	xercesc::XMLString::release(&query_xml_c);
 	serializer->release();
 	xmldoc->release();
 	
-	XQillaPlatformUtils::terminate();
+	xercesc::XMLPlatformUtils::Terminate();
 	
 	return exit_status;
 }

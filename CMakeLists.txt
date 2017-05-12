@@ -25,7 +25,7 @@ add_executable(evqueue
 	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp
 	src/DOMDocument.cpp src/DOMNamedNodeMap.cpp src/XPathTokens.cpp src/XPathParser.cpp src/XPathEval.cpp
 	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp src/WorkflowXPathFunctions.cpp
-	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp)
+	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp src/XMLString.cpp)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -45,7 +45,6 @@ target_link_libraries(evqueue z)
 target_link_libraries(evqueue mysqlclient)
 target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
-target_link_libraries(evqueue xqilla)
 target_link_libraries(evqueue rt)
 target_link_libraries(evqueue pcrecpp)
 target_link_libraries(evqueue curl)
@@ -74,12 +73,11 @@ project(evqueue_wfmanager)
 
 add_executable(evqueue_wfmanager
 	src/evqueue_wfmanager.cpp src/ClientBase.cpp src/Exception.cpp src/ExceptionManager.cpp src/SocketResponseSAX2Handler.cpp src/SocketSAX2Handler.cpp
-	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/Sha1String.cpp)
+	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/Sha1String.cpp src/XMLString.cpp)
 
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_wfmanager xerces-c)
-target_link_libraries(evqueue_wfmanager xqilla)
 
 
 
@@ -88,12 +86,11 @@ project(evqueue_api)
 add_executable(evqueue_api
 	src/evqueue_api.cpp src/ClientBase.cpp src/Exception.cpp src/ExceptionManager.cpp src/SocketResponseSAX2Handler.cpp src/SocketSAX2Handler.cpp
 	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/XMLFormatter.cpp
-	src/Sha1String.cpp)
+	src/Sha1String.cpp src/XMLString.cpp)
 
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_api xerces-c)
-target_link_libraries(evqueue_api xqilla)
 
 
 

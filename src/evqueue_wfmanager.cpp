@@ -20,6 +20,7 @@
 #include <ClientBase.h>
 #include <SocketResponseSAX2Handler.h>
 #include <Exception.h>
+#include <XMLString.h>
 #include <sha1.h>
 
 #include <stdio.h>
@@ -36,10 +37,8 @@
 #include <iomanip>
 #include <sstream>
 
-#include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/dom/DOM.hpp>
 
-using namespace xercesc;
 using namespace std;
 
 int connect_socket(const char *connection_str);
@@ -163,20 +162,20 @@ int main(int argc, char  **argv)
 	}
 	
 	// Build workflow XML
-	XQillaPlatformUtils::initialize();
+	xercesc::XMLPlatformUtils::Initialize();
 	
-	DOMImplementation *xqillaImplementation = DOMImplementationRegistry::getDOMImplementation(X("XPath2 3.0"));
-	DOMDocument *xmldoc = xqillaImplementation->createDocument();
+	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
+	xercesc::DOMDocument *xmldoc = xercesImplementation->createDocument();
 	
-	DOMElement *workflow_node = xmldoc->createElement(X("instance"));
+	xercesc::DOMElement *workflow_node = xmldoc->createElement(XMLString("instance"));
 	xmldoc->appendChild(workflow_node);
 	
-	workflow_node->setAttribute(X("action"),X("launch"));
-	workflow_node->setAttribute(X("name"),X(workflow_name));
+	workflow_node->setAttribute(XMLString("action"),XMLString("launch"));
+	workflow_node->setAttribute(XMLString("name"),XMLString(workflow_name));
 	if(workflow_mode)
-		workflow_node->setAttribute(X("mode"),X(workflow_mode));
+		workflow_node->setAttribute(XMLString("mode"),XMLString(workflow_mode));
 	if(timeout)
-		workflow_node->setAttribute(X("timeout"),X(timeout));
+		workflow_node->setAttribute(XMLString("timeout"),XMLString(timeout));
 	
 	int status = 1;
 	char *parameter_name, *parameter_value;
@@ -200,16 +199,16 @@ int main(int argc, char  **argv)
 			parameter_value = argv[i];
 			status=1;
 			
-			DOMElement *parameter_node = xmldoc->createElement(X("parameter"));
-			parameter_node->setAttribute(X("name"),X(parameter_name));
-			parameter_node->setAttribute(X("value"),X(parameter_value));
+			xercesc::DOMElement *parameter_node = xmldoc->createElement(XMLString("parameter"));
+			parameter_node->setAttribute(XMLString("name"),XMLString(parameter_name));
+			parameter_node->setAttribute(XMLString("value"),XMLString(parameter_value));
 			workflow_node->appendChild(parameter_node);
 		}
 	}
 	
-	DOMLSSerializer *serializer = xqillaImplementation->createLSSerializer();
+	xercesc::DOMLSSerializer *serializer = xercesImplementation->createLSSerializer();
 	XMLCh *workflow_xml = serializer->writeToString(workflow_node);
-	char *workflow_xml_c = XMLString::transcode(workflow_xml);
+	char *workflow_xml_c = xercesc::XMLString::transcode(workflow_xml);
 	
 	// Send launch command to evQueue
 	int exit_status = 0;
@@ -230,12 +229,12 @@ int main(int argc, char  **argv)
 		exit_status = -1;
 	}
 	
-	XMLString::release(&workflow_xml);
-	XMLString::release(&workflow_xml_c);
+	xercesc::XMLString::release(&workflow_xml);
+	xercesc::XMLString::release(&workflow_xml_c);
 	serializer->release();
 	xmldoc->release();
 	
-	XQillaPlatformUtils::terminate();
+	xercesc::XMLPlatformUtils::Terminate();
 	
 	return exit_status;
 }

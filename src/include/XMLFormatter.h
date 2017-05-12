@@ -24,12 +24,10 @@
 
 #include <string>
 
-using namespace xercesc;
-
 class XMLFormatter
 {
-	DOMLSParser *parser = 0;
-	DOMDocument *xmldoc = 0;
+	xercesc::DOMLSParser *parser = 0;
+	xercesc::DOMDocument *xmldoc = 0;
 	int level;
 	
 	public:
@@ -39,10 +37,10 @@ class XMLFormatter
 		void Format();
 	
 	private:
-		void format(DOMNode *node);
-		void display_element_start(DOMElement *element);
-		void display_element_end(DOMElement *element);
-		void display_text(DOMNode *node);
+		void format(xercesc::DOMNode *node);
+		void display_element_start(xercesc::DOMElement *element);
+		void display_element_end(xercesc::DOMElement *element);
+		void display_text(xercesc::DOMNode *node);
 };
 
 #endif
