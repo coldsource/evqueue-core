@@ -25,7 +25,6 @@
 #include <map>
 #include <vector>
 
-#include <xqilla/xqilla-dom3.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/dom/DOMElement.hpp>
 #include <xercesc/dom/DOMText.hpp>

@@ -32,8 +32,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <xqilla/xqilla-dom3.hpp>
-
 using namespace std;
 using namespace xercesc;
 
