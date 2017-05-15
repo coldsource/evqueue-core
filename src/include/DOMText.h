@@ -30,7 +30,10 @@ class DOMText:public DOMNode
 	xercesc::DOMText *text;
 	
 public:
+	DOMText();
 	DOMText(xercesc::DOMText *text);
+	
+	void appendData(const std::string str);
 };
 
 #endif

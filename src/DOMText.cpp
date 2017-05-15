@@ -18,8 +18,19 @@
  */
 
 #include <DOMText.h>
+#include <XMLString.h>
+
+DOMText::DOMText()
+{
+	this->text = 0;
+}
 
 DOMText::DOMText(xercesc::DOMText *text):DOMNode(text)
 {
 	this->text = text;
+}
+
+void DOMText::appendData(const std::string str)
+{
+	this->text->appendData(XMLString(str));
 }
