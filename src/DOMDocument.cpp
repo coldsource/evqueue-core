@@ -37,22 +37,18 @@ DOMDocument::DOMDocument(void)
 	xmldoc = xercesImplementation->createDocument();
 	xpath = new DOMXPath(this);
 	parser = 0;
-	serializer = xercesImplementation->createLSSerializer();;
-	resolver = xmldoc->createNSResolver(xmldoc->getDocumentElement());
-	
-	
-	resolver->addNamespaceBinding(XMLString("xs"), XMLString("http://www.w3.org/2001/XMLSchema"));
+	serializer = xercesImplementation->createLSSerializer();
 	
 	this->node = (xercesc::DOMNode *)xmldoc;
 }
 
 DOMDocument::DOMDocument(xercesc::DOMDocument *xmldoc):DOMNode(xmldoc)
 {
+	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
 	this->xmldoc = xmldoc;
 	xpath = new DOMXPath(this);
 	parser = 0;
-	serializer = 0;
-	resolver = 0;
+	serializer = xmldoc?xercesImplementation->createLSSerializer():0;
 }
 
 DOMDocument::~DOMDocument(void)
@@ -92,9 +88,6 @@ DOMDocument *DOMDocument::Parse(const string &xml_str)
 	input->release();
 	
 	xercesc::XMLString::release(&xml);
-	
-	doc->resolver = doc->xmldoc->createNSResolver(doc->xmldoc->getDocumentElement());
-	doc->resolver->addNamespaceBinding(XMLString("xs"), XMLString("http://www.w3.org/2001/XMLSchema"));
 	
 	if(!doc->xmldoc->getDocumentElement())
 	{

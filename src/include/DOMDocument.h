@@ -36,7 +36,6 @@ private:
 	xercesc::DOMDocument *xmldoc;
 	xercesc::DOMLSParser *parser;
 	xercesc::DOMLSSerializer *serializer;
-	xercesc::DOMXPathNSResolver *resolver;
 	DOMXPath *xpath;
 	
 	std::map<int,DOMElement> id_node;
