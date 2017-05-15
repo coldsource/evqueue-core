@@ -25,8 +25,7 @@
 #include <XMLFormatter.h>
 #include <XMLString.h>
 #include <sha1.h>
-
-#include <xercesc/dom/DOM.hpp>
+#include <DOMDocument.h>
 
 #include <map>
 #include <string>
@@ -143,62 +142,49 @@ int main(int argc, char  **argv)
 	// Build API Query XML
 	xercesc::XMLPlatformUtils::Initialize();
 	
-	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
-	xercesc::DOMDocument *xmldoc = xercesImplementation->createDocument();
-	
-	xercesc::DOMElement *root_node = xmldoc->createElement(XMLString(group));
-	xmldoc->appendChild(root_node);
-	
-	root_node->setAttribute(XMLString("action"),XMLString(action));
-	for(auto it=parameters.begin();it!=parameters.end();it++)
-	{
-		string name = it->first;
-		name = name.substr(2);
-		replace( name.begin(), name.end(), '-', '_');
-		root_node->setAttribute(XMLString(name),XMLString(it->second));
-	}
-		
-	xercesc::DOMLSSerializer *serializer = xercesImplementation->createLSSerializer();
-	XMLCh *query_xml = serializer->writeToString(root_node);
-	char *query_xml_c = xercesc::XMLString::transcode(query_xml);
-	
-	// Send API command to evQueue
 	int exit_status = 0;
 	
-	try
 	{
-		ClientBase client(connection_str,user,password);
-		client.Exec(query_xml_c,true);
+		DOMDocument xmldoc;
+		DOMElement root_node = xmldoc.createElement(group);
+		xmldoc.appendChild(root_node);
 		
-		xercesc::DOMDocument *xmldoc = client.GetResponseDOM();
-		
-		xercesc::DOMLSSerializer *serializer = xercesImplementation->createLSSerializer();
-		XMLCh *response_xml = serializer->writeToString(xmldoc->getDocumentElement());
-		char *response_xml_c = xercesc::XMLString::transcode(response_xml);
-		
-		if(format)
+		root_node.setAttribute("action",action);
+		for(auto it=parameters.begin();it!=parameters.end();it++)
 		{
-			XMLFormatter formatter(response_xml_c);
-			formatter.Format();
+			string name = it->first;
+			name = name.substr(2);
+			replace( name.begin(), name.end(), '-', '_');
+			root_node.setAttribute(name,it->second);
 		}
-		else
-			printf("%s\n",response_xml_c);
+			
+		string query_xml = xmldoc.Serialize(xmldoc.getDocumentElement());
 		
+		// Send API command to evQueue
 		
-		xercesc::XMLString::release(&response_xml);
-		xercesc::XMLString::release(&response_xml_c);
-		serializer->release();
+		try
+		{
+			ClientBase client(connection_str,user,password);
+			client.Exec(query_xml,true);
+			
+			DOMDocument *xmldoc = client.GetResponseDOM();
+			
+			string response_xml = xmldoc->Serialize(xmldoc->getDocumentElement());
+			
+			if(format)
+			{
+				XMLFormatter formatter(response_xml);
+				formatter.Format();
+			}
+			else
+				printf("%s\n",response_xml.c_str());
+		}
+		catch(Exception &e)
+		{
+			fprintf(stderr,"Exception in client : %s\n",e.error.c_str());
+			exit_status = -1;
+		}
 	}
-	catch(Exception &e)
-	{
-		fprintf(stderr,"Exception in client : %s\n",e.error.c_str());
-		exit_status = -1;
-	}
-	
-	xercesc::XMLString::release(&query_xml);
-	xercesc::XMLString::release(&query_xml_c);
-	serializer->release();
-	xmldoc->release();
 	
 	xercesc::XMLPlatformUtils::Terminate();
 	

@@ -164,75 +164,69 @@ int main(int argc, char  **argv)
 	// Build workflow XML
 	xercesc::XMLPlatformUtils::Initialize();
 	
-	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
-	xercesc::DOMDocument *xmldoc = xercesImplementation->createDocument();
-	
-	xercesc::DOMElement *workflow_node = xmldoc->createElement(XMLString("instance"));
-	xmldoc->appendChild(workflow_node);
-	
-	workflow_node->setAttribute(XMLString("action"),XMLString("launch"));
-	workflow_node->setAttribute(XMLString("name"),XMLString(workflow_name));
-	if(workflow_mode)
-		workflow_node->setAttribute(XMLString("mode"),XMLString(workflow_mode));
-	if(timeout)
-		workflow_node->setAttribute(XMLString("timeout"),XMLString(timeout));
-	
-	int status = 1;
-	char *parameter_name, *parameter_value;
-	for(int i=cur;i<argc;i++)
-	{
-		if(status==1)
-		{
-			// Parameter name expected
-			if(strncmp(argv[i],"--",2)!=0 || strlen(argv[i])<=2)
-			{
-				fprintf(stderr,"Parameter name expected with format : --<parameter name>\n");
-				return -1;
-			}
-			
-			parameter_name = argv[i]+2;
-			status = 2;
-		}
-		else if(status==2)
-		{
-			// Value expacted
-			parameter_value = argv[i];
-			status=1;
-			
-			xercesc::DOMElement *parameter_node = xmldoc->createElement(XMLString("parameter"));
-			parameter_node->setAttribute(XMLString("name"),XMLString(parameter_name));
-			parameter_node->setAttribute(XMLString("value"),XMLString(parameter_value));
-			workflow_node->appendChild(parameter_node);
-		}
-	}
-	
-	xercesc::DOMLSSerializer *serializer = xercesImplementation->createLSSerializer();
-	XMLCh *workflow_xml = serializer->writeToString(workflow_node);
-	char *workflow_xml_c = xercesc::XMLString::transcode(workflow_xml);
-	
-	// Send launch command to evQueue
 	int exit_status = 0;
 	
-	try
 	{
-		ClientBase client(connection_str,user,password);
-		client.Exec(workflow_xml_c);
+		DOMDocument xmldoc;
+		DOMElement workflow_node = xmldoc.createElement("instance");
+		xmldoc.appendChild(workflow_node);
 		
-		SocketResponseSAX2Handler *saxh = client.GetResponseHandler();
-		string wfid = saxh->GetRootAttribute("workflow-instance-id");
-		printf("Launched instance %s\n",wfid.c_str());
+		workflow_node.setAttribute("action","launch");
+		workflow_node.setAttribute("name",workflow_name);
+		if(workflow_mode)
+			workflow_node.setAttribute("mode",workflow_mode);
+		if(timeout)
+			workflow_node.setAttribute("timeout",timeout);
 		
+		int status = 1;
+		char *parameter_name, *parameter_value;
+		for(int i=cur;i<argc;i++)
+		{
+			if(status==1)
+			{
+				// Parameter name expected
+				if(strncmp(argv[i],"--",2)!=0 || strlen(argv[i])<=2)
+				{
+					fprintf(stderr,"Parameter name expected with format : --<parameter name>\n");
+					return -1;
+				}
+				
+				parameter_name = argv[i]+2;
+				status = 2;
+			}
+			else if(status==2)
+			{
+				// Value expacted
+				parameter_value = argv[i];
+				status=1;
+				
+				DOMElement parameter_node = xmldoc.createElement("parameter");
+				parameter_node.setAttribute("name",parameter_name);
+				parameter_node.setAttribute("value",parameter_value);
+				workflow_node.appendChild(parameter_node);
+			}
+		}
+		
+		string workflow_xml = xmldoc.Serialize(workflow_node);
+		
+		// Send launch command to evQueue
+		
+		try
+		{
+			ClientBase client(connection_str,user,password);
+			client.Exec(workflow_xml);
+			
+			SocketResponseSAX2Handler *saxh = client.GetResponseHandler();
+			string wfid = saxh->GetRootAttribute("workflow-instance-id");
+			printf("Launched instance %s\n",wfid.c_str());
+			
+		}
+		catch(Exception &e)
+		{
+			fprintf(stderr,"Exception in client : %s\n",e.error.c_str());
+			exit_status = -1;
+		}
 	}
-	catch(Exception &e)
-	{
-		fprintf(stderr,"Exception in client : %s\n",e.error.c_str());
-		exit_status = -1;
-	}
-	
-	xercesc::XMLString::release(&workflow_xml);
-	xercesc::XMLString::release(&workflow_xml_c);
-	serializer->release();
-	xmldoc->release();
 	
 	xercesc::XMLPlatformUtils::Terminate();
 	
