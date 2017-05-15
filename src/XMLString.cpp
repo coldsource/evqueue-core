@@ -19,9 +19,27 @@
 
 #include <XMLString.h>
 
-XMLString::XMLString(const std::string &str)
+using namespace std;
+
+XMLString::XMLString(const string &str)
 {
-	xmlstr = xercesc::XMLString::transcode(str.c_str());
+	this->xmlstr = xercesc::XMLString::transcode(str.c_str());
+	this->str = str;
+}
+
+XMLString::XMLString(const XMLCh *xmlstr)
+{
+	char *ptr = xercesc::XMLString::transcode(xmlstr);
+	this->str = ptr;
+	xercesc::XMLString::release(&ptr);
+	
+	this->xmlstr = xercesc::XMLString::transcode(this->str.c_str());
+}
+
+XMLString::XMLString(const XMLString &xmlstr)
+{
+	this->str = xmlstr.str;
+	this->xmlstr = xercesc::XMLString::transcode(this->str.c_str());
 }
 
 XMLString::~XMLString()
@@ -32,4 +50,9 @@ XMLString::~XMLString()
 XMLString::operator const XMLCh*() const
 {
 	return xmlstr;
+}
+
+XMLString::operator const string &() const
+{
+	return str;
 }

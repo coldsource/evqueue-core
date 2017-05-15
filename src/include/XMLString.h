@@ -24,10 +24,15 @@
 class XMLString
 {
 	XMLCh *xmlstr;
+	std::string str;
 	
 public:
+	XMLString(const XMLCh *xmlstr);
 	XMLString(const std::string &str);
+	XMLString(const XMLString &xmlstr);
 	~XMLString();
 	
 	operator const XMLCh*() const;
+	operator const std::string&() const;
+	const XMLString &operator =(const XMLString &xmlstr) = delete;
 };
