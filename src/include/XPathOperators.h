@@ -44,6 +44,7 @@ class XPathOperators
 		static Token *Operator_GEQ(Token *left, Token *right);
 		static Token *Operator_AND(Token *left, Token *right);
 		static Token *Operator_OR(Token *left, Token *right);
+		static Token *Operator_PIPE(Token *left, Token *right);
 };
 
 #endif

@@ -66,7 +66,8 @@ enum OPERATOR
 	EQ, // =
 	NEQ, // !=
 	AND, // and
-	OR// or
+	OR, // or
+	PIPE // |
 };
 
 // Definition of tokens

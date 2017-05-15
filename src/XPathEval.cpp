@@ -517,6 +517,7 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	ops_desc.insert(ops_desc.begin()+OPERATOR::NEQ,{3,XPathOperators::Operator_NEQ});
 	ops_desc.insert(ops_desc.begin()+OPERATOR::AND,{4,XPathOperators::Operator_AND});
 	ops_desc.insert(ops_desc.begin()+OPERATOR::OR,{5,XPathOperators::Operator_OR});
+	ops_desc.insert(ops_desc.begin()+OPERATOR::PIPE,{5,XPathOperators::Operator_PIPE});
 	
 	// Initialize functions
 	funcs_desc.insert(pair<string,func_desc>("true",{XPathFunctions::fntrue,0}));

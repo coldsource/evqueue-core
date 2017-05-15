@@ -241,3 +241,23 @@ Token* XPathOperators::Operator_OR(Token* left, Token* right)
 	
 	throw Exception("Operator OR","Logical operator 'or' can only operate on boolean values");
 }
+
+// // Union
+Token* XPathOperators::Operator_PIPE(Token* left, Token* right)
+{
+	TokenSeq *seq = new TokenSeq();
+	
+	if(left->GetType()==SEQ)
+		for(int i=0;i<((TokenSeq *)left)->items.size();i++)
+			seq->items.push_back(((TokenSeq *)left)->items.at(i)->clone());
+	else
+		seq->items.push_back(left->clone());
+	
+	if(right->GetType()==SEQ)
+		for(int i=0;i<((TokenSeq *)right)->items.size();i++)
+			seq->items.push_back(((TokenSeq *)right)->items.at(i)->clone());
+	else
+		seq->items.push_back(right->clone());
+	
+	return seq;
+}
