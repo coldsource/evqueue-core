@@ -521,6 +521,7 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	// Initialize functions
 	funcs_desc.insert(pair<string,func_desc>("true",{XPathFunctions::fntrue,0}));
 	funcs_desc.insert(pair<string,func_desc>("false",{XPathFunctions::fnfalse,0}));
+	funcs_desc.insert(pair<string,func_desc>("not",{XPathFunctions::fnnot,0}));
 	funcs_desc.insert(pair<string,func_desc>("name",{XPathFunctions::name,0}));
 	funcs_desc.insert(pair<string,func_desc>("count",{XPathFunctions::count,0}));
 	funcs_desc.insert(pair<string,func_desc>("min",{XPathFunctions::min,0}));

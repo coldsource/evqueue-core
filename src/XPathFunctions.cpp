@@ -34,6 +34,14 @@ Token *XPathFunctions::fnfalse(XPathEval::func_context context,const std::vector
 	return new TokenBool(false);
 }
 
+Token *XPathFunctions::fnnot(XPathEval::func_context context,const std::vector<Token *> &args)
+{
+	if(args.size()!=1)
+		throw Exception("not()","Expecting 1 parameter");
+	
+	return new TokenBool(!((bool)(*args.at(0))));
+}
+
 Token *XPathFunctions::name(XPathEval::func_context context,const std::vector<Token *> &args)
 {
 	if(args.size()>1)
