@@ -66,6 +66,9 @@ DOMNode DOMXPathResult::getNodeValue()
 {
 	if(result->GetType()==SEQ)
 	{
+		if(idx==-1)
+			throw Exception("DOMXPathResult","Invalid index");
+		
 		TokenSeq *seq = (TokenSeq *)result;
 		return *seq->items.at(idx);
 	}
@@ -77,6 +80,23 @@ int DOMXPathResult::getIntegerValue()
 {
 	if(result->GetType()==SEQ)
 	{
+		if(idx==-1)
+			throw Exception("DOMXPathResult","Invalid index");
+		
+		TokenSeq *seq = (TokenSeq *)result;
+		return *seq->items.at(idx);
+	}
+	else
+		return *result;
+}
+
+bool DOMXPathResult::getBooleanValue()
+{
+	if(result->GetType()==SEQ)
+	{
+		if(idx==-1)
+			throw Exception("DOMXPathResult","Invalid index");
+		
 		TokenSeq *seq = (TokenSeq *)result;
 		return *seq->items.at(idx);
 	}
@@ -88,6 +108,9 @@ string DOMXPathResult::getStringValue()
 {
 	if(result->GetType()==SEQ)
 	{
+		if(idx==-1)
+			throw Exception("DOMXPathResult","Invalid index");
+		
 		TokenSeq *list = (TokenSeq *)result;
 		return *list->items.at(idx);
 	}

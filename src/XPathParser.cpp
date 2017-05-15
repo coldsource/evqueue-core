@@ -122,6 +122,11 @@ Token *XPathParser::parse_token(const string &s, int *pos)
 		*pos = *pos+2;
 		return (new TokenOP(GEQ))->SetInitialPosition(base_pos);
 	}
+	else if(s.substr(*pos,1)=="|")
+	{
+		*pos = *pos+1;
+		return (new TokenOP(PIPE))->SetInitialPosition(base_pos);
+	}
 	
 	// Match strings
 	if(s[*pos]=='\'' || s[*pos]=='\"')

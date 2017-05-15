@@ -20,6 +20,7 @@
 #include <DOMXPath.h>
 #include <DOMXPathResult.h>
 #include <XPathEval.h>
+#include <Exception.h>
 
 DOMXPath::DOMXPath(DOMDocument *xmldoc):eval(xmldoc)
 {
@@ -39,7 +40,14 @@ DOMXPathResult *DOMXPath::evaluate(const std::string &xpath,DOMNode node,DOMXPat
 	{
 		DOMXPathResult *res = new DOMXPathResult(result);
 		res->snapshotItem(0);
+		
 		return res;
+	}
+	else if(result_type==DOMXPathResult::BOOLEAN_TYPE)
+	{
+		if(result->GetType()!=LIT_BOOL)
+			throw Exception("DOMXPath","Expected boolean result");
+		return new DOMXPathResult(result);
 	}
 	else if(result_type==DOMXPathResult::SNAPSHOT_RESULT_TYPE)
 		return new DOMXPathResult(result);

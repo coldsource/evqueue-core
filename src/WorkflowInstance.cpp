@@ -809,9 +809,9 @@ bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
 	
 	try
 	{
-		unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(node.getAttribute("condition"),context_node,DOMXPathResult::FIRST_RESULT_TYPE));
+		unique_ptr<DOMXPathResult> test_expr(xmldoc->evaluate(node.getAttribute("condition"),context_node,DOMXPathResult::BOOLEAN_TYPE));
 		
-		if(!test_expr->getIntegerValue())
+		if(!test_expr->getBooleanValue())
 		{
 			node.setAttribute("status","SKIPPED");
 			node.setAttribute("details","Condition evaluates to false");

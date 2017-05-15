@@ -48,6 +48,7 @@ public:
 	DOMNode getNodeValue();
 	
 	int getIntegerValue();
+	bool getBooleanValue();
 	std::string getStringValue();
 };
 
