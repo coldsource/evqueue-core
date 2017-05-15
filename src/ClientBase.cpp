@@ -33,7 +33,6 @@
 #include <errno.h>
 
 using namespace std;
-using namespace xercesc;
 
 ClientBase::ClientBase(const string &connection_str, const string &user, const string &password)
 {
