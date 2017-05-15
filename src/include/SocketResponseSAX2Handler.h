@@ -28,14 +28,15 @@
 #include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/dom/DOMElement.hpp>
 #include <xercesc/dom/DOMText.hpp>
+#include <DOMDocument.h>
 
 class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 	
 	private:
 		bool record;
-		xercesc::DOMDocument *xmldoc = 0;
-		std::vector<xercesc::DOMElement *> current_node;
-		xercesc::DOMText *current_text_node = 0;
+		DOMDocument xmldoc;
+		std::vector<DOMElement> current_node;
+		DOMText current_text_node;
 		
 		
 		std::string group;
@@ -48,7 +49,7 @@ class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 		~SocketResponseSAX2Handler();
 		
 		const std::string &GetGroup() { return group; }
-		xercesc::DOMDocument *GetDOM() { return xmldoc; }
+		DOMDocument *GetDOM() { return &xmldoc; }
 		
 		void startElement( const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes&  attrs );
 		void endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname);

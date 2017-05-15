@@ -22,7 +22,7 @@
 
 #include <string>
 
-#include <xercesc/dom/DOM.hpp>
+#include <DOMDocument.h>
 
 class SocketResponseSAX2Handler;
 
@@ -56,7 +56,7 @@ class ClientBase
 		
 		const std::string &Connect(void);
 		void Exec(const std::string &cmd, bool record = false);
-		xercesc::DOMDocument *GetResponseDOM();
+		DOMDocument *GetResponseDOM();
 		SocketResponseSAX2Handler *GetResponseHandler() { return saxh; }
 		const std::string &GetNode() { return node; }
 		

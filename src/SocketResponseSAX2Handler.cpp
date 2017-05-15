@@ -32,32 +32,25 @@ using namespace std;
 SocketResponseSAX2Handler::SocketResponseSAX2Handler(const string &context, bool record):SocketSAX2HandlerInterface(context)
 {
 	this->record = record;
-	if(record)
-	{
-		xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
-		xmldoc = xercesImplementation->createDocument();
-	}
-	
+
 	level = 0;
 	ready = false;
 }
 
 SocketResponseSAX2Handler::~SocketResponseSAX2Handler()
 {
-	if(record)
-		xmldoc->release();
 }
 
 void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes& attrs)
 {
-	char *node_name_c = xercesc::XMLString::transcode(localname);
+	XMLString node_name(localname);
 	
 	level++;
 	
 	if(record)
 	{
 		// Store XML in DOM document, recreating all elements
-		xercesc::DOMElement *node = xmldoc->createElement(localname);
+		DOMElement node = xmldoc.createElement(node_name);
 		
 		for(int i=0;i<attrs.getLength();i++)
 		{
@@ -65,48 +58,30 @@ void SocketResponseSAX2Handler::startElement(const XMLCh* const uri, const XMLCh
 			attr_name = attrs.getLocalName(i);
 			attr_value = attrs.getValue(i);
 			
-			node->setAttribute(attr_name,attr_value);
+			node.setAttribute(XMLString(attr_name),XMLString(attr_value));
 		}
 		
 		if(level==1)
-			xmldoc->appendChild(node);
+			xmldoc.appendChild(node);
 		else
-			current_node.at(level-2)->appendChild(node);
+			current_node.at(level-2).appendChild(node);
 		
 		current_node.push_back(node);
 	}
 	
-	try
+	if(level==1)
 	{
-		if(level==1)
+		group = node_name;
+		
+		for(int i=0;i<attrs.getLength();i++)
 		{
-			group = node_name_c;
+			const XMLCh *attr_name, *attr_value;
+			attr_name = attrs.getLocalName(i);
+			attr_value = attrs.getValue(i);
 			
-			for(int i=0;i<attrs.getLength();i++)
-			{
-				const XMLCh *attr_name, *attr_value;
-				attr_name = attrs.getLocalName(i);
-				attr_value = attrs.getValue(i);
-				
-				char *attr_name_c, *attr_value_c;
-				attr_name_c = xercesc::XMLString::transcode(attr_name);
-				attr_value_c = xercesc::XMLString::transcode(attr_value);
-				
-				root_attributes[attr_name_c] = attr_value_c;
-				
-				xercesc::XMLString::release(&attr_name_c);
-				xercesc::XMLString::release(&attr_value_c);
-			}
+			root_attributes[XMLString(attr_name)] = XMLString(attr_value);
 		}
 	}
-	catch(Exception e)
-	{
-		xercesc::XMLString::release(&node_name_c);
-		
-		throw e;
-	}
-	
-	xercesc::XMLString::release(&node_name_c);
 }
 
 void SocketResponseSAX2Handler::endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname)
@@ -135,11 +110,11 @@ void SocketResponseSAX2Handler::characters(const XMLCh *const chars, const XMLSi
 		
 		if(!current_text_node)
 		{
-			current_text_node = xmldoc->createTextNode(chars_nt);
-			current_node.at(level-1)->appendChild(current_text_node);
+			current_text_node = xmldoc.createTextNode(XMLString(chars_nt));
+			current_node.at(level-1).appendChild(current_text_node);
 		}
 		else
-			current_text_node->appendData(chars_nt);
+			current_text_node.appendData(XMLString(chars_nt));
 		
 		delete[] chars_nt;
 	}
