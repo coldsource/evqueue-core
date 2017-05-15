@@ -64,9 +64,10 @@ int main(int argc,char ** argv)
 			close(fd_pipe[i][1]);
 		}
 		
-		char **child_argv = new char*[argc-1];
+		char **child_argv = new char*[argc];
 		for(int i=0;i<argc-1;i++)
 			child_argv[i] = argv[i+1];
+		child_argv[argc-1] = 0;
 			
 		execv(child_argv[0],child_argv);
 		
