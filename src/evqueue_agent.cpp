@@ -84,6 +84,7 @@ int main(int argc,char ** argv)
 	int re;
 	while(true)
 	{
+		int maxfd = -1;
 		int set_size = 0;
 		FD_ZERO(&rfds);
 		for(int i=0;i<MAXFD_FORWARD;i++)
@@ -91,6 +92,9 @@ int main(int argc,char ** argv)
 			if(fd_pipe[i][0]!=-1)
 			{
 				FD_SET(fd_pipe[i][0],&rfds);
+				if(fd_pipe[i][0]>maxfd)
+					maxfd = fd_pipe[i][0];
+				
 				set_size++;
 			}
 		}
@@ -98,7 +102,7 @@ int main(int argc,char ** argv)
 		if(set_size==0)
 			break;
 		
-		re = select(fd_pipe[MAXFD_FORWARD-1][0]+1,&rfds,0,0,0);
+		re = select(maxfd+1,&rfds,0,0,0);
 		if(re<=0)
 			break;
 		
