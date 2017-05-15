@@ -73,11 +73,14 @@ project(evqueue_wfmanager)
 
 add_executable(evqueue_wfmanager
 	src/evqueue_wfmanager.cpp src/ClientBase.cpp src/Exception.cpp src/ExceptionManager.cpp src/SocketResponseSAX2Handler.cpp src/SocketSAX2Handler.cpp
-	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/Sha1String.cpp src/XMLString.cpp)
+	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/Sha1String.cpp src/XMLString.cpp src/DOMDocument.cpp src/DOMElement.cpp src/DOMNode.cpp src/DOMText.cpp
+	src/DOMXPath.cpp src/DOMXPathResult.cpp src/XPathTokens.cpp src/XPathEval.cpp src/XPathOperators.cpp
+	src/XPathFunctions.cpp src/DOMNamedNodeMap.cpp src/XPathEval.cpp src/XPathParser.cpp)
 
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_wfmanager xerces-c)
+target_link_libraries(evqueue_wfmanager pcrecpp)
 
 
 
@@ -86,11 +89,14 @@ project(evqueue_api)
 add_executable(evqueue_api
 	src/evqueue_api.cpp src/ClientBase.cpp src/Exception.cpp src/ExceptionManager.cpp src/SocketResponseSAX2Handler.cpp src/SocketSAX2Handler.cpp
 	src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp src/hmac.cpp src/sha1.c src/XMLFormatter.cpp
-	src/Sha1String.cpp src/XMLString.cpp)
+	src/Sha1String.cpp src/XMLString.cpp src/DOMDocument.cpp src/DOMElement.cpp src/DOMNode.cpp src/DOMText.cpp
+	src/DOMXPath.cpp src/DOMXPathResult.cpp src/XPathTokens.cpp src/XPathEval.cpp src/XPathOperators.cpp
+	src/XPathFunctions.cpp src/DOMNamedNodeMap.cpp src/XPathEval.cpp src/XPathParser.cpp)
 
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_api xerces-c)
+target_link_libraries(evqueue_api pcrecpp)
 
 
 
