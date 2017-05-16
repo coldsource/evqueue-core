@@ -59,8 +59,8 @@ public:
 	
 	DOMXPathResult *evaluate(const std::string &xpath_str,DOMNode node,DOMXPathResult::ResultType result_type);
 	
-	int getNodeEvqID(DOMElement node);
-	DOMElement getNodeFromEvqID(int evqid);
+	std::string getNodeEvqID(DOMElement node);
+	DOMElement getNodeFromEvqID(const std::string &evqid);
 	
 private:
 	void initialize_evqid();

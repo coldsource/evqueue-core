@@ -51,6 +51,11 @@ string DOMElement::getAttribute(const string &name) const
 	return s;
 }
 
+DOMNode DOMElement::getAttributeNode(const string &name) const
+{
+	return element->getAttributeNode(XMLString(name));
+}
+
 void DOMElement::setAttribute(const string &name, const string &value)
 {
 	element->setAttribute(XMLString(name),XMLString(value));

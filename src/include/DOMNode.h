@@ -25,6 +25,7 @@
 #include <string>
 
 class DOMNamedNodeMap;
+class DOMElement;
 
 class DOMNode
 {
@@ -70,6 +71,7 @@ public:
 	void setTextContent(const std::string &textContent);
 	
 	DOMNamedNodeMap getAttributes();
+	DOMElement getOwnerElement();
 	
 	operator bool() const;
 };

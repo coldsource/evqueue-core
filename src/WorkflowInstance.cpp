@@ -607,16 +607,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		
 		if(waiting_nodes_copy.at(i).hasAttribute("context-id"))
 		{
-			int context_id;
-			try
-			{
-				context_id = stoi(waiting_nodes_copy.at(i).getAttribute("context-id"));
-			}
-			catch(...)
-			{
-				throw Exception("WorkflowInstance","Invalid context ID");
-			}
-			DOMElement context_node = xmldoc->getNodeFromEvqID(context_id);
+			DOMElement context_node = xmldoc->getNodeFromEvqID(waiting_nodes_copy.at(i).getAttribute("context-id"));
 		
 			// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
 			if(waiting_nodes_copy.at(i).getNodeName()=="task")
@@ -931,7 +922,7 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 	for(int i=0;i<tasks.size();i++)
 	{
 		// Set context node ID
-		tasks.at(i).setAttribute("context-id",to_string(xmldoc->getNodeEvqID(contexts.at(i))));
+		tasks.at(i).setAttribute("context-id",xmldoc->getNodeEvqID(contexts.at(i)));
 		
 		replace_values(tasks.at(i),contexts.at(i));
 		enqueue_task(tasks.at(i));
@@ -982,7 +973,7 @@ bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&subjob});
 	
 	// Set context node ID
-	subjob.setAttribute("context-id",to_string(xmldoc->getNodeEvqID(context_node)));
+	subjob.setAttribute("context-id",xmldoc->getNodeEvqID(context_node));
 	
 	if(!handle_condition(subjob,context_node))
 		return false;
@@ -994,7 +985,7 @@ bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 	for(int i=0;i<jobs.size();i++)
 	{
 		// Set new context node ID (based on loop expanding)
-		jobs.at(i).setAttribute("context-id",to_string(xmldoc->getNodeEvqID(contexts.at(i))));
+		jobs.at(i).setAttribute("context-id",xmldoc->getNodeEvqID(contexts.at(i)));
 		
 		DOMElement current_job = jobs.at(i);
 		xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&current_job});

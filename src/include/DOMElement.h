@@ -36,6 +36,7 @@ public:
 	
 	bool hasAttribute(const std::string &name) const;
 	std::string getAttribute(const std::string &name) const;
+	DOMNode getAttributeNode(const std::string &name) const;
 	void setAttribute(const std::string &name, const std::string &value);
 	void removeAttribute(const std::string &name);
 };

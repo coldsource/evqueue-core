@@ -207,21 +207,35 @@ DOMXPathResult *DOMDocument::evaluate(const string &xpath_str,DOMNode node,DOMXP
 	}
 }
 
-int DOMDocument::getNodeEvqID(DOMElement node)
+string DOMDocument::getNodeEvqID(DOMElement node)
 {
 	if(current_id==-1)
 		initialize_evqid();
 	
 	try
 	{
+		string evqid;
+		string attribute_name;
+		
+		if(node.getNodeType()==ATTRIBUTE_NODE)
+		{
+			attribute_name = node.getNodeName();
+			node = node.getOwnerElement();
+		}
+		
 		if(node.hasAttribute("evqid"))
-			return stoi(node.getAttribute("evqid"));
+			evqid = node.getAttribute("evqid");
 		else
 		{
 			node.setAttribute("evqid",to_string(++current_id));
 			id_node[current_id] = node;
-			return current_id;
+			evqid = to_string(current_id);
 		}
+		
+		if(attribute_name!="")
+			evqid += "/@"+attribute_name;
+		
+		return evqid;
 	}
 	catch(...)
 	{
@@ -230,16 +244,45 @@ int DOMDocument::getNodeEvqID(DOMElement node)
 	}
 }
 
-DOMElement DOMDocument::getNodeFromEvqID(int evqid)
+DOMElement DOMDocument::getNodeFromEvqID(const string &evqid)
 {
 	if(current_id==-1)
 		initialize_evqid();
 	
-	auto it = id_node.find(evqid);
+	int ievqid;
+	string attribute_name;
+	
+	try
+	{
+		size_t pos = evqid.find("/@");
+		if(pos!=string::npos)
+		{
+			// This is an attribute
+			ievqid = stoi(evqid.substr(0,pos));
+			attribute_name = evqid.substr(pos+2);
+			if(attribute_name=="")
+				throw -1;
+		}
+		else
+		{
+			// This is a node
+			ievqid = stoi(evqid);
+		}
+	}
+	catch(...)
+	{
+		throw Exception("WorkflowInstance","Invalid context ID");
+	}
+	
+	auto it = id_node.find(ievqid);
 	if(it==id_node.end())
 		return DOMElement();
 	
-	return it->second;
+	if(attribute_name=="")
+		return it->second; // Node
+	
+	// Attribute
+	return (it->second).getAttributeNode(attribute_name);
 }
 
 void DOMDocument::initialize_evqid()

@@ -18,6 +18,7 @@
  */
 
 #include <DOMNode.h>
+#include <DOMElement.h>
 #include <DOMNamedNodeMap.h>
 #include <XMLString.h>
 
@@ -125,6 +126,11 @@ void DOMNode::setTextContent(const string &textContent)
 DOMNamedNodeMap DOMNode::getAttributes()
 {
 	return node->getAttributes();
+}
+
+DOMElement DOMNode::getOwnerElement()
+{
+	return ((xercesc::DOMAttr *)node)->getOwnerElement();
 }
 
 DOMNode::operator bool() const
