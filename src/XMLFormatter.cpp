@@ -19,31 +19,19 @@
 
 #include <XMLFormatter.h>
 #include <XMLString.h>
+#include <DOMNamedNodeMap.h>
 
 using namespace std;
 
 XMLFormatter::XMLFormatter(const string& xml_str)
 {
-	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
-	parser = xercesImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
-	
-	xercesc::DOMLSInput *input = xercesImplementation->createLSInput();
-	
-	// Set XML content and parse document
-	XMLCh *xml;
-	xml = xercesc::XMLString::transcode(xml_str.c_str());
-	input->setStringData(xml);
-	
-	xmldoc = parser->parse(input);
-
-	input->release();
-	xercesc::XMLString::release(&xml);
+	xmldoc = DOMDocument::Parse(xml_str);
 }
 
 XMLFormatter::~XMLFormatter()
 {
-	if(parser)
-		parser->release();
+	if(xmldoc)
+		delete xmldoc;
 }
 
 void XMLFormatter::Format()
@@ -52,89 +40,80 @@ void XMLFormatter::Format()
 	format(xmldoc->getDocumentElement());
 }
 
-void XMLFormatter::format(xercesc::DOMNode* node)
+void XMLFormatter::format(DOMNode node)
 {
 	level++;
 	
 	do
 	{
-		short node_type = node->getNodeType();
-		if(node_type==xercesc::DOMNode::ELEMENT_NODE)
+		short node_type = node.getNodeType();
+		if(node_type==DOMNode::ELEMENT_NODE)
 		{
-			display_element_start((xercesc::DOMElement *)node);
+			display_element_start(node);
 			
-			xercesc::DOMNode *child = (xercesc::DOMElement *)node->getFirstChild();
+			DOMNode child = node.getFirstChild();
 			if(child)
 			{
 				printf(">\n");
 				format(child);
-				display_element_end((xercesc::DOMElement *)node);
+				display_element_end(node);
 			}
 			else
 				printf("/>\n");
 		}
-		else if(node_type==xercesc::DOMNode::TEXT_NODE)
+		else if(node_type==DOMNode::TEXT_NODE)
 			display_text(node);
-	}while(node = node->getNextSibling());
+	}while(node = node.getNextSibling());
 	
 	level--;
 }
 
-void XMLFormatter::display_element_start(xercesc::DOMElement *element)
+void XMLFormatter::display_element_start(DOMElement element)
 {
-	const XMLCh *node_name = element->getNodeName();
-	char *node_name_c = xercesc::XMLString::transcode(node_name);
+	string node_name = element.getNodeName();
 	
 	// Padding
 	for(int i=0;i<level-1;i++)
 		printf("  ");
 	
 	// Node name
-	printf("<%s",node_name_c);
+	printf("<%s",node_name.c_str());
 	
 	// Attributes
-	xercesc::DOMNamedNodeMap *attributes = element->getAttributes();
-	for(int i=0;i<attributes->getLength();i++)
+	DOMNamedNodeMap attributes = element.getAttributes();
+	for(int i=0;i<attributes.getLength();i++)
 	{
-		xercesc::DOMNode *attribute = attributes->item(i);
-		char *name_c = xercesc::XMLString::transcode(attribute->getNodeName());
-		char *value_c = xercesc::XMLString::transcode(attribute->getNodeValue());
-		printf(" %s=\"%s\"",name_c,value_c);
-		xercesc::XMLString::release(&name_c);
-		xercesc::XMLString::release(&value_c);
+		DOMNode attribute = attributes.item(i);
+		string name = attribute.getNodeName();
+		string value = attribute.getNodeValue();
+		printf(" %s=\"%s\"",name.c_str(),value.c_str());
 	}
-	
-	xercesc::XMLString::release(&node_name_c);
 }
 
-void XMLFormatter::display_element_end(xercesc::DOMElement *element)
+void XMLFormatter::display_element_end(DOMElement element)
 {
-	const XMLCh *node_name = element->getNodeName();
-	char *node_name_c = xercesc::XMLString::transcode(node_name);
+	string node_name = element.getNodeName();
 	
 	// Padding
 	for(int i=0;i<level-1;i++)
 		printf("  ");
 	
 	// Node name
-	printf("</%s>\n",node_name_c);
-	
-	xercesc::XMLString::release(&node_name_c);
+	printf("</%s>\n",node_name.c_str());
 }
 
-void XMLFormatter::display_text(xercesc::DOMNode *node)
+void XMLFormatter::display_text(DOMNode node)
 {
-	const XMLCh *text = node->getNodeValue();
-	char *text_c = xercesc::XMLString::transcode(text);
+	string text = node.getNodeValue();
 	
 	// Text
-	int len = strlen(text_c);
+	int len = text.length();
 	
 	// Trim left
 	int first = -1;
 	for(int i=0;i<len;i++)
 	{
-		if(text_c[i]!='\r' && text_c[i]!='\n' && text_c[i]!=' ' && text_c[i]!='\t')
+		if(text[i]!='\r' && text[i]!='\n' && text[i]!=' ' && text[i]!='\t')
 		{
 			first = i;
 			break;
@@ -144,7 +123,7 @@ void XMLFormatter::display_text(xercesc::DOMNode *node)
 	int last = -1;
 	for(int i=len-1;i>=0;i--)
 	{
-		if(text_c[i]!='\r' && text_c[i]!='\n' && text_c[i]!=' ' && text_c[i]!='\t')
+		if(text[i]!='\r' && text[i]!='\n' && text[i]!=' ' && text[i]!='\t')
 		{
 			last = i;
 			break;
@@ -157,9 +136,7 @@ void XMLFormatter::display_text(xercesc::DOMNode *node)
 		for(int i=0;i<level-1;i++)
 			printf("  ");
 		
-		fwrite(text_c+first,1,last-first+1,stdout);
+		fwrite(text.c_str()+first,1,last-first+1,stdout);
 		printf("\n");
 	}
-	
-	xercesc::XMLString::release(&text_c);
 }
