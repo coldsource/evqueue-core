@@ -41,97 +41,69 @@ SocketQuerySAX2Handler::~SocketQuerySAX2Handler()
 
 void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes& attrs)
 {
-	char *node_name_c = xercesc::XMLString::transcode(localname);
-	char *name_c = 0;
-	char *value_c = 0;
+	string node_name = XMLString(localname);
+	string name;
+	string value;
 	
 	level++;
 	
-	try
+	if(level==1)
 	{
-		if(level==1)
-		{
-			// Generic data storage for Query Handlers
-			group = node_name_c;
-			
-			for(int i=0;i<attrs.getLength();i++)
-			{
-				const XMLCh *attr_name, *attr_value;
-				attr_name = attrs.getLocalName(i);
-				attr_value = attrs.getValue(i);
-				
-				char *attr_name_c, *attr_value_c;
-				attr_name_c = xercesc::XMLString::transcode(attr_name);
-				attr_value_c = xercesc::XMLString::transcode(attr_value);
-				
-				root_attributes[attr_name_c] = attr_value_c;
-				
-				xercesc::XMLString::release(&attr_name_c);
-				xercesc::XMLString::release(&attr_value_c);
-			}
-		}
-			
-		if((group=="instance" || group=="instances" || group=="workflow_schedule") && level==2)
-		{
-			if(strcmp(node_name_c,"parameter")!=0)
-				throw Exception("SocketQuerySAX2Handler","Expecting parameter node");
-			
-			const XMLCh *name = attrs.getValue(XMLString("name"));
-			const XMLCh *value = attrs.getValue(XMLString("value"));
-			
-			if (name==0 || value==0)
-				throw Exception("SocketQuerySAX2Handler","Invalue parameter node, missing name or value attributes");
-			
-			name_c = xercesc::XMLString::transcode(name);
-			value_c = xercesc::XMLString::transcode(value);
-			
-			int i;
-			int name_len = strlen(name_c);
-			
-			if(name_len>PARAMETER_NAME_MAX_LEN)
-				throw Exception("SocketQuerySAX2Handler","Parameter name is too long");
-			
-			for(i=0;i<name_len;i++)
-				if(!isalnum(name[i]) && name[i]!='_')
-					throw Exception("SocketQuerySAX2Handler","Invalid parameter name");
-			
-			if(!params.Add(name_c,value_c))
-				throw Exception("SocketQuerySAX2Handler","Duplicate parameter name");
-		}
+		// Generic data storage for Query Handlers
+		group = node_name;
 		
-		if(group=="task" && level==2)
+		for(int i=0;i<attrs.getLength();i++)
 		{
-			if(strcmp(node_name_c,"input")!=0)
-				throw Exception("SocketQuerySAX2Handler","Expecting input node");
+			string attr_name = XMLString(attrs.getLocalName(i));
+			string attr_value = XMLString(attrs.getValue(i));
 			
-			const XMLCh *value = attrs.getValue(XMLString("value"));
-			value_c = xercesc::XMLString::transcode(value);
-			
-			inputs.push_back(value_c);
+			root_attributes[attr_name] = attr_value;
 		}
-		
-		if(group=="task" && level>2)
-			throw Exception("SocketQuerySAX2Handler","input node does not accept subnodes");
-		
-		if(group!="instance" && group!="instances" && group!="workflow_schedule" && group!="task" && level>1)
-			throw Exception("SocketQuerySAX2Handler","Unexpected subnode");
 	}
-	catch(Exception e)
-	{
-		if(name_c)
-			xercesc::XMLString::release(&name_c);
-		if(value_c)
-			xercesc::XMLString::release(&value_c);
-		xercesc::XMLString::release(&node_name_c);
 		
-		throw e;
+	if((group=="instance" || group=="instances" || group=="workflow_schedule") && level==2)
+	{
+		if(node_name!="parameter")
+			throw Exception("SocketQuerySAX2Handler","Expecting parameter node");
+		
+		const XMLCh *name_xml = attrs.getValue(XMLString("name"));
+		const XMLCh *value_xml = attrs.getValue(XMLString("value"));
+		
+		if (name_xml==0 || value_xml==0)
+			throw Exception("SocketQuerySAX2Handler","Invalue parameter node, missing name or value attributes");
+		
+		name = XMLString(name_xml);
+		value = XMLString(value_xml);
+		
+		int i;
+		int name_len = name.length();
+		
+		if(name_len>PARAMETER_NAME_MAX_LEN)
+			throw Exception("SocketQuerySAX2Handler","Parameter name is too long");
+		
+		for(i=0;i<name_len;i++)
+			if(!isalnum(name[i]) && name[i]!='_')
+				throw Exception("SocketQuerySAX2Handler","Invalid parameter name");
+		
+		if(!params.Add(name,value))
+			throw Exception("SocketQuerySAX2Handler","Duplicate parameter name");
 	}
 	
-	if(name_c)
-		xercesc::XMLString::release(&name_c);
-	if(value_c)
-		xercesc::XMLString::release(&value_c);
-	xercesc::XMLString::release(&node_name_c);
+	if(group=="task" && level==2)
+	{
+		if(node_name!="input")
+			throw Exception("SocketQuerySAX2Handler","Expecting input node");
+		
+		value = XMLString(attrs.getValue(XMLString("value")));
+		
+		inputs.push_back(value);
+	}
+	
+	if(group=="task" && level>2)
+		throw Exception("SocketQuerySAX2Handler","input node does not accept subnodes");
+	
+	if(group!="instance" && group!="instances" && group!="workflow_schedule" && group!="task" && level>1)
+		throw Exception("SocketQuerySAX2Handler","Unexpected subnode");
 }
 
 void SocketQuerySAX2Handler::endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname)
