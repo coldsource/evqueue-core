@@ -95,6 +95,7 @@ class WorkflowInstance
 		bool handle_loop(DOMElement node,DOMElement context_node,std::vector<DOMElement> &nodes, std::vector<DOMElement> &contexts);
 		void run_tasks(DOMElement job,DOMElement context_node);
 		bool run_task(DOMElement task,DOMElement context_node);
+		void register_job_functions(DOMElement node);
 		void run_subjobs(DOMElement job);
 		bool run_subjob(DOMElement subjob,DOMElement context_node);
 		void enqueue_task(DOMElement task);

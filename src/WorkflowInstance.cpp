@@ -611,7 +611,10 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		
 			// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
 			if(waiting_nodes_copy.at(i).getNodeName()=="task")
+			{
+				register_job_functions(task_node);
 				run_task(waiting_nodes_copy.at(i),context_node);
+			}
 			else if(waiting_nodes_copy.at(i).getNodeName()=="job")
 				run_subjob(waiting_nodes_copy.at(i),context_node);
 		}
@@ -931,6 +934,23 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 	return true;
 }
 
+void WorkflowInstance::register_job_functions(DOMElement node)
+{
+	static DOMElement job, parent_job;
+	if(node.getNodeName()=="task")
+		job = node.getParentNode().getParentNode();
+	else
+		job = node;
+	
+	
+	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&job});
+	
+	parent_job = job.getParentNode().getParentNode();
+	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&parent_job});
+}
+
 void WorkflowInstance::run_subjobs(DOMElement job)
 {
 	// Loop on subjobs
@@ -966,12 +986,7 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 
 bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 {
-	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&subjob});
-	
-	DOMElement parent_job = subjob.getParentNode().getParentNode();
-	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&parent_job});
-	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&parent_job});
-	xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&parent_job});
+	register_job_functions(subjob);
 	
 	// Set context node ID
 	subjob.setAttribute("context-id",xmldoc->getNodeEvqID(context_node));
