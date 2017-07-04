@@ -944,10 +944,6 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 		int subjobs_index = 0;
 		while(subjobs->snapshotItem(subjobs_index++))
 		{
-			xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&job});
-			xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&job});
-			xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&job});
-			
 			subjob = (DOMElement)subjobs->getNodeValue();
 			run_subjob(subjob,job);
 		}
@@ -971,6 +967,11 @@ void WorkflowInstance::run_subjobs(DOMElement job)
 bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 {
 	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&subjob});
+	
+	DOMElement parent_job = subjob.getParentNode().getParentNode();
+	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&parent_job});
 	
 	// Set context node ID
 	subjob.setAttribute("context-id",xmldoc->getNodeEvqID(context_node));
