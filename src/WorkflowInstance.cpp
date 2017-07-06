@@ -612,7 +612,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 			// Re-evaluate conditions : will wait till next event or start tasks/jobs if condition evaluates to true
 			if(waiting_nodes_copy.at(i).getNodeName()=="task")
 			{
-				register_job_functions(task_node);
+				register_job_functions(waiting_nodes_copy.at(i));
 				run_task(waiting_nodes_copy.at(i),context_node);
 			}
 			else if(waiting_nodes_copy.at(i).getNodeName()=="job")
@@ -914,6 +914,9 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 	string task_status;
 	if(task.hasAttribute("status") && task.getAttribute("status")=="TERMINATED")
 		return false; // Skip tasks that are already terminated (can happen on resume)
+	
+	// Set context node ID
+	task.setAttribute("context-id",xmldoc->getNodeEvqID(context_node));
 
 	if(!handle_condition(task,context_node))
 		return false;
@@ -924,7 +927,7 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 	
 	for(int i=0;i<tasks.size();i++)
 	{
-		// Set context node ID
+		// Set new context node ID (based on loop expanding)
 		tasks.at(i).setAttribute("context-id",xmldoc->getNodeEvqID(contexts.at(i)));
 		
 		replace_values(tasks.at(i),contexts.at(i));
