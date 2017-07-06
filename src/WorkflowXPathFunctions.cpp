@@ -100,6 +100,23 @@ Token *WorkflowXPathFunctions::evqGetOutput(XPathEval::func_context context, con
 	return context.eval->Evaluate("tasks/task[@name='"+task_name+"']/output",context_node);
 }
 
+Token *WorkflowXPathFunctions::evqGetInput(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=2)
+		throw Exception("evqGetOutput()","Expecting 2 parameters");
+	
+	string task_name = (string)(*args.at(0));
+	string input_name = (string)(*args.at(1));
+	
+	DOMNode context_node;
+	if(context.left_context->items.size()>0)
+		context_node = *context.left_context->items.at(0);
+	else
+		context_node = *((DOMNode *)context.custom_context);
+	
+	return context.eval->Evaluate("tasks/task[@name='"+task_name+"']/input[@name='"+input_name+"']",context_node);
+}
+
 Token *WorkflowXPathFunctions::evqGetContext(XPathEval::func_context context, const vector<Token *> &args)
 {
 	if(args.size()!=0)

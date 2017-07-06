@@ -951,6 +951,7 @@ void WorkflowInstance::register_job_functions(DOMElement node)
 	parent_job = job.getParentNode().getParentNode();
 	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&parent_job});
 	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetInput",{WorkflowXPathFunctions::evqGetInput,&parent_job});
 	xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&parent_job});
 }
 
