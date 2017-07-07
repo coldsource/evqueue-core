@@ -320,7 +320,7 @@ int main(int argc,char ** argv)
 						{
 							line_buf[line_buf_size] = '\0';
 							
-							if(strcmp(line_buf,"\\close")==0)
+							if(strcmp(line_buf,"\\close\n")==0)
 								break;
 							
 							if(!send_progress_message(msgqid,line_buf,tid))
@@ -359,7 +359,7 @@ int main(int argc,char ** argv)
 			FILE *log_out = fdopen(LOG_FILENO,"w");
 			while(fgets(buf,4096,log_in))
 			{
-				if(strcmp(buf,"\\close")==0)
+				if(strcmp(buf,"\\close\n")==0)
 					break;
 				
 				if(!send_progress_message(msgqid,buf,tid))
