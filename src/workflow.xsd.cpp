@@ -94,6 +94,7 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		</xs:choice>       \
 		<xs:attribute name=\"name\" type=\"StrNonEmpty\" use=\"optional\" /> \
 		<xs:attribute name=\"loop\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"condition\" type=\"xs:string\" use=\"optional\" /> \
 	</xs:complexType> \
 	 \
 	<xs:complexType name=\"stdinType\" mixed=\"true\"> \

@@ -91,7 +91,7 @@ class WorkflowInstance
 	private:
 		WorkflowInstance();
 		
-		bool handle_condition(DOMElement node,DOMElement context_node);
+		bool handle_condition(DOMElement node,DOMElement context_node,bool can_wait=true);
 		bool handle_loop(DOMElement node,DOMElement context_node,std::vector<DOMElement> &nodes, std::vector<DOMElement> &contexts);
 		void run_tasks(DOMElement job,DOMElement context_node);
 		bool run_task(DOMElement task,DOMElement context_node);

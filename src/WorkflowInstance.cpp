@@ -659,18 +659,19 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 			DOMElement parameter;
 			int parameters_index = 0;
 
-			while(parameters->snapshotItem(parameters_index))
+			while(parameters->snapshotItem(parameters_index++))
 			{
 				parameter = (DOMElement)parameters->getNodeValue();
-
+				
+				if(parameter.hasAttribute("status") && parameter.getAttribute("status")=="SKIPPED")
+					continue;
+				
 				if(parameter.hasAttribute("name"))
 					parameters_name.push_back(parameter.getAttribute("name"));
 				else
 					parameters_name.push_back("");
 
 				parameters_value.push_back(parameter.getTextContent());
-
-				parameters_index++;
 			}
 		}
 		
@@ -791,7 +792,7 @@ bool WorkflowInstance::KillTask(pid_t pid)
 	return found;
 }
 
-bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
+bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node,bool can_wait)
 {
 	if(!node.hasAttribute("condition"))
 		return true;
@@ -821,6 +822,9 @@ bool WorkflowInstance::handle_condition(DOMElement node,DOMElement context_node)
 	{
 		if(needs_wait)
 		{
+			if(!can_wait)
+				throw;
+			
 			// evqWait() has thrown exception because it needs to wait
 			waiting_nodes.push_back(node);
 			node.setAttribute("status","WAITING");
@@ -1076,6 +1080,13 @@ void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
 	for(int i=0;i<inputs.size();i++)
 	{
 		DOMElement current_input = inputs.at(i);
+		
+		{
+			ExceptionWorkflowContext ctx(current_input,"Error computing condition");
+			
+			if(!handle_condition(current_input,context_node,false))
+				continue;
+		}
 	
 		{
 			ExceptionWorkflowContext ctx(current_input,"Error computing input value");
