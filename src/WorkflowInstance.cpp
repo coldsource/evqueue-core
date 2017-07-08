@@ -1073,6 +1073,13 @@ void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
 	DOMElement value;
 	int values_index;
 	
+	{
+		ExceptionWorkflowContext ctx(input,"Error computing condition");
+		
+		if(!handle_condition(input,context_node,false))
+			return;
+	}
+	
 	vector<DOMElement> inputs;
 	vector<DOMElement> contexts;
 	handle_loop(input,context_node,inputs,contexts);
@@ -1081,13 +1088,6 @@ void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
 	{
 		DOMElement current_input = inputs.at(i);
 		
-		{
-			ExceptionWorkflowContext ctx(current_input,"Error computing condition");
-			
-			if(!handle_condition(current_input,context_node,false))
-				continue;
-		}
-	
 		{
 			ExceptionWorkflowContext ctx(current_input,"Error computing input value");
 			
