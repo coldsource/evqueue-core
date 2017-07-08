@@ -259,6 +259,7 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 	
 	if(action=="list")
 	{
+		unsigned int filter_id = saxh->GetRootAttributeInt("filter_id",0);
 		string filter_node = saxh->GetRootAttribute("filter_node","");
 		string filter_workflow = saxh->GetRootAttribute("filter_workflow","");
 		string filter_launched_from = saxh->GetRootAttribute("filter_launched_from","");
@@ -275,6 +276,12 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		
 		string query_where = "WHERE wi.workflow_id=w.workflow_id";
 		vector<void *> query_where_values;
+		
+		if(filter_id!=0)
+		{
+			query_where += " AND wi.workflow_instance_id=%i";
+			query_where_values.push_back(&filter_id);
+		}
 		
 		if(filter_node.length())
 		{
