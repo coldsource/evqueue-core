@@ -93,6 +93,9 @@ Task::Task(DB *db,const string &task_name)
 
 bool Task::GetIsModified()
 {
+#ifndef USELIBGIT2
+	return false;
+#else
 	// We are not bound to git, so we cannot compute this
 	if(lastcommit=="")
 		return false;
@@ -105,6 +108,7 @@ bool Task::GetIsModified()
 	string db_hash = Sha1String(SaveToXML()).GetBinary();
 	
 	return (repo_hash!=db_hash);
+#endif
 }
 
 void Task::SetLastCommit(const std::string &commit_id)

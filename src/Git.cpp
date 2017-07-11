@@ -49,6 +49,7 @@ Git *Git::instance = 0;
 
 Git::Git()
 {
+#ifdef USELIBGIT2
 	Configuration *config = Configuration::GetInstance();
 	
 	repo_path = config->Get("git.repository");
@@ -58,16 +59,20 @@ Git::Git()
 	
 	workflows_subdirectory = config->Get("git.workflows.subdirectory");
 	tasks_subdirectory = config->Get("git.tasks.subdirectory");
+#endif
 	
 	instance = this;
 }
 
 Git::~Git()
 {
+#ifdef USELIBGIT2
 	if(repo)
 		delete repo;
+#endif
 }
 
+#ifdef USELIBGIT2
 void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 {
 	unique_lock<mutex> llock(lock);
@@ -250,8 +255,13 @@ void Git::ListTasks(QueryResponse *response)
 	list_files(tasks_subdirectory,response);
 }
 
+#endif // USELIBGIT2
+
 bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
+#ifndef USELIBGIT2
+	throw Exception("Git", "evQueue was not compiled with git support");
+#else
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
@@ -348,7 +358,10 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	
 	return false;
+#endif // USELIBGIT2
 }
+
+#ifdef USELIBGIT2
 
 string Git::save_file(const string &filename, const string &content, const string &db_lastcommit, const string &commit_log, bool force)
 {
@@ -487,3 +500,5 @@ string Git::get_file_hash(const string filename)
 	
 	return hash;
 }
+
+#endif // USELIBGIT2

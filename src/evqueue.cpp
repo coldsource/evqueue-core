@@ -251,7 +251,10 @@ int main(int argc,const char **argv)
 	// Initialize external libraries
 	mysql_library_init(0,0,0);
 	mysql_thread_init();
+	
+#ifdef USELIBGIT2
 	git_libgit2_init();
+#endif
 	
 	openlog("evqueue",0,LOG_DAEMON);
 	
@@ -696,7 +699,10 @@ int main(int argc,const char **argv)
 				
 				mysql_thread_end();
 				mysql_library_end();
+				
+#ifdef USELIBGIT2
 				git_libgit2_shutdown();
+#endif
 				
 				return 0;
 			}

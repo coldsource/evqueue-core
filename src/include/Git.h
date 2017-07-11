@@ -36,7 +36,10 @@ class Git
 	std::mutex lock;
 	
 	std::string repo_path;
+	
+#ifdef USELIBGIT2
 	LibGit2 *repo = 0;
+#endif
 	
 	std::string workflows_subdirectory;
 	std::string tasks_subdirectory;
@@ -47,6 +50,7 @@ class Git
 		
 		static Git *GetInstance() { return  instance; }
 		
+#ifdef USELIBGIT2
 		void SaveWorkflow(const std::string &name, const std::string &commit_log, bool force);
 		void SaveTask(const std::string &name, const std::string &commit_log, bool force);
 		void LoadWorkflow(const std::string &name);
@@ -59,14 +63,17 @@ class Git
 		void RemoveTask(const std::string &name,const std::string &commit_log);
 		void ListWorkflows(QueryResponse *response);
 		void ListTasks(QueryResponse *response);
+#endif
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
+#ifdef USELIBGIT2
 		std::string save_file(const std::string &filename, const std::string &content, const std::string &db_lastcommit, const std::string &commit_log, bool force);
 		DOMDocument *load_file(const std::string &filename);
 		void list_files(const std::string directory, QueryResponse *response);
 		std::string get_file_hash(const std::string filename);
+#endif
 };
 
 #endif

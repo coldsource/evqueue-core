@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 set(EVQUEUE_VERSION "2.0")
 
+option(USELIBGIT2 "Enable libgit2 support" OFF)
+
 set(CMAKE_BUILD_TYPE Release)
 
 project(evqueue)
@@ -18,14 +20,19 @@ add_executable(evqueue
 	src/RetrySchedules.cpp src/SequenceGenerator.cpp src/tools.cpp src/tools_ipc.cpp src/Notification.cpp
 	src/Notifications.cpp src/Sockets.cpp src/FileManager.cpp src/base64.cpp src/tables.cpp src/tools_db.cpp
 	src/workflow.xsd.cpp src/XMLUtils.cpp src/QueryHandlers.cpp src/QueryResponse.cpp src/Cluster.cpp src/ping.cpp
-	src/SocketResponseSAX2Handler.cpp src/retry_schedule.xsd.cpp src/WorkflowSchedules.cpp
+	src/SocketResponseSAX2Handler.cpp src/LibGit2.cpp src/retry_schedule.xsd.cpp src/WorkflowSchedules.cpp
 	src/NotificationType.cpp src/NotificationTypes.cpp src/sha1.c src/WorkflowInstanceAPI.cpp src/SocketSAX2Handler.cpp
 	src/hmac.cpp src/AuthHandler.cpp src/User.cpp src/Users.cpp src/Logs.cpp src/ClientBase.cpp src/Client.cpp
-	src/ActiveConnections.cpp src/LibGit2.cpp src/Git.cpp src/Sha1String.cpp src/pbkdf2.cpp src/Random.cpp
+	src/ActiveConnections.cpp src/Git.cpp src/Sha1String.cpp src/pbkdf2.cpp src/Random.cpp
 	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp
 	src/DOMDocument.cpp src/DOMNamedNodeMap.cpp src/XPathTokens.cpp src/XPathParser.cpp src/XPathEval.cpp
 	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp src/WorkflowXPathFunctions.cpp
 	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp src/XMLString.cpp)
+
+if(USELIBGIT2)
+	add_definitions(-DUSELIBGIT2)
+	target_link_libraries(evqueue git2)
+endif(USELIBGIT2)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -40,7 +47,6 @@ endif()
 
 include_directories(include /usr/include)
 
-target_link_libraries(evqueue git2)
 target_link_libraries(evqueue z)
 target_link_libraries(evqueue mysqlclient)
 target_link_libraries(evqueue pthread)

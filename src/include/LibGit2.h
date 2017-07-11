@@ -17,6 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
+#ifdef USELIBGIT2
+
 #ifndef _LIBGIT2_H_
 #define _LIBGIT2_H_
 
@@ -62,5 +64,7 @@ class LibGit2
 		static int credentials_callback(git_cred **cred,const char *url,const char *username_from_url,unsigned int allowed_types,void *payload);
 		bool delta_with_parent(git_commit *commit, int i, git_diff_options *opts);
 };
+
+#endif
 
 #endif
