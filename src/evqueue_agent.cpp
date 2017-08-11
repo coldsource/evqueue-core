@@ -124,6 +124,7 @@ int main(int argc,char ** argv)
 				
 				printf("%02d%09d",STDOUT_FILENO+i,read_size);
 				fwrite(buf,1,read_size,stdout);
+				fflush(stdout);
 			}
 		}
 	}
