@@ -137,9 +137,9 @@ void base64_encode_file(FILE *f,string &base64_str)
 	{
 		block = block_str[0] << 16;
 		if(block_size>=1)
-			block = block | (block_str[1] << 8);
+			block = block | ((block_str[1]&0xFF) << 8);
 		if(block_size>=2)
-			block = block | block_str[2];
+			block = block | (block_str[2]&0xFF);
 		
 		base64_str.append(1,b64_table[(block & 0xFC0000) >> 18]);
 		base64_str.append(1,b64_table[(block & 0x03F000) >> 12]);
@@ -172,9 +172,9 @@ void base64_encode_string(const string &str,string &base64_str)
 	{
 		block = block_str[0] << 16;
 		if(block_size>=1)
-			block = block | (block_str[1] << 8);
+			block = block | ((block_str[1]&0xFF) << 8);
 		if(block_size>=2)
-			block = block | block_str[2];
+			block = block | (block_str[2]&0xFF);
 		
 		base64_str.append(1,b64_table[(block & 0xFC0000) >> 18]);
 		base64_str.append(1,b64_table[(block & 0x03F000) >> 12]);
