@@ -51,6 +51,7 @@ class WorkflowInstance
 		
 		bool errlogs;
 		const std::string &errlogs_directory;
+		int log_dom_maxsize;
 		
 		bool saveparameters;
 		
@@ -104,6 +105,7 @@ class WorkflowInstance
 		bool workflow_ended(void);
 		
 		void record_savepoint(bool force=false);
+		void record_log(DOMElement node, const char *log);
 		void replace_values(DOMElement task,DOMElement context_node);
 		void replace_value(DOMElement input,DOMElement context_node);
 		std::string format_datetime();

@@ -45,6 +45,10 @@ void WorkflowInstanceAPI::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",&id);
 	if(db.AffectedRows()==0)
 		throw Exception("WorkflowInstanceAPI", "Instance ID not found");
+	
+	db.QueryPrintf("DELETE FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",&id);
+	
+	db.QueryPrintf("DELETE FROM t_datastore WHERE workflow_instance_id=%i",&id);
 }
 
 bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)

@@ -184,5 +184,14 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_schedule_parameter_value` text COLLATE utf8_unicode_ci NOT NULL, \
   KEY `workflow_schedule_id` (`workflow_schedule_id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.0'; \
+"},
+{"t_datastore",
+"CREATE TABLE `t_datastore` ( \
+  `datastore_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `workflow_instance_id` int(10) unsigned NOT NULL, \
+  `datastore_value` longtext COLLATE utf8_unicode_ci NOT NULL, \
+  PRIMARY KEY (`datastore_id`), \
+  KEY `workflow_instance_id` (`workflow_instance_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.0'; \
 "}
 };

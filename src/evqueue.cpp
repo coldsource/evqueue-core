@@ -77,6 +77,7 @@
 #include <Users.h>
 #include <Sockets.h>
 #include <Random.h>
+#include <Datastore.h>
 #include <QueryHandlers.h>
 #include <Cluster.h>
 #include <ActiveConnections.h>
@@ -531,6 +532,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("ping",ping_handle_query);
 		qh->RegisterHandler("git",Git::HandleQuery);
 		qh->RegisterHandler("filesystem",Filesystem::HandleQuery);
+		qh->RegisterHandler("datastore",Datastore::HandleQuery);
 		
 		// Create sockets set
 		Sockets *sockets = new Sockets();

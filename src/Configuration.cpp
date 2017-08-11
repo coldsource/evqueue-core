@@ -78,6 +78,10 @@ Configuration::Configuration(void)
 	entries["processmanager.monitor.ssh_path"] = "/usr/bin/ssh";
 	entries["processmanager.agent.path"] = "/usr/bin/evqueue_agent";
 	entries["processmanager.tasks.directory"] = ".";
+	entries["datastore.dom.maxsize"] = "500K";
+	entries["datastore.db.maxsize"] = "50M";
+	entries["datastore.gzip.level"] = "9";
+	entries["datastore.gzip.enable"] = "yes";
 	entries["workflowinstance.saveparameters"] = "yes";
 	entries["workflowinstance.savepoint.level"] = "2";
 	entries["workflowinstance.savepoint.retry.enable"] = "yes";
@@ -130,6 +134,19 @@ int Configuration::GetInt(const string &entry) const
 	if(value.substr(0,2)=="0x")
 		return strtol(value.c_str(),0,16);
 	return strtol(value.c_str(),0,10);
+}
+
+int Configuration::GetSize(const string &entry) const
+{
+	const string value = Get(entry);
+	if(value.substr(value.length()-1,1)=="K")
+		return strtol(value.c_str(),0,10)*1024;
+	else if(value.substr(value.length()-1,1)=="M")
+		return strtol(value.c_str(),0,10)*1024*1024;
+	else if(value.substr(value.length()-1,1)=="G")
+		return strtol(value.c_str(),0,10)*1024*1024*1024;
+	else
+		return strtol(value.c_str(),0,10);
 }
 
 bool Configuration::GetBool(const string &entry) const

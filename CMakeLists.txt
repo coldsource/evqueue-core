@@ -27,7 +27,7 @@ add_executable(evqueue
 	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp
 	src/DOMDocument.cpp src/DOMNamedNodeMap.cpp src/XPathTokens.cpp src/XPathParser.cpp src/XPathEval.cpp
 	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp src/WorkflowXPathFunctions.cpp
-	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp src/XMLString.cpp)
+	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp src/XMLString.cpp src/Datastore.cpp)
 
 if(USELIBGIT2)
 	add_definitions(-DUSELIBGIT2)

@@ -38,6 +38,7 @@ class Configuration
 		bool Set(const std::string &entry,const std::string &value);
 		const std::string &Get(const std::string &entry) const;
 		int GetInt(const std::string &entry) const;
+		int GetSize(const std::string &entry) const;
 		bool GetBool(const std::string &entry) const;
 		
 		void Substitute(void);

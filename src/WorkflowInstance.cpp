@@ -67,6 +67,8 @@ WorkflowInstance::WorkflowInstance(void):
 	workflow_schedule_id = 0;
 
 	errlogs = Configuration::GetInstance()->GetBool("processmanager.errlogs.enable");
+	
+	log_dom_maxsize = Configuration::GetInstance()->GetSize("datastore.dom.maxsize");
 
 	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
 
@@ -526,16 +528,16 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		{
 			// We are in text mode
 			output_element.setAttribute("method","text");
-			output_element.appendChild(xmldoc->createTextNode(stdout_output));
 			task_node.appendChild(output_element);
+			record_log(output_element,stdout_output);
 		}
 	}
 	else
 	{
 		// Store task log in output node. We treat this as TEXT since errors can corrupt XML
 		output_element.setAttribute("method","text");
-		output_element.appendChild(xmldoc->createTextNode(stdout_output));
 		task_node.appendChild(output_element);
+		record_log(output_element,stdout_output);
 
 		if(is_cancelling)
 		{
@@ -552,16 +554,16 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 	if(stderr_output)
 	{
 		DOMElement stderr_element = xmldoc->createElement("stderr");
-		stderr_element.appendChild(xmldoc->createTextNode(stderr_output));
 		task_node.appendChild(stderr_element);
+		record_log(stderr_element,stderr_output);
 	}
 
 	// Add evqueue log output if present
 	if(log_output)
 	{
 		DOMElement log_element = xmldoc->createElement("log");
-		log_element.appendChild(xmldoc->createTextNode(log_output));
 		task_node.appendChild(log_element);
+		record_log(log_element,log_output);
 	}
 
 	int tasks_count,tasks_successful;
@@ -1405,6 +1407,29 @@ void WorkflowInstance::record_savepoint(bool force)
 		tries++;
 
 	} while(savepoint_retry && (savepoint_retry_times==0 || tries<=savepoint_retry_times));
+}
+
+void WorkflowInstance::record_log(DOMElement node, const char *log)
+{
+	if(strlen(log)<log_dom_maxsize)
+	{
+		node.appendChild(xmldoc->createTextNode(log));
+	}
+	else
+	{
+		DB db;
+		try
+		{
+			db.QueryPrintfC("INSERT INTO t_datastore(workflow_instance_id,datastore_value) VALUES(%i,%s)",&workflow_instance_id,log);
+			
+			int datastore_id = db.InsertID();
+			node.setAttribute("datastore-id",to_string(datastore_id));
+		}
+		catch(Exception &e)
+		{
+			node.setAttribute("datastore-error",e.error);
+		}
+	}
 }
 
 string WorkflowInstance::format_datetime()

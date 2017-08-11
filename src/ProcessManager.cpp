@@ -57,6 +57,9 @@
 using namespace std;
 
 volatile bool ProcessManager::is_shutting_down=false;
+string ProcessManager::logs_directory;
+bool ProcessManager::logs_delete;
+int ProcessManager::log_maxsize;
 
 ProcessManager::ProcessManager()
 {
@@ -65,6 +68,8 @@ ProcessManager::ProcessManager()
 	logs_directory = config->Get("processmanager.logs.directory");
 	
 	logs_delete = config->GetBool("processmanager.logs.delete");
+	
+	log_maxsize = config->GetSize("datastore.db.maxsize");
 	
 	// Create message queue
 	msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
@@ -192,9 +197,9 @@ void *ProcessManager::Gather(ProcessManager *pm)
 		if(msgbuf.type==1)
 		{
 			// Fetch task output in log files before releasing tid
-			stdout_output =  read_log_file(pm,pid,tid,STDOUT_FILENO);
-			stderr_output =  read_log_file(pm,pid,tid,STDERR_FILENO);
-			log_output =  read_log_file(pm,pid,tid,LOG_FILENO);
+			stdout_output =  read_log_file(pid,tid,STDOUT_FILENO);
+			stderr_output =  read_log_file(pid,tid,STDERR_FILENO);
+			log_output =  read_log_file(pid,tid,LOG_FILENO);
 			
 			// Get task informations
 			if(!QueuePool::GetInstance()->TerminateTask(tid,&workflow_instance,&task))
@@ -437,14 +442,13 @@ pid_t ProcessManager::ExecuteTask(
 	return pid;
 }
 
-int ProcessManager::open_log_file(int tid, int fileno)
+int ProcessManager::open_log_file(int tid, int log_fileno)
 {
-	static const string logs_directory = Configuration::GetInstance()->Get("processmanager.logs.directory");
 	char *log_filename = new char[logs_directory.length()+32];
 
-	if(fileno==STDOUT_FILENO)
+	if(log_fileno==STDOUT_FILENO)
 		sprintf(log_filename,"%s/%d.stdout",logs_directory.c_str(),tid);
-	else if(fileno==STDERR_FILENO)
+	else if(log_fileno==STDERR_FILENO)
 		sprintf(log_filename,"%s/%d.stderr",logs_directory.c_str(),tid);
 	else
 		sprintf(log_filename,"%s/%d.log",logs_directory.c_str(),tid);
@@ -456,7 +460,7 @@ int ProcessManager::open_log_file(int tid, int fileno)
 
 	if(fno==-1)
 	{
-		Logger::Log(LOG_ERR,"Unable to open task output log file (%d)",fileno);
+		Logger::Log(LOG_ERR,"Unable to open task output log file (%d)",log_fileno);
 		tools_send_exit_msg(1,tid,-1);
 		exit(-1);
 	}
@@ -464,21 +468,22 @@ int ProcessManager::open_log_file(int tid, int fileno)
 	return fno;
 }
 
-char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno)
+char *ProcessManager::read_log_file(pid_t pid,pid_t tid,int log_fileno)
 {
 	string log_filename;
-	if(fileno==STDOUT_FILENO)
-		log_filename = pm->logs_directory+"/"+to_string(tid)+".stdout";
-	else if(fileno==STDERR_FILENO)
-		log_filename = pm->logs_directory+"/"+to_string(tid)+".stderr";
+	if(log_fileno==STDOUT_FILENO)
+		log_filename = logs_directory+"/"+to_string(tid)+".stdout";
+	else if(log_fileno==STDERR_FILENO)
+		log_filename = logs_directory+"/"+to_string(tid)+".stderr";
 	else
-		log_filename = pm->logs_directory+"/"+to_string(tid)+".log";
+		log_filename = logs_directory+"/"+to_string(tid)+".log";
 	
 	FILE *f;
 	long log_size;
+	bool log_truncated = false;
 	char *output;
 	
-	f  = fopen(log_filename.c_str(),"r");
+	f  = fopen(log_filename.c_str(),"r+");
 	
 	if(f)
 	{
@@ -486,11 +491,24 @@ char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int f
 		fseek(f,0,SEEK_END);
 		log_size = ftell(f);
 		
+		if(log_size>log_maxsize)
+		{
+			log_truncated = true;
+			ftruncate(fileno(f),log_maxsize);
+			
+			fseek(f,0,SEEK_END);
+			fwrite("...TRUNCATED...",1,15,f);
+			
+			log_size=log_maxsize+15;
+		}
+		
 		// Read output log
 		fseek(f,0,SEEK_SET);
+		
 		output = new char[log_size+1];
 		if(fread(output,1,log_size,f)!=log_size)
 			Logger::Log(LOG_WARNING,"[ ProcessManager ] Error reading output log for pid %d",pid);
+		
 		output[log_size] = '\0';
 		
 		fclose(f);
@@ -502,7 +520,7 @@ char *ProcessManager::read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int f
 		Logger::Log(LOG_WARNING,"[ ProcessManager ] Could not read task output for pid %d",pid);
 	}
 	
-	if(pm->logs_delete)
+	if(logs_delete)
 		unlink(log_filename.c_str()); // Delete log file since it is not usefull anymore
 	
 	return output;

@@ -31,8 +31,9 @@ class ProcessManager
 	private:
 		int msgqid;
 		
-		std::string logs_directory;
-		bool logs_delete;
+		static std::string logs_directory;
+		static bool logs_delete;
+		static int log_maxsize;
 		
 		static volatile bool is_shutting_down;
 		
@@ -60,8 +61,8 @@ class ProcessManager
 			);
 	
 	private:
-		static int open_log_file(int tid, int fileno);
-		static char *read_log_file(ProcessManager *pm,pid_t pid,pid_t tid,int fileno);
+		static int open_log_file(int tid, int log_fileno);
+		static char *read_log_file(pid_t pid,pid_t tid,int log_fileno);
 };
 
 #endif

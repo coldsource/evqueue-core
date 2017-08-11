@@ -31,6 +31,14 @@ ALTER TABLE t_user ADD COLUMN user_preferences TEXT NOT NULL DEFAULT '' AFTER us
 UPDATE t_user SET user_profile='USER' WHERE user_profile='';
 ALTER TABLE t_user_right DROP COLUMN user_right_del;
 
+CREATE TABLE `t_datastore` (
+  `datastore_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `workflow_instance_id` int(10) unsigned NOT NULL,
+  `datastore_value` longtext COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`datastore_id`),
+  KEY `workflow_instance_id` (`workflow_instance_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.0';
+
 -- Alter version number --
 ALTER TABLE t_log COMMENT 'v2.0';
 ALTER TABLE t_notification COMMENT 'v2.0';
