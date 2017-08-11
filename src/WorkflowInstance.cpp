@@ -479,7 +479,11 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		try
 		{
 			ExceptionWorkflowContext ctx(task_node,"Task has vanished");
-			task = Tasks::GetInstance()->Get(task_node.getAttribute("name"));
+			string task_name = task_node.getAttribute("name");
+			if(task_name[0]!='!')
+				task = Tasks::GetInstance()->Get(task_name); // Task from name
+			else
+				task = Task(task_name.substr(1)); // Task from path
 		}
 		catch(Exception e)
 		{

@@ -284,7 +284,10 @@ pid_t ProcessManager::ExecuteTask(
 	static const string tasks_directory = Configuration::GetInstance()->Get("processmanager.tasks.directory");
 	static const string monitor_path = Configuration::GetInstance()->Get("processmanager.monitor.path");
 
-	task = Tasks::GetInstance()->Get(task_name);
+	if(task_name[0]!='!')
+		task = Tasks::GetInstance()->Get(task_name); // Task from name
+	else
+		task = Task(task_name.substr(1)); // Task from path
 
 	// Prepare pipe for STDIN before fork()
 	parameters_pipe[0] = -1;

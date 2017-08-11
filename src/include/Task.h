@@ -51,6 +51,7 @@ class Task
 		
 	public:
 		Task();
+		Task(const std::string &path);
 		Task(DB *db,const std::string &task_name);
 		
 		unsigned int GetID() const { return task_id; }

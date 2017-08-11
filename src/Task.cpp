@@ -45,6 +45,18 @@ Task::Task()
 	output_method = task_output_method::UNKNOWN;
 }
 
+Task::Task(const string &path)
+{
+	task_id = 0;
+	task_name = "dynamic task";
+	task_binary = path;
+	task_use_agent = false;
+	parameters_mode = task_parameters_mode::CMDLINE;
+	output_method = task_output_method::TEXT;
+	task_merge_stderr = false;
+	bound_workflow_id = 0;
+}
+
 Task::Task(DB *db,const string &task_name)
 {
 	db->QueryPrintf("SELECT task_id,task_name,task_binary,task_wd,task_user,task_host,task_use_agent,task_parameters_mode,task_output_method,task_merge_stderr,task_group,task_comment,task_lastcommit,workflow_id FROM t_task WHERE task_name=%s",&task_name);
