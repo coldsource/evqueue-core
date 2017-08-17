@@ -39,7 +39,7 @@ Token *WorkflowXPathFunctions::evqGetWorkflowParameter(XPathEval::func_context c
 Token *WorkflowXPathFunctions::evqGetCurrentJob(XPathEval::func_context context, const vector<Token *> &args)
 {
 	if(args.size()!=0)
-		throw Exception("evqGetParentJob()","Expecting 0 parameters");
+		throw Exception("evqGetCurrentJob()","Expecting 0 parameters");
 	
 	DOMNode node = *((DOMNode *)context.custom_context);
 	return new TokenSeq(new TokenNode(node));
