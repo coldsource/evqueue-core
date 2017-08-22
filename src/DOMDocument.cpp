@@ -105,6 +105,7 @@ DOMDocument *DOMDocument::ParseFile(const string &filename)
 	
 	xercesc::DOMImplementation *xercesImplementation = xercesc::DOMImplementationRegistry::getDOMImplementation(XMLString(""));
 	doc->parser = xercesImplementation->createLSParser(xercesc::DOMImplementationLS::MODE_SYNCHRONOUS,0);
+	doc->serializer = xercesImplementation->createLSSerializer();
 	
 	// Load XML from file
 	XMLCh *xfilename = xercesc::XMLString::transcode(filename.c_str());
