@@ -78,6 +78,8 @@ bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 	
 	if(action=="list")
 	{
+		bool full = saxh->GetRootAttributeBool("full",false);
+		
 		unique_lock<mutex> llock(workflows->lock);
 		
 		for(auto it = workflows->objects_name.begin(); it!=workflows->objects_name.end(); it++)
@@ -87,7 +89,12 @@ bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			if(!user.HasAccessToWorkflow(workflow.GetID(), "read"))
 				continue;
 			
-			DOMElement node = (DOMElement)response->AppendXML(workflow.GetXML());
+			DOMElement node;
+			if(full)
+				node = (DOMElement)response->AppendXML(workflow.GetXML());
+			else
+				node = (DOMElement)response->AppendXML("<workflow/>");
+			
 			node.setAttribute("id",to_string(workflow.GetID()));
 			node.setAttribute("name",workflow.GetName());
 			node.setAttribute("group",workflow.GetGroup());
