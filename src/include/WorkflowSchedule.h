@@ -95,6 +95,8 @@ class WorkflowSchedule
 			WorkflowParameters *parameters
 		);
 		
+		static void SetIsActive(unsigned int id,bool active);
+		
 		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);

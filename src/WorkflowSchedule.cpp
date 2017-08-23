@@ -230,6 +230,19 @@ void WorkflowSchedule::Edit(
 	db.CommitTransaction();
 }
 
+void WorkflowSchedule::SetIsActive(unsigned int id,bool active)
+{
+	int iactive = active;
+	
+	DB db;
+	
+	// We only store locally schedules that belong to our node, we have to check existence against DB
+	if(!WorkflowSchedules::GetInstance()->Exists(id))
+		throw Exception("WorkflowSchedule","Workflow schedule not found");
+	
+	db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=%i WHERE workflow_schedule_id=%i",&iactive,&id);
+}
+
 void WorkflowSchedule::Delete(unsigned int id)
 {
 	DB db;
@@ -321,6 +334,26 @@ bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Delete(id);
+		
+		WorkflowScheduler::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="lock")
+	{
+		unsigned int workflow_id = saxh->GetRootAttributeInt("id");
+		
+		SetIsActive(workflow_id,false);
+		
+		WorkflowScheduler::GetInstance()->Reload();
+		
+		return true;
+	}
+	else if(action=="unlock")
+	{
+		unsigned int workflow_id = saxh->GetRootAttributeInt("id");
+		
+		SetIsActive(workflow_id,true);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		
