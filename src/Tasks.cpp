@@ -148,6 +148,7 @@ bool Tasks::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 			node.setAttribute("host",task.GetHost());
 			node.setAttribute("binary",task.GetBinary());
 			node.setAttribute("parameters_mode",task.GetParametersMode()==task_parameters_mode::ENV?"ENV":"CMDLINE");
+			node.setAttribute("output_method",task.GetOutputMethod()==task_output_method::TEXT?"TEXT":"XML");
 			node.setAttribute("group",task.GetGroup());
 			node.setAttribute("comment",task.GetComment());
 			node.setAttribute("modified",task.GetIsModified()?"1":"0");
