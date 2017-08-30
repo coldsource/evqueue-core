@@ -927,6 +927,9 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 	
 	// Set context node ID
 	task.setAttribute("context-id",xmldoc->getNodeEvqID(context_node));
+	
+	// Set task ID
+	xmldoc->getNodeEvqID(task);
 
 	if(!handle_condition(task,context_node))
 		return false;
@@ -939,6 +942,9 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 	{
 		// Set new context node ID (based on loop expanding)
 		tasks.at(i).setAttribute("context-id",xmldoc->getNodeEvqID(contexts.at(i)));
+		
+		// Set new task id
+		xmldoc->getNodeEvqID(tasks.at(i));
 		
 		replace_values(tasks.at(i),contexts.at(i));
 		enqueue_task(tasks.at(i));
@@ -1005,6 +1011,9 @@ bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 	// Set context node ID
 	subjob.setAttribute("context-id",xmldoc->getNodeEvqID(context_node));
 	
+	// Set job ID
+	xmldoc->getNodeEvqID(subjob);
+	
 	if(!handle_condition(subjob,context_node))
 		return false;
 
@@ -1016,6 +1025,9 @@ bool WorkflowInstance::run_subjob(DOMElement subjob,DOMElement context_node)
 	{
 		// Set new context node ID (based on loop expanding)
 		jobs.at(i).setAttribute("context-id",xmldoc->getNodeEvqID(contexts.at(i)));
+		
+		// Set new job ID
+		xmldoc->getNodeEvqID(jobs.at(i));
 		
 		DOMElement current_job = jobs.at(i);
 		xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&current_job});
