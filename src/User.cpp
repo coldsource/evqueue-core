@@ -262,7 +262,7 @@ void User::RevokeRight(const string &name, unsigned int workflow_id)
 	db.QueryPrintf("DELETE FROM t_user_right WHERE workflow_id=%i",&workflow_id);
 	
 	if(db.AffectedRows()==0)
-		throw Exception("User","Not right found on that workflow");
+		throw Exception("User","No right found on that workflow");
 }
 
 void User::create_edit_check(const std::string &name, const std::string &password, const std::string &profile)
