@@ -463,6 +463,8 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 	task_node.setAttribute("retval",to_string(retval));
 	task_node.removeAttribute("tid");
 	task_node.removeAttribute("pid");
+	if(task_node.hasAttribute("retry_at"))
+		task_node.removeAttribute("retry_at");
 
 	TaskUpdateProgression(task_node,100);
 
