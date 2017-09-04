@@ -43,6 +43,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <pthread.h>
+#include <wordexp.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -268,8 +269,8 @@ void ProcessManager::WaitForShutdown(void)
 
 pid_t ProcessManager::ExecuteTask(
 	const string &task_name,
-	const vector<string> &parameters_name,
-	const vector<string> &parameters_value,
+	vector<string> &parameters_name,
+	vector<string> &parameters_value,
 	const string &stdin_parameter,
 	pid_t tid,
 	const string &host,
@@ -287,7 +288,24 @@ pid_t ProcessManager::ExecuteTask(
 	if(task_name[0]!='!')
 		task = Tasks::GetInstance()->Get(task_name); // Task from name
 	else
-		task = Task(task_name.substr(1)); // Task from path
+	{
+		// Task from path
+		
+		// Perform arguments expension
+		wordexp_t wexp;
+		if(wordexp(task_name.substr(1).c_str(), &wexp, 0)!=0)
+			throw Exception("ProcessManager","Error expanding task command line");
+		
+		char **w = wexp.we_wordv;
+		task = Task(w[0]);
+		for (int i = 1; i < wexp.we_wordc; i++)
+		{
+			parameters_name.insert(parameters_name.begin(),string(""));
+			parameters_value.insert(parameters_value.begin(),string(w[i]));
+		}
+		
+		wordfree(&wexp);
+	}
 
 	// Prepare pipe for STDIN before fork()
 	parameters_pipe[0] = -1;
