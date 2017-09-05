@@ -27,11 +27,14 @@ add_executable(evqueue
 	src/Filesystem.cpp src/DOMNode.cpp src/DOMText.cpp src/DOMElement.cpp src/DOMXPathResult.cpp
 	src/DOMDocument.cpp src/DOMNamedNodeMap.cpp src/XPathTokens.cpp src/XPathParser.cpp src/XPathEval.cpp
 	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp src/WorkflowXPathFunctions.cpp
-	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp src/XMLString.cpp src/Datastore.cpp)
+	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp src/XMLString.cpp src/Datastore.cpp
+	src/XMLFormatter.cpp)
 
 if(USELIBGIT2)
 	add_definitions(-DUSELIBGIT2)
 	target_link_libraries(evqueue git2)
+	target_link_libraries(evqueue ssh2)
+	target_link_libraries(evqueue http_parser)
 endif(USELIBGIT2)
 
 include(CheckCXXCompilerFlag)
@@ -54,8 +57,6 @@ target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue rt)
 target_link_libraries(evqueue pcrecpp)
 target_link_libraries(evqueue curl)
-target_link_libraries(evqueue ssh2)
-target_link_libraries(evqueue http_parser)
 
 
 

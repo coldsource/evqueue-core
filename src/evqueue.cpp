@@ -42,7 +42,9 @@
 
 #include <mysql/mysql.h>
 
+#ifdef USELIBGIT2
 #include <git2.h>
+#endif
 
 #include <Logger.h>
 #include <Logs.h>
