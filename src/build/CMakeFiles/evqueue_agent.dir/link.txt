@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11 -g    CMakeFiles/evqueue_agent.dir/src/evqueue_agent.cpp.o  -o evqueue_agent -rdynamic 

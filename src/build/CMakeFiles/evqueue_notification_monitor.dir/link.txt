@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11 -g    CMakeFiles/evqueue_notification_monitor.dir/src/evqueue_notification_monitor.cpp.o CMakeFiles/evqueue_notification_monitor.dir/src/tools_ipc.cpp.o  -o evqueue_notification_monitor -rdynamic 
