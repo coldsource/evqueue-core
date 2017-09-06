@@ -26,6 +26,10 @@
 #include <vector>
 #include <thread>
 
+class SocketQuerySAX2Handler;
+class QueryResponse;
+class User;
+
 class ProcessManager
 {
 	private:
@@ -59,10 +63,13 @@ class ProcessManager
 			const std::string &host,
 			const std::string &user
 			);
+		
+		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
 		static int open_log_file(int tid, int log_fileno);
 		static char *read_log_file(pid_t pid,pid_t tid,int log_fileno);
+		static std::string tail_log_file(pid_t tid,int log_fileno);
 };
 
 #endif

@@ -63,6 +63,11 @@ DOMNode QueryResponse::AppendXML(const string &xml)
 	return XMLUtils::AppendXML(xmldoc, xmldoc->getDocumentElement(), xml);
 }
 
+DOMNode QueryResponse::AppendText(const string &text)
+{
+	return XMLUtils::AppendText(xmldoc, xmldoc->getDocumentElement(), text);
+}
+
 DOMNode QueryResponse::AppendXML(const string &xml, DOMElement node)
 {
 	return XMLUtils::AppendXML(xmldoc, node, xml);

@@ -43,6 +43,7 @@ class QueryResponse
 		void SetAttribute(const std::string &name, const std::string &value);
 		
 		DOMNode AppendXML(const std::string &xml);
+		DOMNode AppendText(const std::string &text);
 		DOMNode AppendXML(const std::string &xml, DOMElement node);
 		
 		void SendResponse();

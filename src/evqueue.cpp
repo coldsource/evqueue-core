@@ -485,6 +485,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("git",Git::HandleQuery);
 		qh->RegisterHandler("filesystem",Filesystem::HandleQuery);
 		qh->RegisterHandler("datastore",Datastore::HandleQuery);
+		qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
 		
 		// Create sockets set
 		Sockets *sockets = new Sockets();

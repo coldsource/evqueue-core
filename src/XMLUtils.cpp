@@ -105,6 +105,15 @@ DOMNode XMLUtils::AppendXML(DOMDocument *xmldoc, DOMNode parent_node, const stri
 	return node;
 }
 
+DOMNode XMLUtils::AppendText(DOMDocument *xmldoc, DOMNode parent_node, const string &text)
+{
+	// Set XML content and parse document
+	DOMElement node = xmldoc->createTextNode(text);
+	parent_node.appendChild(node);
+	
+	return node;
+}
+
 string XMLUtils::GetAttribute(DOMElement node, const string &name, bool remove_attribute)
 {
 	if(!node.hasAttribute(name))

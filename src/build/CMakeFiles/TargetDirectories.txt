@@ -1,0 +1,7 @@
+/mnt/dev/evqueue-core/src/build/CMakeFiles/evqueue.dir
+/mnt/dev/evqueue-core/src/build/CMakeFiles/evqueue_agent.dir
+/mnt/dev/evqueue-core/src/build/CMakeFiles/evqueue_api.dir
+/mnt/dev/evqueue-core/src/build/CMakeFiles/evqueue_monitor.dir
+/mnt/dev/evqueue-core/src/build/CMakeFiles/evqueue_notification_monitor.dir
+/mnt/dev/evqueue-core/src/build/CMakeFiles/evqueue_wfmanager.dir
+/mnt/dev/evqueue-core/src/build/CMakeFiles/man.dir

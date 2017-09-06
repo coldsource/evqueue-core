@@ -26,7 +26,10 @@
 #include <Configuration.h>
 #include <Retrier.h>
 #include <Statistics.h>
+#include <SocketQuerySAX2Handler.h>
+#include <QueryResponse.h>
 #include <Logger.h>
+#include <User.h>
 #include <Tasks.h>
 #include <Task.h>
 #include <tools.h>
@@ -463,6 +466,35 @@ pid_t ProcessManager::ExecuteTask(
 	return pid;
 }
 
+bool ProcessManager::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+{
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
+	const string action = saxh->GetRootAttribute("action");
+	
+	if(action=="tail")
+	{
+		unsigned int tid = saxh->GetRootAttributeInt("tid");
+		string type_str= saxh->GetRootAttribute("type");
+		int type_int;
+		if(type_str=="stdout")
+			type_int = STDOUT_FILENO;
+		else if(type_str=="stderr")
+			type_int = STDERR_FILENO;
+		else if(type_str=="log")
+			type_int = LOG_FILENO;
+		else
+			throw Exception("ProcessManager", "Unknown log type : "+type_str);
+		
+		response->AppendText(tail_log_file(tid,type_int));
+		
+		return true;
+	}
+	
+	return false;
+}
+
 int ProcessManager::open_log_file(int tid, int log_fileno)
 {
 	char *log_filename = new char[logs_directory.length()+32];
@@ -545,5 +577,34 @@ char *ProcessManager::read_log_file(pid_t pid,pid_t tid,int log_fileno)
 		unlink(log_filename.c_str()); // Delete log file since it is not usefull anymore
 	
 	return output;
+}
+
+string ProcessManager::tail_log_file(pid_t tid,int log_fileno)
+{
+	string log_filename;
+	if(log_fileno==STDOUT_FILENO)
+		log_filename = logs_directory+"/"+to_string(tid)+".stdout";
+	else if(log_fileno==STDERR_FILENO)
+		log_filename = logs_directory+"/"+to_string(tid)+".stderr";
+	else
+		log_filename = logs_directory+"/"+to_string(tid)+".log";
+	
+	FILE *f;
+	
+	f  = fopen(log_filename.c_str(),"r+");
+	if(!f)
+		throw Exception("ProcessManager","Error opening log file");
+	
+	// Tail fail
+	int size = Configuration::GetInstance()->GetSize("processmanager.logs.tailsize");
+	fseek(f,-size,SEEK_END);
+	
+	char output[size+1];
+	int read_size = fread(output,1,size,f);
+	output[read_size] = '\0';
+	
+	fclose(f);
+	
+	return string(output);
 }
 

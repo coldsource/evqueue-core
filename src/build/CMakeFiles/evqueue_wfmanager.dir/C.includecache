@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/sha1.h
+stdio.h
+-
+stdint.h
+-
+
+/mnt/dev/evqueue-core/src/sha1.c
+sha1.h
+/mnt/dev/evqueue-core/src/sha1.h
+stddef.h
+-
+stdlib.h
+-
+string.h
+-
+unlocked-io.h
+/mnt/dev/evqueue-core/src/unlocked-io.h
+
