@@ -32,6 +32,8 @@
 #include <Logger.h>
 #include <DB.h>
 #include <User.h>
+#include <Sha1String.h>
+#include <XMLFormatter.h>
 #include <base64.h>
 
 #include <stdio.h>
@@ -179,18 +181,30 @@ void Git::GetTask(const string &name, QueryResponse *response)
 	response_xmldoc->getDocumentElement().appendChild(node);
 }
 
-string Git::GetWorkflowHash(const string &name)
+string Git::GetWorkflowHash(const string &rev, const string &name)
 {
 	unique_lock<mutex> llock(lock);
 	
-	return get_file_hash(workflows_subdirectory+"/"+name+".xml");
+	string filename = workflows_subdirectory+"/"+name+".xml";
+	
+	// Ensure uniform format
+	XMLFormatter formatter(repo->Cat(rev,filename));
+	formatter.Format(false);
+	
+	return Sha1String(formatter.GetOutput()).GetBinary();
 }
 
-string Git::GetTaskHash(const string &name)
+string Git::GetTaskHash(const string &rev, const string &name)
 {
 	unique_lock<mutex> llock(lock);
 	
-	return get_file_hash(tasks_subdirectory+"/"+name+".xml");
+	string filename = tasks_subdirectory+"/"+name+".xml";
+	
+	// Ensure uniform format
+	XMLFormatter formatter(repo->Cat(rev,filename));
+	formatter.Format(false);
+	
+	return Sha1String(formatter.GetOutput()).GetBinary();
 }
 
 void Git::RemoveWorkflow(const std::string &name, const string &commit_log)

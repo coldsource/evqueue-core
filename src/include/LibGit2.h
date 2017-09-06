@@ -31,7 +31,7 @@
 class LigGit2Exception:public Exception
 {
 	public:
-		LigGit2Exception(const git_error *e):Exception("LigGit",e->message) {};
+		LigGit2Exception(const git_error *e):Exception("LigGit",""/*e->message*/) {};
 };
 
 class LibGit2
@@ -59,6 +59,8 @@ class LibGit2
 		
 		void Checkout();
 		void ResetLastCommit();
+		
+		std::string Cat(const std::string &rev, const std::string &path);
 	
 	private:
 		static int credentials_callback(git_cred **cred,const char *url,const char *username_from_url,unsigned int allowed_types,void *payload);

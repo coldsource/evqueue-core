@@ -33,6 +33,7 @@
 #include <Tasks.h>
 #include <Git.h>
 #include <User.h>
+#include <XMLFormatter.h>
 #include <global.h>
 #include <base64.h>
 
@@ -124,9 +125,18 @@ bool Workflow::GetIsModified()
 	// Check SHA1 between repo and current instance
 	Git *git = Git::GetInstance();
 	
-	string repo_hash = git->GetWorkflowHash(workflow_name);
+	string repo_hash;
+	try {
+		repo_hash = git->GetWorkflowHash(lastcommit,workflow_name);
+	} catch(Exception &e) {
+		return true; // Errors can happen on repo change, ignore them
+	}
 	
-	string db_hash = Sha1String(SaveToXML()).GetBinary();
+	// Ensure uniform format
+	XMLFormatter formatter(SaveToXML());
+	formatter.Format(false);
+	
+	string db_hash = Sha1String(formatter.GetOutput()).GetBinary();
 	
 	return (repo_hash!=db_hash);
 #endif

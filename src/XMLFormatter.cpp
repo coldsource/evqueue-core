@@ -23,20 +23,28 @@
 
 using namespace std;
 
+XMLFormatter::XMLFormatter(DOMDocument *xmldoc)
+{
+	this->xmldoc = xmldoc;
+	external_xmldoc = true;
+}
+
 XMLFormatter::XMLFormatter(const string& xml_str)
 {
 	xmldoc = DOMDocument::Parse(xml_str);
+	external_xmldoc = false;
 }
 
 XMLFormatter::~XMLFormatter()
 {
-	if(xmldoc)
+	if(!external_xmldoc && xmldoc)
 		delete xmldoc;
 }
 
-void XMLFormatter::Format()
+void XMLFormatter::Format(bool display_output )
 {
 	level = 0;
+	this->display_output = display_output;
 	format(xmldoc->getDocumentElement());
 }
 
@@ -54,12 +62,20 @@ void XMLFormatter::format(DOMNode node)
 			DOMNode child = node.getFirstChild();
 			if(child)
 			{
-				printf(">\n");
+				if(display_output)
+					printf(">\n");
+				else
+					output += ">\n";
 				format(child);
 				display_element_end(node);
 			}
 			else
-				printf("/>\n");
+			{
+				if(display_output)
+					printf("/>\n");
+				else
+					output += "/>\n";
+			}
 		}
 		else if(node_type==DOMNode::TEXT_NODE)
 			display_text(node);
@@ -74,10 +90,18 @@ void XMLFormatter::display_element_start(DOMElement element)
 	
 	// Padding
 	for(int i=0;i<level-1;i++)
-		printf("  ");
+	{
+		if(display_output)
+			printf("  ");
+		else
+			output += "  ";
+	}
 	
 	// Node name
-	printf("<%s",node_name.c_str());
+	if(display_output)
+		printf("<%s",node_name.c_str());
+	else
+		output += "<"+node_name;
 	
 	// Attributes
 	DOMNamedNodeMap attributes = element.getAttributes();
@@ -86,7 +110,10 @@ void XMLFormatter::display_element_start(DOMElement element)
 		DOMNode attribute = attributes.item(i);
 		string name = attribute.getNodeName();
 		string value = attribute.getNodeValue();
-		printf(" %s=\"%s\"",name.c_str(),value.c_str());
+		if(display_output)
+			printf(" %s=\"%s\"",name.c_str(),value.c_str());
+		else
+			output += " "+name+"=\""+value+"\"";
 	}
 }
 
@@ -96,10 +123,18 @@ void XMLFormatter::display_element_end(DOMElement element)
 	
 	// Padding
 	for(int i=0;i<level-1;i++)
-		printf("  ");
+	{
+		if(display_output)
+			printf("  ");
+		else
+			output += "  ";
+	}
 	
 	// Node name
-	printf("</%s>\n",node_name.c_str());
+	if(display_output)
+		printf("</%s>\n",node_name.c_str());
+	else
+		output += "</"+node_name+">\n";
 }
 
 void XMLFormatter::display_text(DOMNode node)
@@ -134,9 +169,19 @@ void XMLFormatter::display_text(DOMNode node)
 	{
 		// Padding
 		for(int i=0;i<level-1;i++)
-			printf("  ");
+		{
+			if(display_output)
+				printf("  ");
+			else
+				output += "  ";
+		}
 		
-		fwrite(text.c_str()+first,1,last-first+1,stdout);
-		printf("\n");
+		if(display_output)
+		{
+			fwrite(text.c_str()+first,1,last-first+1,stdout);
+			printf("\n");
+		}
+		else
+			output += text.substr(first,last-first+1)+"\n";
 	}
 }

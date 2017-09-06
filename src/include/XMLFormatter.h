@@ -27,13 +27,19 @@
 class XMLFormatter
 {
 	DOMDocument *xmldoc = 0;
+	bool external_xmldoc;
+	
 	int level;
+	bool display_output;
+	std::string output;
 	
 	public:
+		XMLFormatter(DOMDocument *xmldoc);
 		XMLFormatter(const std::string &xml_str);
 		~XMLFormatter();
 		
-		void Format();
+		void Format(bool display_output = true);
+		std::string GetOutput() { return output; }
 	
 	private:
 		void format(DOMNode node);

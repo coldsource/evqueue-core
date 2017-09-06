@@ -427,6 +427,19 @@ void LibGit2::ResetLastCommit()
 	git_commit_free(parent_commmit);
 }
 
+string LibGit2::Cat(const string &rev, const string &path)
+{
+	git_object *obj = NULL;
+	string rev_str = rev+":"+path;
+	if(git_revparse_single(&obj, repo, rev_str.c_str())!=0)
+		throw LigGit2Exception(giterr_last());
+	
+	const git_blob *blob = (const git_blob *)obj;
+	string content((char *)git_blob_rawcontent(blob),git_blob_rawsize(blob));
+	git_object_free(obj);
+	return content;
+}
+
 int LibGit2::credentials_callback(git_cred **cred,const char *url,const char *username_from_url,unsigned int allowed_types,void *payload)
 {
 	string user = Configuration::GetInstance()->Get("git.user");

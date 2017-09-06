@@ -86,7 +86,7 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 	if(!re)
 	{
 		unlink(path.c_str());
-		throw Exception("FileManager","Invalid file data");
+		throw Exception("FileManager","Invalid file data in file "+filename);
 	}
 }
 

@@ -31,6 +31,7 @@
 #include <Git.h>
 #include <Sha1String.h>
 #include <XMLUtils.h>
+#include <XMLFormatter.h>
 #include <Logger.h>
 #include <base64.h>
 #include <global.h>
@@ -115,9 +116,18 @@ bool Task::GetIsModified()
 	// Check SHA1 between repo and current instance
 	Git *git = Git::GetInstance();
 	
-	string repo_hash = git->GetTaskHash(task_name);
+	string repo_hash;
+	try {
+		repo_hash = git->GetTaskHash(lastcommit,task_name);
+	} catch(Exception &e) {
+		return true; // Errors can happen on repo change, ignore them
+	}
 	
-	string db_hash = Sha1String(SaveToXML()).GetBinary();
+	// Ensure uniform format
+	XMLFormatter formatter(SaveToXML());
+	formatter.Format(false);
+	
+	string db_hash = Sha1String(formatter.GetOutput()).GetBinary();
 	
 	return (repo_hash!=db_hash);
 #endif
