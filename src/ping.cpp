@@ -30,7 +30,6 @@ bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
 	
 	response->SetAttribute("version",EVQUEUE_VERSION);
-	response->SetAttribute("node",Configuration::GetInstance()->Get("cluster.node.name"));
 #ifdef USELIBGIT2
 	response->SetAttribute("git-support","enabled");
 #else
