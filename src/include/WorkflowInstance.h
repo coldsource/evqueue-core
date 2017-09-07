@@ -75,6 +75,7 @@ class WorkflowInstance
 		
 		void Start(bool *workflow_terminated);
 		void Resume(bool *workflow_terminated);
+		void DebugResume(bool *workflow_terminated);
 		void Migrate(bool *workflow_terminated);
 		void Cancel();
 		void Shutdown();
@@ -110,6 +111,7 @@ class WorkflowInstance
 		void replace_value(DOMElement input,DOMElement context_node);
 		std::string format_datetime();
 		void update_job_statistics(const std::string &name,int delta,DOMElement node);
+		void clear_statistics();
 };
 
 #endif

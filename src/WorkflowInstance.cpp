@@ -252,6 +252,9 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 	// Load workflow XML
 	xmldoc = DOMDocument::Parse(db.GetField(0));
 	xmldoc->getXPath()->RegisterFunction("evqGetWorkflowParameter",{WorkflowXPathFunctions::evqGetWorkflowParameter,xmldoc->getXPath()});
+	
+	// Upate XML ID (useful after workflows cloning)
+	this->xmldoc->getDocumentElement().setAttribute("id",to_string(workflow_instance_id)); 
 
 	// Load workflow schedule if necessary
 	workflow_schedule_id = db.GetFieldInt(1);
@@ -326,19 +329,7 @@ void WorkflowInstance::Resume(bool *workflow_terminated)
 	unique_lock<recursive_mutex> llock(lock);
 	
 	// Clear statistics
-	{
-		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("//*[name() = 'job' or name() = 'task' or name() = 'workflow']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-		int i = 0;
-		while(res->snapshotItem(i++))
-		{
-			DOMElement node = (DOMElement)res->getNodeValue();
-			node.removeAttribute("running_tasks");
-			node.removeAttribute("queued_tasks");
-			node.removeAttribute("retrying_tasks");
-			node.removeAttribute("error_tasks");
-			node.removeAttribute("waiting_conditions");
-		}
-	}
+	clear_statistics();
 	
 	// Look for tasks or job that have conditions waiting for a new evaluation (via evqWait() function)
 	{
@@ -379,6 +370,43 @@ void WorkflowInstance::Resume(bool *workflow_terminated)
 			if(task.getAttribute("retval")!="0")
 				retry_task(task);
 		}
+	}
+
+	*workflow_terminated = workflow_ended();
+
+	if(tasks_index>0)
+		record_savepoint(); // XML has been modified (tasks status update from DB)
+}
+
+void WorkflowInstance::DebugResume(bool *workflow_terminated)
+{
+	QueuePool *qp = QueuePool::GetInstance();
+
+	unique_lock<recursive_mutex> llock(lock);
+	
+	// Clear statistics
+	clear_statistics();
+	
+	// Look for TERMINATED tasks (in error) and relaunch them
+	unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task[@status='TERMINATED' and @retval!=0]",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+	DOMElement task;
+
+	int tasks_index = 0;
+	while(tasks->snapshotItem(tasks_index++))
+	{
+		task = (DOMElement)tasks->getNodeValue();
+		
+		// Reset task attributes
+		task.removeAttribute("retry_schedule_level");
+		task.removeAttribute("retry_times");
+		task.removeAttribute("retry_at");
+		task.removeAttribute("progression");
+		task.removeAttribute("error");
+		task.removeAttribute("retval");
+		task.removeAttribute("retval");
+		task.removeAttribute("execution_time");
+		
+		enqueue_task(task);
 	}
 
 	*workflow_terminated = workflow_ended();
@@ -458,6 +486,8 @@ void WorkflowInstance::TaskRestart(DOMElement task, bool *workflow_terminated)
 bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdout_output,const char *stderr_output,const char *log_output,bool *workflow_terminated)
 {
 	unique_lock<recursive_mutex> llock(lock);
+	
+	Logger::Log(LOG_INFO,"[WID %d] Task %s stopped",workflow_instance_id,task_node.getAttribute("name").c_str());
 
 	task_node.setAttribute("status","TERMINATED");
 	task_node.setAttribute("retval",to_string(retval));
@@ -1478,4 +1508,22 @@ void WorkflowInstance::update_job_statistics(const string &name,int delta,DOMEle
 	job.setAttribute(name,to_string(oldval+delta));
 	if(job.getParentNode() && job.getParentNode().getParentNode())
 		update_job_statistics(name,delta,job.getParentNode().getParentNode());
+}
+
+void WorkflowInstance::clear_statistics()
+{
+	// Clear statistics
+	{
+		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("//*[name() = 'job' or name() = 'task' or name() = 'workflow']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		int i = 0;
+		while(res->snapshotItem(i++))
+		{
+			DOMElement node = (DOMElement)res->getNodeValue();
+			node.removeAttribute("running_tasks");
+			node.removeAttribute("queued_tasks");
+			node.removeAttribute("retrying_tasks");
+			node.removeAttribute("error_tasks");
+			node.removeAttribute("waiting_conditions");
+		}
+	}
 }

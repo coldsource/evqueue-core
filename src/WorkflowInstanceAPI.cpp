@@ -23,6 +23,7 @@
 #include <Workflow.h>
 #include <WorkflowInstances.h>
 #include <SocketQuerySAX2Handler.h>
+#include <SequenceGenerator.h>
 #include <QueryResponse.h>
 #include <Statistics.h>
 #include <Exception.h>
@@ -113,6 +114,61 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 	{
 		unsigned int workflow_instance_id = saxh->GetRootAttributeInt("id");
 		
+		if(action=="debugresume")
+		{
+			DB db;
+			
+			// Fetch existing instance (must be terminated)
+			db.QueryPrintf("SELECT workflow_id,workflow_instance_host,workflow_instance_savepoint FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",&workflow_instance_id);
+			if(!db.FetchRow())
+				throw Exception("Workflow Debug Resume", "Unable to find instance to resume, or instance is not terminated");
+			
+			if(!user.HasAccessToWorkflow(db.GetFieldInt(1), "read") || !user.HasAccessToWorkflow(db.GetFieldInt(1), "exec"))
+					User::InsufficientRights();
+			
+			int savepoint_level = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level");
+			
+			// Clone existing instance
+			string node_name = Configuration::GetInstance()->Get("cluster.node.name");
+			unsigned int workflow_id = db.GetFieldInt(0);
+			string workflow_host = db.GetField(1);
+			string savepoint = db.GetField(2);
+			int new_instance_id = 0;
+			if(savepoint_level<2)
+				SequenceGenerator::GetInstance()->GetInc();
+			db.QueryPrintf("INSERT INTO t_workflow_instance(workflow_instance_id,node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_savepoint) VALUES(%i,%s,%i,0,%s,'EXECUTING',NOW(),%s)",savepoint_level<2?new_instance_id:0,&node_name,&workflow_id,&workflow_host,&savepoint);
+			
+			if(savepoint_level>=2)
+				new_instance_id = db.InsertID();
+			
+			// Clone parameters if needed
+			if(Configuration::GetInstance()->GetBool("workflowinstance.saveparameters"))
+				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters(workflow_instance_id,workflow_instance_parameter,workflow_instance_parameter_value) SELECT %i,workflow_instance_parameter,workflow_instance_parameter_value FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",&new_instance_id,&workflow_instance_id);
+			
+			WorkflowInstance *wi;
+			bool workflow_terminated;
+			
+			try
+			{
+				wi = new WorkflowInstance(new_instance_id);
+			}
+			catch(Exception &e)
+			{
+				stats->IncWorkflowExceptions();
+				throw e;
+			}
+			
+			wi->DebugResume(&workflow_terminated);
+			
+			Logger::Log(LOG_NOTICE,"[WID %d] Resumed in debug mode",wi->GetInstanceID());
+			
+			response->GetDOM()->getDocumentElement().setAttribute("workflow-instance-id",to_string(new_instance_id));
+			
+			if(workflow_terminated)
+				delete wi; // This can happen if nothing is to resume
+			
+			return true;
+		}
 		if(action=="migrate")
 		{
 			if(!user.IsAdmin())
