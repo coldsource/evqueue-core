@@ -130,7 +130,7 @@ DOMDocument *DOMDocument::ParseFile(const string &filename)
 	return doc;
 }
 
-string DOMDocument::Serialize(DOMNode node)
+string DOMDocument::Serialize(DOMNode node) const
 {
 	XMLCh *xml_output = serializer->writeToString(node.node);
 	char *xml_output_c = xercesc::XMLString::transcode(xml_output);
@@ -171,7 +171,7 @@ string DOMDocument::ExpandXPathAttribute(const string &attribute,DOMNode context
 	return attribute_expanded;
 }
 
-DOMElement DOMDocument::getDocumentElement()
+DOMElement DOMDocument::getDocumentElement() const
 {
 	return xmldoc->getDocumentElement();
 }

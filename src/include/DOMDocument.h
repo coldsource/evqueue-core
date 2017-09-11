@@ -48,10 +48,10 @@ public:
 	
 	static DOMDocument *Parse(const std::string &xml_str);
 	static DOMDocument *ParseFile(const std::string &filename);
-	std::string Serialize(DOMNode node);
+	std::string Serialize(DOMNode node) const;
 	std::string ExpandXPathAttribute(const std::string &attribute,DOMNode context_node);
 	
-	DOMElement getDocumentElement();
+	DOMElement getDocumentElement() const;
 	DOMXPath *getXPath();
 	DOMElement createElement(const std::string &name);
 	DOMText createTextNode(const std::string &data);
