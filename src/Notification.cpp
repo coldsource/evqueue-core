@@ -30,6 +30,7 @@
 #include <Sockets.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <base64.h>
 #include <User.h>
 #include <tools.h>
 #include <global.h>
@@ -69,7 +70,16 @@ Notification::Notification(DB *db,unsigned int notification_id)
 		notification_binary = Configuration::GetInstance()->Get("notifications.tasks.directory")+"/"+notification_type.GetName();
 	
 	notification_name = db->GetField(1);
+	
+	// Build confiuration JSON
 	notification_configuration = db->GetField(2);
+	string plugin_configuration = notification_type.GetConfiguration();
+	
+	configuration += "{\"plugin\":";
+	configuration += plugin_configuration;
+	configuration += ",\"notification\":";
+	configuration += notification_configuration;
+	configuration += "}";
 }
 
 pid_t Notification::Call(WorkflowInstance *workflow_instance)
@@ -117,7 +127,7 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 	}
 	
 	// Pipe configuration data
-	if(write(pipe_fd[1],notification_configuration.c_str(),notification_configuration.length())!=notification_configuration.length())
+	if(write(pipe_fd[1],configuration.c_str(),configuration.length())!=configuration.length())
 		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to send configuration to notification task '%s' : error writing to pipe",workflow_instance->GetInstanceID(),notification_name.c_str());
 	
 	close(pipe_fd[1]);
@@ -133,26 +143,32 @@ void Notification::Get(unsigned int id,QueryResponse *response)
 	DOMElement node = (DOMElement)response->AppendXML("<notification />");
 	node.setAttribute("type_id",to_string(notification.GetTypeID()));
 	node.setAttribute("name",notification.GetName());
-	node.setAttribute("parameters",notification.GetConfiguration());
+	
+	string  parameters_base64;
+	base64_encode_string(notification.GetConfiguration(),parameters_base64);
+	node.setAttribute("parameters",parameters_base64);
 }
 
 void Notification::Create(unsigned int type_id,const std::string &name, const std::string parameters)
 {
 	create_edit_check(type_id,name,parameters);
 	
+	if(!NotificationTypes::GetInstance()->Exists(type_id))
+		throw Exception("Notification","Unknown notification type ID");
+	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_parameters) VALUES(%i,%s,%s)",&type_id,&name,&parameters);
 }
 
-void Notification::Edit(unsigned int id,unsigned int type_id,const std::string &name, const std::string parameters)
+void Notification::Edit(unsigned int id,const std::string &name, const std::string parameters)
 {
-	create_edit_check(type_id,name,parameters);
-	
 	if(!Notifications::GetInstance()->Exists(id))
 		throw Exception("Notification","Unable to find notification");
 	
+	create_edit_check(0,name,parameters);
+	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_parameters=%s WHERE notification_id=%i",&type_id,&name,&parameters,&id);
+	db.QueryPrintf("UPDATE t_notification SET notification_name=%s,notification_parameters=%s WHERE notification_id=%i",&name,&parameters,&id);
 }
 
 void Notification::Delete(unsigned int id)
@@ -171,13 +187,36 @@ void Notification::Delete(unsigned int id)
 	db.CommitTransaction();
 }
 
+string Notification::json_escape(const std::string &str)
+{
+	string escaped_str;
+	for(int i=0;i<str.length();i++)
+	{
+		if(str[i]=='\b')
+			escaped_str+="\\b";
+		else if(str[i]=='\f')
+			escaped_str+="\\f";
+		else if(str[i]=='\r')
+			escaped_str+="\\r";
+		else if(str[i]=='\n')
+			escaped_str+="\\n";
+		else if(str[i]=='\t')
+			escaped_str+="\\t";
+		else if(str[i]=='\"')
+			escaped_str+="\\\"";
+		else if(str[i]=='\\')
+			escaped_str+="\\\\";
+		else
+			escaped_str+=str[i];
+	}
+	
+	return escaped_str;
+}
+
 void Notification::create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters)
 {
 	if(name.length()==0)
 		throw Exception("Notification","Name cannot be empty");
-	
-	if(!NotificationTypes::GetInstance()->Exists(type_id))
-		throw Exception("Notification","Unknown notification type ID");
 }
 
 bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -197,17 +236,23 @@ bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Q
 	}
 	else if(action=="create" || action=="edit")
 	{
-		unsigned int type_id = saxh->GetRootAttributeInt("type_id");
 		string name = saxh->GetRootAttribute("name");
-		string parameters = saxh->GetRootAttribute("parameters");
+		string parameters_base64 = saxh->GetRootAttribute("parameters");
+		string parameters;
+		if(parameters_base64.length())
+			base64_decode_string(parameters,parameters_base64);
 		
 		if(action=="create")
+		{
+			unsigned int type_id = saxh->GetRootAttributeInt("type_id");
+			
 			Create(type_id, name, parameters);
+		}
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			Edit(id, type_id, name, parameters);
+			Edit(id, name, parameters);
 		}
 		
 		Notifications::GetInstance()->Reload();

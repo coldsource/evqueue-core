@@ -45,6 +45,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `notification_type_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
   `notification_type_name` varchar(32) COLLATE utf8_unicode_ci NOT NULL, \
   `notification_type_description` text COLLATE utf8_unicode_ci NOT NULL, \
+  `notification_type_manifest` longtext COLLATE utf8_unicode_ci NOT NULL, \
   `notification_type_binary_content` longblob, \
   `notification_type_conf_content` longblob, \
   PRIMARY KEY (`notification_type_id`), \

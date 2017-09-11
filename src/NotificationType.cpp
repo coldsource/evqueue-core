@@ -34,7 +34,7 @@ using namespace std;
 
 NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 {
-	db->QueryPrintf("SELECT notification_type_id,notification_type_name,notification_type_description FROM t_notification_type WHERE notification_type_id=%i",&notification_type_id);
+	db->QueryPrintf("SELECT notification_type_id,notification_type_name,notification_type_description,notification_type_manifest,notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&notification_type_id);
 	
 	if(!db->FetchRow())
 		throw Exception("NotificationType","Unknown notification type");
@@ -42,6 +42,8 @@ NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 	id = db->GetFieldInt(0);
 	name = db->GetField(1);
 	description = db->GetField(2);
+	manifest = db->GetField(3);
+	configuration = db->GetField(4);
 }
 
 void NotificationType::PutFile(const string &filename,const string &data,bool base64_encoded)
@@ -67,29 +69,6 @@ void NotificationType::RemoveFile(const string &filename)
 	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename);
 }
 
-void NotificationType::PutConfFile(const string &filename,const string &data,bool base64_encoded)
-{
-	if(base64_encoded)
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BASE64);
-	else
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BINARY);
-}
-
-void NotificationType::GetConfFileHash(const string &filename,string &hash)
-{
-	FileManager::GetFileHash(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,hash);
-}
-
-void NotificationType::GetConfFile(const string &filename,string &data)
-{
-	FileManager::GetFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename,data);
-}
-
-void NotificationType::RemoveConfFile(const string &filename)
-{
-	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory")+"/conf",filename);
-}
-
 void NotificationType::Get(unsigned int id, QueryResponse *response)
 {
 	NotificationType type = NotificationTypes::GetInstance()->Get(id);
@@ -97,18 +76,20 @@ void NotificationType::Get(unsigned int id, QueryResponse *response)
 	DOMElement node = (DOMElement)response->AppendXML("<notification_type />");
 	node.setAttribute("name",type.GetName());
 	node.setAttribute("description",type.GetDescription());
+	response->AppendXML(type.GetManifest());
 }
 
-void NotificationType::Register(const std::string &name, const std::string &description, const std::string binary_content)
+void NotificationType::Register(const string &name, const string &description, const string &manifest, const string &binary_content)
 {
 	if(name.length()==0)
 		throw Exception("NotificationType","Name cannot be empty");
 	
 	DB db;
 	db.QueryPrintf(
-		"INSERT INTO t_notification_type(notification_type_name,notification_type_description,notification_type_binary_content) VALUES(%s,%s,%s)",
+		"INSERT INTO t_notification_type(notification_type_name,notification_type_description,notification_type_manifest,notification_type_binary_content) VALUES(%s,%s,%s,%s)",
 		&name,
 		&description,
+		&manifest,
 		binary_content.length()?&binary_content:0
 		);
 }
@@ -121,20 +102,13 @@ void NotificationType::Unregister(unsigned int id)
 	
 	db.StartTransaction();
 	
-	// Delete notification task
+	// Delete notification type
 	db.QueryPrintf("DELETE FROM t_notification_type WHERE notification_type_id=%i",&id);
 	
 	// Remove binary
 	try
 	{
 		RemoveFile(notification_type.name);
-	}
-	catch(Exception &e) {}
-	
-	// Remove config file
-	try
-	{
-		RemoveConfFile(notification_type.name);
 	}
 	catch(Exception &e) {}
 	
@@ -191,12 +165,16 @@ bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	{
 		string name = saxh->GetRootAttribute("name");
 		string description = saxh->GetRootAttribute("description");
+		string manifest_base64 = saxh->GetRootAttribute("manifest","");
+		string manifest;
+		if(manifest_base64.length())
+			base64_decode_string(manifest,manifest_base64);
 		string binary_content_base64 = saxh->GetRootAttribute("binary_content","");
 		string binary_content;
 		if(binary_content_base64.length())
 			base64_decode_string(binary_content,binary_content_base64);
 		
-		Register(name,description,binary_content);
+		Register(name,description,manifest,binary_content);
 		
 		NotificationTypes::GetInstance()->Reload();
 		NotificationTypes::GetInstance()->SyncBinaries();
@@ -236,7 +214,8 @@ bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 		
 		SetConf(id, content);
 		
-		NotificationTypes::GetInstance()->SyncBinaries();
+		NotificationTypes::GetInstance()->Reload();
+		Notifications::GetInstance()->Reload();
 		
 		return true;
 	}

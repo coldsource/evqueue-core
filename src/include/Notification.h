@@ -38,6 +38,7 @@ class Notification
 	std::string notification_binary;
 	std::string notification_name;
 	std::string notification_configuration;
+	std::string configuration;
 	std::string unix_socket_path;
 	
 	public:
@@ -54,13 +55,13 @@ class Notification
 		
 		static void Get(unsigned int id,QueryResponse *response);
 		static void Create(unsigned int type_id,const std::string &name, const std::string parameters);
-		static void Edit(unsigned int id,unsigned int type_id,const std::string &name, const std::string parameters);
+		static void Edit(unsigned int id,const std::string &name, const std::string parameters);
 		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
-		void free(void);
+		std::string json_escape(const std::string &str);
 		
 		static void create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters);
 };

@@ -6,6 +6,8 @@ ALTER TABLE t_workflow ADD COLUMN workflow_lastcommit VARCHAR(40) COLLATE 'ascii
 
 ALTER TABLE t_log ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER log_id;
 
+ALTER TABLE t_notification_type ADD COLUMN notification_type_manifest longtext COLLATE utf8_unicode_ci NOT NULL AFTER notification_type_description;
+
 ALTER TABLE t_task ADD COLUMN task_comment TEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER task_group;
 ALTER TABLE t_task ADD COLUMN task_use_agent TINYINT NOT NULL DEFAULT 0 AFTER task_host;
 ALTER TABLE t_task ADD COLUMN task_merge_stderr TINYINT NOT NULL DEFAULT 0 AFTER task_output_method;

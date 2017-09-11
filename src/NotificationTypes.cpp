@@ -101,7 +101,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 		{
 			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" was not found creating it");
 			
-			NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+			NotificationType::PutFile(db.GetField(0),db.GetField(1),false);
 			continue;
 		}
 		
@@ -114,40 +114,6 @@ void NotificationTypes::SyncBinaries(bool notify)
 		Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" hash does not match DB, replacing");
 		
 		NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
-	}
-	
-	// Load tasks config files from database
-	db.Query("SELECT notification_type_name, notification_type_conf_content FROM t_notification_type WHERE notification_type_conf_content IS NOT NULL");
-	
-	while(db.FetchRow())
-	{
-		// Compute database SHA1 hash
-		sha1_init_ctx(&ctx);
-		sha1_process_bytes(db.GetField(1).c_str(),db.GetFieldLength(1),&ctx);
-		sha1_finish_ctx(&ctx,db_hash);
-		
-		// Compute file SHA1 hash
-		try
-		{
-			NotificationType::GetConfFileHash(db.GetField(0),file_hash);
-		}
-		catch(Exception &e)
-		{
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task "+db.GetField(0)+" was not found creating it");
-			
-			NotificationType::PutConfFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
-			continue;
-		}
-		
-		if(memcmp(file_hash.c_str(),db_hash,20)==0)
-		{
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task "+db.GetField(0)+" hash matches DB, skipping");
-			continue;
-		}
-		
-		Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Config for task "+db.GetField(0)+" hash does not match DB, replacing");
-		
-		NotificationType::PutConfFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
 	}
 	
 	llock.unlock();
