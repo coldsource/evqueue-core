@@ -73,13 +73,7 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	
 	// Build confiuration JSON
 	notification_configuration = db->GetField(2);
-	string plugin_configuration = notification_type.GetConfiguration();
-	
-	configuration += "{\"plugin\":";
-	configuration += plugin_configuration;
-	configuration += ",\"notification\":";
-	configuration += notification_configuration;
-	configuration += "}";
+	plugin_configuration = notification_type.GetConfiguration();
 }
 
 pid_t Notification::Call(WorkflowInstance *workflow_instance)
@@ -125,6 +119,15 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		
 		return pid;
 	}
+	
+	string configuration;
+	configuration += "{\"pluginconf\":";
+	configuration += plugin_configuration;
+	configuration += ",\"notificationconf\":";
+	configuration += notification_configuration;
+	configuration += ",\"instance\":\"";
+	configuration += json_escape(workflow_instance->GetDOM()->Serialize(workflow_instance->GetDOM()->getDocumentElement()));
+	configuration += "\"}";
 	
 	// Pipe configuration data
 	if(write(pipe_fd[1],configuration.c_str(),configuration.length())!=configuration.length())
@@ -185,6 +188,32 @@ void Notification::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",&id);
 	
 	db.CommitTransaction();
+}
+
+string Notification::json_escape(const string &str)
+{
+	string escaped_str;
+	for(int i=0;i<str.length();i++)
+	{
+		if(str[i]=='\b')
+			escaped_str+="\\b";
+		else if(str[i]=='\f')
+			escaped_str+="\\f";
+		else if(str[i]=='\r')
+			escaped_str+="\\r";
+		else if(str[i]=='\n')
+			escaped_str+="\\n";
+		else if(str[i]=='\t')
+			escaped_str+="\\t";
+		else if(str[i]=='\"')
+			escaped_str+="\\\"";
+		else if(str[i]=='\\')
+			escaped_str+="\\\\";
+		else
+			escaped_str+=str[i];
+	}
+	
+	return escaped_str;
 }
 
 void Notification::create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters)

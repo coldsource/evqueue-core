@@ -72,6 +72,7 @@ class WorkflowInstance
 		unsigned int GetInstanceID() { return workflow_instance_id; }
 		unsigned int GetWorkflowID() { return workflow_id; }
 		unsigned int GetErrors() { return error_tasks; }
+		const DOMDocument *GetDOM() { return xmldoc; }
 		
 		void Start(bool *workflow_terminated);
 		void Resume(bool *workflow_terminated);
