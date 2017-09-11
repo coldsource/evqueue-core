@@ -187,32 +187,6 @@ void Notification::Delete(unsigned int id)
 	db.CommitTransaction();
 }
 
-string Notification::json_escape(const std::string &str)
-{
-	string escaped_str;
-	for(int i=0;i<str.length();i++)
-	{
-		if(str[i]=='\b')
-			escaped_str+="\\b";
-		else if(str[i]=='\f')
-			escaped_str+="\\f";
-		else if(str[i]=='\r')
-			escaped_str+="\\r";
-		else if(str[i]=='\n')
-			escaped_str+="\\n";
-		else if(str[i]=='\t')
-			escaped_str+="\\t";
-		else if(str[i]=='\"')
-			escaped_str+="\\\"";
-		else if(str[i]=='\\')
-			escaped_str+="\\\\";
-		else
-			escaped_str+=str[i];
-	}
-	
-	return escaped_str;
-}
-
 void Notification::create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters)
 {
 	if(name.length()==0)

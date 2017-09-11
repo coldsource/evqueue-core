@@ -61,8 +61,6 @@ class Notification
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
-		std::string json_escape(const std::string &str);
-		
 		static void create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters);
 };
 
