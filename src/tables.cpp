@@ -36,7 +36,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `notification_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
   `notification_type_id` int(10) unsigned NOT NULL, \
   `notification_name` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
-  `notification_parameters` text COLLATE utf8_unicode_ci NOT NULL, \
+  `notification_parameters` longtext COLLATE utf8_unicode_ci NOT NULL, \
   PRIMARY KEY (`notification_id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.0'; \
 "},
