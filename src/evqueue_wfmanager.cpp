@@ -48,6 +48,7 @@ int main(int argc, char  **argv)
 	// Parse cmdline parameters
 	char *workflow_name = 0;
 	char *workflow_mode = 0;
+	char *workflow_comment = 0;
 	char *timeout = 0;
 	
 	// Parse cmdline parameters
@@ -125,6 +126,17 @@ int main(int argc, char  **argv)
 			timeout = argv[cur+1];
 			cur++;
 		}
+		else if(strcmp(argv[cur],"--comment")==0)
+		{
+			if(cur+1>=argc)
+			{
+				fprintf(stderr,"Missing comment : --mode <comment>\n");
+				return -1;
+			}
+			
+			workflow_comment = argv[cur+1];
+			cur++;
+		}
 		else
 		{
 			fprintf(stderr,"Unknown parameter name : %s\n",argv[cur]);
@@ -140,6 +152,7 @@ int main(int argc, char  **argv)
 		fprintf(stderr,"  --password <password>\n");
 		fprintf(stderr,"  --mode [synchronous|asynchronous]\n");
 		fprintf(stderr,"  --timeout <timeout>\n");
+		fprintf(stderr,"  --comment <comment>\n");
 		return -1;
 	}
 	
@@ -177,6 +190,8 @@ int main(int argc, char  **argv)
 			workflow_node.setAttribute("mode",workflow_mode);
 		if(timeout)
 			workflow_node.setAttribute("timeout",timeout);
+		if(workflow_comment)
+			workflow_node.setAttribute("comment",workflow_comment);
 		
 		int status = 1;
 		char *parameter_name, *parameter_value;

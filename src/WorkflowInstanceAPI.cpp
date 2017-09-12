@@ -70,6 +70,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		string username = saxh->GetRootAttribute("user","");
 		string host = saxh->GetRootAttribute("host","");
 		string mode = saxh->GetRootAttribute("mode","asynchronous");
+		string comment = saxh->GetRootAttribute("comment","");
 		
 		if(mode!="synchronous" && mode!="asynchronous")
 			throw Exception("WorkflowInstance","mode must be 'synchronous' or 'asynchronous'");
@@ -83,7 +84,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		
 		try
 		{
-			wi = new WorkflowInstance(name,saxh->GetWorkflowParameters(),0,host,username);
+			wi = new WorkflowInstance(name,saxh->GetWorkflowParameters(),0,host,username,comment);
 		}
 		catch(Exception &e)
 		{

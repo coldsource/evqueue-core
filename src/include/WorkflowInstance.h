@@ -65,7 +65,7 @@ class WorkflowInstance
 		std::recursive_mutex lock;
 	
 	public:
-		WorkflowInstance(const std::string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id = 0,const std::string &workflow_host=0, const std::string &workflow_user=0);
+		WorkflowInstance(const std::string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id = 0,const std::string &workflow_host="", const std::string &workflow_user="", const std::string &workflow_comment="");
 		WorkflowInstance(unsigned int workflow_instance_id);
 		~WorkflowInstance();
 		

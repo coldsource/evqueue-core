@@ -97,7 +97,7 @@ WorkflowInstance::WorkflowInstance(void):
 	is_shutting_down = false;
 }
 
-WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const string &workflow_host, const string &workflow_user):
+WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameters *parameters, unsigned int workflow_schedule_id,const string &workflow_host, const string &workflow_user, const string &workflow_comment):
 	WorkflowInstance()
 {
 	DB db;
@@ -128,6 +128,10 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 		if(workflow_user.length())
 			xmldoc->getDocumentElement().setAttribute("user",workflow_user);
 	}
+	
+	// Set workflow comment
+	if(workflow_comment.length())
+		xmldoc->getDocumentElement().setAttribute("comment",workflow_comment);
 
 	// Set input parameters
 	string parameter_name;
