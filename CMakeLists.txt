@@ -2,11 +2,17 @@ cmake_minimum_required(VERSION 2.8)
 
 set(EVQUEUE_VERSION "2.0")
 
-option(USELIBGIT2 "Enable libgit2 support" OFF)
-
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 project(evqueue)
+
+find_library(HAS_LIBGIT2 libgit2.so)
+
+if(HAS_LIBGIT2)
+	option(USELIBGIT2 "Enable libgit2 support" ON)
+else()
+	option(USELIBGIT2 "Enable libgit2 support" OFF)
+endif(HAS_LIBGIT2)
 
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
