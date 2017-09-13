@@ -124,14 +124,14 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			if(!db.FetchRow())
 				throw Exception("Workflow Debug Resume", "Unable to find instance to resume, or instance is not terminated");
 			
-			if(!user.HasAccessToWorkflow(db.GetFieldInt(1), "read") || !user.HasAccessToWorkflow(db.GetFieldInt(1), "exec"))
+			unsigned int workflow_id = db.GetFieldInt(0);
+			if(!user.HasAccessToWorkflow(workflow_id, "read") || !user.HasAccessToWorkflow(workflow_id, "exec"))
 					User::InsufficientRights();
 			
 			int savepoint_level = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level");
 			
 			// Clone existing instance
 			string node_name = Configuration::GetInstance()->Get("cluster.node.name");
-			unsigned int workflow_id = db.GetFieldInt(0);
 			string workflow_host = db.GetField(1);
 			string savepoint = db.GetField(2);
 			int new_instance_id = 0;
