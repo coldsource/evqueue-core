@@ -73,7 +73,7 @@ Configuration::Configuration(void)
 	entries["processmanager.errlogs.enable"] = "no";
 	entries["processmanager.logs.delete"] = "yes";
 	entries["processmanager.logs.directory"] = "/tmp";
-	entries["processmanager.logs.tailsize"] = "1K";
+	entries["processmanager.logs.tailsize"] = "20K";
 	entries["processmanager.monitor.path"] = "/usr/bin/evqueue_monitor";
 	entries["processmanager.monitor.ssh_key"] = "";
 	entries["processmanager.monitor.ssh_path"] = "/usr/bin/ssh";
