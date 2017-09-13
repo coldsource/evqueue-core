@@ -31,7 +31,7 @@
 class LigGit2Exception:public Exception
 {
 	public:
-		LigGit2Exception(const git_error *e):Exception("LigGit",""/*e->message*/) {};
+		LigGit2Exception(const git_error *e):Exception("LigGit",e->message) {};
 };
 
 class LibGit2
