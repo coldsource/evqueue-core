@@ -99,6 +99,8 @@ Configuration::Configuration(void)
 	entries["git.repository"] = "";
 	entries["git.user"] = "";
 	entries["git.password"] = "";
+	entries["git.public_key"] = "";
+	entries["git.private_key"] = "";
 	entries["git.signature.name"] = "evQueue";
 	entries["git.signature.email"] = "evqueue@local";
 	entries["git.workflows.subdirectory"] = "workflows";

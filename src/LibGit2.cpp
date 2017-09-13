@@ -319,6 +319,8 @@ void LibGit2::Pull()
 		// Fetch repository from remote
 		git_fetch_options fetch_opts;
 		fetch_opts = GIT_FETCH_OPTIONS_INIT;
+		git_remote_init_callbacks(&fetch_opts.callbacks,GIT_REMOTE_CALLBACKS_VERSION);
+		fetch_opts.callbacks.credentials = LibGit2::credentials_callback;
 		if(git_remote_fetch(remote,0,&fetch_opts,"fetch")!=0)
 			throw LigGit2Exception(giterr_last());
 		
@@ -444,8 +446,15 @@ int LibGit2::credentials_callback(git_cred **cred,const char *url,const char *us
 {
 	string user = Configuration::GetInstance()->Get("git.user");
 	string password = Configuration::GetInstance()->Get("git.password");
+	string public_key = Configuration::GetInstance()->Get("git.public_key");
+	string private_key = Configuration::GetInstance()->Get("git.private_key");
 	
-	return git_cred_userpass_plaintext_new(cred,user.c_str(),password.c_str());
+	if(allowed_types & git_credtype_t::GIT_CREDTYPE_SSH_KEY)
+		return git_cred_ssh_key_new(cred,user.c_str(),public_key.c_str(),private_key.c_str(),"");
+	else if(allowed_types & git_credtype_t::GIT_CREDTYPE_USERPASS_PLAINTEXT)
+		return git_cred_userpass_plaintext_new(cred,user.c_str(),password.c_str());
+	else
+		return GIT_PASSTHROUGH;
 }
 
 bool LibGit2::delta_with_parent(git_commit *commit, int i, git_diff_options *opts)
