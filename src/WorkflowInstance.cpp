@@ -388,29 +388,49 @@ void WorkflowInstance::DebugResume(bool *workflow_terminated)
 
 	unique_lock<recursive_mutex> llock(lock);
 	
+	// Put instance back in executing status
+	xmldoc->getDocumentElement().setAttribute("status","EXECUTING");
+	
 	// Clear statistics
 	clear_statistics();
 	
-	// Look for TERMINATED tasks (in error) and relaunch them
-	unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task[@status='TERMINATED' and @retval!=0]",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-	DOMElement task;
-
-	int tasks_index = 0;
-	while(tasks->snapshotItem(tasks_index++))
+	// Look for tasks or job that have conditions waiting for a new evaluation (via evqWait() function)
 	{
-		task = (DOMElement)tasks->getNodeValue();
-		
-		// Reset task attributes
-		task.removeAttribute("retry_schedule_level");
-		task.removeAttribute("retry_times");
-		task.removeAttribute("retry_at");
-		task.removeAttribute("progression");
-		task.removeAttribute("error");
-		task.removeAttribute("retval");
-		task.removeAttribute("retval");
-		task.removeAttribute("execution_time");
-		
-		enqueue_task(task);
+		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("//*[(name() = 'job' or name() = 'task') and @status='WAITING']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		int i = 0;
+		while(res->snapshotItem(i++))
+		{
+			waiting_nodes.push_back((DOMElement)res->getNodeValue());
+			waiting_conditions++;
+			update_job_statistics("waiting_conditions",1,(DOMElement)res->getNodeValue());
+		}
+	}
+	
+	// Look for TERMINATED tasks (in error) and relaunch them. Also requeue QUEUED tasks
+	int tasks_index = 0;
+	{
+		unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task[(@status='TERMINATED' and @retval!=0) or @status='QUEUED']",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		DOMElement task;
+
+		while(tasks->snapshotItem(tasks_index++))
+		{
+			task = (DOMElement)tasks->getNodeValue();
+			
+			if(task.getAttribute("status")=="TERMINATED")
+			{
+				// Reset task attributes
+				task.removeAttribute("retry_schedule_level");
+				task.removeAttribute("retry_times");
+				task.removeAttribute("retry_at");
+				task.removeAttribute("progression");
+				task.removeAttribute("error");
+				task.removeAttribute("retval");
+				task.removeAttribute("retval");
+				task.removeAttribute("execution_time");
+			}
+			
+			enqueue_task(task);
+		}
 	}
 
 	*workflow_terminated = workflow_ended();
