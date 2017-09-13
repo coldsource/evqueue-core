@@ -536,7 +536,7 @@ int DB::GetFieldInt(int n)
 	{
 		throw Exception("DB",v+" is not an integer value");
 	}
-	return ival
+	return ival;
 }
 
 double DB::GetFieldDouble(int n)
