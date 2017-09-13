@@ -527,7 +527,16 @@ int DB::GetFieldInt(int n)
 	if(v=="")
 		return 0;
 	
-	return stoi(v);
+	int ival;
+	try
+	{
+		ival = stoi(v);
+	}
+	catch(...)
+	{
+		throw Exception("DB",v+" is not an integer value");
+	}
+	return ival
 }
 
 double DB::GetFieldDouble(int n)
