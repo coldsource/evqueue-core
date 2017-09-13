@@ -67,7 +67,7 @@ void FileManager::PutFile(const string &directory,const string &filename,const s
 	{
 		if(errno==EEXIST)
 		{
-			Logger::Log(LOG_ERR,"File already exist : %s",path.c_str());
+			Logger::Log(LOG_ERR,"File already exist (and will not be overridden) : %s",path.c_str());
 			throw Exception("FileManager","File already exist");
 		}
 		
