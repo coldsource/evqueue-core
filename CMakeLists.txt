@@ -41,6 +41,7 @@ if(USELIBGIT2)
 	target_link_libraries(evqueue git2)
 	target_link_libraries(evqueue ssh2)
 	target_link_libraries(evqueue http_parser)
+	Message("Git support is enabled")
 endif(USELIBGIT2)
 
 include(CheckCXXCompilerFlag)
