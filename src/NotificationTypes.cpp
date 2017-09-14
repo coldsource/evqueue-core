@@ -113,7 +113,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 		
 		Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" hash does not match DB, replacing");
 		
-		NotificationType::PutFile(db.GetField(0),string(db.GetField(1),db.GetFieldLength(1)),false);
+		NotificationType::PutFile(db.GetField(0),string(db.GetField(1).c_str(),db.GetFieldLength(1)),false);
 	}
 	
 	llock.unlock();
