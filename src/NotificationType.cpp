@@ -49,9 +49,9 @@ NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 void NotificationType::PutFile(const string &filename,const string &data,bool base64_encoded)
 {
 	if(base64_encoded)
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BASE64);
+		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BASE64);
 	else
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_BINARY,FileManager::DATATYPE_BINARY);
+		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BINARY);
 }
 
 void NotificationType::GetFile(const string &filename,string &data)
@@ -86,7 +86,7 @@ void NotificationType::Register(const string &name, const string &description, c
 	
 	DB db;
 	db.QueryPrintf(
-		"INSERT INTO t_notification_type(notification_type_name,notification_type_description,notification_type_manifest,notification_type_binary_content) VALUES(%s,%s,%s,%s)",
+		"INSERT INTO t_notification_type(notification_type_name,notification_type_description,notification_type_manifest,notification_type_binary_content) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE notification_type_description=VALUES(notification_type_description),notification_type_manifest=VALUES(notification_type_manifest),notification_type_binary_content=VALUES(notification_type_binary_content)",
 		&name,
 		&description,
 		&manifest,
