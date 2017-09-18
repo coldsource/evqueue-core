@@ -49,8 +49,6 @@ class WorkflowInstance
 		
 		const std::string &logs_directory;
 		
-		bool errlogs;
-		const std::string &errlogs_directory;
 		int log_dom_maxsize;
 		
 		bool saveparameters;

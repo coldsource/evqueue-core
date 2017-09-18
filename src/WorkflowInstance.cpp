@@ -60,14 +60,11 @@
 using namespace std;
 
 WorkflowInstance::WorkflowInstance(void):
-	logs_directory(Configuration::GetInstance()->Get("processmanager.logs.directory")),
-	errlogs_directory(Configuration::GetInstance()->Get("processmanager.errlogs.directory"))
+	logs_directory(Configuration::GetInstance()->Get("processmanager.logs.directory"))
 {
 	workflow_instance_id = 0;
 	workflow_schedule_id = 0;
 
-	errlogs = Configuration::GetInstance()->GetBool("processmanager.errlogs.enable");
-	
 	log_dom_maxsize = Configuration::GetInstance()->GetSize("datastore.dom.maxsize");
 
 	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
@@ -561,24 +558,13 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 			else
 			{
 				// Task returned successfully but XML is invalid. Unable to continue as following tasks might need XML output
-				if(errlogs)
-				{
-					char *errlog_filename = new char[errlogs_directory.length()+32];
-					sprintf(errlog_filename,"%s/%d-XXXXXX.log",errlogs_directory.c_str(),workflow_instance_id);
-
-					int fno = mkstemps(errlog_filename,4);
-					int stdout_output_len = strlen(stdout_output);
-					if(write(fno,stdout_output,stdout_output_len)!=stdout_output_len)
-						Logger::Log(LOG_WARNING,"[WID %d] Error writing error log file %s",workflow_instance_id,errlog_filename);
-					close(fno);
-
-					Logger::Log(LOG_WARNING,"[WID %d] Invalid XML returned, output has been saved as %s",workflow_instance_id,errlog_filename);
-
-					delete[] errlog_filename;
-				}
-
 				task_node.setAttribute("status","ABORTED");
 				task_node.setAttribute("error","Invalid XML returned");
+				
+				// Treat output as text
+				output_element.setAttribute("method","text");
+				task_node.appendChild(output_element);
+				record_log(output_element,stdout_output);
 
 				error_tasks++;
 				update_job_statistics("error_tasks",1,task_node);
