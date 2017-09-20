@@ -31,6 +31,7 @@
 #include <QueryResponse.h>
 #include <Configuration.h>
 #include <Cluster.h>
+#include <UniqueAction.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -148,6 +149,17 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			// Prevent destructor from deleting workflow_schedule
 			WorkflowSchedule *workflow_schedule = scheduled_wf->workflow_schedule;
 			scheduled_wf->workflow_schedule = 0;
+			
+			// Special node 'any'
+			if(workflow_schedule->GetNode()=="any")
+			{
+				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID())+"_"+to_string(e->scheduled_at));
+				if(!uaction.IsElected())
+				{
+					delete scheduled_wf;
+					return;
+				}
+			}
 			
 			// We have to fill this first because WorkflowInstance() can throw an exception and call ScheduledWorkflowInstanceStop() in it's destructor
 			if(i!=-1)
