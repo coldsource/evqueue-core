@@ -156,6 +156,8 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID())+"_"+to_string(e->scheduled_at));
 				if(!uaction.IsElected())
 				{
+					// Immediately reschedule workflow
+					ScheduleWorkflow(workflow_schedule);
 					delete scheduled_wf;
 					return;
 				}
