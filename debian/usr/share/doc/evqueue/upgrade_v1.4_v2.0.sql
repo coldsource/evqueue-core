@@ -1,4 +1,5 @@
 ALTER TABLE t_workflow_instance ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER workflow_instance_id;
+ALTER TABLE t_workflow_instance ADD COLUMN workflow_instance_comment varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL AFTER workflow_instance_errors;
 
 ALTER TABLE t_workflow_schedule ADD COLUMN node_name VARCHAR(32) COLLATE 'ascii_general_ci' NOT NULL DEFAULT '' AFTER workflow_schedule_id;
 

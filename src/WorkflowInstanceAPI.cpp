@@ -120,7 +120,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			DB db;
 			
 			// Fetch existing instance (must be terminated)
-			db.QueryPrintf("SELECT workflow_id,workflow_instance_host,workflow_instance_savepoint FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",&workflow_instance_id);
+			db.QueryPrintf("SELECT workflow_id,workflow_instance_host,workflow_instance_savepoint,workflow_instance_comment FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",&workflow_instance_id);
 			if(!db.FetchRow())
 				throw Exception("Workflow Debug Resume", "Unable to find instance to resume, or instance is not terminated");
 			
@@ -134,10 +134,11 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			string node_name = Configuration::GetInstance()->Get("cluster.node.name");
 			string workflow_host = db.GetField(1);
 			string savepoint = db.GetField(2);
+			string instance_comment = db.GetField(3);
 			int new_instance_id = 0;
 			if(savepoint_level<2)
 				SequenceGenerator::GetInstance()->GetInc();
-			db.QueryPrintf("INSERT INTO t_workflow_instance(workflow_instance_id,node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_savepoint) VALUES(%i,%s,%i,0,%s,'EXECUTING',NOW(),%s)",savepoint_level<2?new_instance_id:0,&node_name,&workflow_id,&workflow_host,&savepoint);
+			db.QueryPrintf("INSERT INTO t_workflow_instance(workflow_instance_id,node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment,workflow_instance_savepoint) VALUES(%i,%s,%i,0,%s,'EXECUTING',NOW(),%s,%s)",savepoint_level<2?new_instance_id:0,&node_name,&workflow_id,&workflow_host,&instance_comment,&savepoint);
 			
 			if(savepoint_level>=2)
 				new_instance_id = db.InsertID();
