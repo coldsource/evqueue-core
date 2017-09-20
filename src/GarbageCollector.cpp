@@ -22,6 +22,7 @@
 #include <DB.h>
 #include <Logger.h>
 #include <Exception.h>
+#include <UniqueAction.h>
 
 #include <string.h>
 #include <unistd.h>
@@ -92,6 +93,10 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 			
 			sleep(1);
 		}
+		
+		UniqueAction uaction("gc",gc->interval);
+		if(!uaction.IsElected())
+			continue;
 		
 		int deleted_rows;
 		do
