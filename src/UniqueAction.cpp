@@ -32,7 +32,7 @@ UniqueAction::UniqueAction(const string &name, int period)
 	unsigned int myid = db.InsertID();
 	
 	if(period>0)
-		db.QueryPrintf("SELECT uniqueaction_id FROM t_uniqueaction WHERE uniqueaction_name=%s AND uniqueaction_time+%i>NOW()",&name,&period);
+		db.QueryPrintf("SELECT uniqueaction_id FROM t_uniqueaction WHERE uniqueaction_name=%s AND DATE_ADD(uniqueaction_time,INTERVAL %i SECOND)>NOW()",&name,&period);
 	else
 		db.QueryPrintf("SELECT uniqueaction_id FROM t_uniqueaction WHERE uniqueaction_name=%s",&name);
 	
