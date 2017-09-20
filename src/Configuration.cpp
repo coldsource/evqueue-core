@@ -50,6 +50,7 @@ Configuration::Configuration(void)
 	entries["gc.limit"] = "1000";
 	entries["gc.logs.retention"] = "7";
 	entries["gc.workflowinstance.retention"] = "30";
+	entries["gc.uniqueaction.retention"] = "30";
 	entries["logger.db.enable"] = "yes";
 	entries["logger.db.filter"] = "LOG_WARNING";
 	entries["logger.syslog.enable"] = "yes";

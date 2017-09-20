@@ -32,6 +32,7 @@ class GarbageCollector
 		int limit;
 		int workflowinstance_retention;
 		int logs_retention;
+		int uniqueaction_retention;
 		
 		bool is_shutting_down;
 		
@@ -47,7 +48,7 @@ class GarbageCollector
 	private:
 		static void *gc_thread(GarbageCollector *gc);
 		
-		int purge(void);
+		int purge(time_t now);
 };
 
 #endif

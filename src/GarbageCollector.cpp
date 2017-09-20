@@ -42,6 +42,7 @@ GarbageCollector::GarbageCollector()
 	limit = Configuration::GetInstance()->GetInt("gc.limit");
 	workflowinstance_retention = Configuration::GetInstance()->GetInt("gc.workflowinstance.retention");
 	logs_retention = Configuration::GetInstance()->GetInt("gc.logs.retention");
+	uniqueaction_retention = Configuration::GetInstance()->GetInt("gc.uniqueaction.retention");
 	
 	is_shutting_down = false;
 	
@@ -99,9 +100,13 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 			continue;
 		
 		int deleted_rows;
+		
+		time_t now;
+		time(&now);
+		
 		do
 		{
-			deleted_rows = gc->purge();
+			deleted_rows = gc->purge(now);
 			if(deleted_rows)
 			{
 				Logger::Log(LOG_NOTICE,"GarbageCollector: Removed %d expired entries",deleted_rows);
@@ -125,20 +130,22 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 	}
 }
 
-int GarbageCollector::purge(void)
+int GarbageCollector::purge(time_t now)
 {
 	// Compute dates
 	struct tm wfi_t;
 	struct tm logs_t;
-	time_t now,wfi,logs;
-	
-	time(&now);
+	struct tm uniqueaction_t;
+	time_t wfi,logs,uniqueaction;
 	
 	wfi = now - workflowinstance_retention*86400;
 	localtime_r(&wfi,&wfi_t);
 	
 	logs = now - logs_retention*86400;
 	localtime_r(&logs,&logs_t);
+	
+	uniqueaction = now - uniqueaction_retention*86400;
+	localtime_r(&uniqueaction,&uniqueaction_t);
 	
 	// Purge
 	try
@@ -160,6 +167,10 @@ int GarbageCollector::purge(void)
 		
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logs_t);
 		db.QueryPrintfC("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",buf,&limit);
+		deleted_rows += db.AffectedRows();
+		
+		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&uniqueaction_t);
+		db.QueryPrintfC("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",buf,&limit);
 		deleted_rows += db.AffectedRows();
 		
 		return deleted_rows;

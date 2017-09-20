@@ -50,6 +50,6 @@ UniqueAction::UniqueAction(const string &name, int period)
 	{
 		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_id=%i",&myid);
 		
-		Logger::Log(LOG_NOTICE,"Not elected for cluster unique action '"+name+"'");
+		Logger::Log(LOG_INFO,"Not elected for cluster unique action '"+name+"'");
 	}
 }
