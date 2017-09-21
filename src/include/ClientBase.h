@@ -55,6 +55,8 @@ class ClientBase
 		virtual ~ClientBase();
 		
 		const std::string &Connect(void);
+		void Disconnect(void);
+		
 		void Exec(const std::string &cmd, bool record = false);
 		DOMDocument *GetResponseDOM();
 		SocketResponseSAX2Handler *GetResponseHandler() { return saxh; }

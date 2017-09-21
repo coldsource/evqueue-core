@@ -114,6 +114,11 @@ const string& ClientBase::Connect(void)
 	return GetNode();
 }
 
+void ClientBase::Disconnect(void)
+{
+	disconnect();
+}
+
 void ClientBase::Exec(const std::string &cmd, bool record)
 {
 	if(!connected)
