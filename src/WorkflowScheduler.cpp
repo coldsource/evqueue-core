@@ -153,6 +153,17 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			// Special node 'any'
 			if(workflow_schedule->GetNode()=="any")
 			{
+				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID())+"_"+to_string(e->scheduled_at));
+				if(!uaction.IsElected())
+				{
+					Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on unelected node "+Configuration::GetInstance()->Get("cluster.node.name"));
+					
+					// Immediately reschedule workflow, but do not execute
+					ScheduleWorkflow(workflow_schedule);
+					delete scheduled_wf;
+					return;
+				}
+				
 				// Check schedule is not already running on another node
 				DOMDocument response;
 				if(Cluster::GetInstance()->ExecuteCommand("<status action='query' type='scheduler' />\n",&response))
@@ -168,17 +179,6 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 						delete scheduled_wf;
 						return;
 					}
-				}
-				
-				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID())+"_"+to_string(e->scheduled_at));
-				if(!uaction.IsElected())
-				{
-					Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on unelected node "+Configuration::GetInstance()->Get("cluster.node.name"));
-					
-					// Immediately reschedule workflow, but do not execute
-					ScheduleWorkflow(workflow_schedule);
-					delete scheduled_wf;
-					return;
 				}
 			}
 			
