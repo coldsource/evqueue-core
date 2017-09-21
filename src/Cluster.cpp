@@ -98,6 +98,7 @@ bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
 		try
 		{
 			Client client(nodes.at(i),user,password);
+			client.SetTimeouts(cnx_timeout,snd_timeout,rcv_timeout);
 			
 			// Check if we are not self connecting
 			const string node = client.Connect();
@@ -108,7 +109,6 @@ bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
 				continue;
 			}
 			
-			client.SetTimeouts(cnx_timeout,snd_timeout,rcv_timeout);
 			if(response)
 				client.Exec(command, true);
 			else
@@ -119,9 +119,34 @@ bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
 		}
 		catch(Exception &e)
 		{
-			Logger::Log(LOG_ERR, "Error executing cluster command on node %s : %s",nodes.at(i).c_str(),e.error.c_str());
+			Logger::Log(LOG_ERR, "Error executing cluster command on node "+nodes.at(i)+" : "+e.error);
 		}
 	}
 	
 	return true;
+}
+
+std::vector<std::string> Cluster::Ping(void)
+{
+	Logger::Log(LOG_INFO, "Discovering cluster");
+	
+	vector<string> res;
+	
+	for(int i=0;i<nodes.size();i++)
+	{
+		try
+		{
+			Client client(nodes.at(i),user,password);
+			client.SetTimeouts(cnx_timeout,snd_timeout,rcv_timeout);
+			
+			res.push_back(client.Connect());
+			client.Disconnect();
+		}
+		catch(Exception &e)
+		{
+			// Errors are ignored in discovery mode
+		}
+	}
+	
+	return res;
 }

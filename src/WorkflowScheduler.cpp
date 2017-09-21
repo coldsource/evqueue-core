@@ -88,7 +88,7 @@ void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, un
 		struct tm time_t;
 		localtime_r(&new_scheduled_wf->scheduled_at,&time_t);
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&time_t);
-		Logger::Log(LOG_NOTICE,"[WSID "+to_string(workflow_schedule->GetID())+"] Scheduled workflow "+workflow_schedule->GetWorkflowName()+" at "+string(buf));
+		Logger::Log(LOG_INFO,"[WSID "+to_string(workflow_schedule->GetID())+"] Scheduled workflow "+workflow_schedule->GetWorkflowName()+" at "+string(buf));
 		
 		InsertEvent(new_scheduled_wf);
 	}

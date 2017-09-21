@@ -22,6 +22,10 @@
 #include <Configuration.h>
 #include <Logger.h>
 #include <Exception.h>
+#include <Cluster.h>
+
+#include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -53,4 +57,26 @@ UniqueAction::UniqueAction(const string &name, int period)
 		
 		Logger::Log(LOG_INFO,"Not elected for cluster unique action '"+name+"'");
 	}
+	else
+		Logger::Log(LOG_NOTICE,"Node "+Configuration::GetInstance()->Get("cluster.node.name")+" elected for action '"+name+"'");
+}
+
+UniqueAction::UniqueAction(const string &name)
+{
+	vector<string> nodes = Cluster::GetInstance()->Ping();
+	
+	if(nodes.size()==0)
+	{
+		// Cluster is not configured, nothing to do
+		is_elected = true;
+		return;
+	}
+	
+	auto min = min_element(nodes.begin(),nodes.end());
+	is_elected = (*min==Configuration::GetInstance()->Get("cluster.node.name"));
+	
+	if(!is_elected)
+		Logger::Log(LOG_INFO,"Not elected for cluster unique action '"+name+"'");
+	else
+		Logger::Log(LOG_NOTICE,"Node "+Configuration::GetInstance()->Get("cluster.node.name")+" elected for action '"+name+"'");
 }

@@ -27,7 +27,8 @@ class UniqueAction
 	bool is_elected;
 	
 	public:
-		UniqueAction(const std::string &name, int period = -1);
+		UniqueAction(const std::string &name, int period);
+		UniqueAction(const std::string &name);
 		
 		bool IsElected() { return is_elected; }
 };

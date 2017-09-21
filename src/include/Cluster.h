@@ -46,6 +46,8 @@ class Cluster
 		
 		void Notify(const std::string &command);
 		bool ExecuteCommand(const std::string &command, DOMDocument *response = 0);
+		
+		std::vector<std::string> Ping(void);
 };
 
 #endif
