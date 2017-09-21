@@ -103,7 +103,7 @@ bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
 			const string node = client.Connect();
 			if(node==Configuration::GetInstance()->Get("cluster.node.name"))
 			{
-				Logger::Log(LOG_NOTICE, "Skipping current node in cluster notification");
+				Logger::Log(LOG_INFO, "Skipping current node in cluster notification");
 				continue;
 			}
 			
