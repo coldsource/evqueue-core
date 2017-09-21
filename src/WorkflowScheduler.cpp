@@ -119,6 +119,10 @@ void WorkflowScheduler::ScheduledWorkflowInstanceStop(unsigned int workflow_sche
 	wfs_wi_ids[i] = 0;
 	wfs_executing_instances[i] = 0; // Remove from executing instances
 	
+	// Special node 'any'
+	if(workflow_schedule->GetNode()=="any")
+		UniqueAction::Done("scheduledwf_"+to_string(workflow_schedule->GetID()));
+	
 	if(success || workflow_schedule->GetOnFailureBehavior()==CONTINUE) // Re-schedule
 		ScheduleWorkflow(workflow_schedule);
 	else
@@ -153,7 +157,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			// Special node 'any'
 			if(workflow_schedule->GetNode()=="any")
 			{
-				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID())+"_"+to_string(e->scheduled_at));
+				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID()));
 				if(!uaction.IsElected())
 				{
 					// Immediately reschedule workflow
