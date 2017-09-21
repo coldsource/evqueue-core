@@ -75,15 +75,23 @@ void Cluster::ParseConfiguration(const string &conf)
 	rcv_timeout = Configuration::GetInstance()->GetInt("cluster.rcv.timeout");
 }
 
-void Cluster::ExecuteCommand(const string &command)
+void Cluster::Notify(const string &command)
 {
 	if(!notify)
 		return; // Cluster notifications are disabled
 	
+	ExecuteCommand(command);
+}
+
+bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
+{
 	if(nodes.size()==0)
-		return; // Cluster is not configures
+		return false; // Cluster is not configured
 	
 	Logger::Log(LOG_NOTICE, "Executing cluster command "+command);
+	
+	if(response)
+		response->appendChild(response->createElement("cluster-response"));
 	
 	for(int i=0;i<nodes.size();i++)
 	{
@@ -100,11 +108,19 @@ void Cluster::ExecuteCommand(const string &command)
 			}
 			
 			client.SetTimeouts(cnx_timeout,snd_timeout,rcv_timeout);
-			client.Exec(command);
+			if(response)
+				client.Exec(command, true);
+			else
+				client.Exec(command);
+			
+			if(response)
+				response->getDocumentElement().appendChild(response->importNode(client.GetResponseDOM()->getDocumentElement(),true));
 		}
 		catch(Exception &e)
 		{
 			Logger::Log(LOG_ERR, "Error executing cluster command on node %s : %s",nodes.at(i).c_str(),e.error.c_str());
 		}
 	}
+	
+	return true;
 }

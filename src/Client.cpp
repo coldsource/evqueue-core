@@ -48,11 +48,11 @@ Client::~Client()
 	}
 }
 
-void Client::Exec(const std::string &cmd)
+void Client::Exec(const std::string &cmd, bool record)
 {
 	try
 	{
-		ClientBase::Exec(cmd);
+		ClientBase::Exec(cmd, record);
 	}
 	catch(Exception &e)
 	{

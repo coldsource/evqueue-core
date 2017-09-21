@@ -54,17 +54,3 @@ UniqueAction::UniqueAction(const string &name, int period)
 		Logger::Log(LOG_INFO,"Not elected for cluster unique action '"+name+"'");
 	}
 }
-
-void UniqueAction::Done(const string &name)
-{
-	DB db;
-	
-	try
-	{
-		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_name=%s",&name);
-	}
-	catch(Exception &e)
-	{
-		Logger::Log(LOG_WARNING,"Error terminating unique action "+name+". DB returned error : "+e.error);
-	}
-}

@@ -30,8 +30,6 @@ class UniqueAction
 		UniqueAction(const std::string &name, int period = -1);
 		
 		bool IsElected() { return is_elected; }
-		
-		static void Done(const std::string &name);
 };
 
 #endif

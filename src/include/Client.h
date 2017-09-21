@@ -32,7 +32,7 @@ class Client:public ClientBase
 		Client(const std::string &connection_str, const std::string &user, const std::string &password);
 		virtual ~Client();
 		
-		void Exec(const std::string &cmd);
+		void Exec(const std::string &cmd, bool record = false);
 };
 
 #endif

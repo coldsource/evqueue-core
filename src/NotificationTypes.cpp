@@ -66,7 +66,7 @@ void NotificationTypes::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='notifications' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='notifications' notify='no' />\n");
 	}
 }
 
@@ -121,7 +121,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='syncnotifications' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='syncnotifications' notify='no' />\n");
 	}
 }
 

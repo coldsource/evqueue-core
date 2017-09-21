@@ -119,10 +119,6 @@ void WorkflowScheduler::ScheduledWorkflowInstanceStop(unsigned int workflow_sche
 	wfs_wi_ids[i] = 0;
 	wfs_executing_instances[i] = 0; // Remove from executing instances
 	
-	// Special node 'any'
-	if(workflow_schedule->GetNode()=="any")
-		UniqueAction::Done("scheduledwf_"+to_string(workflow_schedule->GetID()));
-	
 	if(success || workflow_schedule->GetOnFailureBehavior()==CONTINUE) // Re-schedule
 		ScheduleWorkflow(workflow_schedule);
 	else
@@ -157,10 +153,29 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			// Special node 'any'
 			if(workflow_schedule->GetNode()=="any")
 			{
-				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID()));
+				// Check schedule is not already running on another node
+				DOMDocument response;
+				if(Cluster::GetInstance()->ExecuteCommand("<status action='query' type='scheduler' />\n",&response))
+				{
+					unique_ptr<DOMXPathResult> res(response.evaluate("count(/cluster-response/response/status/workflow[@workflow_schedule_id="+to_string(workflow_schedule->GetID())+" and @scheduled_at='running'])",response.getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+					int nrunning = res->getIntegerValue();
+					if(nrunning>0)
+					{
+						Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on node "+Configuration::GetInstance()->Get("cluster.node.name")+" because it is already running");
+						
+						// Immediately reschedule workflow, but do not execute
+						ScheduleWorkflow(workflow_schedule);
+						delete scheduled_wf;
+						return;
+					}
+				}
+				
+				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID())+"_"+to_string(e->scheduled_at));
 				if(!uaction.IsElected())
 				{
-					// Immediately reschedule workflow
+					Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on unelected node "+Configuration::GetInstance()->Get("cluster.node.name"));
+					
+					// Immediately reschedule workflow, but do not execute
 					ScheduleWorkflow(workflow_schedule);
 					delete scheduled_wf;
 					return;
@@ -268,7 +283,7 @@ void WorkflowScheduler::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='scheduler' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='scheduler' notify='no' />\n");
 	}
 }
 

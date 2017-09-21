@@ -62,7 +62,7 @@ void Users::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='users' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='users' notify='no' />\n");
 	}
 }
 

@@ -23,6 +23,8 @@
 #include <vector>
 #include <string>
 
+class DOMDocument;
+
 class Cluster
 {
 	static Cluster *instance;
@@ -42,7 +44,8 @@ class Cluster
 		
 		static Cluster *GetInstance() { return instance; }
 		
-		void ExecuteCommand(const std::string &command);
+		void Notify(const std::string &command);
+		bool ExecuteCommand(const std::string &command, DOMDocument *response = 0);
 };
 
 #endif

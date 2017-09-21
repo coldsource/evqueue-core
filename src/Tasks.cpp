@@ -65,7 +65,7 @@ void Tasks::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='tasks' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='tasks' notify='no' />\n");
 	}
 }
 
@@ -121,7 +121,7 @@ void Tasks::SyncBinaries(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='synctasks' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='synctasks' notify='no' />\n");
 	}
 }
 

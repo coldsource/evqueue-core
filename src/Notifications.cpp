@@ -69,7 +69,7 @@ void Notifications::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='notifications' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='notifications' notify='no' />\n");
 	}
 }
 

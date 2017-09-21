@@ -20,7 +20,7 @@
 #ifndef _CONFIGURATIONREADER_H_
 #define _CONFIGURATIONREADER_H_
 
-#define CONFIGURATION_LINE_MAXLEN           256
+#define CONFIGURATION_LINE_MAXLEN           4096
 
 #include <Configuration.h>
 

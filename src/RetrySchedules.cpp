@@ -66,7 +66,7 @@ void RetrySchedules::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->ExecuteCommand("<control action='reload' module='retry_schedules' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='retry_schedules' notify='no' />\n");
 	}
 }
 
