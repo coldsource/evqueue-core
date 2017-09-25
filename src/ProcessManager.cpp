@@ -303,8 +303,8 @@ pid_t ProcessManager::ExecuteTask(
 		task = Task(w[0]);
 		for (int i = 1; i < wexp.we_wordc; i++)
 		{
-			parameters_name.insert(parameters_name.begin(),string(""));
-			parameters_value.insert(parameters_value.begin(),string(w[i]));
+			parameters_name.insert(parameters_name.begin()+i-1,string(""));
+			parameters_value.insert(parameters_value.begin()+i-1,string(w[i]));
 		}
 		
 		wordfree(&wexp);
