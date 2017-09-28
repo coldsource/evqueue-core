@@ -36,6 +36,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <libgen.h>
+#include <time.h>
 
 #include <string>
 #include <stdexcept>
@@ -95,6 +96,7 @@
 
 int listen_socket = -1;
 int listen_socket_unix = -1;
+time_t evqueue_start_time = 0;
 
 void signal_callback_handler(int signum)
 {
@@ -228,6 +230,9 @@ int main(int argc,const char **argv)
 	sigaction(SIGINT,&sa,0);
 	sigaction(SIGTERM,&sa,0);
 	sigaction(SIGUSR1,&sa,0);
+	
+	// Get start time for computing uptime
+	time(&evqueue_start_time);
 	
 	try
 	{

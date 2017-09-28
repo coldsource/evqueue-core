@@ -23,7 +23,11 @@
 #include <QueryResponse.h>
 #include <Configuration.h>
 
+#include <time.h>
+
 using namespace std;
+
+extern time_t evqueue_start_time;
 
 bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
 {
@@ -35,6 +39,11 @@ bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 #else
 	response->SetAttribute("git-support","disabled");
 #endif
+	
+	time_t now;
+	time(&now);
+	
+	response->SetAttribute("uptime",to_string(now-evqueue_start_time));
 	
 	return true;
 }
