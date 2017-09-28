@@ -791,6 +791,8 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 
 void WorkflowInstance::TaskUpdateProgression(DOMElement task, int prct)
 {
+	unique_lock<recursive_mutex> llock(lock);
+	
 	task.setAttribute("progression",to_string(prct));
 }
 
