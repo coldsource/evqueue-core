@@ -390,11 +390,11 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		else
 		{
 			if(groupby=="hour")
-				query_order_by = "ORDER BY year, month, day, hour DESC";
+				query_order_by = "ORDER BY year DESC, month DESC, day DESC, hour DESC";
 			if(groupby=="day")
-				query_order_by = "ORDER BY year, month, day DESC";
+				query_order_by = "ORDER BY year DESC, month DESC, day DESC";
 			if(groupby=="month")
-				query_order_by = "ORDER BY year, month DESC";
+				query_order_by = "ORDER BY year DESC, month DESC";
 			if(groupby=="year")
 				query_order_by = "ORDER BY year DESC";
 		}
