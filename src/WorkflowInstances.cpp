@@ -269,9 +269,40 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		unsigned int filter_schedule_id = saxh->GetRootAttributeInt("filter_schedule_id",0);
 		unsigned int limit = saxh->GetRootAttributeInt("limit",30);
 		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
+		string groupby = saxh->GetRootAttribute("groupby","");
 		
 		// Build query parts
-		string query_select = "SELECT SQL_CALC_FOUND_ROWS wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status, wi.workflow_schedule_id, wi.workflow_instance_comment";
+		string query_select;
+		string query_groupby;
+		if(groupby=="")
+			query_select = "SELECT SQL_CALC_FOUND_ROWS wi.workflow_instance_id, w.workflow_name, wi.node_name, wi.workflow_instance_host, wi.workflow_instance_start, wi.workflow_instance_end, wi.workflow_instance_errors, wi.workflow_instance_status, wi.workflow_schedule_id, wi.workflow_instance_comment";
+		else
+		{
+			query_select = "SELECT SQL_CALC_FOUND_ROWS w.workflow_name, wi.node_name, COUNT(*) AS n";
+			query_groupby = "GROUP BY w.workflow_name, wi.node_name";
+			
+			if(groupby=="hour")
+			{
+				query_select += ", HOUR(wi.workflow_instance_start) AS hour";
+				query_groupby += ", HOUR(wi.workflow_instance_start)";
+			}
+			if(groupby=="hour" || groupby=="day")
+			{
+				query_select += ", DAY(wi.workflow_instance_start) AS day";
+				query_groupby += ", DAY(wi.workflow_instance_start)";
+			}
+			if(groupby=="hour" || groupby=="day" || groupby=="month")
+			{
+				query_select += ", MONTH(wi.workflow_instance_start) AS month";
+				query_groupby += ", MONTH(wi.workflow_instance_start)";
+			}
+			if(groupby=="hour" || groupby=="day" || groupby=="month" || groupby=="year")
+			{
+				query_select += ", YEAR(wi.workflow_instance_start) AS year";
+				query_groupby += ", YEAR(wi.workflow_instance_start)";
+			}
+		}
+		
 		string query_from = "FROM t_workflow_instance wi, t_workflow w";
 		
 		string query_where = "WHERE wi.workflow_id=w.workflow_id";
@@ -353,29 +384,72 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 			query_where_values.push_back(value);
 		}
 		
-		string query_order_by = "ORDER BY wi.workflow_instance_end DESC";
+		string query_order_by;
+		if(groupby=="")
+			query_order_by = "ORDER BY wi.workflow_instance_end DESC";
+		else
+		{
+			if(groupby=="hour")
+				query_order_by = "ORDER BY year, month, day, hour DESC";
+			if(groupby=="day")
+				query_order_by = "ORDER BY year, month, day DESC";
+			if(groupby=="month")
+				query_order_by = "ORDER BY year, month DESC";
+			if(groupby=="year")
+				query_order_by = "ORDER BY year DESC";
+		}
 		
 		string query_limit = "LIMIT "+to_string(offset)+","+to_string(limit);
 		
-		string query = query_select+" "+query_from+" "+query_where+" "+query_order_by+" "+query_limit;
+		string query = query_select+" "+query_from+" "+query_where+" "+query_groupby+" "+query_order_by+" "+query_limit;
 		
 		DB db;
 		db.QueryVsPrintf(query,query_where_values);
 		while(db.FetchRow())
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<workflow />");
-			node.setAttribute("id",to_string(db.GetFieldInt(0)));
-			node.setAttribute("name",db.GetField(1));
-			node.setAttribute("node_name",db.GetField(2));
-			if(!db.GetFieldIsNULL(3))
-				node.setAttribute("host",db.GetField(3));
-			node.setAttribute("start_time",db.GetField(4));
-			node.setAttribute("end_time",db.GetField(5));
-			node.setAttribute("errors",db.GetField(6));
-			node.setAttribute("status",db.GetField(7));
-			if(!db.GetFieldIsNULL(8))
-				node.setAttribute("schedule_id",db.GetField(8));
-			node.setAttribute("comment",db.GetField(9));
+			
+			if(groupby=="")
+			{
+				node.setAttribute("id",to_string(db.GetFieldInt(0)));
+				node.setAttribute("name",db.GetField(1));
+				node.setAttribute("node_name",db.GetField(2));
+				if(!db.GetFieldIsNULL(3))
+					node.setAttribute("host",db.GetField(3));
+				node.setAttribute("start_time",db.GetField(4));
+				node.setAttribute("end_time",db.GetField(5));
+				node.setAttribute("errors",db.GetField(6));
+				node.setAttribute("status",db.GetField(7));
+				if(!db.GetFieldIsNULL(8))
+					node.setAttribute("schedule_id",db.GetField(8));
+				node.setAttribute("comment",db.GetField(9));
+			}
+			else
+			{
+				node.setAttribute("name",db.GetField(0));
+				node.setAttribute("node_name",db.GetField(1));
+				node.setAttribute("count",to_string(db.GetFieldInt(2)));
+				if(groupby=="hour")
+				{
+					node.setAttribute("hour",to_string(db.GetFieldInt(3)));
+					node.setAttribute("day",to_string(db.GetFieldInt(4)));
+					node.setAttribute("month",to_string(db.GetFieldInt(5)));
+					node.setAttribute("year",to_string(db.GetFieldInt(6)));
+				}
+				if(groupby=="day")
+				{
+					node.setAttribute("day",to_string(db.GetFieldInt(3)));
+					node.setAttribute("month",to_string(db.GetFieldInt(4)));
+					node.setAttribute("year",to_string(db.GetFieldInt(5)));
+				}
+				if(groupby=="month")
+				{
+					node.setAttribute("month",to_string(db.GetFieldInt(3)));
+					node.setAttribute("year",to_string(db.GetFieldInt(4)));
+				}
+				if(groupby=="year")
+					node.setAttribute("year",to_string(db.GetFieldInt(3)));
+			}
 		}
 		
 		db.Query("SELECT FOUND_ROWS()");
