@@ -40,7 +40,7 @@ ExceptionWorkflowContext::~ExceptionWorkflowContext()
 		if(e && !ExceptionManager::IsExceptionLogged())
 		{
 			node.setAttribute("status","ABORTED");
-			node.setAttribute("details",log_message+" : "+e->error);
+			node.setAttribute("error",log_message+" : "+e->error);
 			ExceptionManager::SetExceptionLogged();
 		}
 	}
