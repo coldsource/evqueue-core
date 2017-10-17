@@ -41,6 +41,7 @@ if(USELIBGIT2)
 	target_link_libraries(evqueue git2)
 	target_link_libraries(evqueue ssh2)
 	target_link_libraries(evqueue http_parser)
+	target_link_libraries(evqueue curl)
 	Message("Git support is enabled")
 endif(USELIBGIT2)
 
@@ -63,7 +64,6 @@ target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue rt)
 target_link_libraries(evqueue pcrecpp)
-target_link_libraries(evqueue curl)
 
 
 
