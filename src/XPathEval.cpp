@@ -529,6 +529,7 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	funcs_desc.insert(pair<string,func_desc>("max",{XPathFunctions::max,0}));
 	funcs_desc.insert(pair<string,func_desc>("position",{XPathFunctions::position,0}));
 	funcs_desc.insert(pair<string,func_desc>("last",{XPathFunctions::last,0}));
+	funcs_desc.insert(pair<string,func_desc>("string-length",{XPathFunctions::string_length,0}));
 	funcs_desc.insert(pair<string,func_desc>("substring",{XPathFunctions::substring,0}));
 	funcs_desc.insert(pair<string,func_desc>("contains",{XPathFunctions::contains,0}));
 }
