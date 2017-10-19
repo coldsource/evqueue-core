@@ -129,7 +129,10 @@ int main(int argc,char ** argv)
 		}
 	}
 	
-	wait(0);
+	int status;
+	wait(&status);
 	
-	return 0;
+	if(WIFEXITED(status))
+		return WEXITSTATUS(status);
+	return -1;
 }
