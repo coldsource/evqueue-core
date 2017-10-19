@@ -271,21 +271,21 @@ void Workflow::Delete(unsigned int id)
 	
 	// Also delete associated tasks
 	db.QueryPrintf("DELETE FROM t_task WHERE workflow_id=%i",&id);
-	if(db.AffectedRows()==0)
-		task_deleted = false;
+	if(db.AffectedRows()>0)
+		task_deleted = true;
 	
 	// Clean notifications
 	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
 	
 	// Clean schedules
 	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_id=%i",&id);
-	if(db.AffectedRows()==0)
-		schedule_deleted = false;
+	if(db.AffectedRows()>0)
+		schedule_deleted = true;
 	
 	// Delete user rights associated
 	db.QueryPrintf("DELETE FROM t_user_right WHERE workflow_id=%i",&id);
-	if(db.AffectedRows()==0)
-		rights_deleted = false;
+	if(db.AffectedRows()>0)
+		rights_deleted = true;
 	
 	db.CommitTransaction();
 	
