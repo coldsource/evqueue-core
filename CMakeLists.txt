@@ -60,6 +60,7 @@ if(USESTATICLIBGIT2)
 	target_link_libraries(evqueue curl)
 	target_link_libraries(evqueue ssl)
 	target_link_libraries(evqueue crypto)
+	target_link_libraries(evqueue rt)
 	Message("Git static support is enabled")
 endif(USESTATICLIBGIT2)
 
@@ -80,7 +81,6 @@ target_link_libraries(evqueue z)
 target_link_libraries(evqueue mysqlclient)
 target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
-target_link_libraries(evqueue rt)
 target_link_libraries(evqueue pcrecpp)
 
 
