@@ -1,5 +1,5 @@
-evqueue-core (2.0) UNRELEASED; urgency=medium
+evqueue-core (2.0-1) stretch; urgency=medium
 
-  * Initial release.
+  * Initial release (closes: #880973).
 
  -- Thibault KUMMER <bob@coldsource.net>  Wed, 17 Aug 2016 12:30:16 +0200

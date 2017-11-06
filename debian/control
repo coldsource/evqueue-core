@@ -2,7 +2,7 @@ Source: evqueue-core
 Section: net
 Priority: optional
 Maintainer: Thibault KUMMER <bob@coldsource.net>
-Build-Depends: debhelper (>= 9.0.0), cmake
+Build-Depends: debhelper (>= 10), cmake
 Standards-Version: 4.1.1
 Homepage: http://www.evqueue.net
 Vcs-Git: https://github.com/coldsource/evqueue-core.git
@@ -13,7 +13,19 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base (>= 3.0-6)
 Pre-Depends: adduser (>= 3.40)
 Description: evQueue core module
- evQueue is a fast event driven scheduler and queueing engine
+ evQueue is a fast event driven scheduler and queueing engine.
+ .
+ It provides both simple task execution and complex task chaining
+ (workflow) using an easy to use drag & drop web interface. Workflow
+ description includes output linking to input, conditions, loops...
+ Queues management provides an easy way for task parallelization and
+ resource control.
+ .
+ The network API provides an easy way, XML based, for synchronous or
+ asynchronous workflow launching and control, allowing tasks to be
+ launched from external applications or web pages. You can thus execute
+ heavy tasks on a remote (dedicated) machine to save resources on your
+ web frontends while providing live reporing of the treatment to you users.
 
 Package: evqueue-utils
 Architecture: any
