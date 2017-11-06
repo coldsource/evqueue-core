@@ -196,7 +196,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			
 			wfs_mutex.unlock();
 			
-			Logger::Log(LOG_NOTICE,"[WID %d] Instanciated by workflow scheduler",wi->GetInstanceID());
+			Logger::Log(LOG_NOTICE,"[WID %d] Instantiated by workflow scheduler",wi->GetInstanceID());
 			
 			wi->Start(&workflow_terminated);
 			
@@ -207,7 +207,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		{
 			stats->IncWorkflowExceptions();
 			
-			Logger::Log(LOG_WARNING,"[ WorkflowScheduler ] Unexpected exception trying to instanciate workflow '"+workflow_name+"': [ "+e.context+" ] "+e.error);
+			Logger::Log(LOG_WARNING,"[ WorkflowScheduler ] Unexpected exception trying to instantiate workflow '"+workflow_name+"': [ "+e.context+" ] "+e.error);
 			delete scheduled_wf;
 			
 			if(wi)

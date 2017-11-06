@@ -702,7 +702,7 @@ int main(int argc,const char **argv)
 	}
 	catch(Exception &e)
 	{
-		// We have to use only syslog here because the logger might not be instanciated yet
+		// We have to use only syslog here because the logger might not be instantiated yet
 		syslog(LOG_CRIT,"Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
 		
 		if(!daemonized)

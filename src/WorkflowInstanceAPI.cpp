@@ -96,7 +96,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		
 		wi->Start(&workflow_terminated);
 		
-		Logger::Log(LOG_NOTICE,"[WID %d] Instanciated",wi->GetInstanceID());
+		Logger::Log(LOG_NOTICE,"[WID %d] Instantiated",wi->GetInstanceID());
 		
 		int wait_re = true;
 		if(!workflow_terminated && mode=="synchronous")

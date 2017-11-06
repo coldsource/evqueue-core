@@ -271,7 +271,7 @@ void WorkflowSchedule::create_edit_check(
 	WorkflowParameters *parameters
 )
 {
-	// Check schedule is valid by trying to instanciate it
+	// Check schedule is valid by trying to instantiate it
 	Schedule schedule(schedule_description.c_str());
 	
 	// Check workflow ID exists

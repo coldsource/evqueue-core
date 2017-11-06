@@ -22,7 +22,7 @@ Run in background.
 Remove the IPC queue. This will erase all persistent state of processes termination. In general you should never use this option unless the IPC queue has become corrupted. This can happen after an upgrade to an incompatible version when messages are pending in queue.
 .TP
 \fB--ipcq-stats\fR
-Display informations about IPC queue.
+Display information about IPC queue.
 .TP
 \fB--ipc-terminate-tid\fR \fItid\fR
 Send IPC message to notify evQueue that the task identified by \fItid\fR is terminated. The return code -1 is sent (error status). This can be used if a task is stuck (task is terminated but message from monitor to daemon has been lost). This can happen when multiple daemons are launched with the same queue ID and the wrong daemon gets notified.
