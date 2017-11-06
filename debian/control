@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Thibault KUMMER <bob@coldsource.net>
 Build-Depends: debhelper (>= 9.0.0), cmake
-Standards-Version: 3.9.7
+Standards-Version: 4.1.1
 Homepage: http://www.evqueue.net
 Vcs-Git: https://github.com/coldsource/evqueue-core.git
 Vcs-Browser: https://github.com/coldsource/evqueue-core

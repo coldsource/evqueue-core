@@ -2,16 +2,26 @@ cmake_minimum_required(VERSION 2.8)
 
 set(EVQUEUE_VERSION "2.0")
 
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 project(evqueue)
 
+# Detect libgit2 library
 find_library(HAS_LIBGIT2 libgit2.so)
+find_library(HAS_STATICLIBGIT2 libgit2.a)
 
+# We prefer shared version
 if(HAS_LIBGIT2)
 	option(USELIBGIT2 "Enable libgit2 support" ON)
 else()
 	option(USELIBGIT2 "Enable libgit2 support" OFF)
+	
+	# Shared version is not available, try static one
+	if(HAS_STATICLIBGIT2)
+		option(USESTATICLIBGIT2 "Enable static libgit2 support" ON)
+	else()
+		option(USESTATICLIBGIT2 "Enable static libgit2 support" OFF)
+	endif(HAS_STATICLIBGIT2)
 endif(HAS_LIBGIT2)
 
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
@@ -39,11 +49,19 @@ add_executable(evqueue
 if(USELIBGIT2)
 	add_definitions(-DUSELIBGIT2)
 	target_link_libraries(evqueue git2)
+	Message("Git support is enabled")
+endif(USELIBGIT2)
+
+if(USESTATICLIBGIT2)
+	add_definitions(-DUSELIBGIT2)
+	target_link_libraries(evqueue libgit2.a)
 	target_link_libraries(evqueue ssh2)
 	target_link_libraries(evqueue http_parser)
 	target_link_libraries(evqueue curl)
-	Message("Git support is enabled")
-endif(USELIBGIT2)
+	target_link_libraries(evqueue ssl)
+	target_link_libraries(evqueue crypto)
+	Message("Git static support is enabled")
+endif(USESTATICLIBGIT2)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
