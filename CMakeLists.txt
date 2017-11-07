@@ -176,5 +176,5 @@ install(TARGETS evqueue_wfmanager evqueue_api DESTINATION bin COMPONENT utils)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_wfmanager.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT utils)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_api.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT utils)
 
-install(TARGETS evqueue_agent DESTINATION agent)
+install(TARGETS evqueue_agent DESTINATION bin COMPONENT agent)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/evqueue_agent.8.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man8 COMPONENT agent)
