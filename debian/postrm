@@ -6,7 +6,9 @@ if id -u evqueue >/dev/null 2>&1; then
         deluser --quiet evqueue
 fi
 
-service rsyslog restart
+if service --status-all | grep -Fq 'rsyslog'; then
+	service rsyslog restart
+fi
 
 #DEBHELPER#
 
