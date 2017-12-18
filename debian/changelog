@@ -1,4 +1,4 @@
-evqueue-core (2.0-1) stretch; urgency=medium
+evqueue-core (2.0-2) stretch; urgency=medium
 
   * Initial release (closes: #880973).
 
