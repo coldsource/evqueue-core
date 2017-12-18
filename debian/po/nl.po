@@ -1,0 +1,65 @@
+# Dutch translation of evqueue-core debconf templates.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the evqueue-core package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Frans Spiesschaert <Frans.Spiesschaert@yucom.be>, 2017.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: evqueue-core_2.0-1\n"
+"Report-Msgid-Bugs-To: evqueue-core@packages.debian.org\n"
+"POT-Creation-Date: 2016-11-26 16:19+0100\n"
+"PO-Revision-Date: 2017-11-15 00:00+0100\n"
+"Last-Translator: Frans Spiesschaert <Frans.Spiesschaert@yucom.be>\n"
+"Language-Team: Debian Dutch l10n Team <debian-l10n-dutch@lists.debian.org>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Gtranslator 2.91.7\n"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:1001
+msgid "MySQL hostname:"
+msgstr "MySQL-computernaam:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:1001
+msgid "Hostame of the MySQL server that will contain evQueue database."
+msgstr "Computernaam van de MySQL-server die de evQueue-databank zal bevatten."
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:2001
+msgid "MySQL user:"
+msgstr "MySQL-gebruiker:"
+
+#. Type: string
+#. Description
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:2001 ../evqueue-core.templates:3001
+msgid "User used to connect to MySQL server."
+msgstr ""
+"Gebruikersnaam die gebruikt wordt bij het verbinden met de MySQL-server."
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:3001
+msgid "MySQL password:"
+msgstr "MySQL-wachtwoord:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:4001
+msgid "MySQL database name:"
+msgstr "Naam voor de MySQL-databank:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:4001
+msgid "Name of the evQueue database."
+msgstr "Naam van de evQueue-databank."

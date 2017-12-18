@@ -1,0 +1,63 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the evqueue-core package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: evqueue-core\n"
+"Report-Msgid-Bugs-To: evqueue-core@packages.debian.org\n"
+"POT-Creation-Date: 2016-11-26 16:19+0100\n"
+"PO-Revision-Date: 2017-12-02 00:36+0500\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.4\n"
+"Last-Translator: Lev Lamberov <dogsleg@debian.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Language: ru\n"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:1001
+msgid "MySQL hostname:"
+msgstr "Имя узда MySQL:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:1001
+msgid "Hostame of the MySQL server that will contain evQueue database."
+msgstr "Имя узда сервера MySQL, на котором будет храниться база данных evQueue."
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:2001
+msgid "MySQL user:"
+msgstr "Пользователь MySQL:"
+
+#. Type: string
+#. Description
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:2001 ../evqueue-core.templates:3001
+msgid "User used to connect to MySQL server."
+msgstr "Пользователь, используемый для подключения к серверу MySQL."
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:3001
+msgid "MySQL password:"
+msgstr "Пароль MySQL:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:4001
+msgid "MySQL database name:"
+msgstr "Имя базы данных MySQL:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:4001
+msgid "Name of the evQueue database."
+msgstr "Имя базы данных evQueue."

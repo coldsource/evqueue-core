@@ -1,0 +1,62 @@
+# Portuguese translation for evqueue-core's debconf messages
+# Copyright (C) 2017 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the evqueue-core package.
+# Rui Branco <ruipb@debianpt.org>, 2017.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: evqueue-core 2.0-1\n"
+"Report-Msgid-Bugs-To: evqueue-core@packages.debian.org\n"
+"POT-Creation-Date: 2016-11-26 16:19+0100\n"
+"PO-Revision-Date: 2017-12-03 19:37+0000\n"
+"Last-Translator: Rui Branco <ruipb@debianpt.org>\n"
+"Language-Team: Portuguese <traduz@debianpt.org>\n"
+"Language: Portuguese\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:1001
+msgid "MySQL hostname:"
+msgstr "Nome da máquina MySQL:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:1001
+msgid "Hostame of the MySQL server that will contain evQueue database."
+msgstr "Nome da máquina a correr o servidor MySQL que irá conter a base de dados evQueue."
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:2001
+msgid "MySQL user:"
+msgstr "Utilizador MySQL:"
+
+#. Type: string
+#. Description
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:2001 ../evqueue-core.templates:3001
+msgid "User used to connect to MySQL server."
+msgstr "Utilizador utilizado para se ligar ao servidor MySQL."
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:3001
+msgid "MySQL password:"
+msgstr "Palavra-chave MySQL:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:4001
+msgid "MySQL database name:"
+msgstr "Nome da base de dados MySQL:"
+
+#. Type: string
+#. Description
+#: ../evqueue-core.templates:4001
+msgid "Name of the evQueue database."
+msgstr "Nome da base de dados evQueue."
