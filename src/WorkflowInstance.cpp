@@ -956,8 +956,11 @@ void WorkflowInstance::run_tasks(DOMElement job,DOMElement context_node)
 	unique_ptr<DOMXPathResult> res(xmldoc->evaluate("count(tasks/task[(@status='TERMINATED' and @retval = 0) or (@status='SKIPPED')])",job,DOMXPathResult::FIRST_RESULT_TYPE));
 	int tasks_successful = res->getIntegerValue();
 	
+	unique_ptr<DOMXPathResult> res2(xmldoc->evaluate("count(tasks/task)",job,DOMXPathResult::FIRST_RESULT_TYPE));
+	int tasks_total = res2->getIntegerValue();
+	
 	// If all task of job is skipped goto child job :
-	if (tasks_successful == tasks_index-1){
+	if (tasks_successful == tasks_total){
 		run_subjobs(job);
 	}
 }
