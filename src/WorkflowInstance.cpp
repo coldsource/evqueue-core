@@ -1003,12 +1003,11 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 
 void WorkflowInstance::register_job_functions(DOMElement node)
 {
-	static DOMElement job, parent_job;
+	DOMElement job, parent_job;
 	if(node.getNodeName()=="task")
 		job = node.getParentNode().getParentNode();
 	else
 		job = node;
-	
 	
 	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&job});
 	
