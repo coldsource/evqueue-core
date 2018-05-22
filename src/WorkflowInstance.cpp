@@ -1003,19 +1003,18 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 
 void WorkflowInstance::register_job_functions(DOMElement node)
 {
-	DOMElement job, parent_job;
 	if(node.getNodeName()=="task")
-		job = node.getParentNode().getParentNode();
+		context_job = node.getParentNode().getParentNode();
 	else
-		job = node;
+		context_job = node;
 	
-	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&job});
+	xmldoc->getXPath()->RegisterFunction("evqGetCurrentJob",{WorkflowXPathFunctions::evqGetCurrentJob,&context_job});
 	
-	parent_job = job.getParentNode().getParentNode();
-	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&parent_job});
-	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&parent_job});
-	xmldoc->getXPath()->RegisterFunction("evqGetInput",{WorkflowXPathFunctions::evqGetInput,&parent_job});
-	xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&parent_job});
+	context_parent_job = context_job.getParentNode().getParentNode();
+	xmldoc->getXPath()->RegisterFunction("evqGetParentJob",{WorkflowXPathFunctions::evqGetParentJob,&context_parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetOutput",{WorkflowXPathFunctions::evqGetOutput,&context_parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetInput",{WorkflowXPathFunctions::evqGetInput,&context_parent_job});
+	xmldoc->getXPath()->RegisterFunction("evqGetContext",{WorkflowXPathFunctions::evqGetContext,&context_parent_job});
 }
 
 void WorkflowInstance::run_subjobs(DOMElement job)

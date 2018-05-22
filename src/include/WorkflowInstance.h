@@ -46,6 +46,7 @@ class WorkflowInstance
 		bool is_cancelling;
 		
 		DOMDocument *xmldoc;
+		DOMElement context_job, context_parent_job;
 		
 		const std::string &logs_directory;
 		
