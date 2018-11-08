@@ -1,3 +1,13 @@
+evqueue-core (2.1-1) stretch; urgency=medium
+
+  * Fix: run subjobs when loop has no iterations
+  * Fix: segfault
+  * Fix: restart rsyslog only if present (closes: #881596)
+  * Added debconf translations (closes: #882654, #883290, #883302, #883822,
+    #884171)
+
+ -- Thibault KUMMER <bob@coldsource.net>  Thu, 08 Nov 2018 09:52:40 +0000
+
 evqueue-core (2.0-2) stretch; urgency=medium
 
   * Initial release (closes: #880973).

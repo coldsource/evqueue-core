@@ -10,8 +10,9 @@ if [ "$1" = "configure" ]; then
 	if ! getent passwd evqueue > /dev/null 2>&1 ; then
 		adduser --quiet --system --disabled-login --ingroup evqueue --home /var/run/evqueue/ --no-create-home evqueue
 	fi
-	
-	chown -R evqueue:evqueue /usr/share/evqueue-core
+
+	chown evqueue:evqueue /usr/share/evqueue-core/plugins
+	chown evqueue:evqueue /usr/share/evqueue-core/plugins/notifications
 	
 	. /usr/share/debconf/confmodule
 	db_get evqueue-core/hostname
