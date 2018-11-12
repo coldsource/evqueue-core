@@ -21,3 +21,24 @@ License: GPL-3+
 License: GPL-3+
     On Debian systems, the complete text of the GNU General Public License
     version 3 can be found in ‘/usr/share/common-licenses/GPL-3’.
+
+Files: debian/po/de.po
+Copyright: 2017 Chris Leick <c.leick@vollbio.de>
+License: GPL-3+
+
+Files: debian/po/fr.po
+Copyright: 2017 Jean-Pierre Giraud <jean-pierregiraud@neuf.fr>
+License: GPL-3+
+
+Files: debian/po/nl.po
+Copyright: 2017 Frans Spiesschaert <Frans.Spiesschaert@yucom.be>
+License: GPL-3+
+
+Files: debian/po/pt.po
+Copyright: 2017 Rui Branco <ruipb@debianpt.org>
+License: GPL-3+
+
+Files: debian/po/ru.po
+Copyright: 2017 Lev Lamberov <dogsleg@debian.org>
+License: GPL-3+
+
