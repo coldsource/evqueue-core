@@ -77,8 +77,17 @@ endif()
 
 include_directories(include /usr/include)
 
+find_library(MYSQL_LIB mysqlclient)
+find_library(MARIADB_LIB mariadbclient)
+if(MYSQL_LIB)
+	target_link_libraries(centralog_server mysqlclient)
+elseif(MARIADB_LIB)
+	target_link_libraries(centralog_server mariadbclient)
+else()
+	 message(FATAL_ERROR "Needing lib mysqlclient or mariadbclient")
+endif()
+
 target_link_libraries(evqueue z)
-target_link_libraries(evqueue mysqlclient)
 target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue pcrecpp)
