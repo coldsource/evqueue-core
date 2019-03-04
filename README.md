@@ -31,7 +31,6 @@ These packages are required to build from the source:
 - build-essential
 - cmake
 - libmysqlclient-dev
-- libxqilla-dev
 - libxerces-c-dev
 - libpcre++-dev
 
