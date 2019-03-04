@@ -33,6 +33,7 @@ These packages are required to build from the source:
 - libmysqlclient-dev or libmariadbclient-dev
 - libxerces-c-dev
 - libpcre++-dev
+- libgit2-dev (optional)
 
 ### Packages
 
