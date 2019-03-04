@@ -30,7 +30,7 @@ These packages are required to build from the source:
 
 - build-essential
 - cmake
-- libmysqlclient-dev
+- libmysqlclient-dev or libmariadbclient-dev
 - libxerces-c-dev
 - libpcre++-dev
 
