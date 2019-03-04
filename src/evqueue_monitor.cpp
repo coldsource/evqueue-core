@@ -280,7 +280,7 @@ int main(int argc,char ** argv)
 				if(read_size!=2)
 				{
 					fprintf(stderr,"Corrupted data received from evqueue agent\n");
-					exit(-1);
+					break;
 				}
 				
 				buf[read_size] = '\0';
@@ -291,7 +291,7 @@ int main(int argc,char ** argv)
 				if(read_size!=9)
 				{
 					fprintf(stderr,"Corrupted data received from evqueue agent\n");
-					exit(-1);
+					break;
 				}
 				
 				buf[read_size] = '\0';
@@ -300,14 +300,14 @@ int main(int argc,char ** argv)
 				if(data_size>4096)
 				{
 					fprintf(stderr,"Corrupted data received from evqueue agent\n");
-					exit(-1);
+					break;
 				}
 				
 				read_size = fread(buf,1,data_size,log_in);
 				if(read_size!=data_size)
 				{
 					fprintf(stderr,"Corrupted data received from evqueue agent\n");
-					exit(-1);
+					break;
 				}
 				
 				if(data_fd==LOG_FILENO)
