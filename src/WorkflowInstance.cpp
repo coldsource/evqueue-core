@@ -997,6 +997,9 @@ bool WorkflowInstance::run_task(DOMElement task,DOMElement context_node)
 			xmldoc->getNodeEvqID(tasks.at(i));
 		}
 		
+		if(!handle_condition(tasks.at(i),contexts.at(i)))
+			continue;
+		
 		replace_values(tasks.at(i),contexts.at(i));
 		enqueue_task(tasks.at(i));
 	}
