@@ -137,5 +137,4 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 	 \
 	 \
 </xs:schema> \
-
 ";
