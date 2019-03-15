@@ -50,10 +50,11 @@ string Datastore::gzip(const string &str)
 		strm.avail_out = 16384;
 		strm.next_out = (Bytef *)output_chunk;
 		deflate(&strm, Z_FINISH);
-		deflateEnd(&strm);
 		
 		output.append(output_chunk,16384-strm.avail_out);
 	}while(strm.avail_out==0);
+	
+	deflateEnd(&strm);
 	
 	return output;
 }
