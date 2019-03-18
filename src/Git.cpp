@@ -121,6 +121,9 @@ void Git::LoadWorkflow(const string &name)
 {
 	unique_lock<mutex> llock(lock);
 	
+	if(!repo)
+		throw Exception("Git","Unable to access git repository");
+	
 	string filename = workflows_subdirectory+"/"+name+".xml";
 	
 	// Load XML from file
@@ -138,6 +141,9 @@ void Git::LoadWorkflow(const string &name)
 void Git::LoadTask(const string &name)
 {
 	unique_lock<mutex> llock(lock);
+	
+	if(!repo)
+		throw Exception("Git","Unable to access git repository");
 	
 	string filename = tasks_subdirectory+"/"+name+".xml";
 	
@@ -185,6 +191,9 @@ string Git::GetWorkflowHash(const string &rev, const string &name)
 {
 	unique_lock<mutex> llock(lock);
 	
+	if(!repo)
+		throw Exception("Git","Unable to access git repository");
+	
 	string filename = workflows_subdirectory+"/"+name+".xml";
 	
 	// Ensure uniform format
@@ -198,6 +207,9 @@ string Git::GetTaskHash(const string &rev, const string &name)
 {
 	unique_lock<mutex> llock(lock);
 	
+	if(!repo)
+		throw Exception("Git","Unable to access git repository");
+	
 	string filename = tasks_subdirectory+"/"+name+".xml";
 	
 	// Ensure uniform format
@@ -210,6 +222,9 @@ string Git::GetTaskHash(const string &rev, const string &name)
 void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
 {
 	unique_lock<mutex> llock(lock);
+	
+	if(!repo)
+		throw Exception("Git","Unable to access git repository");
 	
 	string filename = workflows_subdirectory+"/"+name+".xml";
 	string full_filename = repo_path+"/"+filename;
@@ -234,6 +249,9 @@ void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
 void Git::RemoveTask(const std::string &name, const string &commit_log)
 {
 	unique_lock<mutex> llock(lock);
+	
+	if(!repo)
+		throw Exception("Git","Unable to access git repository");
 	
 	string filename = tasks_subdirectory+"/"+name+".xml";
 	string full_filename = repo_path+"/"+filename;
