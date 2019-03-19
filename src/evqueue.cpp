@@ -66,8 +66,6 @@
 #include <ProcessManager.h>
 #include <DB.h>
 #include <Statistics.h>
-#include <Task.h>
-#include <Tasks.h>
 #include <RetrySchedule.h>
 #include <RetrySchedules.h>
 #include <GarbageCollector.h>
@@ -393,9 +391,6 @@ int main(int argc,const char **argv)
 		NotificationTypes *notification_types = new NotificationTypes();
 		Notifications *notifications = new Notifications();
 		
-		// Instanciate tasks list
-		Tasks *tasks = new Tasks();
-		
 		// Instanciate retry schedules list
 		RetrySchedules *retry_schedules = new RetrySchedules();
 		
@@ -468,8 +463,6 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
 		qh->RegisterHandler("instance",WorkflowInstanceAPI::HandleQuery);
 		qh->RegisterHandler("instances",WorkflowInstances::HandleQuery);
-		qh->RegisterHandler("task",Task::HandleQuery);
-		qh->RegisterHandler("tasks",Tasks::HandleQuery);
 		qh->RegisterHandler("queue",Queue::HandleQuery);
 		qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
 		qh->RegisterHandler("retry_schedule",RetrySchedule::HandleQuery);
@@ -638,7 +631,6 @@ int main(int argc,const char **argv)
 				delete workflows;
 				delete notifications;
 				delete notification_types;
-				delete tasks;
 				delete retry_schedules;
 				delete pm;
 				delete gc;

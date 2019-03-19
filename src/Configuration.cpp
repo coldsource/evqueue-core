@@ -103,7 +103,6 @@ Configuration::Configuration(void)
 	entries["git.signature.name"] = "evQueue";
 	entries["git.signature.email"] = "evqueue@local";
 	entries["git.workflows.subdirectory"] = "workflows";
-	entries["git.tasks.subdirectory"] = "tasks";
 	
 	instance=this;
 }

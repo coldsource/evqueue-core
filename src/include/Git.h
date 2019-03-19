@@ -52,17 +52,11 @@ class Git
 		
 #ifdef USELIBGIT2
 		void SaveWorkflow(const std::string &name, const std::string &commit_log, bool force);
-		void SaveTask(const std::string &name, const std::string &commit_log, bool force);
 		void LoadWorkflow(const std::string &name);
-		void LoadTask(const std::string &name);
 		void GetWorkflow(const std::string &name, QueryResponse *response);
-		void GetTask(const std::string &name, QueryResponse *response);
 		std::string GetWorkflowHash(const std::string &rev,const std::string &name);
-		std::string GetTaskHash(const std::string &rev,const std::string &name);
 		void RemoveWorkflow(const std::string &name,const std::string &commit_log);
-		void RemoveTask(const std::string &name,const std::string &commit_log);
 		void ListWorkflows(QueryResponse *response);
-		void ListTasks(QueryResponse *response);
 #endif
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);

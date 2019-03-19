@@ -20,6 +20,8 @@
 #ifndef _TASK_H_
 #define _TASK_H_
 
+#include <DOMElement.h>
+
 #include <string>
 #include <vector>
 
@@ -34,115 +36,26 @@ class DOMDocument;
 
 class Task
 {
-	unsigned int task_id;
-	std::string task_name;
-	std::string task_binary;
-	std::string task_wd;
-	std::string task_user;
-	std::string task_host;
-	bool task_use_agent;
+	std::string path;
+	std::vector<std::string> arguments;
+	std::string wd;
+	bool use_agent;
 	task_parameters_mode::task_parameters_mode parameters_mode;
 	task_output_method::task_output_method output_method;
-	bool task_merge_stderr;
-	std::string task_group;
-	std::string task_comment;
-	std::string lastcommit;
-	unsigned int bound_workflow_id;
+	bool merge_stderr;
 		
 	public:
 		Task();
-		Task(const std::string &path);
-		Task(DB *db,const std::string &task_name);
+		Task(DOMElement task_node);
 		
-		unsigned int GetID() const { return task_id; }
-		const std::string &GetName() const { return task_name; }
-		const std::string &GetBinary() const { return task_binary; }
-		const std::string &GetWorkingDirectory() const { return task_wd; }
-		const std::string &GetUser() const { return task_user; }
-		const std::string &GetHost() const { return task_host; }
-		bool GetMergeStderr() const { return  task_merge_stderr; }
-		bool GetUseAgent() const { return  task_use_agent; }
-		bool IsAbsolutePath() const { return task_binary[0]=='/'?true:false; }
+		const std::string &GetPath() const { return path; }
+		const std::vector<std::string> &GetArguments() const { return arguments; }
+		const std::string &GetWorkingDirectory() const { return wd; }
+		bool GetMergeStderr() const { return  merge_stderr; }
+		bool GetUseAgent() const { return  use_agent; }
+		bool IsAbsolutePath() const { return path[0]=='/'?true:false; }
 		task_parameters_mode::task_parameters_mode GetParametersMode() const  { return parameters_mode; }
 		task_output_method::task_output_method GetOutputMethod() const  { return output_method; }
-		const std::string &GetGroup() const { return task_group; }
-		const std::string &GetComment() const { return task_comment; }
-		
-		std::string GetLastCommit() const { return lastcommit; }
-		bool GetIsModified();
-		void SetLastCommit(const std::string &commit_id);
-		
-		std::string SaveToXML();
-		static void LoadFromXML(std::string name, DOMDocument *xmldoc, std::string repo_lastcommit);
-		
-		static void PutFile(const std::string &filename,const std::string &data,bool base64_encoded=true);
-		static void GetFile(const std::string &filename,std::string &data);
-		static void GetFileHash(const std::string &filename,std::string &hash);
-		static void RemoveFile(const std::string &filename);
-		
-		static bool CheckTaskName(const std::string &task_name);
-		
-		static void GetByID(unsigned int id, QueryResponse *response);
-		static void GetByName(const std::string &name, QueryResponse *response);
-		
-		static void Create(
-			const std::string &name,
-			const std::string &binary,
-			const std::string &binary_content,
-			const std::string &wd,
-			const std::string &user,
-			const std::string &host,
-			bool use_agent,
-			const std::string &parameters_mode,
-			const std::string &output_method,
-			bool merge_stderr,
-			const std::string &group,
-			const std::string &comment,
-			bool create_workflow,
-			std::vector<std::string> inputs,
-			const std::string &lastcommit = "",
-			QueryResponse *response = 0
-		);
-		
-		static void Edit(
-			unsigned int id,
-			const std::string &name,
-			const std::string &binary,
-			const std::string &binary_content,
-			const std::string &wd,
-			const std::string &user,
-			const std::string &host,
-			bool use_agent,
-			const std::string &parameters_mode,
-			const std::string &output_method,
-			bool merge_stderr,
-			const std::string &group,
-			const std::string &comment,
-			bool *bound_workflow,
-			std::vector<std::string> inputs
-		);
-		
-		static void Delete(unsigned int id, bool *workflow_deleted);
-		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
-		
-	private:
-		static void create_edit_check(
-			const std::string &name,
-			const std::string &binary,
-			const std::string &binary_content,
-			const std::string &wd,
-			const std::string &user,
-			const std::string &host,
-			bool use_agent,
-			const std::string &parameters_mode,
-			const std::string &output_method,
-			bool merge_stderr,
-			const std::string &group,
-			const std::string &comment
-		);
-		
-		static void get(const Task &task, QueryResponse *response);
 };
 
 #endif

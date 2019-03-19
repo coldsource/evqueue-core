@@ -30,7 +30,6 @@
 #include <QueryResponse.h>
 #include <Logger.h>
 #include <User.h>
-#include <Tasks.h>
 #include <Task.h>
 #include <tools.h>
 #include <tools_ipc.h>
@@ -46,7 +45,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <pthread.h>
-#include <wordexp.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -271,7 +269,7 @@ void ProcessManager::WaitForShutdown(void)
 }
 
 pid_t ProcessManager::ExecuteTask(
-	const string &task_name,
+	const Task &task,
 	vector<string> &parameters_name,
 	vector<string> &parameters_value,
 	const string &stdin_parameter,
@@ -281,33 +279,17 @@ pid_t ProcessManager::ExecuteTask(
 	)
 {
 	char buf[32],tid_str[16];
-	char *task_name_c;
 	int parameters_pipe[2];
-	Task task;
 	
 	static const string tasks_directory = Configuration::GetInstance()->Get("processmanager.tasks.directory");
 	static const string monitor_path = Configuration::GetInstance()->Get("processmanager.monitor.path");
 
-	if(task_name[0]!='!')
-		task = Tasks::GetInstance()->Get(task_name); // Task from name
-	else
+	// Add task argumuments
+	auto arguments = task.GetArguments();
+	for (int i = 0; i<arguments.size(); i++)
 	{
-		// Task from path
-		
-		// Perform arguments expension
-		wordexp_t wexp;
-		if(wordexp(task_name.substr(1).c_str(), &wexp, 0)!=0)
-			throw Exception("ProcessManager","Error expanding task command line");
-		
-		char **w = wexp.we_wordv;
-		task = Task(w[0]);
-		for (int i = 1; i < wexp.we_wordc; i++)
-		{
-			parameters_name.insert(parameters_name.begin()+i-1,string(""));
-			parameters_value.insert(parameters_value.begin()+i-1,string(w[i]));
-		}
-		
-		wordfree(&wexp);
+		parameters_name.insert(parameters_name.begin()+i,string(""));
+		parameters_value.insert(parameters_value.begin()+i,arguments.at(i));
 	}
 
 	// Prepare pipe for STDIN before fork()
@@ -333,23 +315,15 @@ pid_t ProcessManager::ExecuteTask(
 		// Compute task filename
 		string task_filename;
 		if(task.IsAbsolutePath())
-			task_filename = task.GetBinary();
+			task_filename = task.GetPath();
 		else
-			task_filename = tasks_directory+"/"+task.GetBinary();
+			task_filename = tasks_directory+"/"+task.GetPath();
 
 		if(!task.GetWorkingDirectory().empty())
 			setenv("EVQUEUE_WORKING_DIRECTORY",task.GetWorkingDirectory().c_str(),true);
 
 		// Set SSH variables for remote execution if needed by task
-		if(!task.GetHost().empty())
-		{
-			// Task is configured as distant
-			setenv("EVQUEUE_SSH_HOST",task.GetHost().c_str(),true);
-
-			if(!task.GetUser().empty())
-				setenv("EVQUEUE_SSH_USER",task.GetUser().c_str(),true);
-		}
-		else if(host!="")
+		if(host!="")
 		{
 			// Dynamic task execution is enabled
 			setenv("EVQUEUE_SSH_HOST",host.c_str(),true);
@@ -461,7 +435,7 @@ pid_t ProcessManager::ExecuteTask(
 	}
 
 	if(pid<0)
-		throw Exception("ProcessManager","Unable to execute task '"+task_name+"' : could not fork");
+		throw Exception("ProcessManager","Unable to execute task '"+task.GetPath()+"' : could not fork");
 
 	return pid;
 }

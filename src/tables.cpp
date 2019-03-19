@@ -72,28 +72,6 @@ std::map<std::string,std::string> evqueue_tables = {
   UNIQUE KEY `schedule_name` (`schedule_name`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.0'; \
 "},
-{"t_task",
-"CREATE TABLE `t_task` ( \
-  `task_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
-  `task_name` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
-  `task_binary` varchar(128) COLLATE utf8_unicode_ci NOT NULL, \
-  `task_binary_content` longblob, \
-  `task_wd` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL, \
-  `task_user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL, \
-  `task_host` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL, \
-  `task_use_agent` tinyint NOT NULL DEFAULT 0, \
-  `task_parameters_mode` enum('CMDLINE','PIPE','ENV') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
-  `task_output_method` enum('XML','TEXT') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'XML', \
-  `task_merge_stderr` tinyint NOT NULL DEFAULT 0, \
-  `task_xsd` longtext COLLATE utf8_unicode_ci, \
-  `task_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '', \
-  `task_comment` text COLLATE utf8_unicode_ci NOT NULL, \
-  `workflow_id` int(10) DEFAULT NULL, \
-  `task_lastcommit` varchar(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL, \
-  UNIQUE KEY `taskdesc_id` (`task_id`), \
-  UNIQUE KEY `task_name` (`task_name`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.0'; \
-"},
 {"t_user",
 "CREATE TABLE `t_user` ( \
   `user_login` varchar(32) COLLATE utf8_unicode_ci NOT NULL, \

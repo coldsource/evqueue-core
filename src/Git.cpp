@@ -24,8 +24,6 @@
 #include <XMLUtils.h>
 #include <Workflow.h>
 #include <Workflows.h>
-#include <Task.h>
-#include <Tasks.h>
 #include <Configuration.h>
 #include <Exception.h>
 #include <FileManager.h>
@@ -60,7 +58,6 @@ Git::Git()
 		repo = new LibGit2(repo_path);
 	
 	workflows_subdirectory = config->Get("git.workflows.subdirectory");
-	tasks_subdirectory = config->Get("git.tasks.subdirectory");
 #endif
 	
 	instance = this;
@@ -96,27 +93,6 @@ void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 	Workflows::GetInstance()->Reload();
 }
 
-void Git::SaveTask(const string &name, const string &commit_log, bool force)
-{
-	unique_lock<mutex> llock(lock);
-	
-	// Get workflow form its ID
-	Task task = Tasks::GetInstance()->Get(name);
-	
-	// Before doing anything, we have to check last commit on disk is the same as in database (to prevent discarding unseen modifications)
-	string db_lastcommit = task.GetLastCommit();
-	
-	// Prepare XML
-	string task_xml = task.SaveToXML();
-	
-	// Write file to repo
-	string commit_id = save_file(tasks_subdirectory+"/"+name+".xml", task_xml, db_lastcommit, commit_log, force);
-	
-	// Update workflow 'lastcommit' to new commit and reload configuration
-	task.SetLastCommit(commit_id);
-	Tasks::GetInstance()->Reload();
-}
-
 void Git::LoadWorkflow(const string &name)
 {
 	unique_lock<mutex> llock(lock);
@@ -138,46 +114,11 @@ void Git::LoadWorkflow(const string &name)
 	Workflow::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
 }
 
-void Git::LoadTask(const string &name)
-{
-	unique_lock<mutex> llock(lock);
-	
-	if(!repo)
-		throw Exception("Git","Unable to access git repository");
-	
-	string filename = tasks_subdirectory+"/"+name+".xml";
-	
-	// Load XML from file
-	unique_ptr<DOMDocument> xmldoc(load_file(filename));
-	
-	// Read repository lastcommit
-	string repo_lastcommit = repo->GetFileLastCommit(filename);
-	if(!repo_lastcommit.length())
-		throw Exception("Git","Unable to get file last commit ID, maybe you need to commit first ?");
-	
-	// Create/Edit workflow
-	Task::LoadFromXML(name, xmldoc.get(), repo_lastcommit);
-}
-
 void Git::GetWorkflow(const string &name, QueryResponse *response)
 {
 	unique_lock<mutex> llock(lock);
 	
 	string filename = workflows_subdirectory+"/"+name+".xml";
-	
-	// Load XML from file
-	unique_ptr<DOMDocument> xmldoc(load_file(filename));
-	
-	DOMDocument *response_xmldoc = response->GetDOM();
-	DOMNode node = response_xmldoc->importNode(xmldoc->getDocumentElement(),true);
-	response_xmldoc->getDocumentElement().appendChild(node);
-}
-
-void Git::GetTask(const string &name, QueryResponse *response)
-{
-	unique_lock<mutex> llock(lock);
-
-	string filename = tasks_subdirectory+"/"+name+".xml";
 	
 	// Load XML from file
 	unique_ptr<DOMDocument> xmldoc(load_file(filename));
@@ -195,22 +136,6 @@ string Git::GetWorkflowHash(const string &rev, const string &name)
 		throw Exception("Git","Unable to access git repository");
 	
 	string filename = workflows_subdirectory+"/"+name+".xml";
-	
-	// Ensure uniform format
-	XMLFormatter formatter(repo->Cat(rev,filename));
-	formatter.Format(false);
-	
-	return Sha1String(formatter.GetOutput()).GetBinary();
-}
-
-string Git::GetTaskHash(const string &rev, const string &name)
-{
-	unique_lock<mutex> llock(lock);
-	
-	if(!repo)
-		throw Exception("Git","Unable to access git repository");
-	
-	string filename = tasks_subdirectory+"/"+name+".xml";
 	
 	// Ensure uniform format
 	XMLFormatter formatter(repo->Cat(rev,filename));
@@ -246,45 +171,11 @@ void Git::RemoveWorkflow(const std::string &name, const string &commit_log)
 	}
 }
 
-void Git::RemoveTask(const std::string &name, const string &commit_log)
-{
-	unique_lock<mutex> llock(lock);
-	
-	if(!repo)
-		throw Exception("Git","Unable to access git repository");
-	
-	string filename = tasks_subdirectory+"/"+name+".xml";
-	string full_filename = repo_path+"/"+filename;
-	
-	repo->Pull();
-	repo->RemoveFile(filename);
-	repo->Commit(commit_log);
-	repo->Push();
-	
-	if(unlink(full_filename.c_str())!=0)
-		throw Exception("Git","Unable to remove file "+full_filename);
-	
-	if(Tasks::GetInstance()->Exists(name))
-	{
-		Task task = Tasks::GetInstance()->Get(name);
-		task.SetLastCommit("");
-		
-		Tasks::GetInstance()->Reload();
-	}
-}
-
 void Git::ListWorkflows(QueryResponse *response)
 {
 	unique_lock<mutex> llock(lock);
 	
 	list_files(workflows_subdirectory,response);
-}
-
-void Git::ListTasks(QueryResponse *response)
-{
-	unique_lock<mutex> llock(lock);
-	
-	list_files(tasks_subdirectory,response);
 }
 
 #endif // USELIBGIT2
@@ -346,46 +237,6 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	else if(action=="list_workflows")
 	{
 		Git::GetInstance()->ListWorkflows(response);
-		return true;
-	}
-	if(action=="save_task")
-	{
-		string name = saxh->GetRootAttribute("name");
-		string commit_log = saxh->GetRootAttribute("commit_log");
-		bool force = saxh->GetRootAttributeBool("force",false);
-		
-		Git::GetInstance()->SaveTask(name,commit_log,force);
-		
-		return true;
-	}
-	else if(action=="load_task")
-	{
-		string name = saxh->GetRootAttribute("name");
-		
-		Git::GetInstance()->LoadTask(name);
-		
-		return true;
-	}
-	else if(action=="get_task")
-	{
-		string name = saxh->GetRootAttribute("name");
-		
-		Git::GetInstance()->GetTask(name,response);
-		
-		return true;
-	}
-	else if(action=="remove_task")
-	{
-		string name = saxh->GetRootAttribute("name");
-		string commit_log = saxh->GetRootAttribute("commit_log");
-		
-		Git::GetInstance()->RemoveTask(name,commit_log);
-		
-		return true;
-	}
-	else if(action=="list_tasks")
-	{
-		Git::GetInstance()->ListTasks(response);
 		return true;
 	}
 	

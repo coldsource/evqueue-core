@@ -22,7 +22,6 @@
 #include <global.h>
 #include <Logger.h>
 #include <WorkflowScheduler.h>
-#include <Tasks.h>
 #include <RetrySchedules.h>
 #include <Workflows.h>
 #include <Notifications.h>
@@ -66,12 +65,6 @@ void tools_config_reload(const std::string &module,bool notify)
 		scheduler->Reload(notify);
 	}
 	
-	if(module=="all" || module=="tasks")
-	{
-		Tasks *tasks = Tasks::GetInstance();
-		tasks->Reload(notify);
-	}
-	
 	if(module=="all" || module=="retry_schedules")
 	{
 		RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
@@ -101,12 +94,6 @@ void tools_config_reload(const std::string &module,bool notify)
 		Users *users = Users::GetInstance();
 		users->Reload(notify);
 	}
-}
-
-void tools_sync_tasks(bool notify)
-{
-	Tasks *tasks = Tasks::GetInstance();
-	tasks->SyncBinaries(notify);
 }
 
 void tools_sync_notifications(bool notify)
@@ -144,12 +131,6 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		else if(action=="retry")
 		{
 			tools_flush_retrier();
-			return true;
-		}
-		else if(action=="synctasks")
-		{
-			bool notify = saxh->GetRootAttributeBool("notify",true);
-			tools_sync_tasks(notify);
 			return true;
 		}
 		else if(action=="syncnotifications")

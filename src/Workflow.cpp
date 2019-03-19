@@ -30,7 +30,6 @@
 #include <QueryResponse.h>
 #include <WorkflowScheduler.h>
 #include <Users.h>
-#include <Tasks.h>
 #include <Git.h>
 #include <User.h>
 #include <XMLFormatter.h>
@@ -260,7 +259,7 @@ void Workflow::Delete(unsigned int id)
 {
 	DB db;
 	
-	bool task_deleted = false, schedule_deleted = false, rights_deleted = false;
+	bool schedule_deleted = false, rights_deleted = false;
 	
 	db.StartTransaction();
 	
@@ -268,11 +267,6 @@ void Workflow::Delete(unsigned int id)
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Workflow","Workflow not found");
-	
-	// Also delete associated tasks
-	db.QueryPrintf("DELETE FROM t_task WHERE workflow_id=%i",&id);
-	if(db.AffectedRows()>0)
-		task_deleted = true;
 	
 	// Clean notifications
 	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
@@ -290,9 +284,6 @@ void Workflow::Delete(unsigned int id)
 	db.CommitTransaction();
 	
 	Workflows::GetInstance()->Reload();
-	
-	if(task_deleted)
-		Tasks::GetInstance()->Reload();
 	
 	if(schedule_deleted)
 		WorkflowScheduler::GetInstance()->Reload();
@@ -338,6 +329,9 @@ void Workflow::ClearNotifications(unsigned int id)
 
 string Workflow::create_edit_check(const string &name, const string &base64, const string &group, const string &comment)
 {
+	if(name=="")
+		throw Exception("Workflow","Workflow name cannot be empty");
+	
 	if(!CheckWorkflowName(name))
 		throw Exception("Workflow","Invalid workflow name");
 	

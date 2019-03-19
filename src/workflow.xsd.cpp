@@ -59,7 +59,6 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		<xs:attribute name=\"loop\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"condition\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"iteration-condition\" type=\"xs:string\" use=\"optional\" /> \
-		<xs:attribute name=\"on_error\" type=\"onErrorType\" use=\"optional\" /> \
 	</xs:complexType> \
 	 \
 	 \
@@ -75,7 +74,12 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 			<xs:element name=\"input\" type=\"inputType\" minOccurs=\"0\" maxOccurs=\"unbounded\" /> \
 			<xs:element name=\"stdin\" type=\"stdinType\" minOccurs=\"0\" maxOccurs=\"1\" /> \
 		</xs:sequence> \
-		<xs:attribute name=\"name\" type=\"xs:string\" use=\"required\" /> \
+		<xs:attribute name=\"path\" type=\"xs:string\" use=\"required\" /> \
+		<xs:attribute name=\"wd\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"parameters-mode\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"output-method\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"merge-stderr\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"use-agent\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"queue\" type=\"xs:string\" use=\"required\" /> \
 		<xs:attribute name=\"user\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"host\" type=\"xs:string\" use=\"optional\" /> \
@@ -117,16 +121,7 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		<xs:sequence> \
 			<xs:element name=\"job\" type=\"jobType\" maxOccurs=\"unbounded\" /> \
 		</xs:sequence> \
-		<xs:attribute name=\"on_error\" type=\"onErrorType\" use=\"optional\" /> \
 	</xs:complexType> \
-	 \
-	 \
-	<xs:simpleType name=\"onErrorType\"> \
-		<xs:restriction base=\"xs:string\"> \
-			<xs:enumeration value=\"continue\"/> <!-- Subjobs won't be executed, but independent tasks will (this is the default) --> \
-			<xs:enumeration value=\"stop\"/>  <!-- Stop execution of other (possibly unrelated) tasks in this branch (workflow/job) --> \
-		</xs:restriction> \
-	</xs:simpleType> \
 	 \
 	 \
 	<xs:simpleType name=\"StrNonEmpty\"> \

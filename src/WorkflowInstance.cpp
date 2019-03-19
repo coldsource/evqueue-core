@@ -33,7 +33,6 @@
 #include <Configuration.h>
 #include <WorkflowInstances.h>
 #include <Logger.h>
-#include <Tasks.h>
 #include <Task.h>
 #include <RetrySchedules.h>
 #include <RetrySchedule.h>
@@ -527,22 +526,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 
 	if(retval==0)
 	{
-		Task task;
-
-		try
-		{
-			ExceptionWorkflowContext ctx(task_node,"Task has vanished");
-			string task_name = task_node.getAttribute("name");
-			if(task_name[0]!='!')
-				task = Tasks::GetInstance()->Get(task_name); // Task from name
-			else
-				task = Task(task_name.substr(1)); // Task from path
-		}
-		catch(Exception e)
-		{
-			error_tasks++;
-			update_job_statistics("error_tasks",1,task_node);
-		}
+		Task task(task_node);
 
 		if(task.GetOutputMethod()==task_output_method::XML)
 		{
@@ -680,7 +664,6 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 	char buf[32],tid_str[16];
 	char *task_name_c;
 	int parameters_pipe[2];
-	Task task;
 
 	unique_lock<recursive_mutex> llock(lock);
 
@@ -696,7 +679,7 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 			throw Exception("WorkflowInstance","Aborted on user request");
 		
 		// Get task informations
-		string task_name = task_node.getAttribute("name");
+		Task task(task_node);
 		
 		// Prepare parameters
 		// This must be done before fork() because xerces Transcode() can deadlock on fork (xerces bug...)
@@ -754,10 +737,10 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 				user = xmldoc->getDocumentElement().getAttribute("user");
 		}
 		
-		Logger::Log(LOG_INFO,"[WID %d] Executing %s",workflow_instance_id,task_name.c_str());
+		Logger::Log(LOG_INFO,"[WID %d] Executing %s",workflow_instance_id,task.GetPath().c_str());
 		
 		// Execute task
-		pid_t pid = ProcessManager::ExecuteTask(task_name,parameters_name,parameters_value,stdin_parameter,tid,host,user);
+		pid_t pid = ProcessManager::ExecuteTask(task,parameters_name,parameters_value,stdin_parameter,tid,host,user);
 		
 		// Update task node
 		task_node.setAttribute("status","EXECUTING");

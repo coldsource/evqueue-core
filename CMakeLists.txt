@@ -31,7 +31,7 @@ add_executable(evqueue
 	src/Queue.cpp src/QueuePool.cpp src/WorkflowInstance.cpp src/WorkflowInstances.cpp src/Scheduler.cpp
 	src/Retrier.cpp src/SocketQuerySAX2Handler.cpp src/ProcessManager.cpp src/WorkflowParameters.cpp
 	src/handle_connection.cpp src/Statistics.cpp src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp
-	src/Schedule.cpp src/WorkflowSchedule.cpp src/WorkflowScheduler.cpp src/Tasks.cpp src/Task.cpp
+	src/Schedule.cpp src/WorkflowSchedule.cpp src/WorkflowScheduler.cpp src/Task.cpp
 	src/Workflow.cpp src/Workflows.cpp src/Logger.cpp src/GarbageCollector.cpp src/RetrySchedule.cpp
 	src/RetrySchedules.cpp src/SequenceGenerator.cpp src/tools.cpp src/tools_ipc.cpp src/Notification.cpp
 	src/Notifications.cpp src/Sockets.cpp src/FileManager.cpp src/base64.cpp src/tables.cpp src/tools_db.cpp

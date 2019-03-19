@@ -20,6 +20,8 @@
 #ifndef _PROCESS_MANAGER_H_
 #define _PROCESS_MANAGER_H_
 
+#include <Task.h>
+
 #include <sys/types.h>
 
 #include <string>
@@ -55,7 +57,7 @@ class ProcessManager
 		void WaitForShutdown(void);
 		
 		static pid_t ExecuteTask(
-			const std::string &task_name,
+			const Task &task,
 			std::vector<std::string> &parameters_name,
 			std::vector<std::string> &parameters_value,
 			const std::string &stdin_parameter,
