@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(EVQUEUE_VERSION "2.0")
+set(EVQUEUE_VERSION "2.2")
 
 set(CMAKE_BUILD_TYPE Release)
 
