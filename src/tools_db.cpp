@@ -155,7 +155,6 @@ void tools_upgrade_v20_v22(void)
 			{
 				DOMNode xpath_string_node = xpath_strings->getNodeValue();
 				string xpath_string = xpath_string_node.getNodeValue();
-				//printf("Found %s\n",xpath_string.c_str());
 				
 				vector<string> function_names;
 				function_names.push_back("evqGetOutput");
