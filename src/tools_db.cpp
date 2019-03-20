@@ -165,6 +165,7 @@ void tools_upgrade_v20_v22(void)
 					pcrecpp::RE regex(function_names.at(j)+"\\(['\"]([^'\")]+)['\"]");
 					pcrecpp::StringPiece str_to_match(xpath_string);
 					string match;
+					size_t find_start_pos = 0;
 					while(regex.FindAndConsume(&str_to_match,&match))
 					{
 						db2.QueryPrintf("SELECT task_binary FROM t_task WHERE task_name=%s",&match);
@@ -172,8 +173,10 @@ void tools_upgrade_v20_v22(void)
 						{
 							string task_path = db2.GetField(0);
 						
-							size_t start_pos = xpath_string.find(match);
+							size_t start_pos = xpath_string.find(match,find_start_pos);
 							xpath_string.replace(start_pos,match.length(),task_path);
+							
+							find_start_pos += start_pos + task_path.length();
 						}
 					}
 				}
