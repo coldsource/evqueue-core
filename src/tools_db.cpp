@@ -26,7 +26,10 @@
 #include <DOMDocument.h>
 #include <DOMXPathResult.h>
 
+#include <pcrecpp.h>
+
 #include <string>
+#include <vector>
 #include <memory>
 
 using namespace std;
@@ -134,6 +137,49 @@ void tools_upgrade_v20_v22(void)
 				task.setAttribute("host",host);
 			if(wd!="")
 				task.setAttribute("wd",wd);
+		}
+		
+		vector<string> xpath_attributes;
+		xpath_attributes.push_back("loop");
+		xpath_attributes.push_back("condition");
+		xpath_attributes.push_back("iteration-condition");
+		xpath_attributes.push_back("select");
+		for(int i=0;i<xpath_attributes.size();i++)
+		{
+			string attribute_name = xpath_attributes.at(i);
+		
+			unique_ptr<DOMXPathResult> xpath_strings(xmldoc->evaluate("//@"+attribute_name,xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+			
+			unsigned int xpath_strings_index = 0;
+			while(xpath_strings->snapshotItem(xpath_strings_index++))
+			{
+				DOMNode xpath_string_node = xpath_strings->getNodeValue();
+				string xpath_string = xpath_string_node.getNodeValue();
+				//printf("Found %s\n",xpath_string.c_str());
+				
+				vector<string> function_names;
+				function_names.push_back("evqGetOutput");
+				function_names.push_back("evqGetInput");
+				for(int j=0;j<function_names.size();j++)
+				{
+					pcrecpp::RE regex(function_names.at(j)+"\\(['\"]([^'\")]+)['\"]");
+					pcrecpp::StringPiece str_to_match(xpath_string);
+					string match;
+					while(regex.FindAndConsume(&str_to_match,&match))
+					{
+						db2.QueryPrintf("SELECT task_binary FROM t_task WHERE task_name=%s",&match);
+						if(db2.FetchRow())
+						{
+							string task_path = db2.GetField(0);
+						
+							size_t start_pos = xpath_string.find(match);
+							xpath_string.replace(start_pos,match.length(),task_path);
+						}
+					}
+				}
+				
+				xpath_string_node.setTextContent(xpath_string);
+			}
 		}
 		
 		string xml2 = xmldoc->Serialize(xmldoc->getDocumentElement());
