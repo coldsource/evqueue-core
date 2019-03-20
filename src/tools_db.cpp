@@ -23,6 +23,11 @@
 #include <Configuration.h>
 #include <Exception.h>
 #include <Logger.h>
+#include <DOMDocument.h>
+#include <DOMXPathResult.h>
+
+#include <string>
+#include <memory>
 
 using namespace std;
 
@@ -53,7 +58,93 @@ void tools_init_db(void)
 				db.Query("INSERT INTO t_user(user_login,user_password,user_profile,user_preferences) VALUES('admin',SHA1('admin'),'ADMIN','');");
 		}
 		else
+		{
 			if(string(db.GetField(0))!="v" EVQUEUE_VERSION)
-				throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
+			{
+				if(db.GetField(0)=="v2.0" && EVQUEUE_VERSION=="2.2")
+					tools_upgrade_v20_v22();
+				else
+					throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
+			}
+		}
+	}
+}
+
+void tools_upgrade_v20_v22(void)
+{
+	Logger::Log(LOG_NOTICE,"Detected v2.0 tables, upgrading scheme to v2.2");
+	
+	DB db;
+	DB db2;
+	
+	db.Query("SELECT workflow_id, workflow_xml FROM t_workflow");
+	while(db.FetchRow())
+	{
+		unsigned int id = db.GetFieldInt(0);
+		string xml = db.GetField(1);
+		
+		unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(xml));
+		
+		unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		
+		unsigned int tasks_index = 0;
+		while(tasks->snapshotItem(tasks_index++))
+		{
+			DOMElement task = (DOMElement)tasks->getNodeValue();
+			
+			// Change task's @name to @path
+			if(task.hasAttribute("path"))
+				continue;
+			
+			string name = task.getAttribute("name");
+			
+			string path, wd="", parameters_mode="CMDLINE",output_method="TEXT",merge_stderr="0",use_agent="0",user="",host="";
+			if(name[0]=='!')
+				path = name.substr(1);
+			else
+			{
+				db2.QueryPrintf("SELECT task_parameters_mode,task_output_method,task_merge_stderr,task_use_agent,task_user,task_host,task_wd,task_binary FROM t_task WHERE task_name=%s",&name);
+				if(!db2.FetchRow())
+					path = name;
+				else
+				{
+					parameters_mode = db2.GetField(0);
+					output_method = db2.GetField(1);
+					merge_stderr = db2.GetField(2);
+					use_agent = db2.GetField(3);
+					user = db2.GetField(4);
+					host = db2.GetField(5);
+					wd = db2.GetField(6);
+					path = db2.GetField(7);
+				}
+			}
+			
+			task.setAttribute("path",path);
+			task.removeAttribute("name");
+			
+			task.setAttribute("parameters-mode",parameters_mode);
+			task.setAttribute("output-method",output_method);
+			if(merge_stderr!="0")
+				task.setAttribute("merge-stderr",merge_stderr);
+			if(use_agent!="0")
+				task.setAttribute("use-agent",use_agent);
+			if(user!="")
+				task.setAttribute("user",user);
+			if(host!="")
+				task.setAttribute("host",host);
+			if(wd!="")
+				task.setAttribute("wd",wd);
+		}
+		
+		string xml2 = xmldoc->Serialize(xmldoc->getDocumentElement());
+		db2.QueryPrintf("UPDATE t_workflow SET workflow_xml=%s WHERE workflow_id=%i",&xml2,&id);
+	}
+	
+	db.Query("DROP TABLE IF EXISTS t_task");
+	
+	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
+	{
+		string version = "v" EVQUEUE_VERSION;
+		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
 	}
 }

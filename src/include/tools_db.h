@@ -21,5 +21,6 @@
 #define _TOOLS_DB_H_
 
 void tools_init_db(void);
+void tools_upgrade_v20_v22(void);
 
 #endif
