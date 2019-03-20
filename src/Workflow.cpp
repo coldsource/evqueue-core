@@ -65,18 +65,6 @@ Workflow::Workflow(DB *db,const string &workflow_name)
 	bound_schedule = db->GetFieldInt(5);
 	lastcommit = db->GetField(6);
 	
-	db->QueryPrintf("SELECT task_id FROM t_task WHERE workflow_id = %i",&workflow_id);
-	if(db->FetchRow())
-	{
-		bound_task = true;
-		bound_task_id = db->GetFieldInt(0);
-	}
-	else
-	{
-		bound_task = false;
-		bound_task_id = 0;
-	}
-	
 	db->QueryPrintf("SELECT notification_id FROM t_workflow_notification WHERE workflow_id=%i",&workflow_id);
 	while(db->FetchRow())
 		notifications.push_back(db->GetFieldInt(0));

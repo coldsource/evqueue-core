@@ -100,8 +100,6 @@ bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			node.setAttribute("group",workflow.GetGroup());
 			node.setAttribute("comment",workflow.GetComment());
 			node.setAttribute("bound-to-schedule",workflow.GetIsBoundSchedule()?"1":"0");
-			node.setAttribute("has-bound-task",workflow.GetIsBoundTask()?"1":"0");
-			node.setAttribute("bound-task-id",to_string(workflow.GetBoundTaskID()));
 			node.setAttribute("lastcommit",workflow.GetLastCommit());
 			node.setAttribute("modified",workflow.GetIsModified()?"1":"0");
 		}
