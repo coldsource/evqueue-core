@@ -41,7 +41,10 @@ void signal_callback_handler(int signum)
 		// Forward signal to our child
 		fprintf(stderr,"evqueue_monitor : received SIGTERM, killing task...\n");
 		if(pid)
-			kill(-pid,SIGKILL);
+		{
+			pid_t pgid = getpgid(pid);
+			kill(-pgid,SIGKILL);
+		}
 	}
 }
 
@@ -94,6 +97,8 @@ int main(int argc,char ** argv)
 	
 	if(pid==0)
 	{
+		setsid(); // Create new process group
+
 		const char *working_directory = getenv("EVQUEUE_WORKING_DIRECTORY");
 		
 		// Compute the number of SSH arguments
