@@ -41,7 +41,7 @@ void signal_callback_handler(int signum)
 		// Forward signal to our child
 		fprintf(stderr,"evqueue_monitor : received SIGTERM, killing task...\n");
 		if(pid)
-			kill(pid,SIGKILL);
+			kill(-pid,SIGKILL);
 	}
 }
 
