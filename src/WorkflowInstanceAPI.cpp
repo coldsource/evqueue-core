@@ -33,6 +33,7 @@
 #include <DB.h>
 #include <Configuration.h>
 #include <User.h>
+#include <Tag.h>
 
 #include <string>
 #include <map>
@@ -50,6 +51,35 @@ void WorkflowInstanceAPI::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",&id);
 	
 	db.QueryPrintf("DELETE FROM t_datastore WHERE workflow_instance_id=%i",&id);
+	
+	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE workflow_instance_id=%i",&id);
+}
+
+void WorkflowInstanceAPI::Tag(unsigned int id, unsigned int tag_id)
+{
+	DB db;
+	
+	// Check tag existence
+	::Tag tag(&db,tag_id);
+	
+	// Check instance existence
+	db.QueryPrintf("SELECT workflow_instance_status FROM t_workflow_instance WHERE workflow_instance_id=%i",&id);
+	if(!db.FetchRow())
+		throw Exception("WorkflowInstanceAPI", "Instance ID not found");
+	
+	if(db.GetField(0)!="TERMINATED")
+		throw Exception("WorkflowInstanceAPI", "Instance is not terminated");
+	
+	db.QueryPrintf("INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",&id,&tag_id);
+}
+
+void WorkflowInstanceAPI::Untag(unsigned int id, unsigned int tag_id)
+{
+	DB db;
+	
+	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE workflow_instance_id=%i AND tag_id=%i",&id,&tag_id);
+	if(db.AffectedRows()==0)
+		throw Exception("WorkflowInstanceAPI", "Instance ID or tag ID not found");
 }
 
 bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -270,7 +300,32 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		}
 		else if(action=="delete")
 		{
+			if(!user.IsAdmin())
+				User::InsufficientRights();
+			
 			Delete(workflow_instance_id);
+			
+			return true;
+		}
+		else if(action=="tag")
+		{
+			if(!user.HasAccessToWorkflow(workflow_instance_id, "exec") && !user.HasAccessToWorkflow(workflow_instance_id, "edit"))
+				User::InsufficientRights();
+			
+			unsigned int tag_id = saxh->GetRootAttributeInt("tag_id");
+			
+			Tag(workflow_instance_id,tag_id);
+			
+			return true;
+		}
+		else if(action=="untag")
+		{
+			if(!user.HasAccessToWorkflow(workflow_instance_id, "exec") && !user.HasAccessToWorkflow(workflow_instance_id, "edit"))
+				User::InsufficientRights();
+			
+			unsigned int tag_id = saxh->GetRootAttributeInt("tag_id");
+			
+			Untag(workflow_instance_id,tag_id);
 			
 			return true;
 		}

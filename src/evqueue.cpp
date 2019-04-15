@@ -76,6 +76,8 @@
 #include <Notifications.h>
 #include <User.h>
 #include <Users.h>
+#include <Tag.h>
+#include <Tags.h>
 #include <Sockets.h>
 #include <Random.h>
 #include <Datastore.h>
@@ -457,6 +459,9 @@ int main(int argc,const char **argv)
 		Users *users = new Users();
 		User::InitAnonymous();
 		
+		// Load tags
+		Tags *tags = new Tags();
+		
 		// Initialize query handlers
 		QueryHandlers *qh = new QueryHandlers();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
@@ -475,6 +480,8 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("notifications",Notifications::HandleQuery);
 		qh->RegisterHandler("user",User::HandleQuery);
 		qh->RegisterHandler("users",Users::HandleQuery);
+		qh->RegisterHandler("tag",Tag::HandleQuery);
+		qh->RegisterHandler("tags",Tags::HandleQuery);
 		qh->RegisterHandler("logs",Logs::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
@@ -639,6 +646,7 @@ int main(int argc,const char **argv)
 				delete sockets;
 				delete cluster;
 				delete users;
+				delete tags;
 				delete active_connections;
 				delete random;
 				

@@ -405,6 +405,7 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		
 		DB db;
 		db.QueryVsPrintf(query,query_where_values);
+		map<unsigned int,DOMNode> instance_id_tags_node;
 		while(db.FetchRow())
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<workflow />");
@@ -423,6 +424,10 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 				if(!db.GetFieldIsNULL(8))
 					node.setAttribute("schedule_id",db.GetField(8));
 				node.setAttribute("comment",db.GetField(9));
+				
+				DOMNode tags_node = response->GetDOM()->createElement("tags");
+				node.appendChild(tags_node);
+				instance_id_tags_node.insert(pair<unsigned int,DOMNode>(db.GetFieldInt(0),tags_node));
 			}
 			else
 			{
@@ -455,6 +460,41 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		db.Query("SELECT FOUND_ROWS()");
 		db.FetchRow();
 		response->GetDOM()->getDocumentElement().setAttribute("rows",db.GetField(0));
+		
+		// Fetch instances associated tags
+		string query_in="";
+		int i=0;
+		for(auto it = instance_id_tags_node.begin(); it!=instance_id_tags_node.end(); ++it)
+		{
+			if(i==0)
+				query_in += "IN(";
+			else if(i>0)
+				query_in += ", ";
+			
+			query_in += to_string(it->first);
+			
+			i++;
+		}
+		
+		if(i>0)
+			query_in += ")";
+		
+		if(i>0)
+		{
+			db.QueryPrintf("SELECT wit.workflow_instance_id, t.tag_id, t.tag_label FROM t_workflow_instance_tag wit, t_tag t WHERE t.tag_id=wit.tag_id AND wit.workflow_instance_id "+query_in);
+			while(db.FetchRow())
+			{
+				auto it = instance_id_tags_node.find(db.GetFieldInt(0));
+				if(it==instance_id_tags_node.end())
+					continue; // Should not happend
+				
+				DOMElement tag_node = response->GetDOM()->createElement("tag");
+				tag_node.setAttribute("id",db.GetField(1));
+				tag_node.setAttribute("label",db.GetField(2));
+				it->second.appendChild(tag_node);
+			}
+		}
+		
 		
 		return true;
 	}

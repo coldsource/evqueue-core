@@ -165,6 +165,9 @@ int GarbageCollector::purge(time_t now)
 		// Purge associated datastore entries
 		db.QueryPrintfC("DELETE data FROM t_datastore data LEFT JOIN t_workflow_instance wi ON data.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
+		// Purge associated tags
+		db.QueryPrintfC("DELETE wit FROM t_workflow_instance_tag wit LEFT JOIN t_workflow_instance wi ON wit.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logs_t);
 		db.QueryPrintfC("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",buf,&limit);
 		deleted_rows += db.AffectedRows();

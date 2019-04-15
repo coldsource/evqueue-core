@@ -35,6 +35,7 @@
 #include <WorkflowInstances.h>
 #include <Users.h>
 #include <User.h>
+#include <Tags.h>
 #include <Exception.h>
 
 #include <sys/types.h>
@@ -93,6 +94,12 @@ void tools_config_reload(const std::string &module,bool notify)
 	{
 		Users *users = Users::GetInstance();
 		users->Reload(notify);
+	}
+	
+	if(module=="all" || module=="tags")
+	{
+		Tags *tags = Tags::GetInstance();
+		tags->Reload(notify);
 	}
 }
 

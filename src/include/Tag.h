@@ -17,20 +17,34 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _WORKFLOWINSTANCEAPI_H_
-#define _WORKFLOWINSTANCEAPI_H_
+#ifndef _TAG_H_
+#define _TAG_H_
 
+#include <string>
+
+class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 class User;
 
-class WorkflowInstanceAPI
+class Tag
 {
+	unsigned int id;
+	std::string label;
+	
 	public:
-		static void Delete(unsigned int id);
+		Tag();
+		Tag(DB *db,unsigned int id);
 		
-		static void Tag(unsigned int id, unsigned int tag_id);
-		static void Untag(unsigned int id, unsigned int tag_id);
+		static void InitAnonymous();
+		
+		const unsigned int GetID() const { return id; }
+		const std::string &GetLabel() const { return label; }
+		
+		static void Get(unsigned int id, QueryResponse *response);
+		static unsigned int Create(const std::string &label);
+		static void Edit(unsigned int id, const std::string &label);
+		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };

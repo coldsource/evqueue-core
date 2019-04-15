@@ -17,22 +17,31 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _WORKFLOWINSTANCEAPI_H_
-#define _WORKFLOWINSTANCEAPI_H_
+#ifndef _TAGS_H_
+#define _TAGS_H_
 
+#include <APIObjectList.h>
+
+class User;
+class Tag;
 class SocketQuerySAX2Handler;
 class QueryResponse;
-class User;
 
-class WorkflowInstanceAPI
+class Tags:public APIObjectList<Tag>
 {
+	static Tags *instance;
+	
 	public:
-		static void Delete(unsigned int id);
 		
-		static void Tag(unsigned int id, unsigned int tag_id);
-		static void Untag(unsigned int id, unsigned int tag_id);
+		Tags();
+		~Tags();
+		
+		static Tags *GetInstance() { return instance; }
+		
+		void Reload(bool notify = true);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 };
+
 
 #endif
