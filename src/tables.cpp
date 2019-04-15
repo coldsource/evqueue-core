@@ -183,5 +183,20 @@ std::map<std::string,std::string> evqueue_tables = {
   PRIMARY KEY (`uniqueaction_id`), \
   KEY `uniqueaction_name` (`uniqueaction_name`,`uniqueaction_time`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
+"},
+{"t_tag",
+"CREATE TABLE `t_tag` ( \
+  `tag_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `tag_label` varchar(64) CHARACTER SET utf8 NOT NULL, \
+  PRIMARY KEY (`tag_id`) \
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
+"},
+{"t_workflow_instance_tag",
+"CREATE TABLE `t_workflow_instance_tag` ( \
+  `tag_id` int(10) unsigned NOT NULL, \
+  `workflow_instance_id` int(10) unsigned NOT NULL, \
+  PRIMARY KEY (`tag_id`,`workflow_instance_id`), \
+  KEY `workflow_instance_id` (`workflow_instance_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
 "}
 };
