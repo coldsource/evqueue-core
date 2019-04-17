@@ -188,7 +188,8 @@ std::map<std::string,std::string> evqueue_tables = {
 "CREATE TABLE `t_tag` ( \
   `tag_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
   `tag_label` varchar(64) CHARACTER SET utf8 NOT NULL, \
-  PRIMARY KEY (`tag_id`) \
+  PRIMARY KEY (`tag_id`), \
+  UNIQUE KEY `tag_label` (`tag_label`) \
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
 "},
 {"t_workflow_instance_tag",
