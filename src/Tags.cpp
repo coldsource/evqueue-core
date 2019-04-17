@@ -83,7 +83,7 @@ bool Tags::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResp
 		for(auto it = tags->objects_name.begin(); it!=tags->objects_name.end(); it++)
 		{
 			Tag it_tag = *it->second;
-			DOMElement node = (DOMElement)response->AppendXML("<tags />");
+			DOMElement node = (DOMElement)response->AppendXML("<tag />");
 			node.setAttribute("id",to_string(it_tag.GetID()));
 			node.setAttribute("label",it_tag.GetLabel());
 		}
