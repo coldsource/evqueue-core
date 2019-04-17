@@ -266,6 +266,7 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		string filter_launched_until = saxh->GetRootAttribute("filter_launched_until","");
 		string filter_status = saxh->GetRootAttribute("filter_status","");
 		bool filter_error = saxh->GetRootAttributeBool("filter_error",false);
+		unsigned int filter_tag_id = saxh->GetRootAttributeInt("filter_tag_id",0);
 		unsigned int filter_schedule_id = saxh->GetRootAttributeInt("filter_schedule_id",0);
 		unsigned int limit = saxh->GetRootAttributeInt("limit",30);
 		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
@@ -351,6 +352,12 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		{
 			query_where += " AND wi.workflow_schedule_id=%i";
 			query_where_values.push_back(&filter_schedule_id);
+		}
+		
+		if(filter_tag_id!=0)
+		{
+			query_where += " AND EXISTS(SELECT * FROM t_workflow_instance_tag wit WHERE wi.workflow_instance_id=wit.workflow_instance_id AND wit.tag_id=%i)";
+			query_where_values.push_back(&filter_tag_id);
 		}
 		
 		if(!user.IsAdmin())
