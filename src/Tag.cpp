@@ -58,6 +58,11 @@ unsigned int Tag::Create(const string &label)
 		throw Exception("Tag", "Invalid tag label");
 	
 	DB db;
+	
+	db.QueryPrintf("SELECT tag_id FROM t_tag WHERE tag_label=%s",&label);
+	if(db.FetchRow())
+		return db.GetFieldInt(0);
+	
 	db.QueryPrintf("INSERT INTO t_tag(tag_label) VALUES(%s)",&label);
 	return db.InsertID();
 }
