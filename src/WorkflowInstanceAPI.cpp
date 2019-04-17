@@ -70,6 +70,11 @@ void WorkflowInstanceAPI::Tag(unsigned int id, unsigned int tag_id)
 	if(db.GetField(0)!="TERMINATED")
 		throw Exception("WorkflowInstanceAPI", "Instance is not terminated");
 	
+	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow_instance_tag WHERE workflow_instance_id=%i AND tag_id=%i",&id,&tag_id);
+	db.FetchRow();
+	if(db.GetFieldInt(0)==1)
+		throw Exception("WorkflowInstanceAPI", "Instance is already tagged");
+	
 	db.QueryPrintf("INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",&id,&tag_id);
 }
 
