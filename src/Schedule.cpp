@@ -29,6 +29,9 @@ using namespace std;
 
 Schedule::Schedule(const string &schedule_description_s)
 {
+	if(schedule_description_s=="")
+		throw Exception("Schedule","Empty schedule");
+	
 	const char *schedule_description = schedule_description_s.c_str();
 	
 	// Parse schedule description
