@@ -272,7 +272,7 @@ void WorkflowSchedule::create_edit_check(
 )
 {
 	// Check schedule is valid by trying to instantiate it
-	Schedule schedule(schedule_description.c_str());
+	Schedule schedule(schedule_description);
 	
 	// Check workflow ID exists
 	Workflow workflow = Workflows::GetInstance()->Get(workflow_id);
