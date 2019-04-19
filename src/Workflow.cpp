@@ -25,6 +25,7 @@
 #include <Exception.h>
 #include <XMLUtils.h>
 #include <Logger.h>
+#include <LoggerAPI.h>
 #include <Sha1String.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
@@ -357,6 +358,9 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 		if(action=="create")
 		{
 			unsigned int id = Create(name, content, group, comment);
+			
+			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
+			
 			response->GetDOM()->getDocumentElement().setAttribute("workflow-id",to_string(id));
 		}
 		else
@@ -364,6 +368,8 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 			unsigned int id = saxh->GetRootAttributeInt("id");
 			
 			Edit(id, name, content, group, comment);
+			
+			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
 		}
 		
 		Workflows::GetInstance()->Reload();
@@ -376,6 +382,8 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 		
 		Delete(id);
 		
+		LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
+		
 		return true;
 	}
 	else if(action=="subscribe_notification" || action=="unsubscribe_notification" || action=="clear_notifications" || action=="list_notifications")
@@ -385,6 +393,8 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 		if(action=="clear_notifications")
 		{
 			ClearNotifications(id);
+			
+			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
 			
 			Workflows::GetInstance()->Reload();
 			
@@ -404,6 +414,8 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 				SubscribeNotification(id,notification_id);
 			else
 				UnsubscribeNotification(id,notification_id);
+			
+			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
 			
 			Workflows::GetInstance()->Reload();
 			

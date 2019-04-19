@@ -17,41 +17,18 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _RETRYSCHEDULE_H_
-#define _RETRYSCHEDULE_H_
+#ifndef _LOGSAPI_H_
+#define _LOGSAPI_H_
 
-#include <string>
-
-class DB;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 class User;
 
-class RetrySchedule
+class LogsAPI
 {
-	unsigned int id;
-	std::string name;
-	std::string schedule_xml;
-		
 	public:
-		RetrySchedule() {}
-		RetrySchedule(DB *db,const std::string &name);
-		
-		inline unsigned int GetID() { return id; }
-		inline const std::string &GetName() const { return name; }
-		inline std::string &GetXML() { return schedule_xml; }
-		
-		static bool CheckRetryScheduleName(const std::string &retry_schedule_name);
-		
-		static void Get(unsigned int id, QueryResponse *response);
-		static unsigned int Create(const std::string &name, const std::string &base64);
-		static void Edit(unsigned int id,const std::string &name, const std::string &base64);
-		static void Delete(unsigned int id);
-		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
-	
-	private:
-		static std::string create_edit_check(const std::string &name, const std::string &base64);
 };
+
 
 #endif

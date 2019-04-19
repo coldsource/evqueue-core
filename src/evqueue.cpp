@@ -48,7 +48,9 @@
 #endif
 
 #include <Logger.h>
+#include <LoggerAPI.h>
 #include <Logs.h>
+#include <LogsAPI.h>
 #include <Queue.h>
 #include <QueuePool.h>
 #include <Workflow.h>
@@ -253,6 +255,9 @@ int main(int argc,const char **argv)
 		
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
+		
+		// Create API logger
+		LoggerAPI *logga_api = new LoggerAPI();
 		
 		// Set locale
 		if(!setlocale(LC_ALL,config->Get("core.locale").c_str()))
@@ -483,6 +488,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("tag",Tag::HandleQuery);
 		qh->RegisterHandler("tags",Tags::HandleQuery);
 		qh->RegisterHandler("logs",Logs::HandleQuery);
+		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
@@ -649,6 +655,7 @@ int main(int argc,const char **argv)
 				delete tags;
 				delete active_connections;
 				delete random;
+				delete logga_api;
 				
 				xercesc::XMLPlatformUtils::Terminate();
 				

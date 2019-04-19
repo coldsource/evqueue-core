@@ -80,6 +80,7 @@ class QueuePool
 		void SendStatistics(QueryResponse *response);
 		
 		static void GetQueue(unsigned int id, QueryResponse *response);
+		static std::string GetQueueName(unsigned int id);
 		bool Exists(unsigned int id);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);

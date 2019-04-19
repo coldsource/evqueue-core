@@ -103,7 +103,7 @@ class Queue
 		bool IsLocked(void);
 		
 		static void Get(unsigned int id, QueryResponse *response);
-		static void Create(const std::string &name, int concurrency, const std::string &scheduler, int dynamic);
+		static unsigned int Create(const std::string &name, int concurrency, const std::string &scheduler, int dynamic);
 		static void Edit(unsigned int id,const std::string &name, int concurrency, const std::string &scheduler, int dynamic);
 		static void Delete(unsigned int id);
 		

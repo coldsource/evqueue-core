@@ -199,5 +199,18 @@ std::map<std::string,std::string> evqueue_tables = {
   PRIMARY KEY (`tag_id`,`workflow_instance_id`), \
   KEY `workflow_instance_id` (`workflow_instance_id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
+"},
+{"t_log_api",
+"CREATE TABLE `t_log_api` (  \
+  `log_api_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `node_name` varchar(32) CHARACTER SET ascii NOT NULL, \
+  `user_login` varchar(32) CHARACTER SET utf8 NOT NULL, \
+  `log_api_object_id` int(10) unsigned NOT NULL, \
+  `log_api_object_type` enum('Workflow','WorkflowSchedule','RetrySchedule','User','Tag','Queue') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  `log_api_group` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  `log_api_action` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  `log_api_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \
+  PRIMARY KEY (`log_api_id`) \
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COMMENT='v2.2'; \
 "}
 };

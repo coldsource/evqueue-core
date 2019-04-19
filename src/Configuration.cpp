@@ -48,6 +48,7 @@ Configuration::Configuration(void)
 	entries["gc.enable"] = "yes";
 	entries["gc.interval"] = "43200";
 	entries["gc.limit"] = "1000";
+	entries["gc.logsapi.retention"] = "30";
 	entries["gc.logs.retention"] = "7";
 	entries["gc.workflowinstance.retention"] = "30";
 	entries["gc.uniqueaction.retention"] = "30";
@@ -55,6 +56,7 @@ Configuration::Configuration(void)
 	entries["logger.db.filter"] = "LOG_WARNING";
 	entries["logger.syslog.enable"] = "yes";
 	entries["logger.syslog.filter"] = "LOG_NOTICE";
+	entries["loggerapi.enable"] = "yes";
 	entries["mysql.database"] = "queueing";
 	entries["mysql.host"] = "localhost";
 	entries["mysql.password"] = "";

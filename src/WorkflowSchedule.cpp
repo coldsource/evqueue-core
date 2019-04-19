@@ -28,6 +28,7 @@
 #include <Configuration.h>
 #include <DB.h>
 #include <Logger.h>
+#include <LoggerAPI.h>
 #include <User.h>
 
 #include <string.h>
@@ -78,7 +79,7 @@ WorkflowSchedule::~WorkflowSchedule()
 {
 }
 
-const string WorkflowSchedule::GetWorkflowName(void)
+const string WorkflowSchedule::GetWorkflowName(void) const
 {
 	Workflow workflow = Workflows::GetInstance()->Get(workflow_id);
 	return workflow.GetName();
@@ -123,7 +124,7 @@ void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
 	}
 }
 
-void WorkflowSchedule::Create(
+unsigned int WorkflowSchedule::Create(
 	unsigned int workflow_id,
 	const string &node,
 	const string &schedule_description,
@@ -172,6 +173,8 @@ void WorkflowSchedule::Create(
 		);
 	
 	db.CommitTransaction();
+	
+	return workflow_schedule_id;
 }
 
 void WorkflowSchedule::Edit(
@@ -311,18 +314,26 @@ bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 		else
 			throw Exception("WorkflowSchedule","onfailure must be 'CONTINUE' or 'SUSPEND'");
 		
-		string user = saxh->GetRootAttribute("user","");
-		string host = saxh->GetRootAttribute("host","");
+		string remote_user = saxh->GetRootAttribute("user","");
+		string remote_host = saxh->GetRootAttribute("host","");
 		bool active = saxh->GetRootAttributeBool("active",true);
 		string comment =  saxh->GetRootAttribute("comment","");
 		
 		if(action=="create")
-			Create(workflow_id,node,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
+		{
+			unsigned int id = Create(workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,saxh->GetWorkflowParameters());
+			
+			LoggerAPI::LogAction(user,id,"WorkflowSchedule",saxh->GetQueryGroup(),action);
+			
+			response->GetDOM()->getDocumentElement().setAttribute("schedule-id",to_string(id));
+		}
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			Edit(id, workflow_id,node,schedule,onfailure_continue,user,host,active,comment,saxh->GetWorkflowParameters());
+			Edit(id, workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,saxh->GetWorkflowParameters());
+			
+			LoggerAPI::LogAction(user,id,"WorkflowSchedule",saxh->GetQueryGroup(),action);
 		}
 		
 		WorkflowScheduler::GetInstance()->Reload();
@@ -335,15 +346,19 @@ bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 		
 		Delete(id);
 		
+		LoggerAPI::LogAction(user,id,"WorkflowSchedule",saxh->GetQueryGroup(),action);
+		
 		WorkflowScheduler::GetInstance()->Reload();
 		
 		return true;
 	}
 	else if(action=="lock")
 	{
-		unsigned int workflow_id = saxh->GetRootAttributeInt("id");
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		SetIsActive(workflow_id,false);
+		SetIsActive(id,false);
+		
+		LoggerAPI::LogAction(user,id,"WorkflowSchedule",saxh->GetQueryGroup(),action);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		
@@ -351,9 +366,11 @@ bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	}
 	else if(action=="unlock")
 	{
-		unsigned int workflow_id = saxh->GetRootAttributeInt("id");
+		unsigned int id = saxh->GetRootAttributeInt("id");
 		
-		SetIsActive(workflow_id,true);
+		SetIsActive(id,true);
+		
+		LoggerAPI::LogAction(user,id,"WorkflowSchedule",saxh->GetQueryGroup(),action);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		

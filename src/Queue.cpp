@@ -23,6 +23,7 @@
 #include <WorkflowInstance.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <LoggerAPI.h>
 #include <Exception.h>
 #include <User.h>
 #include <DB.h>
@@ -234,7 +235,7 @@ void Queue::Get(unsigned int id, QueryResponse *response)
 	QueuePool::GetInstance()->GetQueue(id,response);
 }
 
-void Queue::Create(const string &name, int concurrency, const string &scheduler, int dynamic)
+unsigned int Queue::Create(const string &name, int concurrency, const string &scheduler, int dynamic)
 {
 	create_edit_check(name,concurrency,scheduler);
 	
@@ -294,12 +295,20 @@ bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		bool dynamic = saxh->GetRootAttributeBool("dynamic");
 		
 		if(action=="create")
-			Create(name, iconcurrency, scheduler, dynamic);
+		{
+			unsigned int id = Create(name, iconcurrency, scheduler, dynamic);
+			
+			LoggerAPI::LogAction(user,id,"Queue",saxh->GetQueryGroup(),action);
+			
+			response->GetDOM()->getDocumentElement().setAttribute("queue-id",to_string(id));
+		}
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
 			
 			Edit(id,name, iconcurrency, scheduler, dynamic);
+			
+			LoggerAPI::LogAction(user,id,"Queue",saxh->GetQueryGroup(),action);
 		}
 		
 		QueuePool::GetInstance()->Reload();
@@ -311,6 +320,8 @@ bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Delete(id);
+		
+		LoggerAPI::LogAction(user,id,"Queue",saxh->GetQueryGroup(),action);
 		
 		QueuePool::GetInstance()->Reload();
 		

@@ -398,6 +398,19 @@ void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
 	node.setAttribute("dynamic",q->GetIsDynamic()?"yes":"no");
 }
 
+string QueuePool::GetQueueName(unsigned int id)
+{
+	QueuePool *qp = QueuePool::GetInstance();
+	
+	unique_lock<mutex> llock(qp->lock);
+	
+	Queue *q = qp->get_queue(id);
+	if(!q)
+		throw Exception("QueuePool","Unable to find queue");
+	
+	return q->GetName();
+}
+
 bool QueuePool::Exists(unsigned int id)
 {
 	unique_lock<mutex> llock(lock);

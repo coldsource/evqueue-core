@@ -42,6 +42,7 @@ GarbageCollector::GarbageCollector()
 	limit = Configuration::GetInstance()->GetInt("gc.limit");
 	workflowinstance_retention = Configuration::GetInstance()->GetInt("gc.workflowinstance.retention");
 	logs_retention = Configuration::GetInstance()->GetInt("gc.logs.retention");
+	logsapi_retention = Configuration::GetInstance()->GetInt("gc.logsapi.retention");
 	uniqueaction_retention = Configuration::GetInstance()->GetInt("gc.uniqueaction.retention");
 	
 	is_shutting_down = false;
@@ -135,14 +136,18 @@ int GarbageCollector::purge(time_t now)
 	// Compute dates
 	struct tm wfi_t;
 	struct tm logs_t;
+	struct tm logsapi_t;
 	struct tm uniqueaction_t;
-	time_t wfi,logs,uniqueaction;
+	time_t wfi,logs,logsapi,uniqueaction;
 	
 	wfi = now - workflowinstance_retention*86400;
 	localtime_r(&wfi,&wfi_t);
 	
 	logs = now - logs_retention*86400;
 	localtime_r(&logs,&logs_t);
+	
+	logsapi = now - logsapi_retention*86400;
+	localtime_r(&logsapi,&logsapi_t);
 	
 	uniqueaction = now - uniqueaction_retention*86400;
 	localtime_r(&uniqueaction,&uniqueaction_t);
@@ -170,6 +175,10 @@ int GarbageCollector::purge(time_t now)
 		
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logs_t);
 		db.QueryPrintfC("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",buf,&limit);
+		deleted_rows += db.AffectedRows();
+		
+		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logsapi_t);
+		db.QueryPrintfC("DELETE FROM t_log_api WHERE log_api_timestamp <= %s LIMIT %i",buf,&limit);
 		deleted_rows += db.AffectedRows();
 		
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&uniqueaction_t);

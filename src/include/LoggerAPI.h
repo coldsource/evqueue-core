@@ -17,39 +17,26 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _GARBAGECOLLECTOR_H_
-#define _GARBAGECOLLECTOR_H_
+#ifndef _LOGGERAPI_H_
+#define _LOGGERAPI_H_
 
-#include <thread>
-#include <mutex>
+#include <string>
 
-class GarbageCollector
+class User;
+
+class LoggerAPI
 {
-	private:
-		bool enable;
-		int delay;
-		int interval;
-		int limit;
-		int workflowinstance_retention;
-		int logs_retention;
-		int logsapi_retention;
-		int uniqueaction_retention;
-		
-		bool is_shutting_down;
-		
-		std::thread gc_thread_handle;
-		std::mutex lock;
-		
-	public:
-		GarbageCollector();
-		
-		void Shutdown(void);
-		void WaitForShutdown(void);
+	static LoggerAPI *instance;
 	
-	private:
-		static void *gc_thread(GarbageCollector *gc);
-		
-		int purge(time_t now);
+	bool enabled;
+	const std::string &node_name;
+	
+public:
+	LoggerAPI();
+	
+	static LoggerAPI *GetInstance() { return instance; }
+	
+	static void LogAction(const User &user, unsigned int object_id, const std::string &object_type, const std::string &group, const std::string &action);
 };
 
 #endif

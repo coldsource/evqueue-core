@@ -56,7 +56,7 @@ class WorkflowSchedule
 		~WorkflowSchedule();
 		
 		unsigned int GetID() { return workflow_schedule_id; }
-		const std::string GetWorkflowName();
+		const std::string GetWorkflowName() const;
 		unsigned int GetWorkflowID() { return workflow_id; }
 		const std::string &GetScheduleDescription() { return schedule_description; }
 		unsigned int GetOnFailureBehavior() { return onfailure; }
@@ -70,7 +70,7 @@ class WorkflowSchedule
 		
 		static void Get(unsigned int id, QueryResponse *response);
 		
-		static void Create(
+		static unsigned int Create(
 			unsigned int workflow_id,
 			const std::string &node,
 			const std::string &schedule_description,

@@ -21,6 +21,7 @@
 #include <Tags.h>
 #include <User.h>
 #include <Workflows.h>
+#include <LoggerAPI.h>
 #include <Exception.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
@@ -114,6 +115,9 @@ bool Tag::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 		string label = saxh->GetRootAttribute("label");
 		
 		unsigned int id = Create(label);
+		
+		LoggerAPI::LogAction(user,id,"Tag",saxh->GetQueryGroup(),action);
+		
 		response->GetDOM()->getDocumentElement().setAttribute("tag-id",to_string(id));
 		
 		Tags::GetInstance()->Reload();
@@ -127,6 +131,8 @@ bool Tag::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 		
 		Edit(id,label);
 		
+		LoggerAPI::LogAction(user,id,"Tag",saxh->GetQueryGroup(),action);
+		
 		Tags::GetInstance()->Reload();
 		
 		return true;
@@ -136,6 +142,8 @@ bool Tag::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Delete(id);
+		
+		LoggerAPI::LogAction(user,id,"Tag",saxh->GetQueryGroup(),action);
 		
 		Tags::GetInstance()->Reload();
 		

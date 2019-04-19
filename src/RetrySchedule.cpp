@@ -20,6 +20,7 @@
 #include <RetrySchedule.h>
 #include <RetrySchedules.h>
 #include <Exception.h>
+#include <LoggerAPI.h>
 #include <DB.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
@@ -71,12 +72,14 @@ void RetrySchedule::Get(unsigned int id, QueryResponse *response)
 	node.setAttribute("name",retry_schedule.GetName());
 }
 
-void RetrySchedule::Create(const std::string &name, const std::string &base64)
+unsigned int RetrySchedule::Create(const std::string &name, const std::string &base64)
 {
 	string xml = create_edit_check(name,base64);
 	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",&name,&xml);
+	
+	return db.InsertID();
 }
 
 void RetrySchedule::Edit(unsigned int id,const std::string &name, const std::string &base64)
@@ -131,10 +134,18 @@ bool RetrySchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 		string content = saxh->GetRootAttribute("content");
 		
 		if(action=="create")
-			Create(name, content);
+		{
+			unsigned int id = Create(name, content);
+			
+			LoggerAPI::LogAction(user,id,"RetrySchedule",saxh->GetQueryGroup(),action);
+			
+			response->GetDOM()->getDocumentElement().setAttribute("retry-schedule-id",to_string(id));
+		}
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
+			
+			LoggerAPI::LogAction(user,id,"RetrySchedule",saxh->GetQueryGroup(),action);
 			
 			Edit(id,name, content);
 		}
@@ -148,6 +159,8 @@ bool RetrySchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 		unsigned int id = saxh->GetRootAttributeInt("id");
 		
 		Delete(id);
+		
+		LoggerAPI::LogAction(user,id,"RetrySchedule",saxh->GetQueryGroup(),action);
 		
 		RetrySchedules::GetInstance()->Reload();
 		
