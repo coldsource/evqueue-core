@@ -244,7 +244,7 @@ int main(int argc,const char **argv)
 		
 		// Substitute configuration variables with environment if needed
 		config->Substitute();
-		
+
 		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
 		if(ipcq_remove)
 			return tools_queue_destroy();
@@ -313,6 +313,9 @@ int main(int argc,const char **argv)
 			if(chdir(config->Get("core.wd").c_str())!=0)
 				throw Exception("core","Unable to change working directory");
 		}
+
+		// Sanity checks on configuration values and access rights
+		config->Check();
 		
 		// Create directory for PID (usually in /var/run)
 		char *pid_file2 = strdup(config->Get("core.pidfile").c_str());

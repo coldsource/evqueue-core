@@ -42,10 +42,17 @@ class Configuration
 		bool GetBool(const std::string &entry) const;
 		
 		void Substitute(void);
+
+		void Check(void);
 		
 		void SendConfiguration(QueryResponse *response);
 		
 		static inline Configuration *GetInstance(void) { return instance; }
+
+	private:
+		void check_f_is_exec(const std::string &filename);
+		void check_d_is_writeable(const std::string &path);
+		void check_bool_entry(const std::string &name);
 };
 
 #endif

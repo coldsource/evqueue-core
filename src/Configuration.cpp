@@ -25,6 +25,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <pcrecpp.h>
 
 using namespace std;
@@ -183,6 +185,28 @@ void Configuration::Substitute(void)
 	}
 }
 
+void Configuration::Check(void)
+{
+	check_f_is_exec(entries["processmanager.monitor.path"]);
+	check_f_is_exec(entries["notifications.monitor.path"]);
+	check_d_is_writeable(entries["processmanager.logs.directory"]);
+
+	check_bool_entry("core.auth.enable");
+	check_bool_entry("core.fastshutdown");
+	check_bool_entry("gc.enable");
+	check_bool_entry("logger.db.enable");
+	check_bool_entry("logger.syslog.enable");
+	check_bool_entry("loggerapi.enable");
+	check_bool_entry("processmanager.logs.delete");
+	check_bool_entry("datastore.gzip.enable");
+	check_bool_entry("workflowinstance.saveparameters");
+	check_bool_entry("workflowinstance.savepoint.retry.enable");
+	check_bool_entry("cluster.notify");
+
+	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
+		throw Exception("Configuration","datastore.gzip.level: invalid value "+entries["datastore.gzip.level"]);
+}
+
 void Configuration::SendConfiguration(QueryResponse *response)
 {
 	char buf[16];
@@ -204,4 +228,59 @@ void Configuration::SendConfiguration(QueryResponse *response)
 			entry_node.setAttribute("value",it->second);
 		configuration_node.appendChild(entry_node);
 	}
+}
+
+void Configuration::check_f_is_exec(const string &filename)
+{
+	uid_t uid = geteuid();
+	gid_t gid = getegid();
+
+	struct stat ste;
+	if(stat(filename.c_str(),&ste)!=0)
+		throw Exception("Configuration","File not found : "+filename);
+
+	if(!S_ISREG(ste.st_mode))
+		throw Exception("Configuration",filename+" is not a regular file");
+
+	if(uid==ste.st_uid && (ste.st_mode & S_IXUSR))
+		return;
+	else if(gid==ste.st_gid && (ste.st_mode & S_IXGRP))
+		return;
+	else if(ste.st_mode & S_IXOTH)
+		return;
+
+	throw Exception("Configuration","File is not executable : "+filename);
+}
+
+void Configuration::check_d_is_writeable(const string &path)
+{
+	uid_t uid = geteuid();
+	gid_t gid = getegid();
+
+	struct stat ste;
+	if(stat(path.c_str(),&ste)!=0)
+		throw Exception("Configuration","Directory not found : "+path);
+
+	if(!S_ISDIR(ste.st_mode))
+		throw Exception("Configuration",path+" is not a directory");
+
+	if(uid==ste.st_uid && (ste.st_mode & S_IWUSR))
+		return;
+	else if(gid==ste.st_gid && (ste.st_mode & S_IWGRP))
+		return;
+	else if(ste.st_mode & S_IWOTH)
+		return;
+
+	throw Exception("Configuration","Directory is not writeable : "+path);
+}
+
+void Configuration::check_bool_entry(const string &name)
+{
+	if(entries[name]=="yes" || entries[name]=="true" || entries[name]=="1")
+		return;
+
+	if(entries[name]=="no" || entries[name]=="false" || entries[name]=="0")
+		return;
+
+	throw Exception("Configuration",name+": invalid boolean value '"+entries[name]+"'");
 }
