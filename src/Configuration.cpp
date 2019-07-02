@@ -203,8 +203,40 @@ void Configuration::Check(void)
 	check_bool_entry("workflowinstance.savepoint.retry.enable");
 	check_bool_entry("cluster.notify");
 
+	check_int_entry("dpd.interval");
+	check_int_entry("gc.delay");
+	check_int_entry("gc.interval");
+	check_int_entry("gc.limit");
+	check_int_entry("gc.logsapi.retention");
+	check_int_entry("gc.logs.retention");
+	check_int_entry("gc.workflowinstance.retention");
+	check_int_entry("gc.uniqueaction.retention");
+	check_int_entry("network.connections.max");
+	check_int_entry("network.listen.backlog");
+	check_int_entry("network.rcv.timeout");
+	check_int_entry("network.snd.timeout");
+	check_int_entry("notifications.tasks.timeout");
+	check_int_entry("notifications.tasks.concurrency");
+	check_int_entry("cluster.cnx.timeout");
+	check_int_entry("cluster.rcv.timeout");
+	check_int_entry("cluster.snd.timeout");
+	check_int_entry("datastore.gzip.level");
+	check_int_entry("workflowinstance.savepoint.level");
+	check_int_entry("workflowinstance.savepoint.retry.times");
+	check_int_entry("workflowinstance.savepoint.retry.wait");
+
+	check_size_entry("processmanager.logs.tailsize");
+	check_size_entry("datastore.dom.maxsize");
+	check_size_entry("datastore.db.maxsize");
+
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
-		throw Exception("Configuration","datastore.gzip.level: invalid value "+entries["datastore.gzip.level"]);
+		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");
+
+	if(GetInt("workflowinstance.savepoint.level")>3)
+		throw Exception("Configuration","workflowinstance.savepoint.level: invalid value '"+entries["workflowinstance.savepoint.level"]+"'. Value must be between O and 3");
+
+	if(Get("queuepool.scheduler")!="fifo" && Get("queuepool.scheduler")!="prio")
+		throw Exception("Configuration","queuepool.scheduler: invalid value '"+entries["queuepool.scheduler"]+"'. Value muse be 'fifo' or 'prio'");
 }
 
 void Configuration::SendConfiguration(QueryResponse *response)
@@ -283,4 +315,41 @@ void Configuration::check_bool_entry(const string &name)
 		return;
 
 	throw Exception("Configuration",name+": invalid boolean value '"+entries[name]+"'");
+}
+
+void Configuration::check_int_entry(const string &name, bool signed_int)
+{
+	try
+	{
+		size_t l;
+		int val = stoi(entries[name],&l);
+		if(l!=entries[name].length())
+			throw 1;
+
+		if(!signed_int && val<0)
+			throw 1;
+	}
+	catch(...)
+	{
+		throw Exception("Configuration", name+": invalid integer value '"+entries[name]+"'");
+	}
+}
+
+void Configuration::check_size_entry(const string &name)
+{
+	try
+	{
+		size_t l;
+		stoi(entries[name],&l);
+		if(l==entries[name].length())
+			return;
+
+		string unit = entries[name].substr(l);
+		if(unit!="K" && unit!="M" && unit!="G")
+			throw 1;
+	}
+	catch(...)
+	{
+		throw Exception("Configuration", name+": invalid size value '"+entries[name]+"'");
+	}
 }

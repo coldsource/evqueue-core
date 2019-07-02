@@ -53,6 +53,8 @@ class Configuration
 		void check_f_is_exec(const std::string &filename);
 		void check_d_is_writeable(const std::string &path);
 		void check_bool_entry(const std::string &name);
+		void check_int_entry(const std::string &name, bool signed_int=false);
+		void check_size_entry(const std::string &name);
 };
 
 #endif
