@@ -44,6 +44,7 @@
 #include <sys/wait.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -59,6 +60,8 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	unix_socket_path = Configuration::GetInstance()->Get("network.bind.path");
 	
 	notification_monitor_path = Configuration::GetInstance()->Get("notifications.monitor.path");
+	
+	logs_directory = Configuration::GetInstance()->Get("notifications.logs.directory");
 	
 	type_id = db->GetFieldInt(0);
 	
@@ -93,6 +96,11 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		
 		dup2(pipe_fd[0],STDIN_FILENO);
 		close(pipe_fd[1]);
+		
+		// Redirect stderr to file
+		string log_filename_stderr = logs_directory+"/notif_stderr_"+to_string(getpid());
+		int fno_stderr = open(log_filename_stderr.c_str(),O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+		dup2(fno_stderr,STDERR_FILENO);
 		
 		setenv("EVQUEUE_IPC_QID",Configuration::GetInstance()->Get("core.ipc.qid").c_str(),true);
 		

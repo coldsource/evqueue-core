@@ -28,6 +28,7 @@
 #include <QueryResponse.h>
 #include <Cluster.h>
 #include <User.h>
+#include <LoggerNotifications.h>
 
 #include <string.h>
 
@@ -40,6 +41,10 @@ Notifications::Notifications():APIObjectList()
 	instance = this;
 	
 	max_concurrency = Configuration::GetInstance()->GetInt("notifications.tasks.concurrency");
+	
+	logs_directory = Configuration::GetInstance()->Get("notifications.logs.directory");
+	logs_maxsize = Configuration::GetInstance()->GetSize("notifications.logs.maxsize");
+	logs_delete = Configuration::GetInstance()->GetBool("notifications.logs.delete");
 	
 	Reload(false);
 }
@@ -100,33 +105,45 @@ void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflo
 
 void Notifications::Exit(pid_t pid, int status, char retcode)
 {
-	unique_lock<mutex> llock(lock);
-	
-	map<pid_t,st_notification_instance>::iterator it;
-	it = notification_instances.find(pid);
-	if(it==notification_instances.end())
+	try
 	{
-		Logger::Log(LOG_WARNING,"[ Notifications ] Got exit from pid %d but could not find corresponding notification",pid);
-		return;
+		unique_lock<mutex> llock(lock);
+		
+		map<pid_t,st_notification_instance>::iterator it;
+		it = notification_instances.find(pid);
+		if(it==notification_instances.end())
+		{
+			Logger::Log(LOG_WARNING,"[ Notifications ] Got exit from pid %d but could not find corresponding notification",pid);
+			return;
+		}
+		
+		st_notification_instance ni = it->second;
+		
+		if(status==0)
+		{
+			if(retcode!=0)
+			{
+				Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d returned code %d",ni.notification_type.c_str(),pid,ni.workflow_instance_id,retcode);
+				
+				// Read and store log file
+				store_log(pid);
+			}
+			else
+				Logger::Log(LOG_NOTICE,"Notification task '%s' (pid %d) for workflow instance %d executed successuflly",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+		}
+		else if(status==1)
+			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d was killed",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+		else if(status==2)
+			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d timed out",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+		else if(status==3)
+			Logger::Log(LOG_ALERT,"Notification task '%s' (pid %d) for workflow instance %d could not be forked",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+		
+		notification_instances.erase(pid);
 	}
-	
-	st_notification_instance ni = it->second;
-	
-	if(status==0)
+	catch(Exception &e)
 	{
-		if(retcode!=0)
-			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d returned code %d",ni.notification_type.c_str(),pid,ni.workflow_instance_id,retcode);
-		else
-			Logger::Log(LOG_NOTICE,"Notification task '%s' (pid %d) for workflow instance %d executed successuflly",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+		Logger::Log(LOG_ERR,"Exception on notification script exit : "+e.error+"("+e.context+")");
 	}
-	else if(status==1)
-		Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d was killed",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
-	else if(status==2)
-		Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d timed out",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
-	else if(status==3)
-		Logger::Log(LOG_ALERT,"Notification task '%s' (pid %d) for workflow instance %d could not be forked",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
-	
-	notification_instances.erase(pid);
 }
 
 bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -154,4 +171,44 @@ bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 	}
 	
 	return false;
+}
+
+void Notifications::store_log(pid_t pid)
+{
+	string filename = logs_directory+"/notif_stderr_"+to_string(pid);
+	FILE *f = fopen(filename.c_str(),"r");
+	
+	if(!f)
+	{
+		Logger::Log(LOG_WARNING,"Unable to read notification log file "+filename);
+		return;
+	}
+	
+	fseek(f,0,SEEK_END);
+	size_t log_size = ftell(f);
+	if(log_size>logs_maxsize)
+	{
+		log_size = logs_maxsize;
+		Logger::Log(LOG_NOTICE,"Truncated log file "+filename);
+	}
+	
+	char *buf = new char[log_size+1];
+	fseek(f,0,SEEK_SET);
+	size_t read_size = fread(buf,1,log_size,f);
+	fclose(f);
+	
+	if(logs_delete)
+	{
+		if(unlink(filename.c_str())!=0)
+			Logger::Log(LOG_WARNING,"Error removing log file "+filename);
+	}
+	
+	if(read_size!=log_size)
+		Logger::Log(LOG_WARNING,"Error reading log file "+filename);
+	
+	buf[read_size] = '\0';
+	
+	LoggerNotifications::GetInstance()->Log(pid,buf);
+	
+	delete[] buf;
 }

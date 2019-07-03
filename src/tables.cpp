@@ -211,6 +211,16 @@ std::map<std::string,std::string> evqueue_tables = {
   `log_api_action` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `log_api_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \
   PRIMARY KEY (`log_api_id`) \
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COMMENT='v2.2'; \
-"}
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='v2.2'; \
+"},
+{"t_log_notifications",
+"CREATE TABLE `t_log_notifications` ( \
+  `log_notifications_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `node_name` varchar(32) CHARACTER SET ascii NOT NULL DEFAULT '', \
+  `log_notifications_pid` INT UNSIGNED NOT NULL, \
+  `log_notifications_message` text COLLATE utf8_unicode_ci NOT NULL, \
+  `log_notifications_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
+  PRIMARY KEY (`log_notifications_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
+"},
 };

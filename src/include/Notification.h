@@ -40,6 +40,7 @@ class Notification
 	std::string notification_configuration;
 	std::string plugin_configuration;
 	std::string unix_socket_path;
+	std::string logs_directory;
 	
 	public:
 

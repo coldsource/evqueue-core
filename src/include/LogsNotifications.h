@@ -17,55 +17,18 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _NOTIFICATIONS_H_
-#define _NOTIFICATIONS_H_
+#ifndef _LOGSNOTIFICATIONS_H_
+#define _LOGSNOTIFICATIONS_H_
 
-#include <APIObjectList.h>
-
-#include <map>
-#include <string>
-
-class Notification;
-class WorkflowInstance;
 class SocketQuerySAX2Handler;
 class QueryResponse;
 class User;
 
-class Notifications:public APIObjectList<Notification>
+class LogsNotifications
 {
-	private:
-		struct st_notification_instance
-		{
-			unsigned int workflow_instance_id;
-			std::string notification_type;
-		};
-		
-		static Notifications *instance;
-		
-		int max_concurrency;
-		
-		std::map<pid_t,st_notification_instance> notification_instances;
-		
-		std::string logs_directory;
-		int logs_maxsize;
-		bool logs_delete;
-	
 	public:
-		
-		Notifications();
-		~Notifications();
-		
-		static Notifications *GetInstance() { return instance; }
-		
-		void Reload(bool notify = true);
-		
-		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
-		void Exit(pid_t pid, int status, char retcode);
-		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
-	
-	private:
-		void store_log(pid_t pid);
 };
+
 
 #endif

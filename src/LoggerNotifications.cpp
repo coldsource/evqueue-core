@@ -17,40 +17,28 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _GARBAGECOLLECTOR_H_
-#define _GARBAGECOLLECTOR_H_
+#include <LoggerNotifications.h>
+#include <DB.h>
+#include <User.h>
+#include <Configuration.h>
 
-#include <thread>
-#include <mutex>
+using namespace std;
 
-class GarbageCollector
+LoggerNotifications *LoggerNotifications::instance = 0;
+
+LoggerNotifications::LoggerNotifications():
+	node_name(Configuration::GetInstance()->Get("cluster.node.name"))
 {
-	private:
-		bool enable;
-		int delay;
-		int interval;
-		int limit;
-		int workflowinstance_retention;
-		int logs_retention;
-		int logsapi_retention;
-		int logsnotifications_retention;
-		int uniqueaction_retention;
-		
-		bool is_shutting_down;
-		
-		std::thread gc_thread_handle;
-		std::mutex lock;
-		
-	public:
-		GarbageCollector();
-		
-		void Shutdown(void);
-		void WaitForShutdown(void);
-	
-	private:
-		static void *gc_thread(GarbageCollector *gc);
-		
-		int purge(time_t now);
-};
+	instance = this;
+}
 
-#endif
+void LoggerNotifications::Log(pid_t pid, const string &log)
+{
+	DB db;
+	
+	db.QueryPrintf("INSERT INTO t_log_notifications(node_name,log_notifications_pid,log_notifications_message) VALUES(%s,%i,%s)",
+		&instance->node_name,
+		&pid,
+		&log
+		);
+}

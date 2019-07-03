@@ -51,6 +51,7 @@ Configuration::Configuration(void)
 	entries["gc.interval"] = "43200";
 	entries["gc.limit"] = "1000";
 	entries["gc.logsapi.retention"] = "30";
+	entries["gc.logsnotifications.retention"] = "30";
 	entries["gc.logs.retention"] = "7";
 	entries["gc.workflowinstance.retention"] = "30";
 	entries["gc.uniqueaction.retention"] = "30";
@@ -74,6 +75,9 @@ Configuration::Configuration(void)
 	entries["notifications.tasks.directory"] = "/usr/share/evqueue/plugins/notifications";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["notifications.tasks.concurrency"] = "16";
+	entries["notifications.logs.directory"] = "/tmp";
+	entries["notifications.logs.maxsize"] = "16K";
+	entries["notifications.logs.delete"] = "yes";
 	entries["processmanager.logs.delete"] = "yes";
 	entries["processmanager.logs.directory"] = "/tmp";
 	entries["processmanager.logs.tailsize"] = "20K";
@@ -190,6 +194,7 @@ void Configuration::Check(void)
 	check_f_is_exec(entries["processmanager.monitor.path"]);
 	check_f_is_exec(entries["notifications.monitor.path"]);
 	check_d_is_writeable(entries["processmanager.logs.directory"]);
+	check_d_is_writeable(entries["notifications.logs.directory"]);
 
 	check_bool_entry("core.auth.enable");
 	check_bool_entry("core.fastshutdown");
@@ -198,6 +203,7 @@ void Configuration::Check(void)
 	check_bool_entry("logger.syslog.enable");
 	check_bool_entry("loggerapi.enable");
 	check_bool_entry("processmanager.logs.delete");
+	check_bool_entry("notifications.logs.delete");
 	check_bool_entry("datastore.gzip.enable");
 	check_bool_entry("workflowinstance.saveparameters");
 	check_bool_entry("workflowinstance.savepoint.retry.enable");
@@ -208,6 +214,7 @@ void Configuration::Check(void)
 	check_int_entry("gc.interval");
 	check_int_entry("gc.limit");
 	check_int_entry("gc.logsapi.retention");
+	check_int_entry("gc.logsnotifications.retention");
 	check_int_entry("gc.logs.retention");
 	check_int_entry("gc.workflowinstance.retention");
 	check_int_entry("gc.uniqueaction.retention");
@@ -228,6 +235,7 @@ void Configuration::Check(void)
 	check_size_entry("processmanager.logs.tailsize");
 	check_size_entry("datastore.dom.maxsize");
 	check_size_entry("datastore.db.maxsize");
+	check_size_entry("notifications.logs.maxsize");
 
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
 		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");

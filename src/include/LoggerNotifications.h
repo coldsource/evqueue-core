@@ -17,40 +17,25 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _GARBAGECOLLECTOR_H_
-#define _GARBAGECOLLECTOR_H_
+#ifndef _LOGGERNOTIFICATIONS_H_
+#define _LOGGERNOTIFICATIONS_H_
 
-#include <thread>
-#include <mutex>
+#include <sys/types.h>
 
-class GarbageCollector
+#include <string>
+
+class LoggerNotifications
 {
-	private:
-		bool enable;
-		int delay;
-		int interval;
-		int limit;
-		int workflowinstance_retention;
-		int logs_retention;
-		int logsapi_retention;
-		int logsnotifications_retention;
-		int uniqueaction_retention;
-		
-		bool is_shutting_down;
-		
-		std::thread gc_thread_handle;
-		std::mutex lock;
-		
-	public:
-		GarbageCollector();
-		
-		void Shutdown(void);
-		void WaitForShutdown(void);
+	static LoggerNotifications *instance;
 	
-	private:
-		static void *gc_thread(GarbageCollector *gc);
-		
-		int purge(time_t now);
+	const std::string &node_name;
+	
+public:
+	LoggerNotifications();
+	
+	static LoggerNotifications *GetInstance() { return instance; }
+	
+	static void Log(pid_t pid, const std::string &log);
 };
 
 #endif
