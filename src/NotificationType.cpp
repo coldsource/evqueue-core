@@ -52,6 +52,8 @@ void NotificationType::PutFile(const string &filename,const string &data,bool ba
 		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BASE64);
 	else
 		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BINARY);
+	
+	FileManager::Chmod(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
 }
 
 void NotificationType::GetFile(const string &filename,string &data)

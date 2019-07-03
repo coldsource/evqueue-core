@@ -147,3 +147,14 @@ void FileManager::RemoveFile(const string &directory,const string &filename)
 		throw Exception("FileManager","Unable to remove file");
 	}
 }
+
+void FileManager::Chmod(const string &directory,const string &filename,mode_t mode)
+{
+	string path = directory+"/"+filename;
+	int re = chmod(path.c_str(),mode);
+	if(re!=0)
+	{
+		Logger::Log(LOG_ERR,"Unable to chmod file : %s",path.c_str());
+		throw Exception("FileManager","Unable to chmod file");
+	}
+}

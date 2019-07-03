@@ -20,6 +20,8 @@
 #ifndef _FILEMANAGER_H_
 #define _FILEMANAGER_H_
 
+#include <sys/stat.h>
+
 #include <string>
 
 class FileManager
@@ -37,6 +39,8 @@ class FileManager
 		static void RemoveFile(const std::string &directory,const std::string &filename);
 		
 		static void GetFileHash(const std::string &directory,const std::string &filename,std::string &hash);
+		
+		static void Chmod(const std::string &directory,const std::string &filename,mode_t mode);
 };
 
 #endif
