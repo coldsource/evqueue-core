@@ -98,7 +98,7 @@ vector<int> User::GetReadAccessWorkflows() const
 
 bool User::InsufficientRights()
 {
-	throw Exception("Access Control", "insufficient rights");
+	throw Exception("Access Control", "insufficient rights","INSUFFICIENT_RIGHTS");
 }
 
 bool User::CheckUserName(const string &user_name)
