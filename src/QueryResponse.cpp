@@ -53,6 +53,12 @@ void QueryResponse::SetError(const string &error)
 	status_ok = false;
 }
 
+void QueryResponse::SetErrorCode(const string &code)
+{
+	this->error_code = code;
+	status_ok = false;
+}
+
 void QueryResponse::SetAttribute(const std::string &name, const std::string &value)
 {
 	xmldoc->getDocumentElement().setAttribute(name,value);
@@ -82,7 +88,12 @@ void QueryResponse::SendResponse()
 	else
 	{
 		response_node.setAttribute("status","KO");
-		response_node.setAttribute("error",error);
+		
+		if(error!="")
+			response_node.setAttribute("error",error);
+		
+		if(error_code!="")
+			response_node.setAttribute("error-code",error_code);
 	}
 	
 	string response = xmldoc->Serialize(xmldoc->getDocumentElement());

@@ -181,7 +181,10 @@ int main(int argc, char  **argv)
 		}
 		catch(Exception &e)
 		{
-			fprintf(stderr,"Exception in client : %s\n",e.error.c_str());
+			fprintf(stderr,"%s",e.error.c_str());
+			if(e.code!="")
+				fprintf(stderr," (%s)",e.code.c_str());
+			fprintf(stderr,"\n");
 			exit_status = -1;
 		}
 	}

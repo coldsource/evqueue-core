@@ -39,7 +39,7 @@ const std::string &SocketSAX2HandlerInterface::GetRootAttribute(const std::strin
 {
 	auto it = root_attributes.find(name);
 	if(it==root_attributes.end())
-		throw Exception(context,"Missing '"+name+"' attribute");
+		throw Exception(context,"Missing '"+name+"' attribute","MISSING_PARAMETER");
 	
 	return it->second;
 }
@@ -57,7 +57,7 @@ int SocketSAX2HandlerInterface::GetRootAttributeInt(const std::string &name)
 {
 	auto it = root_attributes.find(name);
 	if(it==root_attributes.end())
-		throw Exception(context,"Missing '"+name+"' attribute");
+		throw Exception(context,"Missing '"+name+"' attribute","MISSING_PARAMETER");
 	
 	try
 	{
@@ -65,7 +65,7 @@ int SocketSAX2HandlerInterface::GetRootAttributeInt(const std::string &name)
 	}
 	catch(...)
 	{
-		throw Exception(context,"Attribute '"+name+"' has invalid integer value");
+		throw Exception(context,"Attribute '"+name+"' has invalid integer value","INVALID_INTEGER");
 	}
 }
 
@@ -81,7 +81,7 @@ int SocketSAX2HandlerInterface::GetRootAttributeInt(const std::string &name, int
 	}
 	catch(...)
 	{
-		throw Exception(context,"Attribute '"+name+"' has invalid integer value");
+		throw Exception(context,"Attribute '"+name+"' has invalid integer value","INVALID_INTEGER");
 	}
 }
 
@@ -89,7 +89,7 @@ bool SocketSAX2HandlerInterface::GetRootAttributeBool(const std::string &name)
 {
 	auto it = root_attributes.find(name);
 	if(it==root_attributes.end())
-		throw Exception(context,"Missing '"+name+"' attribute");
+		throw Exception(context,"Missing '"+name+"' attribute","MISSING_PARAMETER");
 	
 	if(it->second=="yes")
 		return true;
@@ -102,7 +102,7 @@ bool SocketSAX2HandlerInterface::GetRootAttributeBool(const std::string &name)
 	}
 	catch(...)
 	{
-		throw Exception(context,"Attribute '"+name+"' has invalid boolean value");
+		throw Exception(context,"Attribute '"+name+"' has invalid boolean value","INVALID_BOOLEAN");
 	}
 }
 
@@ -123,7 +123,7 @@ bool SocketSAX2HandlerInterface::GetRootAttributeBool(const std::string &name, b
 	}
 	catch(...)
 	{
-		throw Exception(context,"Attribute '"+name+"' has invalid boolean value");
+		throw Exception(context,"Attribute '"+name+"' has invalid boolean value","INVALID_BOOLEAN");
 	}
 }
 

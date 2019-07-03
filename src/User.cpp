@@ -159,7 +159,7 @@ void User::Edit(const string &name,const string &password, const string &profile
 	create_edit_check(name,password,profile);
 	
 	if(!Users::GetInstance()->Exists(name))
-		throw Exception("User","User not found");
+		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	string password_sha1 = Sha1String(password).GetHex();
 	
@@ -174,7 +174,10 @@ void User::Edit(const string &name,const string &password, const string &profile
 void User::ChangePassword(const string &name,const string &password)
 {
 	if(!Users::GetInstance()->Exists(name))
-		throw Exception("User","User not found");
+		throw Exception("User","User not found","UNKNOWN_USER");
+	
+	if(password=="")
+		throw Exception("User","Invalid password","INVALID_PARAMETER");
 	
 	string password_sha1 = Sha1String(password).GetHex();
 	
@@ -188,7 +191,7 @@ void User::ChangePassword(const string &name,const string &password)
 void User::UpdatePreferences(const string &name, const string &preferences)
 {
 	if(!Users::GetInstance()->Exists(name))
-		throw Exception("User","User not found");
+		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	DB db;
 	db.QueryPrintf("UPDATE t_user SET user_preferences=%s WHERE user_login=%s",
@@ -206,7 +209,7 @@ void User::Delete(const string &name)
 	db.QueryPrintf("DELETE FROM t_user WHERE user_login=%s",&name);
 	
 	if(db.AffectedRows()==0)
-		throw Exception("User","User not found");
+		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	db.QueryPrintf("DELETE FROM t_user_right WHERE user_login=%s",&name);
 	
@@ -216,7 +219,7 @@ void User::Delete(const string &name)
 void User::ClearRights(const string &name)
 {
 	if(!Users::GetInstance()->Exists(name))
-		throw Exception("User","User not found");
+		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	DB db;
 	db.QueryPrintf("DELETE FROM t_user_right WHERE user_login=%s",&name);
@@ -240,10 +243,10 @@ void User::ListRights(const string &name, QueryResponse *response)
 void User::GrantRight(const string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill)
 {
 	if(!Users::GetInstance()->Exists(name))
-		throw Exception("User","User not found");
+		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	if(!Workflows::GetInstance()->Exists(workflow_id))
-		throw Exception("User","Workflow not found");
+		throw Exception("User","Workflow not found","UNKNOWN_WORKFLOW");
 	
 	DB db;
 	int iedit = edit, iread = read, iexec = exec, ikill = kill;
@@ -256,25 +259,25 @@ void User::GrantRight(const string &name, unsigned int workflow_id, bool edit, b
 void User::RevokeRight(const string &name, unsigned int workflow_id)
 {
 	if(!Users::GetInstance()->Exists(name))
-		throw Exception("User","User not found");
+		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	DB db;
 	db.QueryPrintf("DELETE FROM t_user_right WHERE workflow_id=%i",&workflow_id);
 	
 	if(db.AffectedRows()==0)
-		throw Exception("User","No right found on that workflow");
+		throw Exception("User","No right found on that workflow","ALREADY_NO_RIGHTS");
 }
 
 void User::create_edit_check(const std::string &name, const std::string &password, const std::string &profile)
 {
 	if(!CheckUserName(name))
-		throw Exception("User","Invalid user name");
+		throw Exception("User","Invalid user name","INVALID_PARAMETER");
 	
 	if(profile!="ADMIN" && profile!="USER")
-		throw Exception("User","Invalid profile, should be 'ADMIN' or 'USER'");
+		throw Exception("User","Invalid profile, should be 'ADMIN' or 'USER'","INVALID_PARAMETER");
 	
 	if(password=="")
-		throw Exception("User","Empty password");
+		throw Exception("User","Empty password","INVALID_PARAMETER");
 }
 
 bool User::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)

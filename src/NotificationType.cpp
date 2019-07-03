@@ -82,7 +82,7 @@ void NotificationType::Get(unsigned int id, QueryResponse *response)
 void NotificationType::Register(const string &name, const string &description, const string &manifest, const string &binary_content)
 {
 	if(name.length()==0)
-		throw Exception("NotificationType","Name cannot be empty");
+		throw Exception("NotificationType","Name cannot be empty","INVALID_PARAMETER");
 	
 	DB db;
 	db.QueryPrintf(
@@ -127,7 +127,7 @@ void NotificationType::GetConf(unsigned int id, QueryResponse *response)
 	db.QueryPrintf("SELECT notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&id);
 	
 	if(!db.FetchRow())
-		throw Exception("NotificationType","Unable to find notification type");
+		throw Exception("NotificationType","Unable to find notification type","UNKNOWN_NOTIFICATION_TYPE");
 	
 	string conf = db.GetField(0);
 	string conf_base64;
@@ -140,7 +140,7 @@ void NotificationType::GetConf(unsigned int id, QueryResponse *response)
 void NotificationType::SetConf(unsigned int id, const string &data)
 {
 	if(!NotificationTypes::GetInstance()->Exists(id))
-		throw Exception("NotificationType","Unable to find notification type");
+		throw Exception("NotificationType","Unable to find notification type","UNKNOWN_NOTIFICATION_TYPE");
 	
 	DB db;
 	db.QueryPrintf("UPDATE t_notification_type SET notification_type_conf_content=%s WHERE notification_type_id=%i",&data,&id);

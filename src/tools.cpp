@@ -60,47 +60,59 @@ void tools_print_usage()
 
 void tools_config_reload(const std::string &module,bool notify)
 {
+	bool module_is_valid = false;
+	
 	if(module=="all" || module=="scheduler")
 	{
 		WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
 		scheduler->Reload(notify);
+		module_is_valid = true;
 	}
 	
 	if(module=="all" || module=="retry_schedules")
 	{
 		RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
 		retry_schedules->Reload(notify);
+		module_is_valid = true;
 	}
 	
 	if(module=="all" || module=="workflows")
 	{
 		Workflows *workflows = Workflows::GetInstance();
 		workflows->Reload(notify);
+		module_is_valid = true;
 	}
 	
 	if(module=="all" || module=="notifications")
 	{
 		NotificationTypes::GetInstance()->Reload(notify);
 		Notifications::GetInstance()->Reload(notify);
+		module_is_valid = true;
 	}
 	
 	if(module=="all" || module=="queuepool")
 	{
 		QueuePool *qp = QueuePool::GetInstance();
 		qp->Reload(notify);
+		module_is_valid = true;
 	}
 	
 	if(module=="all" || module=="users")
 	{
 		Users *users = Users::GetInstance();
 		users->Reload(notify);
+		module_is_valid = true;
 	}
 	
 	if(module=="all" || module=="tags")
 	{
 		Tags *tags = Tags::GetInstance();
 		tags->Reload(notify);
+		module_is_valid = true;
 	}
+	
+	if(!module_is_valid)
+		throw Exception("Control","Invalid module","INVALID_MODULE");
 }
 
 void tools_sync_notifications(bool notify)
@@ -195,6 +207,8 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 				
 				return true;
 			}
+			else
+				throw Exception("Status","Unknown type","UNKNOWN_TYPE");
 		}
 	}
 	

@@ -246,7 +246,7 @@ unsigned int Queue::Create(const string &name, int concurrency, const string &sc
 void Queue::Edit(unsigned int id,const string &name, int concurrency, const string &scheduler, int dynamic)
 {
 	if(!QueuePool::GetInstance()->Exists(id))
-		throw Exception("Queue","Unable to find queue");
+		throw Exception("Queue","Unable to find queue","UNKNOWN_QUEUE");
 	
 	create_edit_check(name,concurrency,scheduler);
 	
@@ -258,18 +258,20 @@ void Queue::Delete(unsigned int id)
 {
 	DB db;
 	db.QueryPrintf("DELETE FROM t_queue WHERE queue_id=%i",&id);
+	if(!db.AffectedRows())
+		throw Exception("Queue","Unable to find queue","UNKNOWN_QUEUE");
 }
 
 void Queue::create_edit_check(const std::string &name, int concurrency, const std::string &scheduler)
 {
 	if(!CheckQueueName(name))
-		throw Exception("Queue","Invalid queue name");
+		throw Exception("Queue","Invalid queue name","INVALID_PARAMETER");
 	
 	if(concurrency<=0)
-		throw Exception("Queue","Invalid concurrency, must be greater than 0");
+		throw Exception("Queue","Invalid concurrency, must be greater than 0","INVALID_PARAMETER");
 	
 	if(scheduler!="prio" && scheduler!="fifo" && scheduler!="default")
-		throw Exception("Queue","Invalid scheduler name, must be 'prio', 'fifo' or 'default'");
+		throw Exception("Queue","Invalid scheduler name, must be 'prio', 'fifo' or 'default'","INVALID_PARAMETER");
 }
 
 bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)

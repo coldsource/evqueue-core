@@ -201,7 +201,7 @@ void WorkflowSchedule::Edit(
 	
 	// We only store locally schedules that belong to our node, we have to check existence against DB
 	if(!WorkflowSchedules::GetInstance()->Exists(id))
-		throw Exception("WorkflowSchedule","Workflow schedule not found");
+		throw Exception("WorkflowSchedule","Workflow schedule not found","UNKNOWN_WORKFLOW_SCHEDULE");
 	
 	db.QueryPrintf(
 		"UPDATE t_workflow_schedule SET node_name=%s,workflow_id=%i,workflow_schedule=%s,workflow_schedule_onfailure=%s,workflow_schedule_user=%s,workflow_schedule_host=%s,workflow_schedule_active=%i,workflow_schedule_comment=%s WHERE workflow_schedule_id=%i",
@@ -241,7 +241,7 @@ void WorkflowSchedule::SetIsActive(unsigned int id,bool active)
 	
 	// We only store locally schedules that belong to our node, we have to check existence against DB
 	if(!WorkflowSchedules::GetInstance()->Exists(id))
-		throw Exception("WorkflowSchedule","Workflow schedule not found");
+		throw Exception("WorkflowSchedule","Workflow schedule not found","UNKNOWN_WORKFLOW_SCHEDULE");
 	
 	db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=%i WHERE workflow_schedule_id=%i",&iactive,&id);
 }
@@ -255,7 +255,7 @@ void WorkflowSchedule::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&id);
 	
 	if(db.AffectedRows()==0)
-		throw Exception("WorkflowSchedule","Workflow schedule not found");
+		throw Exception("WorkflowSchedule","Workflow schedule not found","UNKNOWN_WORKFLOW_SCHEDULE");
 	
 	db.QueryPrintf("DELETE FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",&id);
 	
@@ -312,7 +312,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 		else if(onfailure=="SUSPEND")
 			onfailure_continue = false;
 		else
-			throw Exception("WorkflowSchedule","onfailure must be 'CONTINUE' or 'SUSPEND'");
+			throw Exception("WorkflowSchedule","onfailure must be 'CONTINUE' or 'SUSPEND'","INVALID_PARAMETER");
 		
 		string remote_user = saxh->GetRootAttribute("user","");
 		string remote_host = saxh->GetRootAttribute("host","");

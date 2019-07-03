@@ -113,7 +113,7 @@ void handle_connection(int s)
 				try
 				{
 					if(!QueryHandlers::GetInstance()->HandleQuery(user, saxh.GetQueryGroup(),&saxh, &response))
-						throw Exception("API","Unknown command or action");
+						throw Exception("API","Unknown command or action","UNKNOWN_COMMAND");
 				}
 				catch (Exception &e)
 				{
@@ -121,6 +121,7 @@ void handle_connection(int s)
 					
 					QueryResponse response(s);
 					response.SetError(e.error);
+					response.SetErrorCode(e.code);
 					response.SendResponse();
 					
 					continue;
@@ -138,6 +139,7 @@ void handle_connection(int s)
 		
 		QueryResponse response(s);
 		response.SetError(e.error);
+		response.SetErrorCode("UNEXPECTED_EXCEPTION");
 		response.SendResponse();
 		
 		Sockets::GetInstance()->UnregisterSocket(s);

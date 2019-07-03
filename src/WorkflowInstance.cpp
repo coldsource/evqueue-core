@@ -99,7 +99,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 	DB db;
 
 	if(workflow_name.length()>WORKFLOW_NAME_MAX_LEN)
-		throw Exception("WorkflowInstance","Workflow name is too long");
+		throw Exception("WorkflowInstance","Workflow name is too long","UNKNOWN_OBJECT");
 
 	// Get workflow. This will throw an exception if workflow doesn't exist
 	Workflow workflow = Workflows::GetInstance()->Get(workflow_name);
@@ -144,7 +144,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 			parameter_node.setTextContent(parameter_value);
 		}
 		else
-			throw Exception("WorkflowInstance","Unknown parameter : "+parameter_name);
+			throw Exception("WorkflowInstance","Unknown parameter : "+parameter_name,"INVALID_WORKFLOW_PARAMETERS");
 
 		passed_parameters++;
 	}
@@ -157,7 +157,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 		{
 			char e[256];
 			sprintf(e, "Invalid number of parameters passed to workflow (passed %d, expected %d)",passed_parameters,workflow_template_parameters);
-			throw Exception("WorkflowInstance",e);
+			throw Exception("WorkflowInstance",e,"INVALID_WORKFLOW_PARAMETERS");
 		}
 	}
 	

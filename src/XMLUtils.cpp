@@ -142,7 +142,7 @@ bool XMLUtils::GetAttributeBool(DOMElement node, const string &name, bool remove
 	}
 	catch(...)
 	{
-		throw Exception("XML Parser","Attribute '"+name+"' has invalid boolean value");
+		throw Exception("XML Parser","Attribute '"+name+"' has invalid boolean value","INVALID_BOOLEAN");
 	}
 }
 
@@ -156,6 +156,6 @@ int XMLUtils::GetAttributeInt(DOMElement node, const string &name, bool remove_a
 	}
 	catch(...)
 	{
-		throw Exception("XML Parser","Attribute '"+name+"' has invalid integer");
+		throw Exception("XML Parser","Attribute '"+name+"' has invalid integer value","INVALID_INTEGER");
 	}
 }

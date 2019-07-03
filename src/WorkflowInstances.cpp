@@ -99,7 +99,7 @@ bool WorkflowInstances::Wait(const User &user, QueryResponse *response, unsigned
 	std::map<unsigned int,WorkflowInstance *>::iterator i;
 	i = wi.find(workflow_instance_id);
 	if(i==wi.end())
-		throw Exception("WorkflowInstances","Unknown instance ID");
+		throw Exception("WorkflowInstances","Unknown instance ID","UNKNOWN_INSTANCE");
 	
 	if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "read"))
 		User::InsufficientRights();

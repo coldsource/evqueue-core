@@ -30,6 +30,15 @@ Exception::Exception(const string &context, const string &error)
 	ExceptionManager::RegisterException(this);
 }
 
+Exception::Exception(const string &context, const string &error, const string &code)
+{
+	this->context = context;
+	this->error = error;
+    this->code = code;
+	
+	ExceptionManager::RegisterException(this);
+}
+
 Exception::~Exception()
 {
 	ExceptionManager::UnregisterException(this);

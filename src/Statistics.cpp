@@ -195,7 +195,7 @@ bool Statistics::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Que
 			return true;
 		}
 		else
-			throw Exception("Statistics","Unknown statistics type");
+			throw Exception("Statistics","Unknown statistics type", "UNKNOWN_TYPE");
 	}
 	else if(action=="reset")
 	{
@@ -211,7 +211,7 @@ bool Statistics::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Que
 			return true;
 		}
 		else
-			throw Exception("Statistics","Unknown statistics type for this action");
+			throw Exception("Statistics","Unknown statistics type for this action","UNKNOWN_TYPE");
 	}
 	
 	return false;

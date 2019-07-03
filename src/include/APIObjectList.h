@@ -103,7 +103,7 @@ class APIObjectList
 			
 			auto it = objects_id.find(id);
 			if(it==objects_id.end())
-				throw Exception("API","Unknown object ID : " + std::to_string(id));
+				throw Exception("API","Unknown object ID : " + std::to_string(id),"UNKNOWN_OBJECT");
 			
 			APIObjectType object = *it->second;
 			
@@ -116,7 +116,7 @@ class APIObjectList
 			
 			auto it = objects_name.find(name);
 			if(it==objects_name.end())
-				throw Exception("API","Unknown object name : " + name);
+				throw Exception("API","Unknown object name : " + name,"UKNOWN_OBJECT");
 			
 			APIObjectType object = *it->second;
 			

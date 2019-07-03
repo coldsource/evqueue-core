@@ -157,7 +157,7 @@ void Notification::Create(unsigned int type_id,const std::string &name, const st
 	create_edit_check(type_id,name,parameters);
 	
 	if(!NotificationTypes::GetInstance()->Exists(type_id))
-		throw Exception("Notification","Unknown notification type ID");
+		throw Exception("Notification","Unknown notification type ID","UNKNOWN_NOTIFICATION_TYPE");
 	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_parameters) VALUES(%i,%s,%s)",&type_id,&name,&parameters);
@@ -166,7 +166,7 @@ void Notification::Create(unsigned int type_id,const std::string &name, const st
 void Notification::Edit(unsigned int id,const std::string &name, const std::string parameters)
 {
 	if(!Notifications::GetInstance()->Exists(id))
-		throw Exception("Notification","Unable to find notification");
+		throw Exception("Notification","Unable to find notification","UNKNOWN_NOTIFICATION");
 	
 	create_edit_check(0,name,parameters);
 	
@@ -177,7 +177,7 @@ void Notification::Edit(unsigned int id,const std::string &name, const std::stri
 void Notification::Delete(unsigned int id)
 {
 	if(!Notifications::GetInstance()->Exists(id))
-		throw Exception("Notification","Unable to find notification");
+		throw Exception("Notification","Unable to find notification","UNKNOWN_NOTIFICATION");
 	
 	DB db;
 	
@@ -219,7 +219,7 @@ string Notification::json_escape(const string &str)
 void Notification::create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters)
 {
 	if(name.length()==0)
-		throw Exception("Notification","Name cannot be empty");
+		throw Exception("Notification","Name cannot be empty","INVALID_PARAMETER");
 }
 
 bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)

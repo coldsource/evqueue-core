@@ -30,7 +30,7 @@ using namespace std;
 Schedule::Schedule(const string &schedule_description_s)
 {
 	if(schedule_description_s=="")
-		throw Exception("Schedule","Empty schedule");
+		throw Exception("Schedule","Empty schedule","INVALID_SCHEDULE");
 	
 	const char *schedule_description = schedule_description_s.c_str();
 	
@@ -52,10 +52,10 @@ Schedule::Schedule(const string &schedule_description_s)
 			long v = strtol(start_ptr,&end_ptr,10);
 			
 			if(start_ptr==end_ptr)
-				throw Exception("Schedule","Non numeric data in schedule offset");
+				throw Exception("Schedule","Non numeric data in schedule offset","INVALID_SCHEDULE");
 			
 			if(v<0 || v>=length)
-				throw Exception("Schedule","Out of range schedule offset");
+				throw Exception("Schedule","Out of range schedule offset","INVALID_SCHEDULE");
 			
 			schedule[offset+v] = true;
 			empty_level = false;
@@ -80,13 +80,13 @@ Schedule::Schedule(const string &schedule_description_s)
 	}while(level<=SCHEDULE_LEVEL_WDAY);
 	
 	if(schedule_description[i]!='\0')
-		throw Exception("Schedule","Garbage at end of schedule");
+		throw Exception("Schedule","Garbage at end of schedule","INVALID_SCHEDULE");
 	
 	if(min_day==29 && (!schedule[175] && !schedule[177] && !schedule[178] && !schedule[179] && !schedule[180] && !schedule[181] && !schedule[182] && !schedule[183] && !schedule[184] && !schedule[185] && !schedule[186]))
-		throw Exception("Schedule","Schedule constraints are impossible to satisfy");
+		throw Exception("Schedule","Schedule constraints are impossible to satisfy","INVALID_SCHEDULE");
 	
 	if(min_day==30 && (!schedule[175] && !schedule[177] && !schedule[179] && !schedule[181] && !schedule[182] && !schedule[184] && !schedule[186]))
-		throw Exception("Schedule","Schedule constraints are impossible to satisfy");
+		throw Exception("Schedule","Schedule constraints are impossible to satisfy","INVALID_SCHEDULE");
 }
 
 int Schedule::GetScheduleLength(int level)

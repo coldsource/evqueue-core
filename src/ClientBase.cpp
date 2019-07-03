@@ -137,8 +137,13 @@ void ClientBase::Exec(const std::string &cmd, bool record)
 	if(saxh->GetRootAttribute("status")!="OK")
 	{
 		string error = saxh->GetRootAttribute("error");
+		string error_code = saxh->GetRootAttribute("error-code","");
 		
-		throw Exception("Client","Error executing command : "+error);
+		string message = "Error executing command : "+error;
+		if(error_code!="")
+			message += " ("+error_code+")";
+		
+		throw Exception("Client",message);
 	}
 	
 	disconnect();

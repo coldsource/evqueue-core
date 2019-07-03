@@ -85,7 +85,7 @@ void Workflow::CheckInputParameters(WorkflowParameters *parameters)
 	{
 		unique_ptr<DOMXPathResult> res(xmldoc->evaluate("parameters/parameter[@name = '"+parameter_name+"']",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
 		if(!res->isNode())
-			throw Exception("Workflow","Unknown parameter : "+parameter_name);
+			throw Exception("Workflow","Unknown parameter : "+parameter_name,"INVALID_WORKFLOW_PARAMETERS");
 		
 		passed_parameters++;
 	}
@@ -97,7 +97,7 @@ void Workflow::CheckInputParameters(WorkflowParameters *parameters)
 	{
 		char e[256];
 		sprintf(e, "Invalid number of parameters. Workflow expects %d, but %d are given.",workflow_template_parameters,passed_parameters);
-		throw Exception("Workflow",e);
+		throw Exception("Workflow",e,"INVALID_WORKFLOW_PARAMETERS");
 	}
 }
 
@@ -232,7 +232,7 @@ void Workflow::Edit(unsigned int id,const string &name, const string &base64, co
 	string xml = create_edit_check(name,base64,group,comment);
 	
 	if(!Workflows::GetInstance()->Exists(id))
-		throw Exception("Workflow","Workflow not found");
+		throw Exception("Workflow","Workflow not found","UNKNOWN_WORKFLOW");
 	
 	DB db;
 	db.QueryPrintf("UPDATE t_workflow SET workflow_name=%s,workflow_xml=%s,workflow_group=%s,workflow_comment=%s WHERE workflow_id=%i",
@@ -255,7 +255,7 @@ void Workflow::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_workflow WHERE workflow_id=%i",&id);
 	
 	if(db.AffectedRows()==0)
-		throw Exception("Workflow","Workflow not found");
+		throw Exception("Workflow","Workflow not found","UNKNOWN_WORKFLOW");
 	
 	// Clean notifications
 	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
@@ -295,7 +295,7 @@ void Workflow::ListNotifications(unsigned int id, QueryResponse *response)
 void Workflow::SubscribeNotification(unsigned int id, unsigned int notification_id)
 {
 	if(!Notifications::GetInstance()->Exists(notification_id))
-		throw Exception("Workflow","Notification ID not found");
+		throw Exception("Workflow","Notification ID not found","UNKNOWN_NOTIFICATION");
 	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&id,&notification_id);
@@ -307,7 +307,7 @@ void Workflow::UnsubscribeNotification(unsigned int id, unsigned int notificatio
 	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i AND notification_id=%i",&id,&notification_id);
 	
 	if(db.AffectedRows()==0)
-		throw Exception("Workflow","Workflow was not subscribed to this notification");
+		throw Exception("Workflow","Workflow was not subscribed to this notification","UNKNOWN_NOTIFICATION");
 }
 
 void Workflow::ClearNotifications(unsigned int id)
@@ -319,14 +319,14 @@ void Workflow::ClearNotifications(unsigned int id)
 string Workflow::create_edit_check(const string &name, const string &base64, const string &group, const string &comment)
 {
 	if(name=="")
-		throw Exception("Workflow","Workflow name cannot be empty");
+		throw Exception("Workflow","Workflow name cannot be empty","INVALID_PARAMETER");
 	
 	if(!CheckWorkflowName(name))
-		throw Exception("Workflow","Invalid workflow name");
+		throw Exception("Workflow","Invalid workflow name","INVALID_PARAMETER");
 	
 	string workflow_xml;
 	if(!base64_decode_string(workflow_xml,base64))
-		throw Exception("Workflow","Invalid base64 sequence");
+		throw Exception("Workflow","Invalid base64 sequence","INVALID_PARAMETER");
 	
 	XMLUtils::ValidateXML(workflow_xml,workflow_xsd_str);
 	

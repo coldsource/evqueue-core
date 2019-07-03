@@ -85,7 +85,7 @@ unsigned int RetrySchedule::Create(const std::string &name, const std::string &b
 void RetrySchedule::Edit(unsigned int id,const std::string &name, const std::string &base64)
 {
 	if(!RetrySchedules::GetInstance()->Exists(id))
-		throw Exception("RetrySchedule","Retry schedule not found");
+		throw Exception("RetrySchedule","Retry schedule not found","UNKNOWN_RETRY_SCHEDULE");
 	
 	string xml = create_edit_check(name,base64);
 	
@@ -97,16 +97,19 @@ void RetrySchedule::Delete(unsigned int id)
 {
 	DB db;
 	db.QueryPrintf("DELETE FROM t_schedule WHERE schedule_id=%i",&id);
+	
+	if(!db.AffectedRows())
+		throw Exception("RetrySchedule","Retry schedule not found","UNKNOWN_RETRY_SCHEDULE");
 }
 
 std::string RetrySchedule::create_edit_check(const std::string &name, const std::string &base64)
 {
 	if(!CheckRetryScheduleName(name))
-		throw Exception("RetrySchedule","Invalid retry schedule name");
+		throw Exception("RetrySchedule","Invalid retry schedule name","INVALID_PARAMETER");
 	
 	string retry_schedule_xml;
 	if(!base64_decode_string(retry_schedule_xml,base64))
-		throw Exception("RetrySchedule","Invalid base64 sequence");
+		throw Exception("RetrySchedule","Invalid base64 sequence","INVALID_PARAMETER");
 	
 	XMLUtils::ValidateXML(retry_schedule_xml,retry_schedule_xsd_str);
 	

@@ -39,7 +39,7 @@ Tag::Tag(DB *db,unsigned int id)
 	db->QueryPrintf("SELECT tag_label FROM t_tag WHERE tag_id=%i",&id);
 	
 	if(!db->FetchRow())
-		throw Exception("Tag","Unknown Tag");
+		throw Exception("Tag","Unknown Tag","UNKNOWN_TAG");
 	
 	this->id = id;
 	label = db->GetField(0);
@@ -56,7 +56,7 @@ void Tag::Get(unsigned int id, QueryResponse *response)
 unsigned int Tag::Create(const string &label)
 {
 	if(label=="")
-		throw Exception("Tag", "Invalid tag label");
+		throw Exception("Tag", "Invalid tag label","INVALID_PARAMETER");
 	
 	DB db;
 	
@@ -71,7 +71,7 @@ unsigned int Tag::Create(const string &label)
 void Tag::Edit(unsigned int id, const string &label)
 {
 	if(label=="")
-		throw Exception("Tag", "Invalid tag label");
+		throw Exception("Tag", "Invalid tag label","INVALID_PARAMETER");
 	
 	DB db;
 	db.QueryPrintf("UPDATE t_tag SET tag_label=%s WHERE tag_id=%i",&label,&id);
@@ -88,7 +88,7 @@ void Tag::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_tag WHERE tag_id=%i",&id);
 	
 	if(db.AffectedRows()==0)
-		throw Exception("Tag","Tag not found");
+		throw Exception("Tag","Tag not found","UNKNOWN_TAG");
 	
 	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE tag_id=%i",&id);
 	
