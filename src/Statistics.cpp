@@ -163,7 +163,6 @@ void Statistics::ResetGlobalStatistics()
 	statistics_queries = 0;
 	workflow_exceptions = 0;
 	workflow_instance_launched = 0;
-	workflow_instance_executing = 0;
 	workflow_instance_errors = 0;
 }
 
