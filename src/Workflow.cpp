@@ -216,6 +216,11 @@ unsigned int Workflow::Create(const string &name, const string &base64, const st
 	string xml = create_edit_check(name,base64,group,comment);
 	
 	DB db;
+	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow WHERE workflow_name=%s",&name);
+	db.FetchRow();
+	if(db.GetFieldInt(0)!=0)
+		throw Exception("Workflow","Workflow name already exists","WORKFLOW_ALREADY_EXISTS"); 
+	
 	db.QueryPrintf("INSERT INTO t_workflow(workflow_name,workflow_xml,workflow_group,workflow_comment,workflow_lastcommit) VALUES(%s,%s,%s,%s,%s)",
 		&name,
 		&xml,
