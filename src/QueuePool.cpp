@@ -388,7 +388,7 @@ void QueuePool::GetQueue(unsigned int id, QueryResponse *response)
 	
 	Queue *q = qp->get_queue(id);
 	if(!q)
-		throw Exception("QueuePool","Unable to find queue");
+		throw Exception("QueuePool","Unable to find queue","UNKNOWN_OBJECT");
 	
 	DOMElement node = (DOMElement)response->AppendXML("<queue />");
 	node.setAttribute("id",to_string(q->GetID()));
