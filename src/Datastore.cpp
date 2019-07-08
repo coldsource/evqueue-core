@@ -23,7 +23,7 @@
 #include <QueryResponse.h>
 #include <SocketQuerySAX2Handler.h>
 #include <base64.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 
 #include <zlib.h>
 
@@ -31,7 +31,7 @@ using namespace std;
 
 string Datastore::gzip(const string &str)
 {
-	int gzip_level = Configuration::GetInstance()->GetInt("datastore.gzip.level");
+	int gzip_level = ConfigurationEvQueue::GetInstance()->GetInt("datastore.gzip.level");
 	
 	string output;
 	char output_chunk[16384];
@@ -73,7 +73,7 @@ bool Datastore::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Quer
 			throw Exception("Datastore","Unknown datastore entry");
 		
 		DOMDocument *dom = response->GetDOM();
-		if(Configuration::GetInstance()->GetBool("datastore.gzip.enable"))
+		if(ConfigurationEvQueue::GetInstance()->GetBool("datastore.gzip.enable"))
 		{
 			string value_base64;
 			base64_encode_string(gzip(db.GetField(0)),value_base64);

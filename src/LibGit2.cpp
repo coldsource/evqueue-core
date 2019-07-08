@@ -20,7 +20,7 @@
 #ifdef USELIBGIT2
 
 #include <LibGit2.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 
 #include <string.h>
 #include <time.h>
@@ -238,8 +238,8 @@ string LibGit2::Commit(std::string log)
 		localtime_r(&now, &now_tm);
 		time_t now2 = timegm(&now_tm);
 		
-		const string signature_name = Configuration::GetInstance()->Get("git.signature.name");
-		const string signature_email = Configuration::GetInstance()->Get("git.signature.email");
+		const string signature_name = ConfigurationEvQueue::GetInstance()->Get("git.signature.name");
+		const string signature_email = ConfigurationEvQueue::GetInstance()->Get("git.signature.email");
 		if(git_signature_new((git_signature **)&signature, signature_name.c_str(), signature_email.c_str(), now, (now2-now)/60)!=0)
 			throw LigGit2Exception(giterr_last());
 		
@@ -444,10 +444,10 @@ string LibGit2::Cat(const string &rev, const string &path)
 
 int LibGit2::credentials_callback(git_cred **cred,const char *url,const char *username_from_url,unsigned int allowed_types,void *payload)
 {
-	string user = Configuration::GetInstance()->Get("git.user");
-	string password = Configuration::GetInstance()->Get("git.password");
-	string public_key = Configuration::GetInstance()->Get("git.public_key");
-	string private_key = Configuration::GetInstance()->Get("git.private_key");
+	string user = ConfigurationEvQueue::GetInstance()->Get("git.user");
+	string password = ConfigurationEvQueue::GetInstance()->Get("git.password");
+	string public_key = ConfigurationEvQueue::GetInstance()->Get("git.public_key");
+	string private_key = ConfigurationEvQueue::GetInstance()->Get("git.private_key");
 	
 	if(allowed_types & git_credtype_t::GIT_CREDTYPE_SSH_KEY)
 		return git_cred_ssh_key_new(cred,user.c_str(),public_key.c_str(),private_key.c_str(),"");

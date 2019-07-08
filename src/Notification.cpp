@@ -24,7 +24,7 @@
 #include <Workflows.h>
 #include <Exception.h>
 #include <DB.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Logger.h>
 #include <WorkflowInstance.h>
 #include <Sockets.h>
@@ -57,11 +57,11 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	if(!db->FetchRow())
 		throw Exception("Notification","Unknown notification");
 	
-	unix_socket_path = Configuration::GetInstance()->Get("network.bind.path");
+	unix_socket_path = ConfigurationEvQueue::GetInstance()->Get("network.bind.path");
 	
-	notification_monitor_path = Configuration::GetInstance()->Get("notifications.monitor.path");
+	notification_monitor_path = ConfigurationEvQueue::GetInstance()->Get("notifications.monitor.path");
 	
-	logs_directory = Configuration::GetInstance()->Get("notifications.logs.directory");
+	logs_directory = ConfigurationEvQueue::GetInstance()->Get("notifications.logs.directory");
 	
 	type_id = db->GetFieldInt(0);
 	
@@ -70,7 +70,7 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	if(notification_type.GetName().at(0)=='/')
 		notification_binary = notification_type.GetName();
 	else
-		notification_binary = Configuration::GetInstance()->Get("notifications.tasks.directory")+"/"+notification_type.GetName();
+		notification_binary = ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory")+"/"+notification_type.GetName();
 	
 	notification_name = db->GetField(1);
 	
@@ -102,12 +102,12 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		int fno_stderr = open(log_filename_stderr.c_str(),O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
 		dup2(fno_stderr,STDERR_FILENO);
 		
-		setenv("EVQUEUE_IPC_QID",Configuration::GetInstance()->Get("core.ipc.qid").c_str(),true);
+		setenv("EVQUEUE_IPC_QID",ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),true);
 		
-		setenv("EVQUEUE_WORKING_DIRECTORY",Configuration::GetInstance()->Get("notifications.tasks.directory").c_str(),true);
+		setenv("EVQUEUE_WORKING_DIRECTORY",ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory").c_str(),true);
 		
 		char str_timeout[16],str_instance_id[16],str_errors[16];
-		sprintf(str_timeout,"%d",Configuration::GetInstance()->GetInt("notifications.tasks.timeout"));
+		sprintf(str_timeout,"%d",ConfigurationEvQueue::GetInstance()->GetInt("notifications.tasks.timeout"));
 		sprintf(str_instance_id,"%d",workflow_instance->GetInstanceID());
 		sprintf(str_errors,"%d",workflow_instance->GetErrors());
 		

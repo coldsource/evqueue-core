@@ -18,7 +18,7 @@
  */
 
 #include <SequenceGenerator.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <DB.h>
 
 using namespace std;

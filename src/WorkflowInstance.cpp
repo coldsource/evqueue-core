@@ -30,7 +30,7 @@
 #include <ExceptionWorkflowContext.h>
 #include <Retrier.h>
 #include <Statistics.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <WorkflowInstances.h>
 #include <Logger.h>
 #include <Task.h>
@@ -59,25 +59,25 @@
 using namespace std;
 
 WorkflowInstance::WorkflowInstance(void):
-	logs_directory(Configuration::GetInstance()->Get("processmanager.logs.directory"))
+	logs_directory(ConfigurationEvQueue::GetInstance()->Get("processmanager.logs.directory"))
 {
 	workflow_instance_id = 0;
 	workflow_schedule_id = 0;
 
-	log_dom_maxsize = Configuration::GetInstance()->GetSize("datastore.dom.maxsize");
+	log_dom_maxsize = ConfigurationEvQueue::GetInstance()->GetSize("datastore.dom.maxsize");
 
-	saveparameters = Configuration::GetInstance()->GetBool("workflowinstance.saveparameters");
+	saveparameters = ConfigurationEvQueue::GetInstance()->GetBool("workflowinstance.saveparameters");
 
-	savepoint_level = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level");
+	savepoint_level = ConfigurationEvQueue::GetInstance()->GetInt("workflowinstance.savepoint.level");
 	if(savepoint_level<0 || savepoint_level>3)
 		savepoint_level = 0;
 
-	savepoint_retry = Configuration::GetInstance()->GetBool("workflowinstance.savepoint.retry.enable");
+	savepoint_retry = ConfigurationEvQueue::GetInstance()->GetBool("workflowinstance.savepoint.retry.enable");
 
 	if(savepoint_retry)
 	{
-		savepoint_retry_times = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.retry.times");
-		savepoint_retry_wait = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.retry.wait");
+		savepoint_retry_times = ConfigurationEvQueue::GetInstance()->GetInt("workflowinstance.savepoint.retry.times");
+		savepoint_retry_wait = ConfigurationEvQueue::GetInstance()->GetInt("workflowinstance.savepoint.retry.wait");
 	}
 	
 	xmldoc = 0;
@@ -204,7 +204,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 	if(savepoint_level>=2)
 	{
 		// Insert workflow instance in DB
-		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s)",&Configuration::GetInstance()->Get("cluster.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host,&workflow_comment);
+		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s)",&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host,&workflow_comment);
 		this->workflow_instance_id = db.InsertID();
 
 		// Save workflow parameters
@@ -470,7 +470,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 		record_savepoint(); // XML has been modified (tasks status update from DB)
 
 	// Workflow is migrated, update node name
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 
 	DB db;
 	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",&config->Get("cluster.node.name"),&workflow_instance_id);

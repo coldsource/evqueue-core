@@ -21,7 +21,7 @@
 #include <XMLUtils.h>
 #include <Logger.h>
 #include <DOMDocument.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -37,7 +37,7 @@ QueryResponse::QueryResponse(int socket, const string &root_node_name)
 	DOMElement response_node = xmldoc->createElement(root_node_name);
 	xmldoc->appendChild(response_node);
 	
-	response_node.setAttribute("node",Configuration::GetInstance()->Get("cluster.node.name"));
+	response_node.setAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
 	
 	status_ok = true;
 }

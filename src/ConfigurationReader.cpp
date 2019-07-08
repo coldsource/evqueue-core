@@ -28,16 +28,13 @@
 
 using namespace std;
 
-Configuration *ConfigurationReader::Read(const char *filename)
+void ConfigurationReader::Read(const char *filename, Configuration *config)
 {
 	FILE *f;
 	int i,len,entry_len,value_len,lineno = 0;
 	int quoted;
 	char line[CONFIGURATION_LINE_MAXLEN];
 	char *entry,*value;
-	Configuration *config;
-	
-	config=new Configuration();
 	
 	f=0;
 	
@@ -167,6 +164,4 @@ Configuration *ConfigurationReader::Read(const char *filename)
 	}
 	
 	fclose(f);
-	
-	return config;
 }

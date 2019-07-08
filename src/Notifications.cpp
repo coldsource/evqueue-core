@@ -22,7 +22,7 @@
 #include <DB.h>
 #include <Exception.h>
 #include <Logger.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <WorkflowInstance.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
@@ -40,11 +40,11 @@ Notifications::Notifications():APIObjectList()
 {
 	instance = this;
 	
-	max_concurrency = Configuration::GetInstance()->GetInt("notifications.tasks.concurrency");
+	max_concurrency = ConfigurationEvQueue::GetInstance()->GetInt("notifications.tasks.concurrency");
 	
-	logs_directory = Configuration::GetInstance()->Get("notifications.logs.directory");
-	logs_maxsize = Configuration::GetInstance()->GetSize("notifications.logs.maxsize");
-	logs_delete = Configuration::GetInstance()->GetBool("notifications.logs.delete");
+	logs_directory = ConfigurationEvQueue::GetInstance()->Get("notifications.logs.directory");
+	logs_maxsize = ConfigurationEvQueue::GetInstance()->GetSize("notifications.logs.maxsize");
+	logs_delete = ConfigurationEvQueue::GetInstance()->GetBool("notifications.logs.delete");
 	
 	Reload(false);
 }

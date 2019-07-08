@@ -17,28 +17,31 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <LoggerNotifications.h>
-#include <DB.h>
-#include <User.h>
-#include <ConfigurationEvQueue.h>
+#ifndef _CONFIGURATIONEVQUEUE_H_
+#define _CONFIGURATIONEVQUEUE_H_
 
-using namespace std;
+#include <string>
+#include <map>
 
-LoggerNotifications *LoggerNotifications::instance = 0;
+#include <Configuration.h>
 
-LoggerNotifications::LoggerNotifications():
-	node_name(ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"))
+class QueryResponse;
+
+class ConfigurationEvQueue:public Configuration
 {
-	instance = this;
-}
-
-void LoggerNotifications::Log(pid_t pid, const string &log)
-{
-	DB db;
+	static ConfigurationEvQueue *instance;
 	
-	db.QueryPrintf("INSERT INTO t_log_notifications(node_name,log_notifications_pid,log_notifications_message) VALUES(%s,%i,%s)",
-		&instance->node_name,
-		&pid,
-		&log
-		);
-}
+	public:
+		ConfigurationEvQueue(void);
+		~ConfigurationEvQueue(void);
+		
+		void Substitute(void);
+		
+		void Check(void);
+		
+		void SendConfiguration(QueryResponse *response);
+		
+		static inline ConfigurationEvQueue *GetInstance(void) { return instance; }
+};
+
+#endif

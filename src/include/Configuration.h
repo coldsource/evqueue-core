@@ -23,16 +23,14 @@
 #include <string>
 #include <map>
 
-class QueryResponse;
-
 class Configuration
 {
-	std::map<std::string,std::string> entries;
-	
-	static Configuration *instance;
+	protected:
+		std::map<std::string,std::string> entries;
 	
 	public:
 		Configuration(void);
+		Configuration(const std::map<std::string,std::string> &entries);
 		~Configuration(void);
 		
 		bool Set(const std::string &entry,const std::string &value);
@@ -40,16 +38,8 @@ class Configuration
 		int GetInt(const std::string &entry) const;
 		int GetSize(const std::string &entry) const;
 		bool GetBool(const std::string &entry) const;
-		
-		void Substitute(void);
 
-		void Check(void);
-		
-		void SendConfiguration(QueryResponse *response);
-		
-		static inline Configuration *GetInstance(void) { return instance; }
-
-	private:
+	protected:
 		void check_f_is_exec(const std::string &filename);
 		void check_d_is_writeable(const std::string &path);
 		void check_bool_entry(const std::string &name);

@@ -28,7 +28,7 @@
 #include <NotificationTypes.h>
 #include <Retrier.h>
 #include <QueuePool.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Statistics.h>
@@ -202,7 +202,7 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 				
 				stats->IncStatisticsQueries();
 				
-				Configuration *config = Configuration::GetInstance();
+				ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
 				config->SendConfiguration(response);
 				
 				return true;
@@ -217,7 +217,7 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 
 int tools_queue_destroy()
 {
-	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
+	int msgqid = ipc_openq(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
 		return -1;
 	
@@ -239,7 +239,7 @@ int tools_queue_destroy()
 
 int tools_queue_stats()
 {
-	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
+	int msgqid = ipc_openq(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
 		return -1;
 	
@@ -257,7 +257,7 @@ int tools_queue_stats()
 
 int tools_send_exit_msg(int type,int tid,char retcode)
 {
-	int msgqid = ipc_openq(Configuration::GetInstance()->Get("core.ipc.qid").c_str());
+	int msgqid = ipc_openq(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
 	if(msgqid==-1)
 		return -1;
 	

@@ -25,7 +25,7 @@
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <FileManager.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <base64.h>
 #include <DB.h>
 #include <User.h>
@@ -49,26 +49,26 @@ NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 void NotificationType::PutFile(const string &filename,const string &data,bool base64_encoded)
 {
 	if(base64_encoded)
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BASE64);
+		FileManager::PutFile(ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BASE64);
 	else
-		FileManager::PutFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BINARY);
+		FileManager::PutFile(ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"),filename,data,FileManager::FILETYPE_CONF,FileManager::DATATYPE_BINARY);
 	
-	FileManager::Chmod(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+	FileManager::Chmod(ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"),filename,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
 }
 
 void NotificationType::GetFile(const string &filename,string &data)
 {
-	FileManager::GetFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,data);
+	FileManager::GetFile(ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"),filename,data);
 }
 
 void NotificationType::GetFileHash(const string &filename,string &hash)
 {
-	FileManager::GetFileHash(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename,hash);
+	FileManager::GetFileHash(ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"),filename,hash);
 }
 
 void NotificationType::RemoveFile(const string &filename)
 {
-	FileManager::RemoveFile(Configuration::GetInstance()->Get("notifications.tasks.directory"),filename);
+	FileManager::RemoveFile(ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"),filename);
 }
 
 void NotificationType::Get(unsigned int id, QueryResponse *response)

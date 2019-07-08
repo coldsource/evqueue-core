@@ -21,7 +21,7 @@
 
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 
 #include <time.h>
 

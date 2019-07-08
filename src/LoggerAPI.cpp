@@ -20,18 +20,18 @@
 #include <LoggerAPI.h>
 #include <DB.h>
 #include <User.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 
 using namespace std;
 
 LoggerAPI *LoggerAPI::instance = 0;
 
 LoggerAPI::LoggerAPI():
-	node_name(Configuration::GetInstance()->Get("cluster.node.name"))
+	node_name(ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"))
 {
 	instance = this;
 	
-	enabled = Configuration::GetInstance()->GetBool("loggerapi.enable");
+	enabled = ConfigurationEvQueue::GetInstance()->GetBool("loggerapi.enable");
 }
 
 void LoggerAPI::LogAction(const User &user, unsigned int object_id, const string &object_type, const string &group, const string &action)

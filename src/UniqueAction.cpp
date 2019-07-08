@@ -19,7 +19,7 @@
 
 #include <UniqueAction.h>
 #include <DB.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Logger.h>
 #include <Exception.h>
 #include <Cluster.h>
@@ -33,7 +33,7 @@ UniqueAction::UniqueAction(const string &name, int period)
 {
 	DB db;
 	
-	db.QueryPrintf("INSERT INTO t_uniqueaction(node_name,uniqueaction_name) VALUES(%s,%s)",&Configuration::GetInstance()->Get("cluster.node.name"),&name);
+	db.QueryPrintf("INSERT INTO t_uniqueaction(node_name,uniqueaction_name) VALUES(%s,%s)",&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&name);
 	unsigned int myid = db.InsertID();
 	
 	if(period>0)
@@ -58,7 +58,7 @@ UniqueAction::UniqueAction(const string &name, int period)
 		Logger::Log(LOG_INFO,"Not elected for cluster unique action '"+name+"'");
 	}
 	else
-		Logger::Log(LOG_NOTICE,"Node "+Configuration::GetInstance()->Get("cluster.node.name")+" elected for action '"+name+"'");
+		Logger::Log(LOG_NOTICE,"Node "+ConfigurationEvQueue::GetInstance()->Get("cluster.node.name")+" elected for action '"+name+"'");
 }
 
 UniqueAction::UniqueAction(const string &name)
@@ -73,10 +73,10 @@ UniqueAction::UniqueAction(const string &name)
 	}
 	
 	auto min = min_element(nodes.begin(),nodes.end());
-	is_elected = (*min==Configuration::GetInstance()->Get("cluster.node.name"));
+	is_elected = (*min==ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
 	
 	if(!is_elected)
 		Logger::Log(LOG_INFO,"Not elected for cluster unique action '"+name+"'");
 	else
-		Logger::Log(LOG_NOTICE,"Node "+Configuration::GetInstance()->Get("cluster.node.name")+" elected for action '"+name+"'");
+		Logger::Log(LOG_NOTICE,"Node "+ConfigurationEvQueue::GetInstance()->Get("cluster.node.name")+" elected for action '"+name+"'");
 }

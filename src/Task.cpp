@@ -21,7 +21,7 @@
 #include <DB.h>
 #include <Exception.h>
 #include <FileManager.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Workflow.h>
 #include <Workflows.h>
 #include <SocketQuerySAX2Handler.h>

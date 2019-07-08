@@ -61,6 +61,7 @@
 #include <WorkflowInstances.h>
 #include <WorkflowInstanceAPI.h>
 #include <ConfigurationReader.h>
+#include <ConfigurationEvQueue.h>
 #include <Exception.h>
 #include <Retrier.h>
 #include <WorkflowScheduler.h>
@@ -241,8 +242,8 @@ int main(int argc,const char **argv)
 	try
 	{
 		// Read configuration
-		Configuration *config;
-		config = ConfigurationReader::Read(config_filename);
+		ConfigurationEvQueue *config = new ConfigurationEvQueue();
+		ConfigurationReader::Read(config_filename, config);
 		
 		// Substitute configuration variables with environment if needed
 		config->Substitute();
@@ -434,7 +435,7 @@ int main(int argc,const char **argv)
 		}
 		
 		// On level 0 or 1, executing workflows are only stored during engine restart. Purge them since they are resumed
-		if(Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level")<=1)
+		if(ConfigurationEvQueue::GetInstance()->GetInt("workflowinstance.savepoint.level")<=1)
 			db.Query("DELETE FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
 		
 		// Load workflow schedules
@@ -725,8 +726,8 @@ int main(int argc,const char **argv)
 		if(!daemonized)
 			fprintf(stderr,"Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
 		
-		if(Configuration::GetInstance())
-			unlink(Configuration::GetInstance()->Get("core.pidfile").c_str());
+		if(ConfigurationEvQueue::GetInstance())
+			unlink(ConfigurationEvQueue::GetInstance()->Get("core.pidfile").c_str());
 		
 		return -1;
 	}

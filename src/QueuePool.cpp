@@ -23,7 +23,7 @@
 #include <Exception.h>
 #include <WorkflowInstance.h>
 #include <Logger.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
 #include <Cluster.h>
@@ -44,7 +44,7 @@ using namespace std;
 
 QueuePool::QueuePool(void)
 {
-	std::string scheduler_str = Configuration::GetInstance()->Get("queuepool.scheduler");
+	std::string scheduler_str = ConfigurationEvQueue::GetInstance()->Get("queuepool.scheduler");
 	default_scheduler = get_scheduler_from_string(scheduler_str);
 	
 	Logger::Log(LOG_NOTICE,"Loaded default scheduler '%s'",scheduler_str.c_str());

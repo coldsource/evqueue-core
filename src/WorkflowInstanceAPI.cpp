@@ -31,7 +31,7 @@
 #include <Retrier.h>
 #include <QueuePool.h>
 #include <DB.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <User.h>
 #include <Tag.h>
 
@@ -92,7 +92,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 	const string action = saxh->GetRootAttribute("action");
 	
 	Statistics *stats = Statistics::GetInstance();
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
 	if(action=="launch")
 	{
@@ -163,10 +163,10 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			if(!user.HasAccessToWorkflow(workflow_id, "read") || !user.HasAccessToWorkflow(workflow_id, "exec"))
 					User::InsufficientRights();
 			
-			int savepoint_level = Configuration::GetInstance()->GetInt("workflowinstance.savepoint.level");
+			int savepoint_level = ConfigurationEvQueue::GetInstance()->GetInt("workflowinstance.savepoint.level");
 			
 			// Clone existing instance
-			string node_name = Configuration::GetInstance()->Get("cluster.node.name");
+			string node_name = ConfigurationEvQueue::GetInstance()->Get("cluster.node.name");
 			string workflow_host = db.GetField(1);
 			string savepoint = db.GetField(2);
 			string instance_comment = db.GetField(3);
@@ -179,7 +179,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 				new_instance_id = db.InsertID();
 			
 			// Clone parameters if needed
-			if(Configuration::GetInstance()->GetBool("workflowinstance.saveparameters"))
+			if(ConfigurationEvQueue::GetInstance()->GetBool("workflowinstance.saveparameters"))
 				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters(workflow_instance_id,workflow_instance_parameter,workflow_instance_parameter_value) SELECT %i,workflow_instance_parameter,workflow_instance_parameter_value FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",&new_instance_id,&workflow_instance_id);
 			
 			WorkflowInstance *wi;

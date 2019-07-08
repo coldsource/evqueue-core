@@ -23,7 +23,7 @@
 #include <NetworkInputSource.h>
 #include <Logger.h>
 #include <User.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Statistics.h>
 #include <Sockets.h>
 #include <QueryResponse.h>
@@ -46,7 +46,7 @@ using namespace std;
 void handle_connection(int s)
 {
 	// Configure socket
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 	struct timeval tv;
 	
 	tv.tv_sec = config->GetInt("network.rcv.timeout");
@@ -88,7 +88,7 @@ void handle_connection(int s)
 		QueryResponse ready_response(s,"ready");
 		ready_response.SetAttribute("profile",user.GetProfile());
 		ready_response.SetAttribute("version",EVQUEUE_VERSION);
-		ready_response.SetAttribute("node",Configuration::GetInstance()->Get("cluster.node.name"));
+		ready_response.SetAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
 		ready_response.SendResponse();
 		
 		while(true)

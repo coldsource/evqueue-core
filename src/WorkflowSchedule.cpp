@@ -25,7 +25,7 @@
 #include <Exception.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <DB.h>
 #include <Logger.h>
 #include <LoggerAPI.h>

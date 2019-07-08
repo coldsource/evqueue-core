@@ -27,7 +27,7 @@
 class ConfigurationReader
 {
 	public:
-		static Configuration *Read(const char *filename);
+		static void Read(const char *filename, Configuration *config);
 };
 
 #endif

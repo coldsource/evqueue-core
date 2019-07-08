@@ -24,7 +24,7 @@
 #include <XMLUtils.h>
 #include <Workflow.h>
 #include <Workflows.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Exception.h>
 #include <FileManager.h>
 #include <Logger.h>
@@ -50,7 +50,7 @@ Git *Git::instance = 0;
 Git::Git()
 {
 #ifdef USELIBGIT2
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
 	repo_path = config->Get("git.repository");
 	

@@ -18,7 +18,7 @@
  */
 
 #include <GarbageCollector.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <DB.h>
 #include <Logger.h>
 #include <Exception.h>
@@ -34,17 +34,17 @@ using namespace std;
 GarbageCollector::GarbageCollector()
 {
 	// Read configuration
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
-	enable = Configuration::GetInstance()->GetBool("gc.enable");
-	delay = Configuration::GetInstance()->GetInt("gc.delay");
-	interval = Configuration::GetInstance()->GetInt("gc.interval");
-	limit = Configuration::GetInstance()->GetInt("gc.limit");
-	workflowinstance_retention = Configuration::GetInstance()->GetInt("gc.workflowinstance.retention");
-	logs_retention = Configuration::GetInstance()->GetInt("gc.logs.retention");
-	logsapi_retention = Configuration::GetInstance()->GetInt("gc.logsapi.retention");
-	logsnotifications_retention = Configuration::GetInstance()->GetInt("gc.logsnotifications.retention");
-	uniqueaction_retention = Configuration::GetInstance()->GetInt("gc.uniqueaction.retention");
+	enable = ConfigurationEvQueue::GetInstance()->GetBool("gc.enable");
+	delay = ConfigurationEvQueue::GetInstance()->GetInt("gc.delay");
+	interval = ConfigurationEvQueue::GetInstance()->GetInt("gc.interval");
+	limit = ConfigurationEvQueue::GetInstance()->GetInt("gc.limit");
+	workflowinstance_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.workflowinstance.retention");
+	logs_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.logs.retention");
+	logsapi_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.logsapi.retention");
+	logsnotifications_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.logsnotifications.retention");
+	uniqueaction_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.uniqueaction.retention");
 	
 	is_shutting_down = false;
 	

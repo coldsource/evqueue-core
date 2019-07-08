@@ -27,7 +27,7 @@ endif(HAS_LIBGIT2)
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
 add_executable(evqueue
-	src/evqueue.cpp src/Configuration.cpp src/ConfigurationReader.cpp src/DB.cpp src/Exception.cpp
+	src/evqueue.cpp src/ConfigurationEvQueue.cpp src/ConfigurationReader.cpp src/DB.cpp src/Exception.cpp
 	src/Queue.cpp src/QueuePool.cpp src/WorkflowInstance.cpp src/WorkflowInstances.cpp src/Scheduler.cpp
 	src/Retrier.cpp src/SocketQuerySAX2Handler.cpp src/ProcessManager.cpp src/WorkflowParameters.cpp
 	src/handle_connection.cpp src/Statistics.cpp src/NetworkInputSource.cpp src/BinNetworkInputStream.cpp
@@ -45,7 +45,8 @@ add_executable(evqueue
 	src/XPathOperators.cpp src/XPathFunctions.cpp src/DOMXPath.cpp src/WorkflowXPathFunctions.cpp
 	src/ExceptionManager.cpp src/ExceptionWorkflowContext.cpp src/XMLString.cpp src/Datastore.cpp
 	src/XMLFormatter.cpp src/UniqueAction.cpp src/Tag.cpp src/Tags.cpp src/LoggerAPI.cpp src/LogsAPI.cpp
-	src/LoggerNotifications.cpp src/LogsNotifications.cpp)
+	src/LoggerNotifications.cpp src/LogsNotifications.cpp src/ProcessExec.cpp src/DataSerializer.cpp
+	src/Configuration.cpp)
 
 if(USELIBGIT2)
 	add_definitions(-DUSELIBGIT2)
@@ -111,7 +112,10 @@ target_link_libraries(evqueue pcrecpp)
 
 project(evqueue_monitor)
 
-add_executable(evqueue_monitor src/evqueue_monitor.cpp src/tools_ipc.cpp src/tools_env.cpp)
+add_executable(evqueue_monitor
+	src/evqueue_monitor.cpp src/tools_ipc.cpp src/DataSerializer.cpp
+	src/Configuration.cpp src/Exception.cpp src/ExceptionManager.cpp src/ProcessExec.cpp
+	)
 
 include_directories(src/include /usr/include)
 
@@ -158,7 +162,10 @@ target_link_libraries(evqueue_api pcrecpp)
 
 project(evqueue_agent)
 
-add_executable(evqueue_agent src/evqueue_agent.cpp src/tools_env.cpp)
+add_executable(evqueue_agent
+src/evqueue_agent.cpp src/Exception.cpp src/Configuration.cpp src/DataSerializer.cpp src/ProcessExec.cpp
+	src/ExceptionManager.cpp
+	)
 
 include_directories(src/include /usr/include)
 

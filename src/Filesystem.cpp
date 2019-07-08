@@ -22,7 +22,7 @@
 #include <QueryResponse.h>
 #include <SocketQuerySAX2Handler.h>
 #include <User.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -36,7 +36,7 @@ void Filesystem::List(const string &path,QueryResponse *response)
 	if(path[0]=='/')
 		full_path = path;
 	else
-		full_path = Configuration::GetInstance()->Get("processmanager.tasks.directory")+"/"+path;
+		full_path = ConfigurationEvQueue::GetInstance()->Get("processmanager.tasks.directory")+"/"+path;
 		
 	DIR *dh = opendir(full_path.c_str());
 	if(!dh)

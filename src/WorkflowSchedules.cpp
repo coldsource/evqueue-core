@@ -21,7 +21,7 @@
 #include <WorkflowSchedule.h>
 #include <DB.h>
 #include <Logger.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Exception.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
@@ -64,7 +64,7 @@ void WorkflowSchedules::Reload(bool notify)
 			add(db.GetFieldInt(0),"",workflow_schedule);
 			
 			// Schedule is actif if set as active AND configured on the current node
-			if(workflow_schedule->GetIsActive() && (db.GetField(1)==Configuration::GetInstance()->Get("cluster.node.name") || db.GetField(1)=="any" || db.GetField(1)=="all"))
+			if(workflow_schedule->GetIsActive() && (db.GetField(1)==ConfigurationEvQueue::GetInstance()->Get("cluster.node.name") || db.GetField(1)=="any" || db.GetField(1)=="all"))
 				active_schedules.push_back(workflow_schedule);
 		}
 	}

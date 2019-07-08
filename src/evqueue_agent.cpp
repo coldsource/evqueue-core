@@ -25,7 +25,15 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <sys/select.h> 
-#include <tools_env.h>
+#include <DataSerializer.h>
+#include <Configuration.h>
+#include <Exception.h>
+#include <ProcessExec.h>
+
+#include <map>
+#include <string>
+
+using namespace std;
 
 int main(int argc,char ** argv)
 {
@@ -35,104 +43,104 @@ int main(int argc,char ** argv)
 		return -1;
 	}
 	
-	int fd_pipe[MAXFD_FORWARD][2];
-	
-	for(int i=0;i<MAXFD_FORWARD;i++)
+	try
 	{
-		if(pipe(fd_pipe[i])!=0)
-		{
-			fprintf(stderr,"evqueue_agent : could not create pipe\n");
-			return -1;
-		}
-	}
-	
-	pid_t pid = fork();
-	
-	if(pid==0)
-	{
-		if(!prepare_env())
-		{
-			fprintf(stderr,"evqueue_agent: Invalid environment\n");
-			return -1;
-		}
+		// Unserialize configuration that was piped on stdin
+		map<string,string> config_map;
+		if(!DataSerializer::Unserialize(STDIN_FILENO,config_map))
+			throw Exception("evqueue_agent","Could not read configuration");
 		
+		// Load config
+		Configuration *config = new Configuration(config_map);
+		
+		// Unserialize ENV that was piped on stdin
+		map<string,string> env_map;
+		if(!DataSerializer::Unserialize(STDIN_FILENO,env_map))
+			throw Exception("evqueue_monitor","Could not read environment");
+		
+		// Register ENV
+		for(auto it = env_map.begin();it!=env_map.end();++it)
+			setenv(it->first.c_str(),it->second.c_str(),true);
+		
+		// Prepare to fork process
+		ProcessExec proc(argv[1]);
+		
+		// Redirect outputs to multiplex them
+		int fd_pipe[MAXFD_FORWARD];
 		for(int i=0;i<MAXFD_FORWARD;i++)
-		{
-			close(fd_pipe[i][0]);
+			fd_pipe[i] = proc.ParentRedirect(STDOUT_FILENO+i);
 		
-			dup2(fd_pipe[i][1],STDOUT_FILENO+i);
-			close(fd_pipe[i][1]);
+		// Add arguments
+		for(int i=2;i<argc;i++)
+			proc.AddArgument(argv[i]);
+		
+		pid_t pid = proc.Exec();
+		if(pid<0)
+			throw Exception("evqueue_agent","Unable to execute command '"+string(argv[1])+"', fork() returned error");
+		else if(pid==0)
+			throw Exception("evqueue_agent","Unable to execute command '"+string(argv[1])+"', execv() returned error");
+		
+		fd_set rfds;
+		
+		// Multiplex Data to stdout
+		int re;
+		while(true)
+		{
+			int maxfd = -1;
+			int set_size = 0;
+			FD_ZERO(&rfds);
+			for(int i=0;i<MAXFD_FORWARD;i++)
+			{
+				if(fd_pipe[i]!=-1)
+				{
+					FD_SET(fd_pipe[i],&rfds);
+					if(fd_pipe[i]>maxfd)
+						maxfd = fd_pipe[i];
+					
+					set_size++;
+				}
+			}
+			
+			if(set_size==0)
+				break;
+			
+			re = select(maxfd+1,&rfds,0,0,0);
+			if(re<=0)
+				break;
+			
+			char buf[4096];
+			int read_size;
+			int read_pipe_index = -1;
+			
+			for(int i=0;i<MAXFD_FORWARD;i++)
+			{
+				if(fd_pipe[i]!=-1 && FD_ISSET(fd_pipe[i], &rfds))
+				{
+					read_size = read(fd_pipe[i],buf,4096);
+					if(read_size==0)
+					{
+						close(fd_pipe[i]);
+						fd_pipe[i] = -1;
+						continue;
+					}
+					
+					printf("%02d%09d",STDOUT_FILENO+i,read_size);
+					fwrite(buf,1,read_size,stdout);
+					fflush(stdout);
+				}
+			}
 		}
 		
-		char **child_argv = new char*[argc];
-		for(int i=0;i<argc-1;i++)
-			child_argv[i] = argv[i+1];
-		child_argv[argc-1] = 0;
-			
-		execv(child_argv[0],child_argv);
+		int status;
+		wait(&status);
 		
-		fprintf(stderr,"evqueue_agent: Unable to execute %s\n",child_argv[0]);
+		if(WIFEXITED(status))
+			return WEXITSTATUS(status);
 		return -1;
 	}
-	
-	for(int i=0;i<MAXFD_FORWARD;i++)
-		close(fd_pipe[i][1]);
-	
-	fd_set rfds;
-	
-	// Multiplex Data to stdout
-	int re;
-	while(true)
+	catch(Exception &e)
 	{
-		int maxfd = -1;
-		int set_size = 0;
-		FD_ZERO(&rfds);
-		for(int i=0;i<MAXFD_FORWARD;i++)
-		{
-			if(fd_pipe[i][0]!=-1)
-			{
-				FD_SET(fd_pipe[i][0],&rfds);
-				if(fd_pipe[i][0]>maxfd)
-					maxfd = fd_pipe[i][0];
-				
-				set_size++;
-			}
-		}
-		
-		if(set_size==0)
-			break;
-		
-		re = select(maxfd+1,&rfds,0,0,0);
-		if(re<=0)
-			break;
-		
-		char buf[4096];
-		int read_size;
-		int read_pipe_index = -1;
-		
-		for(int i=0;i<MAXFD_FORWARD;i++)
-		{
-			if(fd_pipe[i][0]!=-1 && FD_ISSET(fd_pipe[i][0], &rfds))
-			{
-				read_size = read(fd_pipe[i][0],buf,4096);
-				if(read_size==0)
-				{
-					close(fd_pipe[i][0]);
-					fd_pipe[i][0] = -1;
-					continue;
-				}
-				
-				printf("%02d%09d",STDOUT_FILENO+i,read_size);
-				fwrite(buf,1,read_size,stdout);
-				fflush(stdout);
-			}
-		}
+		fprintf(stderr,"evqueue_agent: %s\n",e.error.c_str());
+		return -1;
 	}
-	
-	int status;
-	wait(&status);
-	
-	if(WIFEXITED(status))
-		return WEXITSTATUS(status);
-	return -1;
 }

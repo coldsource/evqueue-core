@@ -22,7 +22,7 @@
 #include <WorkflowParameters.h>
 #include <Statistics.h>
 #include <Logger.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <QueryResponse.h>
 #include <SocketQuerySAX2Handler.h>
 #include <Exception.h>
@@ -45,7 +45,7 @@ WorkflowInstances::WorkflowInstances()
 	if(!instance)
 		instance = this;
 	
-	poll_interval = Configuration::GetInstance()->GetInt("dpd.interval");
+	poll_interval = ConfigurationEvQueue::GetInstance()->GetInt("dpd.interval");
 	if(poll_interval<0)
 		throw Exception("WorkflowInstances","DPD: Invalid poll interval, should be greater or equal than 0");
 	

@@ -23,7 +23,7 @@
 #include <SocketResponseSAX2Handler.h>
 #include <Exception.h>
 #include <Statistics.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <User.h>
 #include <Users.h>
 #include <Random.h>
@@ -51,7 +51,7 @@ AuthHandler::AuthHandler(int socket, const string &remote_host, int remote_port)
 User AuthHandler::HandleAuth() const
 {
 	// Check if authentication is required
-	if(!Configuration::GetInstance()->GetBool("core.auth.enable"))
+	if(!ConfigurationEvQueue::GetInstance()->GetBool("core.auth.enable"))
 		return User::anonymous;
 	
 	// Generate and send challenge

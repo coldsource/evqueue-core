@@ -29,7 +29,7 @@
 #include <Logger.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Cluster.h>
 #include <UniqueAction.h>
 
@@ -156,7 +156,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 				UniqueAction uaction("scheduledwf_"+to_string(workflow_schedule->GetID())+"_"+to_string(e->scheduled_at));
 				if(!uaction.IsElected())
 				{
-					Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on unelected node "+Configuration::GetInstance()->Get("cluster.node.name"));
+					Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on unelected node "+ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
 					
 					// Immediately reschedule workflow, but do not execute
 					ScheduleWorkflow(workflow_schedule);
@@ -172,7 +172,7 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 					int nrunning = res->getIntegerValue();
 					if(nrunning>0)
 					{
-						Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on node "+Configuration::GetInstance()->Get("cluster.node.name")+" because it is already running");
+						Logger::Log(LOG_INFO,"Skipping execution of schedule "+to_string(workflow_schedule->GetID())+" on node "+ConfigurationEvQueue::GetInstance()->Get("cluster.node.name")+" because it is already running");
 						
 						// Immediately reschedule workflow, but do not execute
 						ScheduleWorkflow(workflow_schedule);

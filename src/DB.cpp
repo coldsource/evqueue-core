@@ -20,7 +20,7 @@
 #include <DB.h>
 #include <Exception.h>
 #include <Logger.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -571,7 +571,7 @@ void DB::connect(void)
 	if(is_connected)
 		return; // Nothing to do
 	
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
 	if(!mysql_real_connect(mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
 		throw Exception("DB",mysql_error(mysql),"SQL_ERROR");

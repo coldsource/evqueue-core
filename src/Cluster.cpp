@@ -18,7 +18,7 @@
  */
 
 #include <Cluster.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Exception.h>
 #include <SocketResponseSAX2Handler.h>
 #include <SocketSAX2Handler.h>
@@ -44,7 +44,7 @@ void Cluster::ParseConfiguration(const string &conf)
 {
 	instance = this;
 	
-	notify = Configuration::GetInstance()->GetBool("cluster.notify");
+	notify = ConfigurationEvQueue::GetInstance()->GetBool("cluster.notify");
 	
 	istringstream split(conf);
 	for (std::string each; std::getline(split, each, ','); nodes.push_back(each));
@@ -52,8 +52,8 @@ void Cluster::ParseConfiguration(const string &conf)
 	if(notify && nodes.size())
 		Logger::Log(LOG_NOTICE,"Cluster notifications enabled");
 	
-	user = Configuration::GetInstance()->Get("cluster.notify.user");
-	password = Configuration::GetInstance()->Get("cluster.notify.password");
+	user = ConfigurationEvQueue::GetInstance()->Get("cluster.notify.user");
+	password = ConfigurationEvQueue::GetInstance()->Get("cluster.notify.password");
 	
 	// Prepare hashed password
 	sha1_ctx ctx;
@@ -70,9 +70,9 @@ void Cluster::ParseConfiguration(const string &conf)
 		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
 	password = sstream.str();
 	
-	cnx_timeout = Configuration::GetInstance()->GetInt("cluster.cnx.timeout");
-	snd_timeout = Configuration::GetInstance()->GetInt("cluster.snd.timeout");
-	rcv_timeout = Configuration::GetInstance()->GetInt("cluster.rcv.timeout");
+	cnx_timeout = ConfigurationEvQueue::GetInstance()->GetInt("cluster.cnx.timeout");
+	snd_timeout = ConfigurationEvQueue::GetInstance()->GetInt("cluster.snd.timeout");
+	rcv_timeout = ConfigurationEvQueue::GetInstance()->GetInt("cluster.rcv.timeout");
 }
 
 void Cluster::Notify(const string &command)
@@ -102,7 +102,7 @@ bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
 			
 			// Check if we are not self connecting
 			const string node = client.Connect();
-			if(node==Configuration::GetInstance()->Get("cluster.node.name"))
+			if(node==ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"))
 			{
 				client.Disconnect();
 				Logger::Log(LOG_INFO, "Skipping current node in cluster notification");

@@ -18,7 +18,7 @@
  */
 
 #include <Logger.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <DB.h>
 #include <Exception.h>
 
@@ -33,15 +33,15 @@ Logger *Logger::instance = 0;
 using namespace std;
 
 Logger::Logger():
-	node_name(Configuration::GetInstance()->Get("cluster.node.name"))
+	node_name(ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"))
 {
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
-	log_syslog = Configuration::GetInstance()->GetBool("logger.syslog.enable");
-	syslog_filter = parse_log_level(Configuration::GetInstance()->Get("logger.syslog.filter"));
+	log_syslog = ConfigurationEvQueue::GetInstance()->GetBool("logger.syslog.enable");
+	syslog_filter = parse_log_level(ConfigurationEvQueue::GetInstance()->Get("logger.syslog.filter"));
 	
-	log_db = Configuration::GetInstance()->GetBool("logger.db.enable");
-	db_filter = parse_log_level(Configuration::GetInstance()->Get("logger.db.filter"));
+	log_db = ConfigurationEvQueue::GetInstance()->GetBool("logger.db.enable");
+	db_filter = parse_log_level(ConfigurationEvQueue::GetInstance()->Get("logger.db.filter"));
 	
 	instance = this;
 }

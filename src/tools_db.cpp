@@ -20,7 +20,7 @@
 #include <tools_db.h>
 #include <tables.h>
 #include <DB.h>
-#include <Configuration.h>
+#include <ConfigurationEvQueue.h>
 #include <Exception.h>
 #include <Logger.h>
 #include <DOMDocument.h>
@@ -38,7 +38,7 @@ void tools_init_db(void)
 {
 	DB db;
 	
-	Configuration *config = Configuration::GetInstance();
+	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
 	map<string,string>::iterator it;
 	for(it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
