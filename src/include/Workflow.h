@@ -77,6 +77,7 @@ class Workflow
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 		
 		static std::string CreateSimpleWorkflow(const std::string &task_name, const std::vector<std::string> &inputs);
+		static void ValidateXML(const std::string &xml_str);
 	
 	private:
 		static std::string create_edit_check(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
