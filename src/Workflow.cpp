@@ -488,7 +488,21 @@ void Workflow::ValidateXML(const string &xml_str)
 		
 		if(type=="BINARY" && (!task.hasAttribute("path") || task.getAttribute("path")==""))
 			throw Exception("Workflow", "Binary task must have a (non empty) 'path' attribute");
-		else if(type=="SCRIPT" && (!task.hasAttribute("name") || task.getAttribute("name")==""))
-			throw Exception("Workflow", "Script task must have a (non empty) 'name' attribute");
+		else if(type=="SCRIPT")
+		{
+			if(!task.hasAttribute("name") || task.getAttribute("name")=="")
+				throw Exception("Workflow", "Script task must have a (non empty) 'name' attribute");
+			
+			unique_ptr<DOMXPathResult> scripts(xmldoc->evaluate("./script",task,DOMXPathResult::FIRST_RESULT_TYPE));
+			if(!scripts->isNode())
+				throw Exception("Workflow", "Script tasks must have a script node");
+			
+			DOMElement script = (DOMElement)scripts->getNodeValue();
+			
+			unique_ptr<DOMXPathResult> values(xmldoc->evaluate("./value",script,DOMXPathResult::FIRST_RESULT_TYPE));
+			
+			if(script.getTextContent()=="" && !values->isNode())
+				throw Exception("Workflow", "Script cannot be empty");
+		}
 	}
 }

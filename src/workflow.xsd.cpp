@@ -73,7 +73,7 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		<xs:sequence> \
 			<xs:element name=\"input\" type=\"inputType\" minOccurs=\"0\" maxOccurs=\"unbounded\" /> \
 			<xs:element name=\"stdin\" type=\"stdinType\" minOccurs=\"0\" maxOccurs=\"1\" /> \
-			<xs:element name=\"script\" type=\"StrNonEmpty\" minOccurs=\"0\" maxOccurs=\"1\" /> \
+			<xs:element name=\"script\" type=\"scriptType\" minOccurs=\"0\" maxOccurs=\"1\" /> \
 		</xs:sequence> \
 		<xs:attribute name=\"type\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"name\" type=\"xs:string\" use=\"optional\" /> \
@@ -124,6 +124,13 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		<xs:sequence> \
 			<xs:element name=\"job\" type=\"jobType\" maxOccurs=\"unbounded\" /> \
 		</xs:sequence> \
+	</xs:complexType> \
+	 \
+	 \
+	<xs:complexType name=\"scriptType\" mixed=\"true\"> \
+		<xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\"> \
+			<xs:element name=\"value\" type=\"valueType\" /> \
+		</xs:choice>       \
 	</xs:complexType> \
 	 \
 	 \
