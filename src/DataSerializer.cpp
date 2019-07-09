@@ -30,7 +30,7 @@ string DataSerializer::Serialize(const string &str)
 	sprintf(buf,"%09ld",str.length());
 	data += buf;
 	
-	data += data;
+	data += str;
 	
 	return data;
 }
