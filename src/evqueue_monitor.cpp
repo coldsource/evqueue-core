@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -96,6 +97,14 @@ int main(int argc,char ** argv)
 		if(!DataSerializer::Unserialize(STDIN_FILENO,env_map))
 			throw Exception("evqueue_monitor","Could not read environment");
 		
+		// Get script if needed
+		string script;
+		if(config->Get("monitor.task.type")=="SCRIPT")
+		{
+			if(!DataSerializer::Unserialize(STDIN_FILENO,script))
+				throw Exception("evqueue_monitor","Could not read script");
+		}
+		
 		// Prepare to execute task
 		ProcessExec proc;
 		
@@ -137,11 +146,16 @@ int main(int argc,char ** argv)
 			
 			proc.PipeMap(config_map);
 			proc.PipeMap(env_map);
+			if(config->Get("monitor.task.type")=="SCRIPT")
+				proc.PipeString(script);
 			proc.Pipe(stdin_data);
 		}
 		else
 		{
-			proc.SetPath(argv[1]);
+			if(config->Get("monitor.task.type")=="BINARY")
+				proc.SetPath(argv[1]);
+			else if(config->Get("monitor.task.type")=="SCRIPT")
+				proc.SetScript(config->Get("processmanager.scripts.directory"),script);
 			
 			// Register ENV
 			for(auto it = env_map.begin();it!=env_map.end();++it)
@@ -286,6 +300,10 @@ int main(int argc,char ** argv)
 		
 		int status;
 		waitpid(pid,&status,0);
+		
+		if(config->Get("monitor.task.type")=="SCRIPT" && config->GetBool("processmanager.scripts.delete"))
+			unlink(proc.GetPath().c_str());
+		
 		if(WIFEXITED(status))
 			msgbuf.mtext.retcode = WEXITSTATUS(status);
 		else

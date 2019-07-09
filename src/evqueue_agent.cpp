@@ -62,8 +62,21 @@ int main(int argc,char ** argv)
 		for(auto it = env_map.begin();it!=env_map.end();++it)
 			setenv(it->first.c_str(),it->second.c_str(),true);
 		
+		// Get script if needed
+		string script;
+		if(config->Get("monitor.task.type")=="SCRIPT")
+		{
+			if(!DataSerializer::Unserialize(STDIN_FILENO,script))
+				throw Exception("evqueue_monitor","Could not read script");
+		}
+		
 		// Prepare to fork process
-		ProcessExec proc(argv[1]);
+		ProcessExec proc;
+		
+		if(config->Get("monitor.task.type")=="BINARY")
+			proc.SetPath(argv[1]);
+		else if(config->Get("monitor.task.type")=="SCRIPT")
+			proc.SetScript(config->Get("processmanager.scripts.directory"),script);
 		
 		// Redirect outputs to multiplex them
 		int fd_pipe[MAXFD_FORWARD];
@@ -133,6 +146,9 @@ int main(int argc,char ** argv)
 		
 		int status;
 		wait(&status);
+		
+		if(config->Get("monitor.task.type")=="SCRIPT" && config->GetBool("processmanager.scripts.delete"))
+			unlink(proc.GetPath().c_str());
 		
 		if(WIFEXITED(status))
 			return WEXITSTATUS(status);

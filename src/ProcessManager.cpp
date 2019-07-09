@@ -271,12 +271,7 @@ void ProcessManager::WaitForShutdown(void)
 
 pid_t ProcessManager::ExecuteTask(
 	const Task &task,
-	vector<string> &parameters_name,
-	vector<string> &parameters_value,
-	const string &stdin_parameter,
-	pid_t tid,
-	const string &host,
-	const string &user
+	pid_t tid
 	)
 {
 	Configuration *config = ConfigurationEvQueue::GetInstance();
@@ -308,21 +303,32 @@ pid_t ProcessManager::ExecuteTask(
 	
 	proc.FileRedirect(LOG_FILENO,logs_directory+"/"+to_string(tid));
 	
+	// Sanity check
+	if(task.GetType()==task_type::SCRIPT && task.GetHost()!="" && !task.GetUseAgent())
+		throw Exception("ProcessManager", "Script tasks cannot be remote without using evQueue agent");
+	
 	// Prepare monitor config
 	map<string,string> monitor_config;
 	monitor_config["core.ipc.qid"] = config->Get("core.ipc.qid");
 	monitor_config["processmanager.agent.path"] = config->Get("processmanager.agent.path");
 	monitor_config["processmanager.monitor.ssh_key"] = config->Get("processmanager.monitor.ssh_key");
 	monitor_config["processmanager.monitor.ssh_path"] = config->Get("processmanager.monitor.ssh_path");
+	monitor_config["processmanager.scripts.directory"] = config->Get("processmanager.scripts.directory");
+	monitor_config["processmanager.scripts.delete"] = config->Get("processmanager.scripts.delete");
 	
 	monitor_config["monitor.ssh.useagent"] = task.GetUseAgent()?"yes":"no";
-	monitor_config["monitor.ssh.host"] = host;
-	monitor_config["monitor.ssh.user"] = user;
+	monitor_config["monitor.ssh.host"] = task.GetHost();
+	monitor_config["monitor.ssh.user"] = task.GetUser();
 	monitor_config["monitor.wd"] = task.GetWorkingDirectory();
+	monitor_config["monitor.task.type"] = task.GetTypeStr();
 	
 	proc.PipeMap(monitor_config);
 	
 	// Task arguments from WF
+	vector<string> parameters_name;
+	vector<string> parameters_value;
+	task.GetParameters(parameters_name,parameters_value);
+	
 	if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
 	{
 		for(int i=0;i<parameters_value.size();i++)
@@ -339,8 +345,12 @@ pid_t ProcessManager::ExecuteTask(
 	}
 	proc.PipeMap(env);
 	
+	// Send script content if needed
+	if(task.GetType()==task_type::SCRIPT)
+		proc.PipeString(task.GetScript());
+	
 	// Stdin
-	proc.Pipe(stdin_parameter);
+	proc.Pipe(task.GetStdin());
 	
 	pid_t pid = proc.Exec();
 	

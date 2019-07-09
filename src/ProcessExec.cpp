@@ -24,6 +24,25 @@ void ProcessExec::SetPath(const string &path)
 	this->path = path;
 }
 
+void ProcessExec::SetScript(const string &directory, const string &script)
+{
+	pid_t pid = getpid();
+	
+	string filename = directory+"/"+to_string(pid)+".script";
+	
+	int fd = open(filename.c_str(),O_CREAT|O_TRUNC|O_RDWR,S_IRWXU);
+	if(fd<0)
+		throw Exception("ProcessExec","Unable to create temporary script : "+filename);
+	
+	int written = write(fd,script.c_str(),script.length());
+	if(written!=script.length())
+		throw Exception("ProcessExec","Unable to write to temporary script : "+filename);
+	
+	close(fd);
+	
+	path = filename;
+}
+
 void ProcessExec::AddArgument(const string &value, bool escape)
 {
 	if(escape)

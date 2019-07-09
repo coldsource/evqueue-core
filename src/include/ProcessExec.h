@@ -28,6 +28,9 @@ class ProcessExec
 		ProcessExec(const std::string &path);
 
 		void SetPath(const std::string &path);
+		std::string GetPath() { return path; }
+		void SetScript(const std::string &path, const std::string &script);
+		
 		void AddArgument(const std::string &value, bool escape=false);
 		
 		void PipeMap(const std::map<std::string,std::string> &data);

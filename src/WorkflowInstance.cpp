@@ -526,7 +526,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 
 	if(retval==0)
 	{
-		Task task(task_node);
+		Task task(xmldoc, task_node);
 
 		if(task.GetOutputMethod()==task_output_method::XML)
 		{
@@ -679,68 +679,12 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 			throw Exception("WorkflowInstance","Aborted on user request");
 		
 		// Get task informations
-		Task task(task_node);
-		
-		// Prepare parameters
-		// This must be done before fork() because xerces Transcode() can deadlock on fork (xerces bug...)
-		vector<string> parameters_name;
-		vector<string> parameters_value;
-		{
-			unique_ptr<DOMXPathResult> parameters(xmldoc->evaluate("input",task_node,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
-			DOMElement parameter;
-			int parameters_index = 0;
-
-			while(parameters->snapshotItem(parameters_index++))
-			{
-				parameter = (DOMElement)parameters->getNodeValue();
-				
-				if(parameter.hasAttribute("status") && parameter.getAttribute("status")=="SKIPPED")
-					continue;
-				
-				if(parameter.hasAttribute("name"))
-					parameters_name.push_back(parameter.getAttribute("name"));
-				else
-					parameters_name.push_back("");
-
-				parameters_value.push_back(parameter.getTextContent());
-			}
-		}
-		
-		// Prepare pipe for SDTIN
-		string stdin_parameter;
-		{
-			unique_ptr<DOMXPathResult> parameters(xmldoc->evaluate("stdin",task_node,DOMXPathResult::FIRST_RESULT_TYPE));
-
-			if(parameters->isNode())
-			{
-				DOMElement stdin_node = (DOMElement)parameters->getNodeValue();
-				if(stdin_node.hasAttribute("mode") && stdin_node.getAttribute("mode")=="text")
-					stdin_parameter = stdin_node.getTextContent();
-				else
-					stdin_parameter = xmldoc->Serialize(stdin_node);
-			}
-		}
-		
-		// Get user/host informations
-		string user;
-		string host;
-		if(task_node.hasAttribute("host"))
-		{
-			host = task_node.getAttribute("host");
-			if(task_node.hasAttribute("user"))
-				user = task_node.getAttribute("user");
-		}
-		else if(xmldoc->getDocumentElement().hasAttribute("host"))
-		{
-			host = xmldoc->getDocumentElement().getAttribute("host");
-			if(xmldoc->getDocumentElement().hasAttribute("user"))
-				user = xmldoc->getDocumentElement().getAttribute("user");
-		}
+		Task task(xmldoc, task_node);
 		
 		Logger::Log(LOG_INFO,"[WID %d] Executing %s",workflow_instance_id,task.GetPath().c_str());
 		
 		// Execute task
-		pid_t pid = ProcessManager::ExecuteTask(task,parameters_name,parameters_value,stdin_parameter,tid,host,user);
+		pid_t pid = ProcessManager::ExecuteTask(task,tid);
 		
 		// Update task node
 		task_node.setAttribute("status","EXECUTING");
@@ -1123,6 +1067,10 @@ void WorkflowInstance::replace_values(DOMElement task,DOMElement context_node)
 	unique_ptr<DOMXPathResult> stdin(xmldoc->evaluate("./stdin",task,DOMXPathResult::FIRST_RESULT_TYPE));
 	if(stdin->isNode())
 		replace_value(stdin->getNodeValue(),context_node);
+	
+	unique_ptr<DOMXPathResult> script(xmldoc->evaluate("./script",task,DOMXPathResult::FIRST_RESULT_TYPE));
+	if(script->isNode())
+		replace_value(script->getNodeValue(),context_node);
 }
 
 void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)

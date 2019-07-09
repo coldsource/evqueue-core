@@ -86,6 +86,8 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["processmanager.monitor.ssh_path"] = "/usr/bin/ssh";
 	entries["processmanager.agent.path"] = "/usr/bin/evqueue_agent";
 	entries["processmanager.tasks.directory"] = ".";
+	entries["processmanager.scripts.directory"] = "/tmp";
+	entries["processmanager.scripts.delete"] = "yes";
 	entries["datastore.dom.maxsize"] = "500K";
 	entries["datastore.db.maxsize"] = "50M";
 	entries["datastore.gzip.level"] = "9";
@@ -157,6 +159,7 @@ void ConfigurationEvQueue::Check(void)
 	check_bool_entry("logger.syslog.enable");
 	check_bool_entry("loggerapi.enable");
 	check_bool_entry("processmanager.logs.delete");
+	check_bool_entry("processmanager.scripts.delete");
 	check_bool_entry("notifications.logs.delete");
 	check_bool_entry("datastore.gzip.enable");
 	check_bool_entry("workflowinstance.saveparameters");

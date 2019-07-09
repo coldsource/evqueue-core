@@ -58,12 +58,7 @@ class ProcessManager
 		
 		static pid_t ExecuteTask(
 			const Task &task,
-			std::vector<std::string> &parameters_name,
-			std::vector<std::string> &parameters_value,
-			const std::string &stdin_parameter,
-			pid_t tid,
-			const std::string &host,
-			const std::string &user
+			pid_t tid
 			);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);

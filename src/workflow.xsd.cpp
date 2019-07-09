@@ -73,8 +73,11 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		<xs:sequence> \
 			<xs:element name=\"input\" type=\"inputType\" minOccurs=\"0\" maxOccurs=\"unbounded\" /> \
 			<xs:element name=\"stdin\" type=\"stdinType\" minOccurs=\"0\" maxOccurs=\"1\" /> \
+			<xs:element name=\"script\" type=\"StrNonEmpty\" minOccurs=\"0\" maxOccurs=\"1\" /> \
 		</xs:sequence> \
-		<xs:attribute name=\"path\" type=\"xs:string\" use=\"required\" /> \
+		<xs:attribute name=\"type\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"name\" type=\"xs:string\" use=\"optional\" /> \
+		<xs:attribute name=\"path\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"wd\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"parameters-mode\" type=\"xs:string\" use=\"optional\" /> \
 		<xs:attribute name=\"output-method\" type=\"xs:string\" use=\"optional\" /> \

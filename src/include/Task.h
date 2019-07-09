@@ -27,6 +27,7 @@
 
 namespace task_parameters_mode { enum task_parameters_mode {ENV,CMDLINE,UNKNOWN}; }
 namespace task_output_method { enum task_output_method {XML,TEXT,UNKNOWN}; }
+namespace task_type { enum task_type {BINARY,SCRIPT}; }
 
 class DB;
 class SocketQuerySAX2Handler;
@@ -36,17 +37,21 @@ class DOMDocument;
 
 class Task
 {
+	DOMDocument *xmldoc;
+	DOMElement task_node;
+	
 	std::string path;
 	std::vector<std::string> arguments;
 	std::string wd;
 	bool use_agent;
 	task_parameters_mode::task_parameters_mode parameters_mode;
 	task_output_method::task_output_method output_method;
+	task_type::task_type type;
 	bool merge_stderr;
 		
 	public:
 		Task();
-		Task(DOMElement task_node);
+		Task(DOMDocument *xmldoc, DOMElement task_node);
 		
 		const std::string &GetPath() const { return path; }
 		const std::vector<std::string> &GetArguments() const { return arguments; }
@@ -56,6 +61,17 @@ class Task
 		bool IsAbsolutePath() const { return path[0]=='/'?true:false; }
 		task_parameters_mode::task_parameters_mode GetParametersMode() const  { return parameters_mode; }
 		task_output_method::task_output_method GetOutputMethod() const  { return output_method; }
+		
+		void GetParameters(std::vector<std::string> &names, std::vector<std::string> &values) const;
+		
+		std::string GetUser() const;
+		std::string GetHost() const;
+		
+		task_type::task_type GetType() const  { return type; }
+		std::string GetTypeStr() const;
+		std::string GetScript() const;
+		
+		std::string GetStdin() const;
 };
 
 #endif
