@@ -36,6 +36,7 @@
 #include <XMLFormatter.h>
 #include <global.h>
 #include <base64.h>
+#include <DOMDocument.h>
 
 #include <string.h>
 
@@ -328,12 +329,14 @@ string Workflow::create_edit_check(const string &name, const string &base64, con
 	
 	if(!CheckWorkflowName(name))
 		throw Exception("Workflow","Invalid workflow name","INVALID_PARAMETER");
-	
+
 	string workflow_xml;
 	if(!base64_decode_string(workflow_xml,base64))
 		throw Exception("Workflow","Invalid base64 sequence","INVALID_PARAMETER");
 	
 	XMLUtils::ValidateXML(workflow_xml,workflow_xsd_str);
+	
+	ValidateXML(workflow_xml);
 	
 	return workflow_xml;
 }
@@ -464,4 +467,28 @@ string Workflow::CreateSimpleWorkflow(const string &task_name, const vector<std:
 	}
 	
 	return xmldoc.Serialize(workflow_node);
+}
+
+void Workflow::ValidateXML(const string &xml_str)
+{
+	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(xml_str));
+
+	unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+	int tasks_index = 0;
+	DOMElement task;
+	while(tasks->snapshotItem(tasks_index++))
+	{
+		task = (DOMElement)tasks->getNodeValue();
+		string type = "BINARY";
+		if(task.hasAttribute("type"))
+			type = task.getAttribute("type");
+		
+		if(type!="BINARY" && type!="SCRIPT")
+			throw Exception("Workflow", "Invalid type attribute value '"+type+"'. Muse be 'BINARY' or 'SCRIPT'.");
+		
+		if(type=="BINARY" && (!task.hasAttribute("path") || task.getAttribute("path")==""))
+			throw Exception("Workflow", "Binary task must have a (non empty) 'path' attribute");
+		else if(type=="SCRIPT" && (!task.hasAttribute("name") || task.getAttribute("name")==""))
+			throw Exception("Workflow", "Script task must have a (non empty) 'name' attribute");
+	}
 }
