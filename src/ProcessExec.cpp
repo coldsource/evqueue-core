@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -61,6 +62,11 @@ void ProcessExec::AddArgument(const string &value, bool escape)
 	}
 	else
 		arguments.push_back(value);
+}
+
+void ProcessExec::AddEnv(const string &name, const string &value)
+{
+	env[name] = value;
 }
 
 void ProcessExec::PipeMap(const map<string,string> &data)
@@ -148,6 +154,10 @@ pid_t ProcessExec::Exec()
 			
 			close(it->second.read_end);
 		}
+		
+		// Prepare ENV
+		for(auto it=env.begin();it!=env.end();++it)
+			setenv(it->first.c_str(),it->second.c_str(),1);
 		
 		// Exec child
 		const char *args[arguments.size()+2];

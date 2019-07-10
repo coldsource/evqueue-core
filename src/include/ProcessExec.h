@@ -15,6 +15,7 @@ class ProcessExec
 	
 	std::string path;
 	std::vector<std::string> arguments;
+	std::map<std::string,std::string> env;
 	
 	int stdin_pipe[2] = {-1,-1};
 	std::string stdin_data;
@@ -32,6 +33,8 @@ class ProcessExec
 		void SetScript(const std::string &path, const std::string &script);
 		
 		void AddArgument(const std::string &value, bool escape=false);
+		
+		void AddEnv(const std::string &name, const std::string &value);
 		
 		void PipeMap(const std::map<std::string,std::string> &data);
 		void PipeString(const std::string &data);
