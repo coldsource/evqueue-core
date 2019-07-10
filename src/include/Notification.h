@@ -41,6 +41,7 @@ class Notification
 	std::string plugin_configuration;
 	std::string unix_socket_path;
 	std::string logs_directory;
+	std::string timeout;
 	
 	public:
 

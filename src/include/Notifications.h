@@ -37,6 +37,7 @@ class Notifications:public APIObjectList<Notification>
 		struct st_notification_instance
 		{
 			unsigned int workflow_instance_id;
+			unsigned int notification_id;
 			std::string notification_type;
 		};
 		
@@ -65,7 +66,7 @@ class Notifications:public APIObjectList<Notification>
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
 	
 	private:
-		void store_log(pid_t pid);
+		void store_log(pid_t pid,unsigned int instance_id, unsigned int notification_id);
 };
 
 #endif

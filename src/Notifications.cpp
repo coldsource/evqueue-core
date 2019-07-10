@@ -90,11 +90,16 @@ void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflo
 		{
 			pid_t pid = notification.Call(workflow_instance);
 			if(pid>0)
-				notification_instances.insert(pair<pid_t,st_notification_instance>(pid,{workflow_instance->GetInstanceID(),notification.GetName()}));
+				notification_instances.insert(pair<pid_t,st_notification_instance>(pid,{workflow_instance->GetInstanceID(),notification.GetID(),notification.GetName()}));
 		}
 		else
 		{
-			Logger::Log(LOG_WARNING,"Maximum concurrency reached for notifications calls, dropping call for notification '%s' of workflow instance %d",notification.GetName().c_str(),workflow_instance->GetInstanceID());
+			Logger::Log(
+				LOG_WARNING,
+				"Maximum concurrency reached for notifications calls, dropping call for notification '%s' of workflow instance %d",
+				notification.GetName().c_str(),
+				workflow_instance->GetInstanceID()
+			);
 		}
 	}
 	catch(Exception &e)
@@ -126,7 +131,7 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 				Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d returned code %d",ni.notification_type.c_str(),pid,ni.workflow_instance_id,retcode);
 				
 				// Read and store log file
-				store_log(pid);
+				store_log(pid,ni.workflow_instance_id,ni.notification_id);
 			}
 			else
 				Logger::Log(LOG_NOTICE,"Notification task '%s' (pid %d) for workflow instance %d executed successuflly",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
@@ -173,9 +178,9 @@ bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 	return false;
 }
 
-void Notifications::store_log(pid_t pid)
+void Notifications::store_log(pid_t pid,unsigned int instance_id, unsigned int notification_id)
 {
-	string filename = logs_directory+"/notif_stderr_"+to_string(pid);
+	string filename = logs_directory+"/notif_"+to_string(instance_id)+"_"+to_string(notification_id)+".stderr";
 	FILE *f = fopen(filename.c_str(),"r");
 	
 	if(!f)

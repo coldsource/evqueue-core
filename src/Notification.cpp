@@ -30,6 +30,7 @@
 #include <Sockets.h>
 #include <SocketQuerySAX2Handler.h>
 #include <QueryResponse.h>
+#include <ProcessExec.h>
 #include <base64.h>
 #include <User.h>
 #include <tools.h>
@@ -63,14 +64,13 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	
 	logs_directory = ConfigurationEvQueue::GetInstance()->Get("notifications.logs.directory");
 	
+	timeout = ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.timeout");
+	
 	type_id = db->GetFieldInt(0);
 	
 	NotificationType notification_type = NotificationTypes::GetInstance()->Get(type_id);
 	
-	if(notification_type.GetName().at(0)=='/')
-		notification_binary = notification_type.GetName();
-	else
-		notification_binary = ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory")+"/"+notification_type.GetName();
+	notification_binary = ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory")+"/"+to_string(notification_type.GetID());
 	
 	notification_name = db->GetField(1);
 	
@@ -81,70 +81,51 @@ Notification::Notification(DB *db,unsigned int notification_id)
 
 pid_t Notification::Call(WorkflowInstance *workflow_instance)
 {
-	int pipe_fd[2];
-	
-	if(pipe(pipe_fd)!=0)
+	try
 	{
-		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to execute notification task '%s' : could not create pipe",workflow_instance->GetInstanceID(),notification_name.c_str());
-		return -1;
-	}
-	
-	pid_t pid = fork();
-	if(pid==0)
-	{
-		setsid();
+		string configuration;
+		configuration += "{\"pluginconf\":";
+		configuration += plugin_configuration;
+		configuration += ",\"notificationconf\":";
+		configuration += notification_configuration;
+		configuration += ",\"instance\":\"";
+		configuration += json_escape(workflow_instance->GetDOM()->Serialize(workflow_instance->GetDOM()->getDocumentElement()));
+		configuration += "\"}";
 		
-		dup2(pipe_fd[0],STDIN_FILENO);
-		close(pipe_fd[1]);
+		ProcessExec proc(notification_monitor_path);
+		proc.AddArgument(notification_binary);
+		proc.AddArgument(timeout);
+		proc.AddArgument(to_string(workflow_instance->GetInstanceID()));
+		proc.AddArgument(to_string(workflow_instance->GetErrors()));
+		proc.AddArgument(unix_socket_path);
 		
-		// Redirect stderr to file
-		string log_filename_stderr = logs_directory+"/notif_stderr_"+to_string(getpid());
-		int fno_stderr = open(log_filename_stderr.c_str(),O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
-		dup2(fno_stderr,STDERR_FILENO);
+		proc.AddEnv("EVQUEUE_IPC_QID",ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid"));
+		proc.AddEnv("EVQUEUE_WORKING_DIRECTORY",ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"));
 		
-		setenv("EVQUEUE_IPC_QID",ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),true);
+		proc.FileRedirect(STDERR_FILENO,logs_directory+"/notif_"+to_string(workflow_instance->GetInstanceID())+"_"+to_string(id));
 		
-		setenv("EVQUEUE_WORKING_DIRECTORY",ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory").c_str(),true);
+		proc.Pipe(configuration);
 		
-		char str_timeout[16],str_instance_id[16],str_errors[16];
-		sprintf(str_timeout,"%d",ConfigurationEvQueue::GetInstance()->GetInt("notifications.tasks.timeout"));
-		sprintf(str_instance_id,"%d",workflow_instance->GetInstanceID());
-		sprintf(str_errors,"%d",workflow_instance->GetErrors());
+		pid_t pid = proc.Exec();
+		if(pid==0)
+		{
+			tools_send_exit_msg(2,0,-1);
+			exit(-1);
+		}
 		
-		execl(notification_monitor_path.c_str(),notification_monitor_path.c_str(),notification_binary.c_str(),str_timeout,str_instance_id,str_errors,unix_socket_path.c_str(),(char *)0);
-		Logger::Log(LOG_ERR,"Unable to execute notification monitor");
-		
-		tools_send_exit_msg(2,0,-1);
-		exit(-1);
-	}
-	
-	if(pid<0)
-	{
-		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to execute notification task '%s' : could not fork monitor",workflow_instance->GetInstanceID(),notification_name.c_str());
-		
-		close(pipe_fd[0]);
-		close(pipe_fd[1]);
+		if(pid<0)
+		{
+			Logger::Log(LOG_WARNING,"[ WID %d ] Unable to execute notification task '%s' : could not fork monitor",workflow_instance->GetInstanceID(),notification_name.c_str());
+			return pid;
+		}
 		
 		return pid;
 	}
-	
-	string configuration;
-	configuration += "{\"pluginconf\":";
-	configuration += plugin_configuration;
-	configuration += ",\"notificationconf\":";
-	configuration += notification_configuration;
-	configuration += ",\"instance\":\"";
-	configuration += json_escape(workflow_instance->GetDOM()->Serialize(workflow_instance->GetDOM()->getDocumentElement()));
-	configuration += "\"}";
-	
-	// Pipe configuration data
-	if(write(pipe_fd[1],configuration.c_str(),configuration.length())!=configuration.length())
-		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to send configuration to notification task '%s' : error writing to pipe",workflow_instance->GetInstanceID(),notification_name.c_str());
-	
-	close(pipe_fd[1]);
-	close(pipe_fd[0]);
-	
-	return pid;
+	catch(Exception &e)
+	{
+		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to execute notification task '%s' : %s",workflow_instance->GetInstanceID(),notification_name.c_str(),e.error.c_str());
+		return -1;
+	}
 }
 
 void Notification::Get(unsigned int id,QueryResponse *response)
