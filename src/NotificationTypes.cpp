@@ -79,7 +79,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 	DB db;
 	
 	// Load tasks binaries from database
-	db.Query("SELECT notification_type_name, notification_type_binary_content FROM t_notification_type WHERE notification_type_binary_content IS NOT NULL");
+	db.Query("SELECT notification_type_id, notification_type_name, notification_type_binary_content FROM t_notification_type WHERE notification_type_binary_content IS NOT NULL");
 	
 	struct sha1_ctx ctx;
 	char db_hash[20];
@@ -89,7 +89,7 @@ void NotificationTypes::SyncBinaries(bool notify)
 	{
 		// Compute database SHA1 hash
 		sha1_init_ctx(&ctx);
-		sha1_process_bytes(db.GetField(1).c_str(),db.GetFieldLength(1),&ctx);
+		sha1_process_bytes(db.GetField(2).c_str(),db.GetFieldLength(2),&ctx);
 		sha1_finish_ctx(&ctx,db_hash);
 		
 		// Compute file SHA1 hash
@@ -99,21 +99,21 @@ void NotificationTypes::SyncBinaries(bool notify)
 		}
 		catch(Exception &e)
 		{
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" was not found creating it");
+			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(1)+" was not found creating it");
 			
-			NotificationType::PutFile(db.GetField(0),string(db.GetField(1).c_str(),db.GetFieldLength(1)),false);
+			NotificationType::PutFile(db.GetField(0),string(db.GetField(2).c_str(),db.GetFieldLength(2)),false);
 			continue;
 		}
 		
 		if(memcmp(file_hash.c_str(),db_hash,20)==0)
 		{
-			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" hash matches DB, skipping");
+			Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(1)+" hash matches DB, skipping");
 			continue;
 		}
 		
-		Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(0)+" hash does not match DB, replacing");
+		Logger::Log(LOG_NOTICE,"[ NotificationTypes ] Task "+db.GetField(1)+" hash does not match DB, replacing");
 		
-		NotificationType::PutFile(db.GetField(0),string(db.GetField(1).c_str(),db.GetFieldLength(1)),false);
+		NotificationType::PutFile(db.GetField(0),string(db.GetField(2).c_str(),db.GetFieldLength(2)),false);
 	}
 	
 	llock.unlock();
