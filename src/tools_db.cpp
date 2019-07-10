@@ -69,6 +69,9 @@ void tools_init_db(void)
 				else
 					throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
 			}
+			
+			if(it->first=="t_notification")
+				tools_upgrade_t_notification();
 		}
 	}
 }
@@ -195,4 +198,17 @@ void tools_upgrade_v20_v22(void)
 		string version = "v" EVQUEUE_VERSION;
 		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
 	}
+}
+
+void tools_upgrade_t_notification()
+{
+	DB db;
+	db.QueryPrintf(
+		"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema=%s AND table_name='t_notification' AND column_name='notification_subscribe_all'",
+		&ConfigurationEvQueue::GetInstance()->Get("mysql.database")
+	);
+	
+	db.FetchRow();
+	if(db.GetFieldInt(0)==0)
+		db.Query("ALTER TABLE t_notification ADD COLUMN `notification_subscribe_all` int(10) unsigned NOT NULL DEFAULT 0 AFTER notification_name");
 }

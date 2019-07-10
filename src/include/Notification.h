@@ -37,6 +37,7 @@ class Notification
 	std::string notification_monitor_path;
 	std::string notification_binary;
 	std::string notification_name;
+	int notification_subscribe_all;
 	std::string notification_configuration;
 	std::string plugin_configuration;
 	std::string unix_socket_path;
@@ -50,14 +51,15 @@ class Notification
 		unsigned int &GetID() { return id; }
 		unsigned int &GetTypeID() { return type_id; }
 		const std::string &GetName() { return notification_name; }
+		int GetSubscribeAll() { return notification_subscribe_all; }
 		const std::string &GetBinary() { return notification_binary; }
 		const std::string &GetConfiguration() { return notification_configuration; }
 		
 		pid_t Call(WorkflowInstance *workflow_instance);
 		
 		static void Get(unsigned int id,QueryResponse *response);
-		static void Create(unsigned int type_id,const std::string &name, const std::string parameters);
-		static void Edit(unsigned int id,const std::string &name, const std::string parameters);
+		static void Create(unsigned int type_id,const std::string &name, int subscribe_all, const std::string parameters);
+		static void Edit(unsigned int id,const std::string &name, int subscribe_all, const std::string parameters);
 		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
@@ -66,6 +68,8 @@ class Notification
 		std::string json_escape(const std::string &str);
 		
 		static void create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters);
+		
+		static void subscribe_all_workflows(unsigned int id);
 };
 
 #endif

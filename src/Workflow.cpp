@@ -230,7 +230,18 @@ unsigned int Workflow::Create(const string &name, const string &base64, const st
 		lastcommit.length()?&lastcommit:0
 	);
 	
-	return db.InsertID();
+	unsigned int workflow_id = db.InsertID();
+	
+	// Automatically subscribe to notifications
+	DB db2(&db);
+	db.Query("SELECT notification_id FROM t_notification WHERE notification_subscribe_all=1");
+	while(db.FetchRow())
+	{
+		unsigned int notification_id = db.GetFieldInt(0);
+		db2.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&workflow_id,&notification_id);
+	}
+	
+	return workflow_id;
 }
 
 void Workflow::Edit(unsigned int id,const string &name, const string &base64, const string &group, const string &comment)

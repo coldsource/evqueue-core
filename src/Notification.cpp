@@ -35,6 +35,7 @@
 #include <User.h>
 #include <tools.h>
 #include <global.h>
+#include <Workflow.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -53,7 +54,7 @@ Notification::Notification(DB *db,unsigned int notification_id)
 {
 	id = notification_id;
 	
-	db->QueryPrintf("SELECT notification_type_id,notification_name,notification_parameters FROM t_notification WHERE notification_id=%i",&notification_id);
+	db->QueryPrintf("SELECT notification_type_id,notification_name,notification_subscribe_all,notification_parameters FROM t_notification WHERE notification_id=%i",&notification_id);
 	
 	if(!db->FetchRow())
 		throw Exception("Notification","Unknown notification");
@@ -73,9 +74,10 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	notification_binary = ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory")+"/"+to_string(notification_type.GetID());
 	
 	notification_name = db->GetField(1);
+	notification_subscribe_all = db->GetFieldInt(2);
 	
 	// Build confiuration JSON
-	notification_configuration = db->GetField(2);
+	notification_configuration = db->GetField(3);
 	plugin_configuration = notification_type.GetConfiguration();
 }
 
@@ -135,13 +137,14 @@ void Notification::Get(unsigned int id,QueryResponse *response)
 	DOMElement node = (DOMElement)response->AppendXML("<notification />");
 	node.setAttribute("type_id",to_string(notification.GetTypeID()));
 	node.setAttribute("name",notification.GetName());
+	node.setAttribute("subscribe_all",to_string(notification.GetSubscribeAll()));
 	
 	string  parameters_base64;
 	base64_encode_string(notification.GetConfiguration(),parameters_base64);
 	node.setAttribute("parameters",parameters_base64);
 }
 
-void Notification::Create(unsigned int type_id,const std::string &name, const std::string parameters)
+void Notification::Create(unsigned int type_id,const string &name, int subscribe_all, const string parameters)
 {
 	create_edit_check(type_id,name,parameters);
 	
@@ -149,10 +152,16 @@ void Notification::Create(unsigned int type_id,const std::string &name, const st
 		throw Exception("Notification","Unknown notification type ID","UNKNOWN_NOTIFICATION_TYPE");
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_parameters) VALUES(%i,%s,%s)",&type_id,&name,&parameters);
+	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_subscribe_all,notification_parameters) VALUES(%i,%s,%i,%s)",&type_id,&name,&subscribe_all,&parameters);
+	
+	if(subscribe_all)
+	{
+		unsigned int id = db.InsertID();
+		subscribe_all_workflows(id);
+	}
 }
 
-void Notification::Edit(unsigned int id,const std::string &name, const std::string parameters)
+void Notification::Edit(unsigned int id,const string &name, int subscribe_all, const string parameters)
 {
 	if(!Notifications::GetInstance()->Exists(id))
 		throw Exception("Notification","Unable to find notification","UNKNOWN_NOTIFICATION");
@@ -160,7 +169,11 @@ void Notification::Edit(unsigned int id,const std::string &name, const std::stri
 	create_edit_check(0,name,parameters);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification SET notification_name=%s,notification_parameters=%s WHERE notification_id=%i",&name,&parameters,&id);
+	db.QueryPrintf("UPDATE t_notification SET notification_name=%s,notification_subscribe_all=%i,notification_parameters=%s WHERE notification_id=%i",&name,&subscribe_all,&parameters,&id);
+	
+	
+	if(subscribe_all)
+		subscribe_all_workflows(id);
 }
 
 void Notification::Delete(unsigned int id)
@@ -205,10 +218,25 @@ string Notification::json_escape(const string &str)
 	return escaped_str;
 }
 
-void Notification::create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters)
+void Notification::create_edit_check(unsigned int type_id,const string &name, const string parameters)
 {
 	if(name.length()==0)
 		throw Exception("Notification","Name cannot be empty","INVALID_PARAMETER");
+}
+
+void Notification::subscribe_all_workflows(unsigned int id)
+{
+	DB db;
+	DB db2(&db);
+	
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",&id);
+	
+	db.Query("SELECT workflow_id FROM t_workflow");
+	while(db.FetchRow())
+	{
+		unsigned int workflow_id = db.GetFieldInt(0);
+		db2.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&workflow_id,&id);
+	}
 }
 
 bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
@@ -229,26 +257,30 @@ bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Q
 	else if(action=="create" || action=="edit")
 	{
 		string name = saxh->GetRootAttribute("name");
+		
 		string parameters_base64 = saxh->GetRootAttribute("parameters");
 		string parameters;
 		if(parameters_base64.length())
 			base64_decode_string(parameters,parameters_base64);
 		
+		bool subscribe_all = saxh->GetRootAttributeBool("subscribe_all",false);
+		
 		if(action=="create")
 		{
 			unsigned int type_id = saxh->GetRootAttributeInt("type_id");
 			
-			Create(type_id, name, parameters);
+			Create(type_id, name, subscribe_all, parameters);
 		}
 		else
 		{
 			unsigned int id = saxh->GetRootAttributeInt("id");
 			
-			Edit(id, name, parameters);
+			Edit(id, name, subscribe_all, parameters);
 		}
 		
 		Notifications::GetInstance()->Reload();
-		Workflows::GetInstance()->Reload();
+		if(subscribe_all)
+			Workflows::GetInstance()->Reload();
 		
 		return true;
 	}
