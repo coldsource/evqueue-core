@@ -345,9 +345,11 @@ string Workflow::create_edit_check(const string &name, const string &base64, con
 	if(!base64_decode_string(workflow_xml,base64))
 		throw Exception("Workflow","Invalid base64 sequence","INVALID_PARAMETER");
 	
-	XMLUtils::ValidateXML(workflow_xml,workflow_xsd_str);
-	
+	// This function has human readable errors, do these checks first
 	ValidateXML(workflow_xml);
+	
+	// XLM sanity check against XSD
+	XMLUtils::ValidateXML(workflow_xml,workflow_xsd_str);
 	
 	return workflow_xml;
 }
@@ -484,6 +486,9 @@ void Workflow::ValidateXML(const string &xml_str)
 {
 	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(xml_str));
 
+	// Check tasks types
+	// Ensure that they have either a 'name' or a 'path' attribute
+	// Ensure script is not empty
 	unique_ptr<DOMXPathResult> tasks(xmldoc->evaluate("//task",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 	int tasks_index = 0;
 	DOMElement task;
@@ -515,5 +520,19 @@ void Workflow::ValidateXML(const string &xml_str)
 			if(script.getTextContent()=="" && !values->isNode())
 				throw Exception("Workflow", "Script cannot be empty");
 		}
+	}
+	
+	// Check jobs
+	// Ensure no jobs are empty
+	unique_ptr<DOMXPathResult> jobs(xmldoc->evaluate("//job",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+	int jobs_index = 0;
+	DOMElement job;
+	while(jobs->snapshotItem(jobs_index++))
+	{
+		job = (DOMElement)jobs->getNodeValue();
+		
+		unique_ptr<DOMXPathResult> ntasks(xmldoc->evaluate("count(tasks/task)",job,DOMXPathResult::FIRST_RESULT_TYPE));
+		if(ntasks->getIntegerValue()==0)
+			throw Exception("Workflow","A job cannot be empty");
 	}
 }
