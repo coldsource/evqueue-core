@@ -89,10 +89,7 @@ void SocketResponseSAX2Handler::endElement (const XMLCh *const uri, const XMLCh 
 	level--;
 	
 	if(record)
-	{
 		current_node.pop_back();
-		current_text_node = 0;
-	}
 	
 	if (level==0) {
 		ready = true;
@@ -108,13 +105,8 @@ void SocketResponseSAX2Handler::characters(const XMLCh *const chars, const XMLSi
 		memcpy(chars_nt,chars,length*sizeof(XMLCh));
 		chars_nt[length] = 0;
 		
-		if(!current_text_node)
-		{
-			current_text_node = xmldoc.createTextNode(XMLString(chars_nt));
-			current_node.at(level-1).appendChild(current_text_node);
-		}
-		else
-			current_text_node.appendData(XMLString(chars_nt));
+		current_text_node = xmldoc.createTextNode(XMLString(chars_nt));
+		current_node.at(level-1).appendChild(current_text_node);
 		
 		delete[] chars_nt;
 	}
