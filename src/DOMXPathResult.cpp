@@ -57,6 +57,31 @@ bool DOMXPathResult::snapshotItem(int index)
 	return  false;
 }
 
+unsigned int DOMXPathResult::length()
+{
+	if(result->GetType()==SEQ)
+	{
+		TokenSeq *seq = (TokenSeq *)result;
+		return seq->items.size();
+	}
+	
+	return 1;
+}
+
+DOMXPathResult::ResultType DOMXPathResult::GetNodeType()
+{
+	if(result->GetType()==LIT_STR)
+		return STRING_TYPE;
+	else if(result->GetType()==LIT_INT)
+		return NUMBER_TYPE;
+	else if(result->GetType()==LIT_BOOL)
+		return BOOLEAN_TYPE;
+	else if(result->GetType()==SEQ)
+		return ITERATOR_RESULT_TYPE;
+	
+	throw Exception("DOMXPathResult", "Unknown result type");
+}
+
 bool DOMXPathResult::isNode()
 {
 	return (idx!=-1);

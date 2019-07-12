@@ -43,7 +43,9 @@ public:
 	~DOMXPathResult();
 
 	bool snapshotItem(int index);
+	unsigned int length();
 	
+	ResultType GetNodeType();
 	bool isNode();
 	DOMNode getNodeValue();
 	
