@@ -62,6 +62,8 @@ public:
 	std::string getNodeEvqID(DOMElement node);
 	DOMElement getNodeFromEvqID(const std::string &evqid);
 	
+	void ImportXPathResult(DOMXPathResult *res, DOMNode node);
+	
 private:
 	void initialize_evqid();
 };

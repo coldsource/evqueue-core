@@ -272,7 +272,7 @@ DOMElement DOMDocument::getNodeFromEvqID(const string &evqid)
 	}
 	catch(...)
 	{
-		throw Exception("WorkflowInstance","Invalid context ID");
+		throw Exception("DOMDocument","Invalid context ID");
 	}
 	
 	auto it = id_node.find(ievqid);
@@ -284,6 +284,29 @@ DOMElement DOMDocument::getNodeFromEvqID(const string &evqid)
 	
 	// Attribute
 	return (it->second).getAttributeNode(attribute_name);
+}
+
+void DOMDocument::ImportXPathResult(DOMXPathResult *res, DOMNode node)
+{
+	if(res->GetNodeType()==DOMXPathResult::NUMBER_TYPE)
+		node.appendChild(createTextNode(to_string(res->getIntegerValue())));
+	else if(res->GetNodeType()==DOMXPathResult::STRING_TYPE)
+		node.appendChild(createTextNode(res->getStringValue()));
+	else if(res->GetNodeType()==DOMXPathResult::BOOLEAN_TYPE)
+		node.appendChild(createTextNode(res->getIntegerValue()?"true":"false"));
+	else if(res->GetNodeType()==DOMXPathResult::ITERATOR_RESULT_TYPE)
+	{
+		unsigned int index = 0;
+		while(res->snapshotItem(index++))
+		{
+			if(res->getNodeValue().getNodeType()==ATTRIBUTE_NODE)
+				node.appendChild(createTextNode(res->getNodeValue().getTextContent()));
+			else
+				node.appendChild(importNode(res->getNodeValue(),true));
+		}
+	}
+	else
+		node.appendChild(createTextNode("unknown"));
 }
 
 void DOMDocument::initialize_evqid()
