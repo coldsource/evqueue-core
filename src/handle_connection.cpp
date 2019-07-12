@@ -41,6 +41,7 @@
 
 #include <string>
 
+#include <XMLString.h>
 using namespace std;
 
 void handle_connection(int s)
@@ -129,7 +130,18 @@ void handle_connection(int s)
 				
 				Logger::Log(LOG_DEBUG,"API : Successfully called, sending response");
 				
-				response.SendResponse();
+				// Apply XPath filter if requested
+				string xpath = saxh.GetRootAttribute("xpathfilter","");
+				if(xpath!="")
+				{
+					unique_ptr<DOMXPathResult> res(response.GetDOM()->evaluate(xpath,response.GetDOM()->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+					
+					QueryResponse xpath_response(s);
+					xpath_response.GetDOM()->ImportXPathResult(res.get(),xpath_response.GetDOM()->getDocumentElement());
+					xpath_response.SendResponse();
+				}
+				else
+					response.SendResponse();
 			}
 		}
 	}
