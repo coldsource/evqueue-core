@@ -151,7 +151,10 @@ void handle_connection(int s)
 		
 		QueryResponse response(s);
 		response.SetError(e.error);
-		response.SetErrorCode("UNEXPECTED_EXCEPTION");
+		if(e.code!="")
+			response.SetErrorCode(e.code);
+		else
+			response.SetErrorCode("UNEXPECTED_EXCEPTION");
 		response.SendResponse();
 		
 		Sockets::GetInstance()->UnregisterSocket(s);

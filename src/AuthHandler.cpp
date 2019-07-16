@@ -69,7 +69,7 @@ User AuthHandler::HandleAuth() const
 		
 		// Check response
 		if(saxh.GetGroup()!="auth")
-			throw Exception("Authentication Handler","Expected 'auth' node");
+			throw Exception("Authentication Handler","Expected 'auth' node","AUTH_ERROR");
 		
 		const string response = saxh.GetRootAttribute("response");
 		const string user_name = saxh.GetRootAttribute("user");
@@ -83,14 +83,14 @@ User AuthHandler::HandleAuth() const
 		{
 			// Cach exceptions to hide real error for security reasons
 			Logger::Log(LOG_NOTICE,"Authentication failed : unknown user "+user.GetName());
-			throw Exception("Authentication Handler","Invalid authentication");
+			throw Exception("Authentication Handler","Invalid authentication","AUTH_ERROR");
 		}
 		
 		string hmac = hash_hmac(user.GetPassword(),challenge);
 		if(time_constant_strcmp("hmac",response)!=0 && time_constant_strcmp(hmac,response)!=0)
 		{
 			Logger::Log(LOG_NOTICE,"Authentication failed for user '"+user.GetName()+"' : wrong password");
-			throw Exception("Authentication Handler","Invalid authentication");
+			throw Exception("Authentication Handler","Invalid authentication","AUTH_ERROR");
 		}
 	}
 	catch(Exception &e)
@@ -120,7 +120,7 @@ string AuthHandler::generate_challenge() const
 	}
 	catch(Exception &e)
 	{
-		throw Exception("Authentication Handler","Internal error");
+		throw Exception("Authentication Handler","Internal error","AUTH_ERROR");
 	}
 	
 	sha1.ProcessBytes(random_kernel);
