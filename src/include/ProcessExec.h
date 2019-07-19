@@ -27,6 +27,7 @@ class ProcessExec
 	public:
 		ProcessExec();
 		ProcessExec(const std::string &path);
+		~ProcessExec();
 
 		void SetPath(const std::string &path);
 		std::string GetPath() { return path; }

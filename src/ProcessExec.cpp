@@ -20,6 +20,12 @@ ProcessExec::ProcessExec(const string &path)
 	this->path = path;
 }
 
+ProcessExec::~ProcessExec()
+{
+	for(auto it=file_rdr.begin();it!=file_rdr.end();++it)
+		close(it->second);
+}
+
 void ProcessExec::SetPath(const string &path)
 {
 	this->path = path;
@@ -36,10 +42,10 @@ void ProcessExec::SetScript(const string &directory, const string &script)
 		throw Exception("ProcessExec","Unable to create temporary script : "+filename);
 	
 	int written = write(fd,script.c_str(),script.length());
+	close(fd);
+	
 	if(written!=script.length())
 		throw Exception("ProcessExec","Unable to write to temporary script : "+filename);
-	
-	close(fd);
 	
 	path = filename;
 }
