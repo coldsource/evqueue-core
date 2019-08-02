@@ -39,6 +39,7 @@ class SocketQuerySAX2Handler : public SocketSAX2HandlerInterface {
 		
 	public:
 		SocketQuerySAX2Handler(const std::string &context);
+		SocketQuerySAX2Handler(const std::string &context, const std::string xml);
 		~SocketQuerySAX2Handler();
 		
 		void startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes&  attrs );

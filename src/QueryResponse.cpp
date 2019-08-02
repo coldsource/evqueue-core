@@ -26,20 +26,43 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include <memory>
+
 using namespace std;
+
+void QueryResponse::init(const string &root_node_name)
+{
+	xmldoc = new DOMDocument();
+	xmldoc->appendChild(xmldoc->createElement(root_node_name)); // Append first root
+	
+	this->root_node_name = root_node_name;
+	Empty();
+	
+	status_ok = true;
+}
+
+QueryResponse::QueryResponse(const string &root_node_name)
+{
+	init(root_node_name);
+	
+	this->socket = -1;
+	this->wsi = 0;
+}
 
 QueryResponse::QueryResponse(int socket, const string &root_node_name)
 {
+	init(root_node_name);
+	
 	this->socket = socket;
+	this->wsi = 0;
+}
+
+QueryResponse::QueryResponse(struct lws *wsi, const string &root_node_name)
+{
+	init(root_node_name);
 	
-	xmldoc = new DOMDocument();
-	
-	DOMElement response_node = xmldoc->createElement(root_node_name);
-	xmldoc->appendChild(response_node);
-	
-	response_node.setAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
-	
-	status_ok = true;
+	this->socket = -1;
+	this->wsi = wsi;
 }
 
 QueryResponse::~QueryResponse()
@@ -79,6 +102,16 @@ DOMNode QueryResponse::AppendXML(const string &xml, DOMElement node)
 	return XMLUtils::AppendXML(xmldoc, node, xml);
 }
 
+void QueryResponse::Empty()
+{
+	xmldoc->removeChild(xmldoc->getDocumentElement());
+	
+	DOMElement response_node = xmldoc->createElement(root_node_name);
+	xmldoc->appendChild(response_node);
+	
+	response_node.setAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
+}
+
 void QueryResponse::SendResponse()
 {
 	DOMElement response_node = xmldoc->getDocumentElement();
@@ -98,8 +131,17 @@ void QueryResponse::SendResponse()
 	
 	string response = xmldoc->Serialize(xmldoc->getDocumentElement());
 	
-	send(socket,response.c_str(),response.length(),0);
-	send(socket,"\n",1,0);
+	if(socket!=-1)
+	{
+		send(socket,response.c_str(),response.length(),0);
+		send(socket,"\n",1,0);
+	}
+	
+	if(wsi)
+	{
+		response.insert(0,LWS_PRE,' ');
+		lws_write(wsi, (unsigned char *)response.c_str() + LWS_PRE, response.length()-LWS_PRE, LWS_WRITE_TEXT);
+	}
 }
 
 bool QueryResponse::Ping()

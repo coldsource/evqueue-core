@@ -20,11 +20,15 @@
 #include <SocketQuerySAX2Handler.h>
 #include <Exception.h>
 #include <XMLString.h>
+#include <DOMNamedNodeMap.h>
+#include <DOMDocument.h>
 
 #include <stdio.h>
 #include <ctype.h>
 
 #include <xercesc/sax2/Attributes.hpp>
+
+#include <memory>
 
 using namespace std;
 
@@ -34,10 +38,29 @@ SocketQuerySAX2Handler::SocketQuerySAX2Handler(const string &context):SocketSAX2
 	ready = false;
 }
 
+SocketQuerySAX2Handler::SocketQuerySAX2Handler(const string &context, const string xml):SocketSAX2HandlerInterface(context)
+{
+	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(xml));
+	if(!xmldoc)
+		throw Exception("API Response","Invalid XML document");
+	
+	group = xmldoc->getDocumentElement().getNodeName();
+	
+	DOMNamedNodeMap attributes = xmldoc->getDocumentElement().getAttributes();
+	for(int i=0;i<attributes.getLength();i++)
+	{
+		DOMNode attribute = attributes.item(i);
+		string name = attribute.getNodeName();
+		string value = attribute.getNodeValue();
+		root_attributes[name] = value;
+	}
+	
+	ready = true;
+}
+
 SocketQuerySAX2Handler::~SocketQuerySAX2Handler()
 {
 }
-
 
 void SocketQuerySAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes& attrs)
 {

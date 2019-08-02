@@ -42,6 +42,7 @@
 #include <QueryResponse.h>
 #include <XMLUtils.h>
 #include <ProcessManager.h>
+#include <Events.h>
 #include <tools.h>
 #include <global.h>
 
@@ -296,6 +297,8 @@ WorkflowInstance::~WorkflowInstance()
 		Logger::Log(LOG_INFO,"[WID %d] Terminated",workflow_instance_id);
 	else
 		Logger::Log(LOG_NOTICE,"[WID %d] Suspended during shutdown",workflow_instance_id);
+	
+	Events::GetInstance()->Create(Events::en_types::INSTANCE_TERMINATED);
 }
 
 void WorkflowInstance::Start(bool *workflow_terminated)
@@ -320,6 +323,8 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 	*workflow_terminated = workflow_ended();
 
 	record_savepoint();
+	
+	Events::GetInstance()->Create(Events::en_types::INSTANCE_STARTED);
 }
 
 void WorkflowInstance::Resume(bool *workflow_terminated)
@@ -1329,7 +1334,7 @@ bool WorkflowInstance::workflow_ended(void)
 
 			Statistics::GetInstance()->IncWorkflowInstanceErrors();
 		}
-
+		
 		return true;
 	}
 

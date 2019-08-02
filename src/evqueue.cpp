@@ -91,6 +91,7 @@
 #include <ActiveConnections.h>
 #include <Git.h>
 #include <Filesystem.h>
+#include <WSServer.h>
 #include <handle_connection.h>
 #include <tools.h>
 #include <tools_ipc.h>
@@ -589,6 +590,9 @@ int main(int argc,const char **argv)
 		
 		unsigned int max_conn = config->GetInt("network.connections.max");
 		
+		WSServer *ws = new WSServer();
+		ws->Start();
+		
 		// Loop for incoming connections
 		int len,*sp;
 		fd_set rfds;
@@ -623,6 +627,10 @@ int main(int argc,const char **argv)
 				// Request shutdown on Retrier and wait
 				retrier->Shutdown();
 				retrier->WaitForShutdown();
+				
+				// Request shutdown on websockets server and wait
+				ws->Shutdown();
+				ws->WaitForShutdown();
 				
 				// Shutdown sockets to end active connections earlier
 				if(config->GetBool("core.fastshutdown"))
@@ -667,6 +675,7 @@ int main(int argc,const char **argv)
 				delete random;
 				delete logger_api;
 				delete logger_notifications;
+				delete ws;
 				
 				xercesc::XMLPlatformUtils::Terminate();
 				

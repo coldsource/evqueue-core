@@ -25,28 +25,42 @@
 
 #include <string>
 
+#include <libwebsockets.h>
+
 class QueryResponse
 {
 	int socket;
+	struct lws *wsi;
+	
+	std::string root_node_name;
 	
 	DOMDocument *xmldoc;
 	
 	bool status_ok;
 	std::string error;
-    std::string error_code;
+	std::string error_code;
+	 
+	 void init(const std::string &root_node_name);
 	
 	public:
+		QueryResponse(const std::string &root_node_name = "response");
 		QueryResponse(int socket, const std::string &root_node_name = "response");
+		QueryResponse(struct lws *wsi, const std::string &root_node_name = "response");
 		~QueryResponse();
+		
+		void SetSocket(int s) { this->socket = s; }
+		void SetWebsocket(struct lws *wsi) { this->wsi = wsi; }
 		
 		DOMDocument *GetDOM() { return xmldoc; }
 		void SetError(const std::string &error);
-        void SetErrorCode(const std::string &code);
+		void SetErrorCode(const std::string &code);
 		void SetAttribute(const std::string &name, const std::string &value);
 		
 		DOMNode AppendXML(const std::string &xml);
 		DOMNode AppendText(const std::string &text);
 		DOMNode AppendXML(const std::string &xml, DOMElement node);
+		
+		void Empty();
 		
 		void SendResponse();
 		bool Ping();

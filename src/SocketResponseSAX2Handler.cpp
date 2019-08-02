@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include <memory>
+
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/dom/DOM.hpp>
 

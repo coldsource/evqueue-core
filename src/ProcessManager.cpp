@@ -164,8 +164,17 @@ void *ProcessManager::Gather(ProcessManager *pm)
 	
 	Logger::Log(LOG_NOTICE,"Gatherer started");
 	
-	while(msgrcv(pm->msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0,0)>0)
+	while(1)
 	{
+		int re = msgrcv(pm->msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0,0);
+		if(re<0)
+		{
+			if(errno==EINTR)
+				continue; // Interrupted but we can still continue
+			else
+				break;
+		}
+		
 		pid = msgbuf.mtext.pid;
 		tid = msgbuf.mtext.tid;
 		retcode = msgbuf.mtext.retcode;

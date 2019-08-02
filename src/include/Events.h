@@ -17,32 +17,46 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _AUTHHANDLER_H_
-#define _AUTHHANDLER_H_
+#ifndef _EVENTS_H_
+#define _EVENTS_H_
 
-#include <string>
+#include <libwebsockets.h>
 
-class User;
-class SocketQuerySAX2Handler;
+#include <thread>
+#include <mutex>
+#include <set>
+#include <map>
 
-class AuthHandler
+class Events
 {
-	std::string remote_host;
-	int remote_port;
-	
-	std::string challenge;
-	
 	public:
-		AuthHandler();
-		
-		void SetRemote(const std::string &remote_host, int remote_port);
-		
-		std::string GetChallenge();
-		User HandleChallenge(SocketQuerySAX2Handler *saxh) const;
+		enum en_types
+		{
+			NONE,
+			INSTANCE_STARTED,
+			INSTANCE_TERMINATED
+		};
 	
 	private:
-		std::string generate_challenge() const;
-		int time_constant_strcmp(const std::string &str1, const std::string &str2) const;
+		static Events *instance;
+		
+		std::mutex lock;
+		
+		std::set<en_types> events;
+		std::map<en_types, std::set<struct lws *>> subscribers;
+		
+		struct lws_context *ws_context;
+	
+	public:
+		Events(struct lws_context *ws_context);
+		
+		static Events *GetInstance() { return instance; }
+		
+		void Subscribe(en_types type, struct lws *wsi);
+		void Unsubscribe(en_types type, struct lws *wsi);
+		
+		void Create(en_types type);
+		en_types Get();
 };
 
 #endif

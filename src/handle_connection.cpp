@@ -28,7 +28,7 @@
 #include <Sockets.h>
 #include <QueryResponse.h>
 #include <QueryHandlers.h>
-#include <AuthHandler.h>
+#include <APISession.h>
 #include <DB.h>
 #include <ActiveConnections.h>
 #include <tools.h>
@@ -58,20 +58,6 @@ void handle_connection(int s)
 	tv.tv_usec = 0;
 	setsockopt(s, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
-	socklen_t remote_addr_len;
-	struct sockaddr_in remote_addr;
-	char remote_addr_str[16] = "local";
-	int remote_port = -1;
-	remote_addr_len = sizeof(remote_addr);
-	getpeername(s,(struct sockaddr*)&remote_addr,&remote_addr_len);
-	if(remote_addr.sin_family==AF_INET)
-	{
-		inet_ntop(AF_INET,&(remote_addr.sin_addr),remote_addr_str,16);
-		remote_port = ntohs(remote_addr.sin_port);
-	}
-	
-	Logger::Log(LOG_INFO,"Accepted connection from %s:%d",remote_addr_str,remote_port);
-	
 	char buf[4096];
 	int read_size;
 	
@@ -83,65 +69,34 @@ void handle_connection(int s)
 	
 	try
 	{
-		AuthHandler auth_handler(s,remote_addr_str,remote_port);
-		User user = auth_handler.HandleAuth();
+		APISession session("API",s);
 		
-		QueryResponse ready_response(s,"ready");
-		ready_response.SetAttribute("profile",user.GetProfile());
-		ready_response.SetAttribute("version",EVQUEUE_VERSION);
-		ready_response.SetAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
-		ready_response.SendResponse();
+		session.SendChallenge();
+		if(session.GetStatus()==APISession::en_status::WAITING_CHALLENGE_RESPONSE)
+		{
+			SocketQuerySAX2Handler saxh("Authentication Handler");
+			SocketSAX2Handler socket_sax2_handler(s);
+			socket_sax2_handler.HandleQuery(&saxh);
+			session.ChallengeReceived(&saxh);
+		}
+		
+		session.SendGreeting();
 		
 		while(true)
 		{
 			{
-				QueryResponse response(s);
-				
+				// Wait for a query
 				SocketQuerySAX2Handler saxh("API");
 				SocketSAX2Handler socket_sax2_handler(s);
 				
 				Logger::Log(LOG_DEBUG,"API : Waiting request");
 				
-				
 				socket_sax2_handler.HandleQuery(&saxh);
 				
-				if(saxh.GetQueryGroup()=="quit")
-				{
-					Logger::Log(LOG_DEBUG,"API : Received quit command, exiting channel");
-					break;
-				}
+				if(session.QueryReceived(&saxh))
+					break; // Quit requested
 				
-				try
-				{
-					if(!QueryHandlers::GetInstance()->HandleQuery(user, saxh.GetQueryGroup(),&saxh, &response))
-						throw Exception("API","Unknown command or action","UNKNOWN_COMMAND");
-				}
-				catch (Exception &e)
-				{
-					Logger::Log(LOG_DEBUG,"Unexpected (caught) exception in context "+e.context+" : "+e.error);
-					
-					QueryResponse response(s);
-					response.SetError(e.error);
-					response.SetErrorCode(e.code);
-					response.SendResponse();
-					
-					continue;
-				}
-				
-				Logger::Log(LOG_DEBUG,"API : Successfully called, sending response");
-				
-				// Apply XPath filter if requested
-				string xpath = saxh.GetRootAttribute("xpathfilter","");
-				if(xpath!="")
-				{
-					unique_ptr<DOMXPathResult> res(response.GetDOM()->evaluate(xpath,response.GetDOM()->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
-					
-					QueryResponse xpath_response(s);
-					xpath_response.GetDOM()->ImportXPathResult(res.get(),xpath_response.GetDOM()->getDocumentElement());
-					xpath_response.SendResponse();
-				}
-				else
-					response.SendResponse();
+				session.SendResponse();
 			}
 		}
 	}

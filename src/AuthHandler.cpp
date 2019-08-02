@@ -20,7 +20,7 @@
 #include <AuthHandler.h>
 #include <Logger.h>
 #include <SocketSAX2Handler.h>
-#include <SocketResponseSAX2Handler.h>
+#include <SocketQuerySAX2Handler.h>
 #include <Exception.h>
 #include <Statistics.h>
 #include <ConfigurationEvQueue.h>
@@ -41,64 +41,52 @@
 
 using namespace std;
 
-AuthHandler::AuthHandler(int socket, const string &remote_host, int remote_port)
+AuthHandler::AuthHandler()
 {
-	this->socket = socket;
+	
+}
+
+void AuthHandler::SetRemote(const string &remote_host, int remote_port)
+{
 	this->remote_host = remote_host;
 	this->remote_port = remote_port;
 }
 
-User AuthHandler::HandleAuth() const
+string AuthHandler::GetChallenge()
 {
-	// Check if authentication is required
-	if(!ConfigurationEvQueue::GetInstance()->GetBool("core.auth.enable"))
-		return User::anonymous;
+	challenge = generate_challenge();
+	return challenge;
+}
+
+User AuthHandler::HandleChallenge(SocketQuerySAX2Handler *saxh) const
+{
+	// Check response
+	if(saxh->GetQueryGroup()!="auth")
+		throw Exception("Authentication Handler","Expected 'auth' node","AUTH_ERROR");
 	
-	// Generate and send challenge
-	string challenge = generate_challenge();
-	string challenge_xml = "<auth challenge='"+challenge+"' />\n";
-	send(socket,challenge_xml.c_str(),challenge_xml.length(),0);
+	const string response = saxh->GetRootAttribute("response");
+	const string user_name = saxh->GetRootAttribute("user");
 	
 	User user;
+	
+	// Check identification
 	try
 	{
-		// Read client response
-		SocketResponseSAX2Handler saxh("Authentication Handler");
-		SocketSAX2Handler socket_sax2_handler(socket);
-		socket_sax2_handler.HandleQuery(&saxh);
-		
-		// Check response
-		if(saxh.GetGroup()!="auth")
-			throw Exception("Authentication Handler","Expected 'auth' node","AUTH_ERROR");
-		
-		const string response = saxh.GetRootAttribute("response");
-		const string user_name = saxh.GetRootAttribute("user");
-		
-		// Check identification
-		try
-		{
-			user = Users::GetInstance()->Get(user_name);
-		}
-		catch(Exception &e)
-		{
-			// Cach exceptions to hide real error for security reasons
-			Logger::Log(LOG_NOTICE,"Authentication failed : unknown user "+user.GetName());
-			throw Exception("Authentication Handler","Invalid authentication","AUTH_ERROR");
-		}
-		
-		string hmac = hash_hmac(user.GetPassword(),challenge);
-		if(time_constant_strcmp("hmac",response)!=0 && time_constant_strcmp(hmac,response)!=0)
-		{
-			Logger::Log(LOG_NOTICE,"Authentication failed for user '"+user.GetName()+"' : wrong password");
-			throw Exception("Authentication Handler","Invalid authentication","AUTH_ERROR");
-		}
+		user = Users::GetInstance()->Get(user_name);
 	}
 	catch(Exception &e)
 	{
-		throw e;
+		// Cach exceptions to hide real error for security reasons
+		Logger::Log(LOG_NOTICE,"Authentication failed : unknown user "+user.GetName());
+		throw Exception("Authentication Handler","Invalid authentication","AUTH_ERROR");
 	}
 	
-	Logger::Log(LOG_INFO,"Successful authentication of user '%s'",user.GetName().c_str());
+	string hmac = hash_hmac(user.GetPassword(),challenge);
+	if(time_constant_strcmp("hmac",response)!=0 && time_constant_strcmp(hmac,response)!=0)
+	{
+		Logger::Log(LOG_NOTICE,"Authentication failed for user '"+user.GetName()+"' : wrong password");
+		throw Exception("Authentication Handler","Invalid authentication","AUTH_ERROR");
+	}
 	
 	return user;
 }
