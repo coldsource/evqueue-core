@@ -264,6 +264,8 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		string filter_workflow = saxh->GetRootAttribute("filter_workflow","");
 		string filter_launched_from = saxh->GetRootAttribute("filter_launched_from","");
 		string filter_launched_until = saxh->GetRootAttribute("filter_launched_until","");
+		string filter_ended_from = saxh->GetRootAttribute("filter_ended_from","");
+		string filter_ended_until = saxh->GetRootAttribute("filter_ended_until","");
 		string filter_status = saxh->GetRootAttribute("filter_status","");
 		bool filter_error = saxh->GetRootAttributeBool("filter_error",false);
 		unsigned int filter_tag_id = saxh->GetRootAttributeInt("filter_tag_id",0);
@@ -337,6 +339,18 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		{
 			query_where += " AND wi.workflow_instance_start<=%s";
 			query_where_values.push_back(&filter_launched_until);
+		}
+		
+		if(filter_ended_from.length())
+		{
+			query_where += " AND wi.workflow_instance_end>=%s";
+			query_where_values.push_back(&filter_ended_from);
+		}
+		
+		if(filter_ended_until.length())
+		{
+			query_where += " AND wi.workflow_instance_end<=%s";
+			query_where_values.push_back(&filter_ended_until);
 		}
 		
 		if(filter_status.length())
