@@ -184,16 +184,18 @@ pid_t ProcessExec::Exec()
 		for(auto it = parent_rdr.begin();it!=parent_rdr.end();++it)
 			close(it->second.write_end);
 		
+		// Close stdin pipe (read end)
+		close(stdin_pipe[0]);
+		
 		if(stdin_pipe[0]!=-1)
 		{
 			// Send data to the child's stdin
 			int written = write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length());
 		
-			close(stdin_pipe[0]);
 			close(stdin_pipe[1]);
 			
 			if(written!=stdin_data.length())
-				throw Exception("ProcessExec","Unable to write parameters to pipe");
+				return pid; //throw Exception("ProcessExec","Unable to write parameters to pipe");
 		}
 	}
 	
