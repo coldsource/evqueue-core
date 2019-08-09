@@ -190,12 +190,10 @@ pid_t ProcessExec::Exec()
 		if(stdin_pipe[0]!=-1)
 		{
 			// Send data to the child's stdin
-			int written = write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length());
+			// It is possible that the child process dies before reading the whole data so we do not want to check the return value of write
+			write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length());
 		
 			close(stdin_pipe[1]);
-			
-			if(written!=stdin_data.length())
-				return pid; //throw Exception("ProcessExec","Unable to write parameters to pipe");
 		}
 	}
 	
