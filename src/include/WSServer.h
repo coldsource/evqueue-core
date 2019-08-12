@@ -53,8 +53,7 @@ class WSServer
 		enum en_protocols
 		{
 			API,
-			RUNNING_INSTANCES,
-			TERMINATED_INSTANCES
+			EVENTS,
 		};
 	
 	public:

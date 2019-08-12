@@ -17,6 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
+#ifndef _SOCKETQUERYSAX2HANDLER_
+#define _SOCKETQUERYSAX2HANDLER_
+
 #include <global.h>
 #include <WorkflowParameters.h>
 #include <SocketSAX2Handler.h>
@@ -52,3 +55,5 @@ class SocketQuerySAX2Handler : public SocketSAX2HandlerInterface {
 		WorkflowParameters *GetWorkflowParameters() {return &params;};
 		const std::vector<std::string> &GetInputs() { return inputs; }
 };
+
+#endif

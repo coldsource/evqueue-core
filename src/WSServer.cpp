@@ -7,6 +7,7 @@
 #include <ConfigurationEvQueue.h>
 #include <QueryHandlers.h>
 #include <Events.h>
+#include <base64.h>
 
 #include <mysql/mysql.h>
 
@@ -25,18 +26,11 @@ const struct lws_protocols protocols[] =
 		WSServer::en_protocols::API
 	},
 	{
-		"running-instances",
+		"events",
 		WSServer::callback_minimal,
 		sizeof(WSServer::per_session_data),
 		32768,
-		WSServer::en_protocols::RUNNING_INSTANCES
-	},
-	{
-		"terminated-instances",
-		WSServer::callback_minimal,
-		sizeof(WSServer::per_session_data),
-		32768,
-		WSServer::en_protocols::TERMINATED_INSTANCES
+		WSServer::en_protocols::EVENTS
 	},
 	{0,0,0,0,0}
 };
@@ -117,6 +111,7 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 			{
 				// Clean context data
 				delete context->session;
+				Events::GetInstance()->UnsubscribeAll(wsi);
 				break;
 			}
 			
@@ -142,6 +137,29 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 						
 						lws_callback_on_writable(wsi); // We have to send response
 					}
+					else if(protocol->id==EVENTS)
+					{
+						if(saxh.GetQueryGroup()!="event")
+							throw Exception("Websocket","Only event query group is supported by this protocol","UNKNOWN_COMMAND");
+						
+						if(saxh.GetRootAttribute("action")=="subscribe")
+						{
+							string type = saxh.GetRootAttribute("type");
+							unsigned int instance_id = saxh.GetRootAttributeInt("instance_id",0);
+							string api_cmd_base64 = saxh.GetRootAttribute("api_cmd");
+							string api_cmd;
+							if(!base64_decode_string(api_cmd,api_cmd_base64))
+								throw Exception("Websocket","Invalid base64 sequence","INVALID_PARAMETER");
+							
+							Events::GetInstance()->Subscribe(type,wsi,instance_id,api_cmd);
+						}
+						else if(saxh.GetRootAttribute("action")=="unsubscribe")
+						{
+							string type = saxh.GetRootAttribute("type");
+							unsigned int instance_id = saxh.GetRootAttributeInt("instance_id",0);
+							Events::GetInstance()->Unsubscribe(type,wsi,instance_id);
+						}
+					}
 				}
 				break;
 			}
@@ -151,26 +169,14 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 				if(context->session->GetStatus()==APISession::en_status::INITIALIZED)
 					context->session->SendChallenge();
 				else if(context->session->GetStatus()==APISession::en_status::AUTHENTICATED)
-				{
 					context->session->SendGreeting();
-					
-					// Websocket is ready, we can now subsribe to events
-					if(protocol->id==RUNNING_INSTANCES)
-					{
-						Events::GetInstance()->Subscribe(Events::en_types::INSTANCE_STARTED,wsi);
-						Events::GetInstance()->Subscribe(Events::en_types::INSTANCE_TERMINATED,wsi);
-					}
-					else if(protocol->id==TERMINATED_INSTANCES)
-						Events::GetInstance()->Subscribe(Events::en_types::INSTANCE_TERMINATED,wsi);
-				}
 				else if(context->session->GetStatus()==APISession::en_status::QUERY_RECEIVED)
-					context->session->SendResponse();
-				else if(context->session->GetStatus()==APISession::en_status::READY)
+					context->session->SendResponse(); // For API protocol
+				else if(context->session->GetStatus()==APISession::en_status::READY && protocol->id==EVENTS)
 				{
-					if(protocol->id==RUNNING_INSTANCES)
-						context->session->Query("<status action='query' type='workflows' />");
-					else if(protocol->id==TERMINATED_INSTANCES)
-						context->session->Query("<instances action='list' />");
+					string api_cmd;
+					if(Events::GetInstance()->Get(wsi,api_cmd))
+						context->session->Query(api_cmd);
 				}
 				break;
 			}

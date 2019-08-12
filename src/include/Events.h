@@ -36,27 +36,36 @@ class Events
 			INSTANCE_STARTED,
 			INSTANCE_TERMINATED
 		};
-	
+		
 	private:
+		struct st_subscription
+		{
+			unsigned int instance_filter;
+			std::string api_cmd;
+		};
+		
 		static Events *instance;
 		
 		std::mutex lock;
 		
-		std::set<en_types> events;
-		std::map<en_types, std::set<struct lws *>> subscribers;
+		std::map<struct lws *, std::set<std::string>> events;
+		std::map<en_types, std::multimap<struct lws *, st_subscription>> subscriptions;
 		
 		struct lws_context *ws_context;
+		
+		en_types get_type(const std::string &type_str);
 	
 	public:
 		Events(struct lws_context *ws_context);
 		
 		static Events *GetInstance() { return instance; }
 		
-		void Subscribe(en_types type, struct lws *wsi);
-		void Unsubscribe(en_types type, struct lws *wsi);
+		void Subscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, const std::string &api_cmd);
+		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter);
+		void UnsubscribeAll(struct lws *wsi);
 		
-		void Create(en_types type);
-		en_types Get();
+		void Create(en_types type, unsigned int instance_id);
+		bool Get(struct lws *wsi, std::string &api_cmd);
 };
 
 #endif

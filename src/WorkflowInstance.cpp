@@ -298,7 +298,7 @@ WorkflowInstance::~WorkflowInstance()
 	else
 		Logger::Log(LOG_NOTICE,"[WID %d] Suspended during shutdown",workflow_instance_id);
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_TERMINATED);
+	Events::GetInstance()->Create(Events::en_types::INSTANCE_TERMINATED,workflow_instance_id);
 }
 
 void WorkflowInstance::Start(bool *workflow_terminated)
@@ -324,7 +324,7 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 
 	record_savepoint();
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_STARTED);
+	Events::GetInstance()->Create(Events::en_types::INSTANCE_STARTED,workflow_instance_id);
 }
 
 void WorkflowInstance::Resume(bool *workflow_terminated)
