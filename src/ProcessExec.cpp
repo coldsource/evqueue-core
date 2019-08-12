@@ -20,6 +20,7 @@
 #include <ProcessExec.h>
 #include <Exception.h>
 #include <DataSerializer.h>
+#include <DataPiper.h>
 
 #include <unistd.h>
 #include <string.h>
@@ -208,11 +209,16 @@ pid_t ProcessExec::Exec()
 		
 		if(stdin_pipe[0]!=-1)
 		{
+#ifdef USE_DATA_PIPER
+			// Use of a threaded data piper is required for evqueue core engine as write can block and thus hold the whole engine
+			DataPiper::GetInstance()->PipeData(stdin_pipe[1],stdin_data);
+#else
 			// Send data to the child's stdin
 			// It is possible that the child process dies before reading the whole data so we do not want to check the return value of write
 			write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length());
 		
 			close(stdin_pipe[1]);
+#endif
 		}
 	}
 	

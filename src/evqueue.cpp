@@ -85,6 +85,7 @@
 #include <Tags.h>
 #include <Sockets.h>
 #include <Random.h>
+#include <DataPiper.h>
 #include <Datastore.h>
 #include <QueryHandlers.h>
 #include <Cluster.h>
@@ -463,6 +464,9 @@ int main(int argc,const char **argv)
 		// Release database connection
 		db.Disconnect();
 		
+		// Start data piper before process manager
+		DataPiper *dp = new DataPiper();
+		
 		// Start Process Manager (Forker & Gatherer)
 		ProcessManager *pm = new ProcessManager();
 		
@@ -616,6 +620,10 @@ int main(int argc,const char **argv)
 				pm->Shutdown();
 				pm->WaitForShutdown();
 				
+				// Request shutdown on data piper and wait
+				dp->Shutdown();
+				dp->WaitForShutdown();
+				
 				// Request shutdown on scheduler and wait
 				scheduler->Shutdown();
 				scheduler->WaitForShutdown();
@@ -656,6 +664,7 @@ int main(int argc,const char **argv)
 				delete notification_types;
 				delete retry_schedules;
 				delete pm;
+				delete dp;
 				delete gc;
 				delete seq;
 				delete qh;
