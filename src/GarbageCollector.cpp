@@ -74,7 +74,7 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 {
 	mysql_thread_init();
 	
-	Logger::Log(LOG_INFO,"Garbage Collector started");
+	Logger::Log(LOG_NOTICE,"Garbage Collector started");
 	
 	while(true)
 	{
@@ -85,7 +85,7 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 			
 			if(gc->is_shutting_down)
 			{
-				Logger::Log(LOG_INFO,"Shutdown in progress exiting Garbage Collector");
+				Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 				
 				mysql_thread_end();
 				
