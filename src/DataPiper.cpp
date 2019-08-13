@@ -87,8 +87,9 @@ void DataPiper::dp_thread(DataPiper *dp)
 			// We were woken by self pipe, read the byte to avoid looping
 			read(fds[nfds].fd,buf,1);
 			
-			if(dp->is_shutting_down)
+			if(dp->pipe_data.size()==0 && dp->is_shutting_down)
 			{
+				// Shutdown is requested and we are done piping data, we can exit now
 				Logger::Log(LOG_NOTICE,"Shutdown requested, exiting data piper");
 				return;
 			}
@@ -122,6 +123,13 @@ void DataPiper::dp_thread(DataPiper *dp)
 				{
 					close(fds[i].fd);
 					dp->pipe_data.erase(fds[i].fd);
+					
+					if(dp->pipe_data.size()==0 && dp->is_shutting_down)
+					{
+						// Shutdown is requested and we are done piping data, we can exit now
+						Logger::Log(LOG_NOTICE,"Shutdown requested, exiting data piper");
+						return;
+					}
 				}
 			}
 		}
