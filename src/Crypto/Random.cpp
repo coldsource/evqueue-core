@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Random.h>
-#include <Exception.h>
-#include <Logger.h>
+#include <Crypto/Random.h>
+#include <Exception/Exception.h>
+#include <Logger/Logger.h>
 
 #include <stdio.h>
 

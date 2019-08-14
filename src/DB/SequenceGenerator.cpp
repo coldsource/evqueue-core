@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <SequenceGenerator.h>
-#include <ConfigurationEvQueue.h>
-#include <DB.h>
+#include <DB/SequenceGenerator.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <DB/DB.h>
 
 using namespace std;
 

@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <XMLFormatter.h>
-#include <XMLString.h>
-#include <DOMNamedNodeMap.h>
+#include <XML/XMLFormatter.h>
+#include <XML/XMLString.h>
+#include <DOM/DOMNamedNodeMap.h>
 
 using namespace std;
 

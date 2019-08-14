@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMXPathResult.h>
-#include <Exception.h>
-#include <XPathTokens.h>
+#include <DOM/DOMXPathResult.h>
+#include <Exception/Exception.h>
+#include <XPath/XPathTokens.h>
 
 using namespace std;
 

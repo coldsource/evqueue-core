@@ -20,7 +20,7 @@
 #ifndef _TASK_H_
 #define _TASK_H_
 
-#include <DOMElement.h>
+#include <DOM/DOMElement.h>
 
 #include <string>
 #include <vector>

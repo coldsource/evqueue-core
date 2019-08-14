@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Retrier.h>
-#include <WorkflowInstance.h>
-#include <Logger.h>
+#include <Schedule/Retrier.h>
+#include <WorkflowInstance/WorkflowInstance.h>
+#include <Logger/Logger.h>
 
 #include <global.h>
 

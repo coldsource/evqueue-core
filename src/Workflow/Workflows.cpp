@@ -17,16 +17,16 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Workflows.h>
-#include <Workflow.h>
-#include <DB.h>
-#include <Exception.h>
-#include <Logger.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <Cluster.h>
-#include <Sha1String.h>
-#include <User.h>
+#include <Workflow/Workflows.h>
+#include <Workflow/Workflow.h>
+#include <DB/DB.h>
+#include <Exception/Exception.h>
+#include <Logger/Logger.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Cluster/Cluster.h>
+#include <Crypto/Sha1String.h>
+#include <User/User.h>
 
 #include <string.h>
 

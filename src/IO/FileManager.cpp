@@ -17,11 +17,11 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <FileManager.h>
-#include <Exception.h>
-#include <Logger.h>
-#include <base64.h>
-#include <sha1.h>
+#include <IO/FileManager.h>
+#include <Exception/Exception.h>
+#include <Logger/Logger.h>
+#include <Crypto/base64.h>
+#include <Crypto/sha1.h>
 
 #include <stdio.h>
 #include <fcntl.h>

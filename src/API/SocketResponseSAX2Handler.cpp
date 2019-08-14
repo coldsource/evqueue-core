@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <SocketResponseSAX2Handler.h>
-#include <Exception.h>
-#include <XMLString.h>
+#include <API/SocketResponseSAX2Handler.h>
+#include <Exception/Exception.h>
+#include <XML/XMLString.h>
 
 #include <stdio.h>
 #include <ctype.h>

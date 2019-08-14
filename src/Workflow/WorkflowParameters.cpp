@@ -17,7 +17,7 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <WorkflowParameters.h>
+#include <Workflow/WorkflowParameters.h>
 
 #include <string.h>
 

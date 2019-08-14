@@ -1,10 +1,10 @@
 #include <string>
 #include <vector>
 #include <stack>
-#include <DOMNamedNodeMap.h>
-#include <XPathTokens.h>
-#include <XPathParser.h>
-#include <XPathEval.h>
+#include <DOM/DOMNamedNodeMap.h>
+#include <XPath/XPathTokens.h>
+#include <XPath/XPathParser.h>
+#include <XPath/XPathEval.h>
 using namespace std;
 
 void dump_expr(TokenExpr *expr, int level);

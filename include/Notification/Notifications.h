@@ -20,7 +20,7 @@
 #ifndef _NOTIFICATIONS_H_
 #define _NOTIFICATIONS_H_
 
-#include <APIObjectList.h>
+#include <API/APIObjectList.h>
 
 #include <map>
 #include <string>

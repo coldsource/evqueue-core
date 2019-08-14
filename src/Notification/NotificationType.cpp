@@ -17,18 +17,18 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <NotificationType.h>
-#include <NotificationTypes.h>
-#include <Notifications.h>
-#include <Workflows.h>
-#include <Exception.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <FileManager.h>
-#include <ConfigurationEvQueue.h>
-#include <base64.h>
-#include <DB.h>
-#include <User.h>
+#include <Notification/NotificationType.h>
+#include <Notification/NotificationTypes.h>
+#include <Notification/Notifications.h>
+#include <Workflow/Workflows.h>
+#include <Exception/Exception.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <IO/FileManager.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Crypto/base64.h>
+#include <DB/DB.h>
+#include <User/User.h>
 
 using namespace std;
 

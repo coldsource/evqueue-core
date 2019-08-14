@@ -19,8 +19,8 @@
 
 #ifdef USELIBGIT2
 
-#include <LibGit2.h>
-#include <ConfigurationEvQueue.h>
+#include <Git/LibGit2.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <string.h>
 #include <time.h>

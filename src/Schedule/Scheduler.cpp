@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Scheduler.h>
-#include <Logger.h>
+#include <Schedule/Scheduler.h>
+#include <Logger/Logger.h>
 
 #include <stdio.h>
 #include <unistd.h>

@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 
-#include <APIObjectList.h>
+#include <API/APIObjectList.h>
 
 class WorkflowSchedule;
 class SocketQuerySAX2Handler;

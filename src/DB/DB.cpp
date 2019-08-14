@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DB.h>
-#include <Exception.h>
-#include <Logger.h>
-#include <ConfigurationEvQueue.h>
+#include <DB/DB.h>
+#include <Exception/Exception.h>
+#include <Logger/Logger.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <stdlib.h>
 #include <string.h>

@@ -20,8 +20,8 @@
 #ifndef _WORKFLOWSCHEDULE_H_
 #define _WORKFLOWSCHEDULE_H_
 
-#include <WorkflowParameters.h>
-#include <Schedule.h>
+#include <Workflow/WorkflowParameters.h>
+#include <Schedule/Schedule.h>
 
 #include <time.h>
 

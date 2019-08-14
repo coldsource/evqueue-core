@@ -20,7 +20,7 @@
 #ifndef _RETRYSCHEDULES_H_
 #define _RETRYSCHEDULES_H_
 
-#include <APIObjectList.h>
+#include <API/APIObjectList.h>
 
 #include <map>
 #include <string>

@@ -17,14 +17,14 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <tools_db.h>
-#include <tables.h>
-#include <DB.h>
-#include <ConfigurationEvQueue.h>
-#include <Exception.h>
-#include <Logger.h>
-#include <DOMDocument.h>
-#include <DOMXPathResult.h>
+#include <DB/tools_db.h>
+#include <DB/tables.h>
+#include <DB/DB.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
+#include <Logger/Logger.h>
+#include <DOM/DOMDocument.h>
+#include <DOM/DOMXPathResult.h>
 
 #include <pcrecpp.h>
 

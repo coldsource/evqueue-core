@@ -17,18 +17,18 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <AuthHandler.h>
-#include <Logger.h>
-#include <SocketSAX2Handler.h>
-#include <SocketResponseSAX2Handler.h>
-#include <Exception.h>
-#include <Statistics.h>
-#include <ConfigurationEvQueue.h>
-#include <User.h>
-#include <Users.h>
-#include <Random.h>
-#include <Sha1String.h>
-#include <hmac.h>
+#include <API/AuthHandler.h>
+#include <Logger/Logger.h>
+#include <API/SocketSAX2Handler.h>
+#include <API/SocketResponseSAX2Handler.h>
+#include <Exception/Exception.h>
+#include <API/Statistics.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <User/User.h>
+#include <User/Users.h>
+#include <Crypto/Random.h>
+#include <Crypto/Sha1String.h>
+#include <Crypto/hmac.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>

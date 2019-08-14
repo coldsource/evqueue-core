@@ -25,4 +25,8 @@
 key_t ipc_get_qid(const char *qid_istr);
 int ipc_openq(const char *qid_str);
 
+int ipc_queue_destroy(const char *qid_str);
+int ipc_queue_stats(const char *qid_str);
+int ipc_send_exit_msg(const char *qid_str,int type,int tid,char retcode);
+
 #endif

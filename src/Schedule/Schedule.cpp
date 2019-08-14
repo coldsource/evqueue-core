@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Schedule.h>
-#include <Exception.h>
+#include <Schedule/Schedule.h>
+#include <Exception/Exception.h>
 
 #include <string.h>
 #include <stdlib.h>

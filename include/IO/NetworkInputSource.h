@@ -22,7 +22,7 @@
 
 #include <sys/types.h>
 #include <xercesc/sax/InputSource.hpp>
-#include <BinNetworkInputStream.h>
+#include <IO/BinNetworkInputStream.h>
 
 class NetworkInputSource : public xercesc::InputSource
 {

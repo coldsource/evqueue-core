@@ -17,12 +17,12 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <UniqueAction.h>
-#include <DB.h>
-#include <ConfigurationEvQueue.h>
-#include <Logger.h>
-#include <Exception.h>
-#include <Cluster.h>
+#include <Cluster/UniqueAction.h>
+#include <DB/DB.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Logger/Logger.h>
+#include <Exception/Exception.h>
+#include <Cluster/Cluster.h>
 
 #include <vector>
 #include <algorithm>

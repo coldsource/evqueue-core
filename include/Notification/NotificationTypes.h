@@ -20,7 +20,7 @@
 #ifndef _NOTIFICATIONTYPES_H_
 #define _NOTIFICATIONTYPES_H_
 
-#include <APIObjectList.h>
+#include <API/APIObjectList.h>
 
 #include <map>
 #include <string>

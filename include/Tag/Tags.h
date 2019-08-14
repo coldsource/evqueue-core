@@ -20,7 +20,7 @@
 #ifndef _TAGS_H_
 #define _TAGS_H_
 
-#include <APIObjectList.h>
+#include <API/APIObjectList.h>
 
 class User;
 class Tag;

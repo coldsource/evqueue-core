@@ -20,7 +20,7 @@
 #ifndef _XPATHFUNCTIONS_H_
 #define _XPATHFUNCTIONS_H_
 
-#include <XPathEval.h>
+#include <XPath/XPathEval.h>
 
 #include <vector>
 

@@ -17,15 +17,15 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Tag.h>
-#include <Tags.h>
-#include <User.h>
-#include <Workflows.h>
-#include <LoggerAPI.h>
-#include <Exception.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <DB.h>
+#include <Tag/Tag.h>
+#include <Tag/Tags.h>
+#include <User/User.h>
+#include <Workflow/Workflows.h>
+#include <Logger/LoggerAPI.h>
+#include <Exception/Exception.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <DB/DB.h>
 #include <global.h>
 
 using namespace std;

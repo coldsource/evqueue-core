@@ -23,7 +23,7 @@
 #include <string>
 #include <map>
 
-#include <Configuration.h>
+#include <Configuration/Configuration.h>
 
 class QueryResponse;
 

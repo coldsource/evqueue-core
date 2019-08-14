@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <XPathOperators.h>
-#include <XPathTokens.h>
-#include <DOMNode.h>
-#include <Exception.h>
+#include <XPath/XPathOperators.h>
+#include <XPath/XPathTokens.h>
+#include <DOM/DOMNode.h>
+#include <Exception/Exception.h>
 
 using namespace std;
 

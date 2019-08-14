@@ -17,23 +17,22 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ProcessManager.h>
-#include <Exception.h>
+#include <Process/ProcessManager.h>
+#include <Exception/Exception.h>
 #include <global.h>
-#include <QueuePool.h>
-#include <WorkflowInstance.h>
-#include <Notifications.h>
-#include <ConfigurationEvQueue.h>
-#include <Retrier.h>
-#include <Statistics.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <Logger.h>
-#include <User.h>
-#include <Task.h>
-#include <ProcessExec.h>
-#include <tools.h>
-#include <tools_ipc.h>
+#include <Queue/QueuePool.h>
+#include <WorkflowInstance/WorkflowInstance.h>
+#include <Notification/Notifications.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Schedule/Retrier.h>
+#include <API/Statistics.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Logger/Logger.h>
+#include <User/User.h>
+#include <WorkflowInstance/Task.h>
+#include <Process/ProcessExec.h>
+#include <Process/tools_ipc.h>
 
 #include <mysql/mysql.h>
 
@@ -360,7 +359,7 @@ pid_t ProcessManager::ExecuteTask(
 	if(pid==0)
 	{
 		// Could not properly call monitor
-		tools_send_exit_msg(1,tid,-1);
+		ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,tid,-1);
 		exit(-1);
 	}
 

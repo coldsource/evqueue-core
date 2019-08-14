@@ -17,25 +17,25 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Notification.h>
-#include <Notifications.h>
-#include <NotificationType.h>
-#include <NotificationTypes.h>
-#include <Workflows.h>
-#include <Exception.h>
-#include <DB.h>
-#include <ConfigurationEvQueue.h>
-#include <Logger.h>
-#include <WorkflowInstance.h>
-#include <Sockets.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <ProcessExec.h>
-#include <base64.h>
-#include <User.h>
-#include <tools.h>
+#include <Notification/Notification.h>
+#include <Notification/Notifications.h>
+#include <Notification/NotificationType.h>
+#include <Notification/NotificationTypes.h>
+#include <Workflow/Workflows.h>
+#include <Exception/Exception.h>
+#include <DB/DB.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Logger/Logger.h>
+#include <WorkflowInstance/WorkflowInstance.h>
+#include <IO/Sockets.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Process/ProcessExec.h>
+#include <Crypto/base64.h>
+#include <User/User.h>
+#include <Process/tools_ipc.h>
 #include <global.h>
-#include <Workflow.h>
+#include <Workflow/Workflow.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -111,7 +111,7 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		pid_t pid = proc.Exec();
 		if(pid==0)
 		{
-			tools_send_exit_msg(2,0,-1);
+			ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),2,0,-1);
 			exit(-1);
 		}
 		

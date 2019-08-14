@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ActiveConnections.h>
-#include <Logger.h>
-#include <handle_connection.h>
+#include <API/ActiveConnections.h>
+#include <Logger/Logger.h>
+#include <API/handle_connection.h>
 
 using namespace std;
 

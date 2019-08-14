@@ -17,23 +17,23 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <WorkflowInstanceAPI.h>
-#include <WorkflowInstance.h>
-#include <Workflows.h>
-#include <Workflow.h>
-#include <WorkflowInstances.h>
-#include <SocketQuerySAX2Handler.h>
-#include <SequenceGenerator.h>
-#include <QueryResponse.h>
-#include <Statistics.h>
-#include <Exception.h>
-#include <Logger.h>
-#include <Retrier.h>
-#include <QueuePool.h>
-#include <DB.h>
-#include <ConfigurationEvQueue.h>
-#include <User.h>
-#include <Tag.h>
+#include <WorkflowInstance/WorkflowInstanceAPI.h>
+#include <WorkflowInstance/WorkflowInstance.h>
+#include <Workflow/Workflows.h>
+#include <Workflow/Workflow.h>
+#include <WorkflowInstance/WorkflowInstances.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <DB/SequenceGenerator.h>
+#include <API/QueryResponse.h>
+#include <API/Statistics.h>
+#include <Exception/Exception.h>
+#include <Logger/Logger.h>
+#include <Schedule/Retrier.h>
+#include <Queue/QueuePool.h>
+#include <DB/DB.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <User/User.h>
+#include <Tag/Tag.h>
 
 #include <string>
 #include <map>

@@ -17,22 +17,22 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Git.h>
-#include <LibGit2.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <XMLUtils.h>
-#include <Workflow.h>
-#include <Workflows.h>
-#include <ConfigurationEvQueue.h>
-#include <Exception.h>
-#include <FileManager.h>
-#include <Logger.h>
-#include <DB.h>
-#include <User.h>
-#include <Sha1String.h>
-#include <XMLFormatter.h>
-#include <base64.h>
+#include <Git/Git.h>
+#include <Git/LibGit2.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <XML/XMLUtils.h>
+#include <Workflow/Workflow.h>
+#include <Workflow/Workflows.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
+#include <IO/FileManager.h>
+#include <Logger/Logger.h>
+#include <DB/DB.h>
+#include <User/User.h>
+#include <Crypto/Sha1String.h>
+#include <XML/XMLFormatter.h>
+#include <Crypto/base64.h>
 
 #include <stdio.h>
 #include <string.h>

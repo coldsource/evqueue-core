@@ -20,7 +20,7 @@
 #ifndef _WORKFLOWXPATHFUNCTIONS_H_
 #define _WORKFLOWXPATHFUNCTIONS_H_
 
-#include <XPathEval.h>
+#include <XPath/XPathEval.h>
 
 #include <vector>
 

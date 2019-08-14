@@ -17,21 +17,21 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <handle_connection.h>
-#include <SocketQuerySAX2Handler.h>
-#include <Exception.h>
-#include <NetworkInputSource.h>
-#include <Logger.h>
-#include <User.h>
-#include <ConfigurationEvQueue.h>
-#include <Statistics.h>
-#include <Sockets.h>
-#include <QueryResponse.h>
-#include <QueryHandlers.h>
-#include <AuthHandler.h>
-#include <DB.h>
-#include <ActiveConnections.h>
-#include <tools.h>
+#include <API/handle_connection.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <Exception/Exception.h>
+#include <IO/NetworkInputSource.h>
+#include <Logger/Logger.h>
+#include <User/User.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <API/Statistics.h>
+#include <IO/Sockets.h>
+#include <API/QueryResponse.h>
+#include <API/QueryHandlers.h>
+#include <API/AuthHandler.h>
+#include <DB/DB.h>
+#include <API/ActiveConnections.h>
+#include <API/tools.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -41,7 +41,7 @@
 
 #include <string>
 
-#include <XMLString.h>
+#include <XML/XMLString.h>
 using namespace std;
 
 void handle_connection(int s)

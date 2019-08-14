@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <hmac.h>
-#include <Sha1String.h>
-#include <Exception.h>
+#include <Crypto/hmac.h>
+#include <Crypto/Sha1String.h>
+#include <Exception/Exception.h>
 
 #include <iomanip>
 #include <sstream>

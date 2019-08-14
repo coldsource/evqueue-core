@@ -20,7 +20,7 @@
 #ifndef _QUEUE_H_
 #define _QUEUE_H_
 
-#include <DOMElement.h>
+#include <DOM/DOMElement.h>
 
 #include <global.h>
 

@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ProcessExec.h>
-#include <Exception.h>
-#include <DataSerializer.h>
-#include <DataPiper.h>
+#include <Process/ProcessExec.h>
+#include <Exception/Exception.h>
+#include <Process/DataSerializer.h>
+#include <Process/DataPiper.h>
 
 #include <unistd.h>
 #include <string.h>

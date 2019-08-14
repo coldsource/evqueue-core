@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMText.h>
-#include <XMLString.h>
+#include <DOM/DOMText.h>
+#include <XML/XMLString.h>
 
 DOMText::DOMText()
 {

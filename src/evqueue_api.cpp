@@ -20,12 +20,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <ClientBase.h>
-#include <Exception.h>
-#include <XMLFormatter.h>
-#include <XMLString.h>
-#include <sha1.h>
-#include <DOMDocument.h>
+#include <API/ClientBase.h>
+#include <Exception/Exception.h>
+#include <XML/XMLFormatter.h>
+#include <XML/XMLString.h>
+#include <Crypto/sha1.h>
+#include <DOM/DOMDocument.h>
 
 #include <map>
 #include <string>

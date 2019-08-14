@@ -21,7 +21,7 @@
 #define _DOMTEXT_H_
 
 #include <xercesc/dom/DOM.hpp>
-#include <DOMNode.h>
+#include <DOM/DOMNode.h>
 
 #include <string>
 

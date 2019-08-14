@@ -22,7 +22,7 @@
 
 #include <string>
 
-#include <DOMDocument.h>
+#include <DOM/DOMDocument.h>
 
 class SocketResponseSAX2Handler;
 

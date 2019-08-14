@@ -17,26 +17,26 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <tools.h>
-#include <tools_ipc.h>
+#include <API/tools.h>
+#include <Process/tools_ipc.h>
 #include <global.h>
-#include <Logger.h>
-#include <WorkflowScheduler.h>
-#include <RetrySchedules.h>
-#include <Workflows.h>
-#include <Notifications.h>
-#include <NotificationTypes.h>
-#include <Retrier.h>
-#include <QueuePool.h>
-#include <ConfigurationEvQueue.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <Statistics.h>
-#include <WorkflowInstances.h>
-#include <Users.h>
-#include <User.h>
-#include <Tags.h>
-#include <Exception.h>
+#include <Logger/Logger.h>
+#include <Schedule/WorkflowScheduler.h>
+#include <Schedule/RetrySchedules.h>
+#include <Workflow/Workflows.h>
+#include <Notification/Notifications.h>
+#include <Notification/NotificationTypes.h>
+#include <Schedule/Retrier.h>
+#include <Queue/QueuePool.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <API/Statistics.h>
+#include <WorkflowInstance/WorkflowInstances.h>
+#include <User/Users.h>
+#include <User/User.h>
+#include <Tag/Tags.h>
+#include <Exception/Exception.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -47,16 +47,6 @@
 #include <signal.h>
 
 using namespace std;
-
-void tools_print_usage()
-{
-	fprintf(stderr,"Usage :\n");
-	fprintf(stderr,"  Launch evqueue      : evqueue (--daemon) --config <path to config file>\n");
-	fprintf(stderr,"  Clean IPC queue     : evqueue --config <path to config file> --ipcq-remove\n");
-	fprintf(stderr,"  Get IPC queue stats : evqueue --config <path to config file> --ipcq-stats\n");
-	fprintf(stderr,"  Send IPC TERM-TID   : evqueue --config <path to config file> --ipc-terminate-tid <tid>\n");
-	fprintf(stderr,"  Show version        : evqueue --version\n");
-}
 
 void tools_config_reload(const std::string &module,bool notify)
 {
@@ -213,59 +203,4 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 	}
 	
 	return false;
-}
-
-int tools_queue_destroy()
-{
-	int msgqid = ipc_openq(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
-	if(msgqid==-1)
-		return -1;
-	
-	int re = msgctl(msgqid,IPC_RMID,0);
-	if(re!=0)
-	{
-		if(errno==EPERM)
-			fprintf(stderr,"Permission refused while trying to remove message queue\n");
-		else
-			fprintf(stderr,"Unknown error trying to remove message queue : %d\n",errno);
-		
-		return -1;
-	}
-	
-	printf("Message queue successfully removed\n");
-	
-	return 0;
-}
-
-int tools_queue_stats()
-{
-	int msgqid = ipc_openq(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
-	if(msgqid==-1)
-		return -1;
-	
-	struct msqid_ds ipcq_stats;
-	int re = msgctl(msgqid,IPC_STAT,&ipcq_stats);
-	if(re!=0)
-	{
-		fprintf(stderr,"Unknown error trying to get message queue statistics: %d\n",errno);
-		return -1;
-	}
-	
-	printf("Queue size : %ld\n",ipcq_stats.msg_qbytes);
-	printf("Pending messages : %ld\n",ipcq_stats.msg_qnum);
-}
-
-int tools_send_exit_msg(int type,int tid,char retcode)
-{
-	int msgqid = ipc_openq(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
-	if(msgqid==-1)
-		return -1;
-	
-	st_msgbuf msgbuf;
-	msgbuf.type = type;
-	memset(&msgbuf.mtext,0,sizeof(st_msgbuf::mtext));
-	msgbuf.mtext.pid = getpid();
-	msgbuf.mtext.tid = tid;
-	msgbuf.mtext.retcode = retcode;
-	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }

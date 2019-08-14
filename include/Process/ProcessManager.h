@@ -20,7 +20,7 @@
 #ifndef _PROCESS_MANAGER_H_
 #define _PROCESS_MANAGER_H_
 
-#include <Task.h>
+#include <WorkflowInstance/Task.h>
 
 #include <sys/types.h>
 

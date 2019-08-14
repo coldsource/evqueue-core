@@ -17,12 +17,12 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs.h>
-#include <Exception.h>
-#include <DB.h>
-#include <Logger.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
+#include <Logs/Logs.h>
+#include <Exception/Exception.h>
+#include <DB/DB.h>
+#include <Logger/Logger.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
 
 using namespace std;
 

@@ -17,11 +17,11 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <QueryResponse.h>
-#include <XMLUtils.h>
-#include <Logger.h>
-#include <DOMDocument.h>
-#include <ConfigurationEvQueue.h>
+#include <API/QueryResponse.h>
+#include <XML/XMLUtils.h>
+#include <Logger/Logger.h>
+#include <DOM/DOMDocument.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>

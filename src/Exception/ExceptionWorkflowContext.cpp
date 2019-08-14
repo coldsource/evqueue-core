@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ExceptionWorkflowContext.h>
-#include <ExceptionManager.h>
-#include <Exception.h>
-#include <DOMElement.h>
+#include <Exception/ExceptionWorkflowContext.h>
+#include <Exception/ExceptionManager.h>
+#include <Exception/Exception.h>
+#include <DOM/DOMElement.h>
 
 #include <exception>
 

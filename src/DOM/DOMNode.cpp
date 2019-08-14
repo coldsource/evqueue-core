@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMNode.h>
-#include <DOMElement.h>
-#include <DOMNamedNodeMap.h>
-#include <XMLString.h>
+#include <DOM/DOMNode.h>
+#include <DOM/DOMElement.h>
+#include <DOM/DOMNamedNodeMap.h>
+#include <XML/XMLString.h>
 
 using namespace std;
 

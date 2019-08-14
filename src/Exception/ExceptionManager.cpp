@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ExceptionManager.h>
-#include <Exception.h>
+#include <Exception/ExceptionManager.h>
+#include <Exception/Exception.h>
 
 thread_local Exception *ExceptionManager::current_exception = 0;
 thread_local bool ExceptionManager::exception_logged = false;

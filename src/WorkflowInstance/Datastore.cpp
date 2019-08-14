@@ -17,13 +17,13 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Datastore.h>
-#include <DB.h>
-#include <Exception.h>
-#include <QueryResponse.h>
-#include <SocketQuerySAX2Handler.h>
-#include <base64.h>
-#include <ConfigurationEvQueue.h>
+#include <WorkflowInstance/Datastore.h>
+#include <DB/DB.h>
+#include <Exception/Exception.h>
+#include <API/QueryResponse.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <Crypto/base64.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <zlib.h>
 

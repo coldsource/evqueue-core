@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <SocketSAX2Handler.h>
-#include <NetworkInputSource.h>
-#include <Exception.h>
+#include <API/SocketSAX2Handler.h>
+#include <IO/NetworkInputSource.h>
+#include <Exception/Exception.h>
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>

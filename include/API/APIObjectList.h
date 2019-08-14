@@ -20,7 +20,7 @@
 #ifndef _APIOBJECTLIST_H_
 #define _APIOBJECTLIST_H_
 
-#include <Exception.h>
+#include <Exception/Exception.h>
 
 #include <string>
 #include <map>

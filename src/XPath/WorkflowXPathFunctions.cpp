@@ -17,11 +17,11 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <WorkflowXPathFunctions.h>
-#include <XPathTokens.h>
-#include <Exception.h>
-#include <DOMXPathResult.h>
-#include <DOMDocument.h>
+#include <XPath/WorkflowXPathFunctions.h>
+#include <XPath/XPathTokens.h>
+#include <Exception/Exception.h>
+#include <DOM/DOMXPathResult.h>
+#include <DOM/DOMDocument.h>
 
 #include <memory>
 

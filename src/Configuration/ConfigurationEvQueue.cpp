@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ConfigurationEvQueue.h>
-#include <Exception.h>
-#include <QueryResponse.h>
-#include <DOMDocument.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
+#include <API/QueryResponse.h>
+#include <DOM/DOMDocument.h>
 
 #include <string.h>
 #include <stdlib.h>

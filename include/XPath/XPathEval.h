@@ -20,13 +20,13 @@
 #ifndef _XPATHEVAL_H_
 #define _XPATHEVAL_H_
 
-#include <DOMNode.h>
+#include <DOM/DOMNode.h>
 
 #include <string>
 #include <vector>
 #include <map>
 
-#include <XPathTokens.h>
+#include <XPath/XPathTokens.h>
 
 class TokenSeq;
 class TokenExpr;

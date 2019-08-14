@@ -25,10 +25,10 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <sys/select.h> 
-#include <DataSerializer.h>
-#include <Configuration.h>
-#include <Exception.h>
-#include <ProcessExec.h>
+#include <Process/DataSerializer.h>
+#include <Configuration/Configuration.h>
+#include <Exception/Exception.h>
+#include <Process/ProcessExec.h>
 
 #include <map>
 #include <string>

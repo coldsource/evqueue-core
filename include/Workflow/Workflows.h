@@ -20,7 +20,7 @@
 #ifndef _WORKFLOWS_H_
 #define _WORKFLOWS_H_
 
-#include <APIObjectList.h>
+#include <API/APIObjectList.h>
 
 #include <map>
 #include <string>

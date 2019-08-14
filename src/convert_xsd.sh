@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in `ls *.xsd`
+for i in `ls */*.xsd`
 do
 	CONST_NAME=${i//'.'/'_'};
 	cat license.header >$i.cpp

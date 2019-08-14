@@ -16,7 +16,7 @@
  * 
  * Author: Thibault Kummer <bob@coldsource.net>
  */
-#include <Sha1String.h>
+#include <Crypto/Sha1String.h>
 
 #include <iomanip>
 #include <sstream>

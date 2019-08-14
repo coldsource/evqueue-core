@@ -20,7 +20,7 @@
 #ifndef _XMLFORMATTER_H_
 #define _XMLFORMATTER_H_
 
-#include <DOMDocument.h>
+#include <DOM/DOMDocument.h>
 
 #include <string>
 

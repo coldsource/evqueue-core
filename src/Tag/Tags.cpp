@@ -17,15 +17,15 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Tags.h>
-#include <Tag.h>
-#include <User.h>
-#include <Exception.h>
-#include <DB.h>
-#include <Logger.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <Cluster.h>
+#include <Tag/Tags.h>
+#include <Tag/Tag.h>
+#include <User/User.h>
+#include <Exception/Exception.h>
+#include <DB/DB.h>
+#include <Logger/Logger.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Cluster/Cluster.h>
 
 Tags *Tags::instance = 0;
 

@@ -20,7 +20,7 @@
 #ifndef _DOMXPATHRESULT_H_
 #define _DOMXPATHRESULT_H_
 
-#include <DOMNode.h>
+#include <DOM/DOMNode.h>
 
 #include <string>
 

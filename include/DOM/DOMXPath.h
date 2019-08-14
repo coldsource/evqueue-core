@@ -20,8 +20,8 @@
 #ifndef _DOMXPATH_H_
 #define _DOMXPATH_H_
 
-#include <DOMXPathResult.h>
-#include <XPathEval.h>
+#include <DOM/DOMXPathResult.h>
+#include <XPath/XPathEval.h>
 
 #include <string>
 

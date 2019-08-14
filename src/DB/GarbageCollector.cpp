@@ -17,12 +17,12 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <GarbageCollector.h>
-#include <ConfigurationEvQueue.h>
-#include <DB.h>
-#include <Logger.h>
-#include <Exception.h>
-#include <UniqueAction.h>
+#include <DB/GarbageCollector.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <DB/DB.h>
+#include <Logger/Logger.h>
+#include <Exception/Exception.h>
+#include <Cluster/UniqueAction.h>
 
 #include <string.h>
 #include <unistd.h>

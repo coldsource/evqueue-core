@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <XMLUtils.h>
-#include <XMLString.h>
-#include <Exception.h>
+#include <XML/XMLUtils.h>
+#include <XML/XMLString.h>
+#include <Exception/Exception.h>
 
 #include <xercesc/dom/DOM.hpp>
 

@@ -17,14 +17,14 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <User.h>
-#include <Users.h>
-#include <Workflows.h>
-#include <Exception.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <DB.h>
-#include <Sha1String.h>
+#include <User/User.h>
+#include <User/Users.h>
+#include <Workflow/Workflows.h>
+#include <Exception/Exception.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <DB/DB.h>
+#include <Crypto/Sha1String.h>
 #include <global.h>
 
 using namespace std;

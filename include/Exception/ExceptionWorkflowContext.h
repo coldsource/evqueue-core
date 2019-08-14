@@ -20,7 +20,7 @@
 #ifndef _EXCEPTIONWORKFLOWCONTEXT_H_
 #define _EXCEPTIONWORKFLOWCONTEXT_H_
 
-#include <DOMElement.h>
+#include <DOM/DOMElement.h>
 
 #include <string>
 

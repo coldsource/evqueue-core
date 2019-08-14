@@ -18,8 +18,8 @@
  */
 
 #include <global.h>
-#include <WorkflowParameters.h>
-#include <SocketSAX2Handler.h>
+#include <Workflow/WorkflowParameters.h>
+#include <API/SocketSAX2Handler.h>
 
 #include <string>
 #include <map>
@@ -28,7 +28,7 @@
 #include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/dom/DOMElement.hpp>
 #include <xercesc/dom/DOMText.hpp>
-#include <DOMDocument.h>
+#include <DOM/DOMDocument.h>
 
 class SocketResponseSAX2Handler : public SocketSAX2HandlerInterface {
 	

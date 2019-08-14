@@ -17,15 +17,15 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Cluster.h>
-#include <ConfigurationEvQueue.h>
-#include <Exception.h>
-#include <SocketResponseSAX2Handler.h>
-#include <SocketSAX2Handler.h>
-#include <Sockets.h>
-#include <Logger.h>
-#include <Client.h>
-#include <sha1.h>
+#include <Cluster/Cluster.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
+#include <API/SocketResponseSAX2Handler.h>
+#include <API/SocketSAX2Handler.h>
+#include <IO/Sockets.h>
+#include <Logger/Logger.h>
+#include <API/Client.h>
+#include <Crypto/sha1.h>
 
 #include <sstream>
 #include <iomanip>

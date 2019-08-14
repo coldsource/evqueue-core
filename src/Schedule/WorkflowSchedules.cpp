@@ -17,15 +17,15 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <WorkflowSchedules.h>
-#include <WorkflowSchedule.h>
-#include <DB.h>
-#include <Logger.h>
-#include <ConfigurationEvQueue.h>
-#include <Exception.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <User.h>
+#include <Schedule/WorkflowSchedules.h>
+#include <Schedule/WorkflowSchedule.h>
+#include <DB/DB.h>
+#include <Logger/Logger.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <User/User.h>
 
 using namespace std;
 

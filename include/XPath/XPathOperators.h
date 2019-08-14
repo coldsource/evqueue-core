@@ -20,7 +20,7 @@
 #ifndef _XPATHOPERATORS_H_
 #define _XPATHOPERATORS_H_
 
-#include <XPathTokens.h>
+#include <XPath/XPathTokens.h>
 
 #include  <string>
 

@@ -17,19 +17,19 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <WorkflowSchedule.h>
-#include <WorkflowSchedules.h>
-#include <WorkflowScheduler.h>
-#include <Workflow.h>
-#include <Workflows.h>
-#include <Exception.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <ConfigurationEvQueue.h>
-#include <DB.h>
-#include <Logger.h>
-#include <LoggerAPI.h>
-#include <User.h>
+#include <Schedule/WorkflowSchedule.h>
+#include <Schedule/WorkflowSchedules.h>
+#include <Schedule/WorkflowScheduler.h>
+#include <Workflow/Workflow.h>
+#include <Workflow/Workflows.h>
+#include <Exception/Exception.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <DB/DB.h>
+#include <Logger/Logger.h>
+#include <Logger/LoggerAPI.h>
+#include <User/User.h>
 
 #include <string.h>
 

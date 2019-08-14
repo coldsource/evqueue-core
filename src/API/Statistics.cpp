@@ -17,14 +17,14 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Statistics.h>
-#include <ActiveConnections.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <Exception.h>
-#include <QueuePool.h>
-#include <User.h>
-#include <DOMDocument.h>
+#include <API/Statistics.h>
+#include <API/ActiveConnections.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Exception/Exception.h>
+#include <Queue/QueuePool.h>
+#include <User/User.h>
+#include <WorkflowInstance/Task.h>
 
 #include <stdio.h>
 

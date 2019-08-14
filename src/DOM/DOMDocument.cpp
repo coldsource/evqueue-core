@@ -17,13 +17,13 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMDocument.h>
-#include <DOMXPath.h>
-#include <DOMXPathResult.h>
-#include <DOMElement.h>
-#include <DOMText.h>
-#include <Exception.h>
-#include <XMLString.h>
+#include <DOM/DOMDocument.h>
+#include <DOM/DOMXPath.h>
+#include <DOM/DOMXPathResult.h>
+#include <DOM/DOMElement.h>
+#include <DOM/DOMText.h>
+#include <Exception/Exception.h>
+#include <XML/XMLString.h>
 
 #include <pcrecpp.h>
 

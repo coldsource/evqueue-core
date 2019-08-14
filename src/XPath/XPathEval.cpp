@@ -17,15 +17,15 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <XPathEval.h>
-#include <XPathTokens.h>
-#include <XPathParser.h>
-#include <XPathOperators.h>
-#include <XPathFunctions.h>
-#include <DOMDocument.h>
-#include <DOMNamedNodeMap.h>
-#include <DOMNode.h>
-#include <Exception.h>
+#include <XPath/XPathEval.h>
+#include <XPath/XPathTokens.h>
+#include <XPath/XPathParser.h>
+#include <XPath/XPathOperators.h>
+#include <XPath/XPathFunctions.h>
+#include <DOM/DOMDocument.h>
+#include <DOM/DOMNamedNodeMap.h>
+#include <DOM/DOMNode.h>
+#include <Exception/Exception.h>
 
 #include <memory>
 

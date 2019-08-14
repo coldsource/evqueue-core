@@ -20,7 +20,7 @@
 #ifndef _XPATHTOKENS_H_
 #define _XPATHTOKENS_H_
 
-#include <DOMNode.h>
+#include <DOM/DOMNode.h>
 
 #include <string>
 #include <vector>

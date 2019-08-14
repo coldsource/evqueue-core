@@ -20,8 +20,8 @@
 #ifndef _QUERYRESPONSE_H_
 #define _QUERYRESPONSE_H_
 
-#include <DOMElement.h>
-#include <DOMDocument.h>
+#include <DOM/DOMElement.h>
+#include <DOM/DOMDocument.h>
 
 #include <string>
 

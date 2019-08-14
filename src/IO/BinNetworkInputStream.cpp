@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <BinNetworkInputStream.h>
-#include <Exception.h>
+#include <IO/BinNetworkInputStream.h>
+#include <Exception/Exception.h>
 
 #include <sys/socket.h>
 #include <string.h>

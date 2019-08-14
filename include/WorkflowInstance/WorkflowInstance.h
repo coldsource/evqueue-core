@@ -20,7 +20,7 @@
 #ifndef _WORKFLOWINSTANCE_H_
 #define _WORKFLOWINSTANCE_H_
 
-#include <DOMDocument.h>
+#include <DOM/DOMDocument.h>
 
 #include <string>
 #include <vector>

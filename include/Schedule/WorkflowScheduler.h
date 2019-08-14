@@ -20,7 +20,7 @@
 #ifndef _WORKFLOWSCHEDULER_H_
 #define _WORKFLOWSCHEDULER_H_
 
-#include <Scheduler.h>
+#include <Schedule/Scheduler.h>
 
 #include <string>
 #include <mutex>

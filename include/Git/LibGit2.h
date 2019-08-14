@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include <Exception.h>
+#include <Exception/Exception.h>
 class LigGit2Exception:public Exception
 {
 	public:

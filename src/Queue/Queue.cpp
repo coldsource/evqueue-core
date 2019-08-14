@@ -17,17 +17,17 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Queue.h>
-#include <QueuePool.h>
-#include <Logger.h>
-#include <WorkflowInstance.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <LoggerAPI.h>
-#include <Exception.h>
-#include <User.h>
-#include <DB.h>
-#include <DOMDocument.h>
+#include <Queue/Queue.h>
+#include <Queue/QueuePool.h>
+#include <Logger/Logger.h>
+#include <WorkflowInstance/WorkflowInstance.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Logger/LoggerAPI.h>
+#include <Exception/Exception.h>
+#include <User/User.h>
+#include <DB/DB.h>
+#include <DOM/DOMDocument.h>
 
 #include <string.h>
 #include <stdio.h>

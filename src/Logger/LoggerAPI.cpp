@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <LoggerAPI.h>
-#include <DB.h>
-#include <User.h>
-#include <ConfigurationEvQueue.h>
+#include <Logger/LoggerAPI.h>
+#include <DB/DB.h>
+#include <User/User.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 using namespace std;
 

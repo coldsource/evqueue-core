@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMElement.h>
-#include <XMLString.h>
+#include <DOM/DOMElement.h>
+#include <XML/XMLString.h>
 
 using namespace std;
 

@@ -18,8 +18,8 @@
  */
 
 #include <global.h>
-#include <WorkflowParameters.h>
-#include <SocketSAX2Handler.h>
+#include <Workflow/WorkflowParameters.h>
+#include <API/SocketSAX2Handler.h>
 
 #include <string>
 #include <map>

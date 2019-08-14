@@ -24,7 +24,7 @@
       Robert Klep <robert@ilse.nl>  -- Expansion function fix
 */
 
-#include "sha1.h"
+#include <Crypto/sha1.h>
 
 #include <stddef.h>
 #include <stdlib.h>

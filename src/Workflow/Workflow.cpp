@@ -17,26 +17,26 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Workflow.h>
-#include <Workflows.h>
-#include <WorkflowParameters.h>
-#include <Notifications.h>
-#include <DB.h>
-#include <Exception.h>
-#include <XMLUtils.h>
-#include <Logger.h>
-#include <LoggerAPI.h>
-#include <Sha1String.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <WorkflowScheduler.h>
-#include <Users.h>
-#include <Git.h>
-#include <User.h>
-#include <XMLFormatter.h>
+#include <Workflow/Workflow.h>
+#include <Workflow/Workflows.h>
+#include <Workflow/WorkflowParameters.h>
+#include <Notification/Notifications.h>
+#include <DB/DB.h>
+#include <Exception/Exception.h>
+#include <XML/XMLUtils.h>
+#include <Logger/Logger.h>
+#include <Logger/LoggerAPI.h>
+#include <Crypto/Sha1String.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Schedule/WorkflowScheduler.h>
+#include <User/Users.h>
+#include <Git/Git.h>
+#include <User/User.h>
+#include <XML/XMLFormatter.h>
 #include <global.h>
-#include <base64.h>
-#include <DOMDocument.h>
+#include <Crypto/base64.h>
+#include <DOM/DOMDocument.h>
 
 #include <string.h>
 

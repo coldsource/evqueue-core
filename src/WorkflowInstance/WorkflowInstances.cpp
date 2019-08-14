@@ -17,17 +17,17 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <WorkflowInstances.h>
-#include <WorkflowInstance.h>
-#include <WorkflowParameters.h>
-#include <Statistics.h>
-#include <Logger.h>
-#include <ConfigurationEvQueue.h>
-#include <QueryResponse.h>
-#include <SocketQuerySAX2Handler.h>
-#include <Exception.h>
-#include <DB.h>
-#include <User.h>
+#include <WorkflowInstance/WorkflowInstances.h>
+#include <WorkflowInstance/WorkflowInstance.h>
+#include <Workflow/WorkflowParameters.h>
+#include <API/Statistics.h>
+#include <Logger/Logger.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <API/QueryResponse.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <Exception/Exception.h>
+#include <DB/DB.h>
+#include <User/User.h>
 
 #include <pthread.h>
 #include <sys/socket.h>

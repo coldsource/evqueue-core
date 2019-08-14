@@ -17,10 +17,10 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMXPath.h>
-#include <DOMXPathResult.h>
-#include <XPathEval.h>
-#include <Exception.h>
+#include <DOM/DOMXPath.h>
+#include <DOM/DOMXPathResult.h>
+#include <XPath/XPathEval.h>
+#include <Exception/Exception.h>
 
 DOMXPath::DOMXPath(DOMDocument *xmldoc):eval(xmldoc)
 {

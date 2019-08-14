@@ -20,9 +20,9 @@
 #ifndef _RETRIER_H_
 #define _RETRIER_H_
 
-#include <Scheduler.h>
+#include <Schedule/Scheduler.h>
 
-#include <DOMElement.h>
+#include <DOM/DOMElement.h>
 
 #include <mutex>
 

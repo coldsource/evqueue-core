@@ -17,12 +17,12 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Client.h>
-#include <Exception.h>
-#include <Sockets.h>
-#include <Logger.h>
-#include <SocketResponseSAX2Handler.h>
-#include <hmac.h>
+#include <API/Client.h>
+#include <Exception/Exception.h>
+#include <IO/Sockets.h>
+#include <Logger/Logger.h>
+#include <API/SocketResponseSAX2Handler.h>
+#include <Crypto/hmac.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>

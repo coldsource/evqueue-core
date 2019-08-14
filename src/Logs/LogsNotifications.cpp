@@ -17,20 +17,20 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <LogsNotifications.h>
-#include <Exception.h>
-#include <DB.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <Workflows.h>
-#include <Workflow.h>
-#include <WorkflowSchedules.h>
-#include <WorkflowSchedule.h>
-#include <RetrySchedules.h>
-#include <RetrySchedule.h>
-#include <Tags.h>
-#include <Tag.h>
-#include <QueuePool.h>
+#include <Logs/LogsNotifications.h>
+#include <Exception/Exception.h>
+#include <DB/DB.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Workflow/Workflows.h>
+#include <Workflow/Workflow.h>
+#include <Schedule/WorkflowSchedules.h>
+#include <Schedule/WorkflowSchedule.h>
+#include <Schedule/RetrySchedules.h>
+#include <Schedule/RetrySchedule.h>
+#include <Tag/Tags.h>
+#include <Tag/Tag.h>
+#include <Queue/QueuePool.h>
 
 using namespace std;
 

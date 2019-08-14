@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DOMNamedNodeMap.h>
-#include <DOMNode.h>
+#include <DOM/DOMNamedNodeMap.h>
+#include <DOM/DOMNode.h>
 
 DOMNamedNodeMap::DOMNamedNodeMap(xercesc::DOMNamedNodeMap *map)
 {

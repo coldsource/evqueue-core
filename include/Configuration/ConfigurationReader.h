@@ -22,7 +22,7 @@
 
 #define CONFIGURATION_LINE_MAXLEN           4096
 
-#include <Configuration.h>
+#include <Configuration/Configuration.h>
 
 class ConfigurationReader
 {

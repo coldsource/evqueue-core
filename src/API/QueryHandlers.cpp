@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <QueryHandlers.h>
-#include <Logger.h>
+#include <API/QueryHandlers.h>
+#include <Logger/Logger.h>
 
 QueryHandlers *QueryHandlers::instance=0;
 

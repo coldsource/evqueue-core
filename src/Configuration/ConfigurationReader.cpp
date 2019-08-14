@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ConfigurationReader.h>
-#include <Exception.h>
+#include <Configuration/ConfigurationReader.h>
+#include <Exception/Exception.h>
 
 #include <stdio.h>
 #include <ctype.h>

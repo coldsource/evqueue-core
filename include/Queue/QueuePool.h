@@ -20,7 +20,7 @@
 #ifndef _QUEUEPOOL_H_
 #define _QUEUEPOOL_H_
 
-#include <DOMElement.h>
+#include <DOM/DOMElement.h>
 
 #include <sys/types.h>
 

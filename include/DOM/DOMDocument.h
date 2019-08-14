@@ -22,10 +22,10 @@
 
 #include <xercesc/dom/DOM.hpp>
 
-#include <DOMXPathResult.h>
-#include <DOMElement.h>
-#include <DOMXPath.h>
-#include <DOMText.h>
+#include <DOM/DOMXPathResult.h>
+#include <DOM/DOMElement.h>
+#include <DOM/DOMXPath.h>
+#include <DOM/DOMText.h>
 
 #include <string>
 #include <map>

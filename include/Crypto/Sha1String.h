@@ -20,7 +20,7 @@
 #ifndef _SHA1STRING_H_
 #define _SHA1STRING_H_
 
-#include <sha1.h>
+#include <Crypto/sha1.h>
 
 #include <string>
 

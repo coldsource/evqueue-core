@@ -16,7 +16,7 @@
  * 
  * Author: Thibault Kummer <bob@coldsource.net>
  */
-#include <DOMDocument.h>
+#include <DOM/DOMDocument.h>
 
 #include <string>
 

@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <DataPiper.h>
-#include <Logger.h>
+#include <Process/DataPiper.h>
+#include <Logger/Logger.h>
 
 #include <signal.h>
 #include <poll.h>

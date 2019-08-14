@@ -18,11 +18,11 @@
  */
 
 #include <global.h>
-#include <tools_ipc.h>
-#include <DataSerializer.h>
-#include <Configuration.h>
-#include <Exception.h>
-#include <ProcessExec.h>
+#include <Process/tools_ipc.h>
+#include <Process/DataSerializer.h>
+#include <Configuration/Configuration.h>
+#include <Exception/Exception.h>
+#include <Process/ProcessExec.h>
 
 #include <stdio.h>
 #include <stdlib.h>

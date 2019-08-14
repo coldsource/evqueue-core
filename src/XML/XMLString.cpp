@@ -17,7 +17,7 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <XMLString.h>
+#include <XML/XMLString.h>
 
 using namespace std;
 

@@ -17,7 +17,7 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <base64.h>
+#include <Crypto/base64.h>
 
 #include <string.h>
 

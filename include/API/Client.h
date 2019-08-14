@@ -20,7 +20,7 @@
 #ifndef _CLIENT_H_
 #define _CLIENT_H_
 
-#include <ClientBase.h>
+#include <API/ClientBase.h>
 
 #include <string>
 

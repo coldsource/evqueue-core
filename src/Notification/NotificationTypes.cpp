@@ -17,16 +17,16 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <NotificationTypes.h>
-#include <NotificationType.h>
-#include <DB.h>
-#include <Exception.h>
-#include <Logger.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <Cluster.h>
-#include <User.h>
-#include <sha1.h>
+#include <Notification/NotificationTypes.h>
+#include <Notification/NotificationType.h>
+#include <DB/DB.h>
+#include <Exception/Exception.h>
+#include <Logger/Logger.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Cluster/Cluster.h>
+#include <User/User.h>
+#include <Crypto/sha1.h>
 
 #include <string.h>
 

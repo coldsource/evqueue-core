@@ -17,16 +17,16 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <RetrySchedule.h>
-#include <RetrySchedules.h>
-#include <Exception.h>
-#include <LoggerAPI.h>
-#include <DB.h>
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <XMLUtils.h>
-#include <User.h>
-#include <base64.h>
+#include <Schedule/RetrySchedule.h>
+#include <Schedule/RetrySchedules.h>
+#include <Exception/Exception.h>
+#include <Logger/LoggerAPI.h>
+#include <DB/DB.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <XML/XMLUtils.h>
+#include <User/User.h>
+#include <Crypto/base64.h>
 #include <global.h>
 
 #include <string.h>

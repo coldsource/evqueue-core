@@ -17,11 +17,11 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ping.h>
+#include <API/ping.h>
 
-#include <SocketQuerySAX2Handler.h>
-#include <QueryResponse.h>
-#include <ConfigurationEvQueue.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <API/QueryResponse.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <time.h>
 

@@ -17,12 +17,12 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Filesystem.h>
-#include <Exception.h>
-#include <QueryResponse.h>
-#include <SocketQuerySAX2Handler.h>
-#include <User.h>
-#include <ConfigurationEvQueue.h>
+#include <IO/Filesystem.h>
+#include <Exception/Exception.h>
+#include <API/QueryResponse.h>
+#include <API/SocketQuerySAX2Handler.h>
+#include <User/User.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <sys/types.h>
 #include <dirent.h>

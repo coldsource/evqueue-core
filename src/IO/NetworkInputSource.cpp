@@ -17,7 +17,7 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <NetworkInputSource.h>
+#include <IO/NetworkInputSource.h>
 
 using namespace xercesc;
 

@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Exception.h>
-#include <ExceptionManager.h>
+#include <Exception/Exception.h>
+#include <Exception/ExceptionManager.h>
 
 using namespace std;
 
