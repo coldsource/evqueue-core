@@ -17,7 +17,7 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Exception/ExceptionWorkflowContext.h>
+#include <WorkflowInstance/ExceptionWorkflowContext.h>
 #include <Exception/ExceptionManager.h>
 #include <Exception/Exception.h>
 #include <DOM/DOMElement.h>

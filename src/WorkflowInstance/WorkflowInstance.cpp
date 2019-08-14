@@ -27,7 +27,7 @@
 #include <Queue/QueuePool.h>
 #include <DB/DB.h>
 #include <Exception/Exception.h>
-#include <Exception/ExceptionWorkflowContext.h>
+#include <WorkflowInstance/ExceptionWorkflowContext.h>
 #include <Schedule/Retrier.h>
 #include <API/Statistics.h>
 #include <Configuration/ConfigurationEvQueue.h>

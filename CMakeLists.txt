@@ -26,28 +26,50 @@ endif(HAS_LIBGIT2)
 
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
+aux_source_directory(src/WorkflowInstance srcWorkflowInstance)
+aux_source_directory(src/DOM srcDOM)
+aux_source_directory(src/XPath srcXPath)
+aux_source_directory(src/Configuration srcConfiguration)
+aux_source_directory(src/Notification srcNotification)
+aux_source_directory(src/Tag srcTag)
+aux_source_directory(src/User srcUser)
+aux_source_directory(src/Schedule srcSchedule)
+aux_source_directory(src/Exception srcException)
+aux_source_directory(src/Workflow srcWorkflow)
+aux_source_directory(src/XML srcXML)
+aux_source_directory(src/Logs srcLogs)
+aux_source_directory(src/API srcAPI)
+aux_source_directory(src/Logger srcLogger)
+aux_source_directory(src/Cluster srcCluster)
+aux_source_directory(src/Crypto srcCrypto)
+aux_source_directory(src/DB srcDB)
+aux_source_directory(src/Process srcProcess)
+aux_source_directory(src/IO srcIO)
+aux_source_directory(src/Queue srcQueue)
+aux_source_directory(src/Git srcGit)
+
 add_executable(evqueue
-	src/WorkflowInstance/WorkflowInstance.cpp src/WorkflowInstance/Task.cpp src/WorkflowInstance/WorkflowInstanceAPI.cpp src/WorkflowInstance/WorkflowInstances.cpp src/WorkflowInstance/Datastore.cpp
-	src/DOM/DOMDocument.cpp src/DOM/DOMNode.cpp src/DOM/DOMElement.cpp src/DOM/DOMText.cpp src/DOM/DOMNamedNodeMap.cpp src/DOM/DOMXPath.cpp src/DOM/DOMXPathResult.cpp
-	src/XPath/XPathTokens.cpp src/XPath/XPathParser.cpp src/XPath/XPathEval.cpp src/XPath/XPathOperators.cpp src/XPath/XPathFunctions.cpp src/XPath/WorkflowXPathFunctions.cpp
-	src/Configuration/ConfigurationEvQueue.cpp src/Configuration/ConfigurationReader.cpp src/Configuration/Configuration.cpp
-	src/Notification/Notification.cpp src/Notification/Notifications.cpp src/Notification/NotificationType.cpp src/Notification/NotificationTypes.cpp
-	src/Tag/Tag.cpp src/Tag/Tags.cpp
-	src/User/User.cpp src/User/Users.cpp
-	src/Schedule/Scheduler.cpp src/Schedule/RetrySchedule.cpp src/Schedule/RetrySchedules.cpp src/Schedule/Schedule.cpp src/Schedule/WorkflowSchedules.cpp src/Schedule/WorkflowSchedule.cpp src/Schedule/WorkflowScheduler.cpp src/Schedule/retry_schedule.xsd.cpp src/Schedule/Retrier.cpp
-	src/Exception/Exception.cpp src/Exception/ExceptionManager.cpp src/Exception/ExceptionWorkflowContext.cpp
-	src/Workflow/Workflow.cpp src/Workflow/Workflows.cpp src/Workflow/workflow.xsd.cpp src/Workflow/WorkflowParameters.cpp
-	src/XML/XMLString.cpp src/XML/XMLUtils.cpp src/XML/XMLFormatter.cpp
-	src/Logs/Logs.cpp src/Logs/LogsAPI.cpp src/Logs/LogsNotifications.cpp
-	src/API/ClientBase.cpp src/API/Client.cpp src/API/SocketQuerySAX2Handler.cpp src/API/SocketResponseSAX2Handler.cpp src/API/SocketSAX2Handler.cpp src/API/handle_connection.cpp src/API/QueryHandlers.cpp src/API/QueryResponse.cpp src/API/AuthHandler.cpp src/API/ping.cpp src/API/ActiveConnections.cpp src/API/Statistics.cpp src/API/tools.cpp
-	src/Logger/Logger.cpp src/Logger/LoggerAPI.cpp src/Logger/LoggerNotifications.cpp
-	src/Cluster/Cluster.cpp src/Cluster/UniqueAction.cpp
-	src/Crypto/base64.cpp src/Crypto/sha1.c src/Crypto/hmac.cpp src/Crypto/Sha1String.cpp src/Crypto/pbkdf2.cpp src/Crypto/Random.cpp
-	src/DB/DB.cpp src/DB/SequenceGenerator.cpp src/DB/tables.cpp src/DB/tools_db.cpp src/DB/GarbageCollector.cpp
-	src/Process/ProcessManager.cpp src/Process/ProcessExec.cpp src/Process/DataSerializer.cpp src/Process/DataPiper.cpp src/Process/tools_ipc.cpp
-	src/IO/NetworkInputSource.cpp src/IO/BinNetworkInputStream.cpp src/IO/Sockets.cpp src/IO/FileManager.cpp src/IO/Filesystem.cpp
-	src/Queue/Queue.cpp src/Queue/QueuePool.cpp
-	src/Git/LibGit2.cpp src/Git/Git.cpp
+	${srcWorkflowInstance}
+	${srcDOM}
+	${srcXPath}
+	${srcConfiguration}
+	${srcNotification}
+	${srcTag}
+	${srcUser}
+	${srcSchedule}
+	${srcException}
+	${srcWorkflow}
+	${srcXML}
+	${srcLogs}
+	${srcAPI}
+	${srcLogger}
+	${srcCluster}
+	${srcCrypto}
+	${srcDB}
+	${srcProcess}
+	${srcIO}
+	${srcQueue}
+	${srcGit}
 	
 	src/evqueue.cpp
 	)
@@ -119,8 +141,8 @@ target_link_libraries(evqueue pcrecpp)
 project(evqueue_monitor)
 
 add_executable(evqueue_monitor
+	${srcException}
 	src/Configuration/Configuration.cpp
-	src/Exception/Exception.cpp src/Exception/ExceptionManager.cpp
 	src/Process/ProcessExec.cpp src/Process/tools_ipc.cpp src/Process/DataSerializer.cpp
 	
 	src/evqueue_monitor.cpp
@@ -141,13 +163,12 @@ include_directories(src/include /usr/include)
 project(evqueue_wfmanager)
 
 add_executable(evqueue_wfmanager
-	src/DOM/DOMDocument.cpp src/DOM/DOMNode.cpp src/DOM/DOMElement.cpp src/DOM/DOMText.cpp src/DOM/DOMNamedNodeMap.cpp src/DOM/DOMXPath.cpp src/DOM/DOMXPathResult.cpp
-	src/XPath/XPathTokens.cpp src/XPath/XPathParser.cpp src/XPath/XPathEval.cpp src/XPath/XPathOperators.cpp src/XPath/XPathFunctions.cpp
-	src/Exception/Exception.cpp src/Exception/ExceptionManager.cpp
-	src/XML/XMLString.cpp
-	src/API/ClientBase.cpp
-	src/API/SocketResponseSAX2Handler.cpp src/API/SocketSAX2Handler.cpp
-	src/Crypto/hmac.cpp src/Crypto/sha1.c src/Crypto/Sha1String.cpp
+	${srcDOM}
+	${srcXPath}
+	${srcXML}
+	${srcCrypto}
+	${srcException}
+	src/API/ClientBase.cpp src/API/SocketResponseSAX2Handler.cpp src/API/SocketSAX2Handler.cpp
 	src/IO/NetworkInputSource.cpp src/IO/BinNetworkInputStream.cpp
 	
 	src/evqueue_wfmanager.cpp
@@ -163,13 +184,12 @@ target_link_libraries(evqueue_wfmanager pcrecpp)
 project(evqueue_api)
 
 add_executable(evqueue_api
-	src/DOM/DOMDocument.cpp src/DOM/DOMNode.cpp src/DOM/DOMElement.cpp src/DOM/DOMText.cpp src/DOM/DOMNamedNodeMap.cpp src/DOM/DOMXPath.cpp src/DOM/DOMXPathResult.cpp
-	src/XPath/XPathTokens.cpp src/XPath/XPathParser.cpp src/XPath/XPathEval.cpp src/XPath/XPathOperators.cpp src/XPath/XPathFunctions.cpp
-	src/Exception/Exception.cpp src/Exception/ExceptionManager.cpp
-	src/XML/XMLFormatter.cpp src/XML/XMLString.cpp
-	src/API/ClientBase.cpp
-	src/API/SocketResponseSAX2Handler.cpp src/API/SocketSAX2Handler.cpp
-	src/Crypto/hmac.cpp src/Crypto/sha1.c src/Crypto/Sha1String.cpp
+	${srcDOM}
+	${srcXPath}
+	${srcXML}
+	${srcCrypto}
+	${srcException}
+	src/API/ClientBase.cpp src/API/SocketResponseSAX2Handler.cpp src/API/SocketSAX2Handler.cpp
 	src/IO/NetworkInputSource.cpp src/IO/BinNetworkInputStream.cpp
 	
 	src/evqueue_api.cpp
@@ -185,8 +205,8 @@ target_link_libraries(evqueue_api pcrecpp)
 project(evqueue_agent)
 
 add_executable(evqueue_agent
+	${srcException}
 	src/Configuration/Configuration.cpp
-	src/Exception/Exception.cpp src/Exception/ExceptionManager.cpp
 	src/Process/DataSerializer.cpp src/Process/ProcessExec.cpp
 
 	src/evqueue_agent.cpp

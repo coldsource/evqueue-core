@@ -19,7 +19,6 @@
 
 #include <Crypto/Random.h>
 #include <Exception/Exception.h>
-#include <Logger/Logger.h>
 
 #include <stdio.h>
 
@@ -44,10 +43,7 @@ string Random::GetKernelRandomBinary(int length)
 	char random_buf[1024];
 	FILE *f = fopen("/dev/urandom","r");
 	if(!f || fread(random_buf,1,length,f)!=length)
-	{
-		Logger::Log(LOG_ERR,"Unable to read /dev/urandom");
 		throw Exception("Random","Unable to read /dev/urandom");
-	}
 	
 	fclose(f);
 	
