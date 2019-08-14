@@ -73,6 +73,7 @@ class WorkflowInstance
 		unsigned int GetErrors() { return error_tasks; }
 		const DOMDocument *GetDOM() { return xmldoc; }
 		
+		// start_stop.cpp
 		void Start(bool *workflow_terminated);
 		void Resume(bool *workflow_terminated);
 		void DebugResume(bool *workflow_terminated);
@@ -80,38 +81,53 @@ class WorkflowInstance
 		void Cancel();
 		void Shutdown();
 		
+		// task_job.cpp
 		void TaskRestart(DOMElement task, bool *workflow_terminated);
 		bool TaskStop(DOMElement task,int retval,const char *stdout_output,const char * stderr_output,const char *log_output,bool *workflow_terminated);
 		pid_t TaskExecute(DOMElement task,pid_t tid,bool *workflow_terminated);
 		void TaskUpdateProgression(DOMElement task, int prct);
-		
-		void SendStatus(QueryResponse *response, bool full_status);
-		void RecordSavepoint();
-		
 		bool KillTask(pid_t pid);
 		
+		
+		// savepoint.cpp
+		void RecordSavepoint();
+		
+		// WorkflowInstance.cpp
+		void SendStatus(QueryResponse *response, bool full_status);
+		
 	private:
+		// WorkflowInstance.cpp
 		WorkflowInstance();
 		
+		// condition_loop
 		bool handle_condition(DOMElement node,DOMElement context_node,bool can_wait=true);
 		bool handle_loop(DOMElement node,DOMElement context_node,std::vector<DOMElement> &nodes, std::vector<DOMElement> &contexts);
+		
+		// job_tasks
 		void run_tasks(DOMElement job,DOMElement context_node);
 		bool run_task(DOMElement task,DOMElement context_node);
 		void register_job_functions(DOMElement node);
 		void run_subjobs(DOMElement job);
 		bool run_subjob(DOMElement subjob,DOMElement context_node);
 		void enqueue_task(DOMElement task);
+		
+		// retry
 		void retry_task(DOMElement task);
 		void schedule_update(DOMElement task,const std::string &schedule_name,int *retry_delay,int *retry_times);
-		bool workflow_ended(void);
 		
+		// savepoint
 		void record_savepoint(bool force=false);
-		void record_log(DOMElement node, const char *log);
+		
+		// value
 		void replace_values(DOMElement task,DOMElement context_node);
 		void replace_value(DOMElement input,DOMElement context_node);
+		
+		// WorkflowInstance.cpp
+		void record_log(DOMElement node, const char *log);
 		std::string format_datetime();
 		void update_job_statistics(const std::string &name,int delta,DOMElement node);
 		void clear_statistics();
+		bool workflow_ended(void);
 };
 
 #endif
