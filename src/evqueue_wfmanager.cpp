@@ -17,11 +17,11 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ClientBase.h>
-#include <SocketResponseSAX2Handler.h>
-#include <Exception.h>
-#include <XMLString.h>
-#include <sha1.h>
+#include <API/ClientBase.h>
+#include <API/SocketResponseSAX2Handler.h>
+#include <Exception/Exception.h>
+#include <XML/XMLString.h>
+#include <Crypto/sha1.h>
 
 #include <stdio.h>
 #include <string.h>

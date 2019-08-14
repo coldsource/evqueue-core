@@ -18,11 +18,11 @@
  */
 
 #include <global.h>
-#include <tools_ipc.h>
-#include <DataSerializer.h>
-#include <Configuration.h>
-#include <Exception.h>
-#include <ProcessExec.h>
+#include <Process/tools_ipc.h>
+#include <Process/DataSerializer.h>
+#include <Configuration/Configuration.h>
+#include <Exception/Exception.h>
+#include <Process/ProcessExec.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,6 +105,14 @@ int main(int argc,char ** argv)
 				throw Exception("evqueue_monitor","Could not read script");
 		}
 		
+		// Task might read stdin slowly (which is blocking), so read the full data here to release the core engine
+		// The stream the data from here to the child process
+		string stdin_data;
+		char stdin_buf[4096];
+		int read_bytes;
+		while((read_bytes = read(STDIN_FILENO,stdin_buf,4096)) > 0)
+			stdin_data.append(stdin_buf,read_bytes);
+		
 		// Prepare to execute task
 		ProcessExec proc;
 		
@@ -112,13 +120,6 @@ int main(int argc,char ** argv)
 		bool use_ssh = config->Get("monitor.ssh.host")!="";
 		if(use_ssh)
 		{
-			// Read piped STDIN as we will have to resend it to SSH
-			string stdin_data;
-			char stdin_buf[4096];
-			int read_bytes;
-			while((read_bytes = read(STDIN_FILENO,stdin_buf,4096)) > 0)
-				stdin_data.append(stdin_buf,read_bytes);
-			
 			proc.SetPath(config->Get("processmanager.monitor.ssh_path"));
 			
 			// SSH key
@@ -168,6 +169,7 @@ int main(int argc,char ** argv)
 			}
 			
 			log_fd = proc.ParentRedirect(LOG_FILENO);
+			proc.Pipe(stdin_data);
 		}
 		
 		// Task arguments

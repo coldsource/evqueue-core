@@ -47,56 +47,57 @@
 #include <git2.h>
 #endif
 
-#include <Logger.h>
-#include <LoggerAPI.h>
-#include <LoggerNotifications.h>
-#include <Logs.h>
-#include <LogsAPI.h>
-#include <LogsNotifications.h>
-#include <Queue.h>
-#include <QueuePool.h>
-#include <Workflow.h>
-#include <Workflows.h>
-#include <WorkflowInstance.h>
-#include <WorkflowInstances.h>
-#include <WorkflowInstanceAPI.h>
-#include <ConfigurationReader.h>
-#include <ConfigurationEvQueue.h>
-#include <Exception.h>
-#include <Retrier.h>
-#include <WorkflowScheduler.h>
-#include <WorkflowSchedule.h>
-#include <WorkflowSchedules.h>
+#include <Logger/Logger.h>
+#include <Logger/LoggerAPI.h>
+#include <Logger/LoggerNotifications.h>
+#include <Logs/Logs.h>
+#include <Logs/LogsAPI.h>
+#include <Logs/LogsNotifications.h>
+#include <Queue/Queue.h>
+#include <Queue/QueuePool.h>
+#include <Workflow/Workflow.h>
+#include <Workflow/Workflows.h>
+#include <WorkflowInstance/WorkflowInstance.h>
+#include <WorkflowInstance/WorkflowInstances.h>
+#include <WorkflowInstance/WorkflowInstanceAPI.h>
+#include <Configuration/ConfigurationReader.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
+#include <Schedule/Retrier.h>
+#include <Schedule/WorkflowScheduler.h>
+#include <Schedule/WorkflowSchedule.h>
+#include <Schedule/WorkflowSchedules.h>
 #include <global.h>
-#include <ProcessManager.h>
-#include <DB.h>
-#include <Statistics.h>
-#include <RetrySchedule.h>
-#include <RetrySchedules.h>
-#include <GarbageCollector.h>
-#include <SequenceGenerator.h>
-#include <NotificationType.h>
-#include <NotificationTypes.h>
-#include <Notification.h>
-#include <Notifications.h>
-#include <User.h>
-#include <Users.h>
-#include <Tag.h>
-#include <Tags.h>
-#include <Sockets.h>
-#include <Random.h>
-#include <Datastore.h>
-#include <QueryHandlers.h>
-#include <Cluster.h>
-#include <ActiveConnections.h>
-#include <Git.h>
-#include <Filesystem.h>
-#include <WSServer.h>
-#include <handle_connection.h>
-#include <tools.h>
-#include <tools_ipc.h>
-#include <tools_db.h>
-#include <ping.h>
+#include <Process/ProcessManager.h>
+#include <DB/DB.h>
+#include <API/Statistics.h>
+#include <Schedule/RetrySchedule.h>
+#include <Schedule/RetrySchedules.h>
+#include <DB/GarbageCollector.h>
+#include <DB/SequenceGenerator.h>
+#include <Notification/NotificationType.h>
+#include <Notification/NotificationTypes.h>
+#include <Notification/Notification.h>
+#include <Notification/Notifications.h>
+#include <User/User.h>
+#include <User/Users.h>
+#include <Tag/Tag.h>
+#include <Tag/Tags.h>
+#include <IO/Sockets.h>
+#include <Crypto/Random.h>
+#include <Process/DataPiper.h>
+#include <WorkflowInstance/Datastore.h>
+#include <API/QueryHandlers.h>
+#include <Cluster/Cluster.h>
+#include <API/ActiveConnections.h>
+#include <Git/Git.h>
+#include <IO/Filesystem.h>
+#include <API/handle_connection.h>
+#include <API/tools.h>
+#include <Process/tools_ipc.h>
+#include <DB/tools_db.h>
+#include <API/ping.h>
+#include <WS/WSServer.h>
 
 #include <xercesc/util/PlatformUtils.hpp>
 
@@ -151,6 +152,16 @@ void fork_child_handler(void)
 		close(listen_socket_unix); // Close listen socket in child to allow process to restart when children are still running
 	
 	Sockets::GetInstance()->CloseSockets(); // Close all open sockets to prevent hanged connections
+}
+
+void tools_print_usage()
+{
+	fprintf(stderr,"Usage :\n");
+	fprintf(stderr,"  Launch evqueue      : evqueue (--daemon) --config <path to config file>\n");
+	fprintf(stderr,"  Clean IPC queue     : evqueue --config <path to config file> --ipcq-remove\n");
+	fprintf(stderr,"  Get IPC queue stats : evqueue --config <path to config file> --ipcq-stats\n");
+	fprintf(stderr,"  Send IPC TERM-TID   : evqueue --config <path to config file> --ipc-terminate-tid <tid>\n");
+	fprintf(stderr,"  Show version        : evqueue --version\n");
 }
 
 using namespace std;
@@ -251,11 +262,11 @@ int main(int argc,const char **argv)
 
 		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
 		if(ipcq_remove)
-			return tools_queue_destroy();
+			return ipc_queue_destroy(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
 		else if(ipcq_stats)
-			return tools_queue_stats();
+			return ipc_queue_stats(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
 		else if(ipc_terminate_tid!=-1)
-			return tools_send_exit_msg(1,ipc_terminate_tid,-1);
+			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,ipc_terminate_tid,-1);
 		
 		// Create logger as soon as possible
 		Logger *logger = new Logger();
@@ -464,6 +475,9 @@ int main(int argc,const char **argv)
 		// Release database connection
 		db.Disconnect();
 		
+		// Start data piper before process manager
+		DataPiper *dp = new DataPiper();
+		
 		// Start Process Manager (Forker & Gatherer)
 		ProcessManager *pm = new ProcessManager();
 		
@@ -620,6 +634,10 @@ int main(int argc,const char **argv)
 				pm->Shutdown();
 				pm->WaitForShutdown();
 				
+				// Request shutdown on data piper and wait
+				dp->Shutdown();
+				dp->WaitForShutdown();
+				
 				// Request shutdown on scheduler and wait
 				scheduler->Shutdown();
 				scheduler->WaitForShutdown();
@@ -664,6 +682,7 @@ int main(int argc,const char **argv)
 				delete notification_types;
 				delete retry_schedules;
 				delete pm;
+				delete dp;
 				delete gc;
 				delete seq;
 				delete qh;

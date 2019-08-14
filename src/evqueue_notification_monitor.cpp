@@ -18,7 +18,7 @@
  */
 
 #include <global.h>
-#include <tools_ipc.h>
+#include <Process/tools_ipc.h>
 
 #include <stdio.h>
 #include <stdlib.h>
