@@ -172,6 +172,7 @@ string Task::GetTypeStr() const
 		return "BINARY";
 	else if(type==task_type::SCRIPT)
 		return "SCRIPT";
+	return "";
 }
 
 string Task::GetScript() const

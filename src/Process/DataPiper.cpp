@@ -19,6 +19,7 @@
 
 #include <Process/DataPiper.h>
 #include <Logger/Logger.h>
+#include <Exception/Exception.h>
 
 #include <signal.h>
 #include <poll.h>
@@ -31,7 +32,8 @@ DataPiper *DataPiper::instance = 0;
 
 DataPiper::DataPiper()
 {
-	pipe(self_pipe);
+	if(pipe(self_pipe)!=0)
+		throw Exception("DataPiper","Unable to create pipe, could not start");
 	
 	instance = this;
 	
@@ -42,16 +44,21 @@ void DataPiper::PipeData(int fd, const string &data)
 {
 	unique_lock<mutex> llock(lock);
 	 
-	// Store FD and data to be sent
-	pipe_data[fd] = {data, 0};
-	 
 	// Set nonblocking IO mode
 	int flags = fcntl(fd, F_GETFL, 0);
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 	 
 	// Wake up poll() to add this FD. Since IO is non-blocking we have to use a static buffer
 	static char buf[1] = {'\0'};
-	write(self_pipe[1],buf,1);
+	size_t written = write(self_pipe[1],buf,1);
+	if(written!=1)
+	{
+		close(fd);
+		throw Exception("DataPiper","Error writing to self pipe, unable to pipe data to child");
+	}
+	
+	// Store FD and data to be sent
+	pipe_data[fd] = {data, 0};
 }
 
 void DataPiper::dp_thread(DataPiper *dp)
@@ -85,7 +92,9 @@ void DataPiper::dp_thread(DataPiper *dp)
 		if(fds[nfds].revents&POLLIN)
 		{
 			// We were woken by self pipe, read the byte to avoid looping
-			read(fds[nfds].fd,buf,1);
+			size_t read_size = read(fds[nfds].fd,buf,1);
+			if(read_size!=1)
+				Logger::Log(LOG_WARNING,"DataPiper : unable to read self pipe");
 			
 			if(dp->pipe_data.size()==0 && dp->is_shutting_down)
 			{
@@ -146,7 +155,8 @@ void DataPiper::Shutdown()
 	
 	// Wake poll()
 	static char buf[1] = {'\0'};
-	write(self_pipe[1],buf,1);
+	if(write(self_pipe[1],buf,1)!=1)
+		Logger::Log(LOG_WARNING,"DataPiper: could not write to selfpipe, shutdown cancelled");
 }
 	
 void DataPiper::WaitForShutdown()

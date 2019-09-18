@@ -94,6 +94,8 @@ int ipc_queue_stats(const char *qid_str)
 	
 	printf("Queue size : %ld\n",ipcq_stats.msg_qbytes);
 	printf("Pending messages : %ld\n",ipcq_stats.msg_qnum);
+	
+	return 0;
 }
 
 int ipc_send_exit_msg(const char *qid_str,int type,int tid,char retcode)

@@ -421,7 +421,8 @@ char *ProcessManager::read_log_file(pid_t pid,pid_t tid,int log_fileno)
 		if(log_size>log_maxsize)
 		{
 			log_truncated = true;
-			ftruncate(fileno(f),log_maxsize);
+			if(ftruncate(fileno(f),log_maxsize)!=0)
+				Logger::Log(LOG_WARNING,"[ ProcessManager ] Could not truncate return log file, truncate will be made on reading");
 			
 			fseek(f,0,SEEK_END);
 			fwrite("...TRUNCATED...",1,15,f);
