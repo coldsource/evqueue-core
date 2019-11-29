@@ -224,4 +224,12 @@ std::map<std::string,std::string> evqueue_tables = {
   PRIMARY KEY (`log_notifications_id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
 "},
+{"t_workflow_instance_filters",
+"CREATE TABLE `t_workflow_instance_filters` ( \
+  `workflow_instance_id` int(10) unsigned NOT NULL, \
+  `workflow_instance_filter` varchar(64) CHARACTER SET utf8 NOT NULL, \
+  `workflow_instance_filter_value` varchar(255) CHARACTER SET utf8 NOT NULL, \
+  KEY `workflow_instance_filter` (`workflow_instance_filter`,`workflow_instance_filter_value`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v2.2'; \
+"},
 };

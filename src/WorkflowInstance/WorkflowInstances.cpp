@@ -405,6 +405,26 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 			query_where_values.push_back(value);
 		}
 		
+		// Custom filters
+		auto filters = saxh->GetRootAttributes();
+		string customfilter_names[saxh->GetRootAttributes().size()];
+		string customfilter_values[saxh->GetRootAttributes().size()];
+		int customfilter_idx = 0;
+		for(auto it = filters.begin();it!=filters.end();++it)
+		{
+			if(it->first.substr(0,13)=="customfilter_")
+			{
+				customfilter_names[customfilter_idx] = it->first.substr(13);
+				customfilter_values[customfilter_idx] = it->second;
+				
+				query_where += " AND EXISTS(SELECT * FROM t_workflow_instance_filters wif WHERE wif.workflow_instance_id=wi.workflow_instance_id AND workflow_instance_filter=%s AND workflow_instance_filter_value=%s)";
+				
+				query_where_values.push_back(&customfilter_names[customfilter_idx]);
+				query_where_values.push_back(&customfilter_values[customfilter_idx]);
+				customfilter_idx++;
+			}
+		}
+		
 		string query_order_by;
 		if(groupby=="")
 			query_order_by = "ORDER BY wi.workflow_instance_end DESC";
