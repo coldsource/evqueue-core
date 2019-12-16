@@ -151,7 +151,11 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 							if(!base64_decode_string(api_cmd,api_cmd_base64))
 								throw Exception("Websocket","Invalid base64 sequence","INVALID_PARAMETER");
 							
+							// Subscribre event
 							Events::GetInstance()->Subscribe(type,wsi,instance_id,api_cmd);
+							
+							// Sent API command immediatly for initialization
+							context->session->Query(api_cmd);
 						}
 						else if(saxh.GetRootAttribute("action")=="unsubscribe")
 						{
