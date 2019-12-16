@@ -110,6 +110,16 @@ void APISession::ChallengeReceived(SocketQuerySAX2Handler *saxh)
 
 void APISession::SendGreeting()
 {
+	// Compute current time
+	time_t t;
+	struct tm t_desc;
+
+	t = time(0);
+	localtime_r(&t,&t_desc);
+
+	char time_str[64];
+	sprintf(time_str,"%d-%02d-%02d %02d:%02d:%02d",1900+t_desc.tm_year,t_desc.tm_mon+1,t_desc.tm_mday,t_desc.tm_hour,t_desc.tm_min,t_desc.tm_sec);
+	
 	QueryResponse ready_response("ready");
 	if(wsi)
 		ready_response.SetWebsocket(wsi);
@@ -119,6 +129,7 @@ void APISession::SendGreeting()
 	ready_response.SetAttribute("profile",user.GetProfile());
 	ready_response.SetAttribute("version",EVQUEUE_VERSION);
 	ready_response.SetAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
+	ready_response.SetAttribute("time",time_str);
 	ready_response.SendResponse();
 	
 	status = READY;
