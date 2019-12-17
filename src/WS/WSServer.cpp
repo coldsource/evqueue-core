@@ -163,6 +163,10 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 							unsigned int instance_id = saxh.GetRootAttributeInt("instance_id",0);
 							Events::GetInstance()->Unsubscribe(type,wsi,instance_id);
 						}
+						else if(saxh.GetRootAttribute("action")=="unsubscribeall")
+						{
+							Events::GetInstance()->UnsubscribeAll(wsi);
+						}
 					}
 				}
 				break;
