@@ -71,6 +71,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";
 	entries["network.snd.timeout"] = "30";
+	entries["ws.bind.port"] = "5001";
 	entries["notifications.monitor.path"] = "/usr/bin/evqueue_notification_monitor";
 	entries["notifications.tasks.directory"] = "/usr/share/evqueue/plugins/notifications";
 	entries["notifications.tasks.timeout"] = "5";
