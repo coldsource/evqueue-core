@@ -50,6 +50,8 @@ void WorkflowInstanceAPI::Delete(unsigned int id)
 	
 	db.QueryPrintf("DELETE FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",&id);
 	
+	db.QueryPrintf("DELETE FROM t_workflow_instance_filters WHERE workflow_instance_id=%i",&id);
+	
 	db.QueryPrintf("DELETE FROM t_datastore WHERE workflow_instance_id=%i",&id);
 	
 	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE workflow_instance_id=%i",&id);
