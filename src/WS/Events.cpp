@@ -35,6 +35,14 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return INSTANCE_STARTED;
 	else if(type_str=="INSTANCE_TERMINATED")
 		return INSTANCE_TERMINATED;
+	else if(type_str=="QUEUE_ENQUEUE")
+		return QUEUE_ENQUEUE;
+	else if(type_str=="QUEUE_DEQUEUE")
+		return QUEUE_DEQUEUE;
+	else if(type_str=="QUEUE_EXECUTE")
+		return QUEUE_EXECUTE;
+	else if(type_str=="QUEUE_TERMINATE")
+		return QUEUE_TERMINATE;
 	
 	return NONE;
 }

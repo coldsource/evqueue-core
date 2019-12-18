@@ -28,6 +28,7 @@
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
 #include <User/User.h>
+#include <WS/Events.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -131,6 +132,8 @@ bool QueuePool::EnqueueTask(const string &queue_name,const string &queue_host,Wo
 	if(fork_locked && fork_possible)
 		fork_lock.notify_one();
 	
+	Events::GetInstance()->Create(Events::en_types::QUEUE_ENQUEUE,0);
+		
 	return true;
 }
 
@@ -169,6 +172,8 @@ bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_ins
 			queue_name = it->first;
 			
 			fork_possible = !IsLocked();
+			
+			Events::GetInstance()->Create(Events::en_types::QUEUE_DEQUEUE,0);
 		
 			return true;
 		}
@@ -212,6 +217,8 @@ pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMElement task
 	if(fork_locked && fork_possible)
 		fork_lock.notify_one();
 	
+	Events::GetInstance()->Create(Events::en_types::QUEUE_EXECUTE,0);
+	
 	return task_id;
 }
 
@@ -247,6 +254,8 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	fork_possible = !IsLocked();
 	if(fork_locked && fork_possible)
 		fork_lock.notify_one();
+	
+	Events::GetInstance()->Create(Events::en_types::QUEUE_TERMINATE,0);
 	
 	return true;
 }
