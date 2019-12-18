@@ -44,7 +44,7 @@ WSServer::WSServer()
 
 	info.keepalive_timeout = 120;
 	info.timeout_secs = 30;
-	info.port = 5001;
+	info.port = ConfigurationEvQueue::GetInstance()->GetInt("ws.bind.port");
 	info.protocols = protocols;
 	info.gid = 33;
 	info.uid = 33;
