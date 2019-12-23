@@ -46,8 +46,8 @@ WSServer::WSServer()
 	info.timeout_secs = 30;
 	info.port = ConfigurationEvQueue::GetInstance()->GetInt("ws.bind.port");
 	info.protocols = protocols;
-	info.gid = 33;
-	info.uid = 33;
+	info.gid = -1;
+	info.uid = -1;
 	info.server_string = "evQueue websockets server";
 	info.vhost_name = "default";
 	/*{
@@ -57,6 +57,8 @@ WSServer::WSServer()
 	}*/
 
 	context = lws_create_context(&info);
+	if(!context)
+		throw Exception("Websocket","Unable to bind port "+to_string(info.port));
 	
 	events = new Events(context);
 	
