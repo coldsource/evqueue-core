@@ -121,7 +121,6 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 			{
 				// Message has been received
 				string input_xml((char *)in,len);
-				printf("%s\n",input_xml.c_str());
 				SocketQuerySAX2Handler saxh("Websocket",input_xml);
 				
 				if(context->session->GetStatus()==APISession::en_status::WAITING_CHALLENGE_RESPONSE)
