@@ -34,6 +34,7 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <User/User.h>
 #include <Tag/Tag.h>
+#include <WS/Events.h>
 
 #include <string>
 #include <map>
@@ -311,6 +312,8 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 				User::InsufficientRights();
 			
 			Delete(workflow_instance_id);
+			
+			Events::GetInstance()->Create(Events::en_types::INSTANCE_REMOVED,workflow_instance_id);
 			
 			return true;
 		}

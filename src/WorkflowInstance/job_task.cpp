@@ -25,6 +25,7 @@
 #include <WorkflowInstance/Task.h>
 #include <Process/ProcessManager.h>
 #include <Queue/QueuePool.h>
+#include <WS/Events.h>
 
 #include <signal.h>
 
@@ -59,7 +60,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		task_node.removeAttribute("retry_at");
 
 	TaskUpdateProgression(task_node,100);
-
+	
 	// Generate output node
 	DOMElement output_element = xmldoc->createElement("output");
 	output_element.setAttribute("retval",to_string(retval));
@@ -137,6 +138,8 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		task_node.appendChild(log_element);
 		record_log(log_element,log_output);
 	}
+	
+	Events::GetInstance()->Create(Events::en_types::TASK_TERMINATE,workflow_instance_id);
 
 	int tasks_count,tasks_successful;
 
@@ -233,6 +236,8 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 		task_node.setAttribute("pid",to_string(pid));
 		task_node.setAttribute("tid",to_string(tid));
 		task_node.setAttribute("execution_time",format_datetime());
+		
+		Events::GetInstance()->Create(Events::en_types::TASK_EXECUTE,workflow_instance_id);
 		
 		*workflow_terminated = workflow_ended();
 
@@ -497,5 +502,8 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 	update_job_statistics("queued_tasks",1,task);
 
 	Logger::Log(LOG_INFO,"[WID %d] Added task %s to queue %s\n",workflow_instance_id,task_name.c_str(),queue_name.c_str());
+	
+	Events::GetInstance()->Create(Events::en_types::TASK_ENQUEUE,workflow_instance_id);
+	
 	return;
 }
