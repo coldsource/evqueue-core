@@ -21,7 +21,7 @@
 #include <Queue/QueuePool.h>
 #include <Logger/Logger.h>
 #include <WorkflowInstance/WorkflowInstance.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Logger/LoggerAPI.h>
 #include <Exception/Exception.h>
@@ -274,16 +274,16 @@ void Queue::create_edit_check(const std::string &name, int concurrency, const st
 		throw Exception("Queue","Invalid scheduler name, must be 'prio', 'fifo' or 'default'","INVALID_PARAMETER");
 }
 
-bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
@@ -291,26 +291,26 @@ bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 	}
 	else if(action=="create" || action=="edit")
 	{
-		string name = saxh->GetRootAttribute("name");
-		int iconcurrency = saxh->GetRootAttributeInt("concurrency");
-		string scheduler = saxh->GetRootAttribute("scheduler");
-		bool dynamic = saxh->GetRootAttributeBool("dynamic");
+		string name = query->GetRootAttribute("name");
+		int iconcurrency = query->GetRootAttributeInt("concurrency");
+		string scheduler = query->GetRootAttribute("scheduler");
+		bool dynamic = query->GetRootAttributeBool("dynamic");
 		
 		if(action=="create")
 		{
 			unsigned int id = Create(name, iconcurrency, scheduler, dynamic);
 			
-			LoggerAPI::LogAction(user,id,"Queue",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 			
 			response->GetDOM()->getDocumentElement().setAttribute("queue-id",to_string(id));
 		}
 		else
 		{
-			unsigned int id = saxh->GetRootAttributeInt("id");
+			unsigned int id = query->GetRootAttributeInt("id");
 			
 			Edit(id,name, iconcurrency, scheduler, dynamic);
 			
-			LoggerAPI::LogAction(user,id,"Queue",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 		}
 		
 		QueuePool::GetInstance()->Reload();
@@ -319,11 +319,11 @@ bool Queue::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 	}
 	else if(action=="delete")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Delete(id);
 		
-		LoggerAPI::LogAction(user,id,"Queue",saxh->GetQueryGroup(),action);
+		LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 		
 		QueuePool::GetInstance()->Reload();
 		

@@ -17,29 +17,19 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <API/QueryHandlers.h>
-#include <Logger/Logger.h>
+#include <API/XMLResponse.h>
 
-QueryHandlers *QueryHandlers::instance=0;
+using namespace std;
 
-QueryHandlers::QueryHandlers(void)
+XMLResponse::XMLResponse(const std::string &context, int s):XMLMessage(context,s)
 {
-	instance = this;
 }
 
-void QueryHandlers::RegisterHandler(const std::string &type, t_query_handler handler)
+XMLResponse::XMLResponse(const std::string &context, const std::string &xml):XMLMessage(context,xml)
 {
-	// No mutexes are used, RegisterHandler must be called within one thread only
-	handlers[type] = handler;
 }
 
-bool QueryHandlers::HandleQuery(const User &user, const std::string &type, XMLQuery *query, QueryResponse *response)
+string XMLResponse::GetGroup()
 {
-	auto it = handlers.find(type);
-	if(it==handlers.end())
-		return false;
-	
-	Logger::Log(LOG_DEBUG, "API : Found handler for group '"+type+"'");
-	
-	return it->second(user, query, response);
+	return xmldoc->getDocumentElement().getNodeName();
 }

@@ -19,7 +19,7 @@
 
 #include <API/ping.h>
 
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Configuration/ConfigurationEvQueue.h>
 
@@ -29,9 +29,9 @@ using namespace std;
 
 extern time_t evqueue_start_time;
 
-bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool ping_handle_query(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	const std::map<std::string,std::string> attrs = saxh->GetRootAttributes();
+	const std::map<std::string,std::string> attrs = query->GetRootAttributes();
 	
 	response->SetAttribute("version",EVQUEUE_VERSION);
 #ifdef USELIBGIT2

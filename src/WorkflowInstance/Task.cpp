@@ -24,7 +24,6 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Workflow/Workflow.h>
 #include <Workflow/Workflows.h>
-#include <API/SocketQuerySAX2Handler.h>
 #include <API/QueryResponse.h>
 #include <User/User.h>
 #include <XML/XMLUtils.h>

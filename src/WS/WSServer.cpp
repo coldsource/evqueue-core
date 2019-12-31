@@ -1,7 +1,7 @@
 #include <WS/WSServer.h>
 #include <User/User.h>
 #include <API/APISession.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <Exception/Exception.h>
 #include <API/QueryResponse.h>
 #include <Configuration/ConfigurationEvQueue.h>
@@ -121,12 +121,12 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 			{
 				// Message has been received
 				string input_xml((char *)in,len);
-				SocketQuerySAX2Handler saxh("Websocket",input_xml);
+				XMLQuery query("Websocket",input_xml);
 				
 				if(context->session->GetStatus()==APISession::en_status::WAITING_CHALLENGE_RESPONSE)
 				{
 					// We are authenticating, this is challenge response
-					context->session->ChallengeReceived(&saxh);
+					context->session->ChallengeReceived(&query);
 					
 					lws_callback_on_writable(wsi); // We have to send greeting
 				}
@@ -135,38 +135,39 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 					if(protocol->id==API)
 					{
 						// We only receive queries in API protocol
-						context->session->QueryReceived(&saxh);
+						context->session->QueryReceived(&query);
 						
 						lws_callback_on_writable(wsi); // We have to send response
 					}
 					else if(protocol->id==EVENTS)
 					{
-						if(saxh.GetQueryGroup()!="event")
+						if(query.GetQueryGroup()!="event")
 							throw Exception("Websocket","Only event query group is supported by this protocol","UNKNOWN_COMMAND");
 						
-						if(saxh.GetRootAttribute("action")=="subscribe")
+						if(query.GetRootAttribute("action")=="subscribe")
 						{
-							string type = saxh.GetRootAttribute("type");
-							unsigned int instance_id = saxh.GetRootAttributeInt("instance_id",0);
-							string api_cmd_base64 = saxh.GetRootAttribute("api_cmd");
+							string type = query.GetRootAttribute("type");
+							unsigned int instance_id = query.GetRootAttributeInt("instance_id",0);
+							int external_id = query.GetRootAttributeInt("external_id",0);
+							string api_cmd_base64 = query.GetRootAttribute("api_cmd");
 							string api_cmd;
 							if(!base64_decode_string(api_cmd,api_cmd_base64))
 								throw Exception("Websocket","Invalid base64 sequence","INVALID_PARAMETER");
 							
 							// Subscribre event
-							Events::GetInstance()->Subscribe(type,wsi,instance_id,api_cmd);
+							Events::GetInstance()->Subscribe(type,wsi,instance_id,external_id,api_cmd);
 							
 							// Sent API command immediatly for initialization
-							if(saxh.GetRootAttributeBool("send_now",false))
-								context->session->Query(api_cmd);
+							if(query.GetRootAttributeBool("send_now",false))
+								context->session->Query(api_cmd,external_id);
 						}
-						else if(saxh.GetRootAttribute("action")=="unsubscribe")
+						else if(query.GetRootAttribute("action")=="unsubscribe")
 						{
-							string type = saxh.GetRootAttribute("type");
-							unsigned int instance_id = saxh.GetRootAttributeInt("instance_id",0);
+							string type = query.GetRootAttribute("type");
+							unsigned int instance_id = query.GetRootAttributeInt("instance_id",0);
 							Events::GetInstance()->Unsubscribe(type,wsi,instance_id);
 						}
-						else if(saxh.GetRootAttribute("action")=="unsubscribeall")
+						else if(query.GetRootAttribute("action")=="unsubscribeall")
 						{
 							Events::GetInstance()->UnsubscribeAll(wsi);
 						}
@@ -186,8 +187,12 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 				else if(context->session->GetStatus()==APISession::en_status::READY && protocol->id==EVENTS)
 				{
 					string api_cmd;
-					if(Events::GetInstance()->Get(wsi,api_cmd))
-						context->session->Query(api_cmd);
+					int external_id;
+					if(Events::GetInstance()->Get(wsi,&external_id,api_cmd))
+					{
+						context->session->Query(api_cmd,external_id);
+						lws_callback_on_writable(wsi); // Set writable again in case we have more than one event
+					}
 				}
 				break;
 			}

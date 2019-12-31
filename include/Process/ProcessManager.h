@@ -28,7 +28,7 @@
 #include <vector>
 #include <thread>
 
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -61,7 +61,7 @@ class ProcessManager
 			pid_t tid
 			);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
 		static char *read_log_file(pid_t pid,pid_t tid,int log_fileno);

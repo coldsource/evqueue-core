@@ -22,7 +22,7 @@
 #include <Notification/Notifications.h>
 #include <Workflow/Workflows.h>
 #include <Exception/Exception.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <IO/FileManager.h>
 #include <Configuration/ConfigurationEvQueue.h>
@@ -148,16 +148,16 @@ void NotificationType::SetConf(unsigned int id, const string &data)
 	db.QueryPrintf("UPDATE t_notification_type SET notification_type_conf_content=%s WHERE notification_type_id=%i",&data,&id);
 }
 
-bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Get(id, response);
 		
@@ -165,13 +165,13 @@ bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	}
 	else if(action=="register")
 	{
-		string name = saxh->GetRootAttribute("name");
-		string description = saxh->GetRootAttribute("description");
-		string manifest_base64 = saxh->GetRootAttribute("manifest","");
+		string name = query->GetRootAttribute("name");
+		string description = query->GetRootAttribute("description");
+		string manifest_base64 = query->GetRootAttribute("manifest","");
 		string manifest;
 		if(manifest_base64.length())
 			base64_decode_string(manifest,manifest_base64);
-		string binary_content_base64 = saxh->GetRootAttribute("binary_content","");
+		string binary_content_base64 = query->GetRootAttribute("binary_content","");
 		string binary_content;
 		if(binary_content_base64.length())
 			base64_decode_string(binary_content,binary_content_base64);
@@ -187,7 +187,7 @@ bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	}
 	else if(action=="unregister")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Unregister(id);
 		
@@ -200,7 +200,7 @@ bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	}
 	else if(action=="get_conf")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		GetConf(id, response);
 		
@@ -208,8 +208,8 @@ bool NotificationType::HandleQuery(const User &user, SocketQuerySAX2Handler *sax
 	}
 	else if(action=="set_conf")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
-		string content_base64 = saxh->GetRootAttribute("content","");
+		unsigned int id = query->GetRootAttributeInt("id");
+		string content_base64 = query->GetRootAttribute("content","");
 		string content;
 		if(content_base64.length())
 			base64_decode_string(content,content_base64);

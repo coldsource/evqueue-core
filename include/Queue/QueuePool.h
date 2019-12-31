@@ -31,7 +31,7 @@
 
 class Queue;
 class WorkflowInstance;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -83,7 +83,7 @@ class QueuePool
 		static std::string GetQueueName(unsigned int id);
 		bool Exists(unsigned int id);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 		
 	private:
 		Queue *get_queue(unsigned int id);

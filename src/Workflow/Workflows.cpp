@@ -22,7 +22,7 @@
 #include <DB/DB.h>
 #include <Exception/Exception.h>
 #include <Logger/Logger.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
 #include <Crypto/Sha1String.h>
@@ -70,15 +70,15 @@ void Workflows::Reload(bool notify)
 	}
 }
 
-bool Workflows::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Workflows::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	Workflows *workflows = Workflows::GetInstance();
 	
-	string action = saxh->GetRootAttribute("action");
+	string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
-		bool full = saxh->GetRootAttributeBool("full",false);
+		bool full = query->GetRootAttributeBool("full",false);
 		
 		unique_lock<mutex> llock(workflows->lock);
 		

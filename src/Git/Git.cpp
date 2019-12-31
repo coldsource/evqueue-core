@@ -19,7 +19,7 @@
 
 #include <Git/Git.h>
 #include <Git/LibGit2.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <XML/XMLUtils.h>
 #include <Workflow/Workflow.h>
@@ -180,7 +180,7 @@ void Git::ListWorkflows(QueryResponse *response)
 
 #endif // USELIBGIT2
 
-bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 #ifndef USELIBGIT2
 	throw Exception("Git", "evQueue was not compiled with git support");
@@ -191,7 +191,7 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	if(!instance->repo)
 		throw Exception("Git", "No git repository is configured, this feature is disabled");
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="pull")
 	{
@@ -201,9 +201,9 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	if(action=="save_workflow")
 	{
-		string name = saxh->GetRootAttribute("name");
-		string commit_log = saxh->GetRootAttribute("commit_log");
-		bool force = saxh->GetRootAttributeBool("force",false);
+		string name = query->GetRootAttribute("name");
+		string commit_log = query->GetRootAttribute("commit_log");
+		bool force = query->GetRootAttributeBool("force",false);
 		
 		Git::GetInstance()->SaveWorkflow(name,commit_log,force);
 		
@@ -211,7 +211,7 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	else if(action=="load_workflow")
 	{
-		string name = saxh->GetRootAttribute("name");
+		string name = query->GetRootAttribute("name");
 		
 		Git::GetInstance()->LoadWorkflow(name);
 		
@@ -219,7 +219,7 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	else if(action=="get_workflow")
 	{
-		string name = saxh->GetRootAttribute("name");
+		string name = query->GetRootAttribute("name");
 		
 		Git::GetInstance()->GetWorkflow(name,response);
 		
@@ -227,8 +227,8 @@ bool Git::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	else if(action=="remove_workflow")
 	{
-		string name = saxh->GetRootAttribute("name");
-		string commit_log = saxh->GetRootAttribute("commit_log");
+		string name = query->GetRootAttribute("name");
+		string commit_log = query->GetRootAttribute("commit_log");
 		
 		Git::GetInstance()->RemoveWorkflow(name,commit_log);
 		

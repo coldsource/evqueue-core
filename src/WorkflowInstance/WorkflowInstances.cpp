@@ -24,7 +24,7 @@
 #include <Logger/Logger.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <API/QueryResponse.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <User/User.h>
@@ -253,26 +253,26 @@ void WorkflowInstances::RecordSavepoint()
 	}
 }
 
-bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
-		unsigned int filter_id = saxh->GetRootAttributeInt("filter_id",0);
-		string filter_node = saxh->GetRootAttribute("filter_node","");
-		string filter_workflow = saxh->GetRootAttribute("filter_workflow","");
-		string filter_launched_from = saxh->GetRootAttribute("filter_launched_from","");
-		string filter_launched_until = saxh->GetRootAttribute("filter_launched_until","");
-		string filter_ended_from = saxh->GetRootAttribute("filter_ended_from","");
-		string filter_ended_until = saxh->GetRootAttribute("filter_ended_until","");
-		string filter_status = saxh->GetRootAttribute("filter_status","");
-		bool filter_error = saxh->GetRootAttributeBool("filter_error",false);
-		unsigned int filter_tag_id = saxh->GetRootAttributeInt("filter_tag_id",0);
-		unsigned int filter_schedule_id = saxh->GetRootAttributeInt("filter_schedule_id",0);
-		unsigned int limit = saxh->GetRootAttributeInt("limit",30);
-		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
-		string groupby = saxh->GetRootAttribute("groupby","");
+		unsigned int filter_id = query->GetRootAttributeInt("filter_id",0);
+		string filter_node = query->GetRootAttribute("filter_node","");
+		string filter_workflow = query->GetRootAttribute("filter_workflow","");
+		string filter_launched_from = query->GetRootAttribute("filter_launched_from","");
+		string filter_launched_until = query->GetRootAttribute("filter_launched_until","");
+		string filter_ended_from = query->GetRootAttribute("filter_ended_from","");
+		string filter_ended_until = query->GetRootAttribute("filter_ended_until","");
+		string filter_status = query->GetRootAttribute("filter_status","");
+		bool filter_error = query->GetRootAttributeBool("filter_error",false);
+		unsigned int filter_tag_id = query->GetRootAttributeInt("filter_tag_id",0);
+		unsigned int filter_schedule_id = query->GetRootAttributeInt("filter_schedule_id",0);
+		unsigned int limit = query->GetRootAttributeInt("limit",30);
+		unsigned int offset = query->GetRootAttributeInt("offset",0);
+		string groupby = query->GetRootAttribute("groupby","");
 		
 		// Build query parts
 		string query_select;
@@ -394,7 +394,7 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 			}
 		}
 		
-		WorkflowParameters *parameters = saxh->GetWorkflowParameters();
+		WorkflowParameters *parameters = query->GetWorkflowParameters();
 		string *name, *value;
 		
 		parameters->SeekStart();
@@ -406,9 +406,9 @@ bool WorkflowInstances::HandleQuery(const User &user, SocketQuerySAX2Handler *sa
 		}
 		
 		// Custom filters
-		auto filters = saxh->GetRootAttributes();
-		string customfilter_names[saxh->GetRootAttributes().size()];
-		string customfilter_values[saxh->GetRootAttributes().size()];
+		auto filters = query->GetRootAttributes();
+		string customfilter_names[query->GetRootAttributes().size()];
+		string customfilter_values[query->GetRootAttributes().size()];
 		int customfilter_idx = 0;
 		for(auto it = filters.begin();it!=filters.end();++it)
 		{

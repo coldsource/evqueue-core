@@ -21,7 +21,6 @@
 #include <Exception/Exception.h>
 #include <IO/Sockets.h>
 #include <Logger/Logger.h>
-#include <API/SocketResponseSAX2Handler.h>
 #include <Crypto/hmac.h>
 
 #include <sys/types.h>
@@ -48,11 +47,11 @@ Client::~Client()
 	}
 }
 
-void Client::Exec(const std::string &cmd, bool record)
+void Client::Exec(const std::string &cmd)
 {
 	try
 	{
-		ClientBase::Exec(cmd, record);
+		ClientBase::Exec(cmd);
 	}
 	catch(Exception &e)
 	{

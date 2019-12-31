@@ -20,7 +20,7 @@
 #ifndef _WORKFLOWINSTANCEAPI_H_
 #define _WORKFLOWINSTANCEAPI_H_
 
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -32,7 +32,7 @@ class WorkflowInstanceAPI
 		static void Tag(unsigned int id, unsigned int tag_id);
 		static void Untag(unsigned int id, unsigned int tag_id);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
 
 #endif

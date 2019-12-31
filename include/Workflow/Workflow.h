@@ -24,7 +24,7 @@
 #include <string>
 
 class DB;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class WorkflowParameters;
 class User;
@@ -74,7 +74,7 @@ class Workflow
 		static void ClearNotifications(unsigned int id);
 		static void ListNotifications(unsigned int id, QueryResponse *response);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 		
 		static std::string CreateSimpleWorkflow(const std::string &task_name, const std::vector<std::string> &inputs);
 		static void ValidateXML(const std::string &xml_str);

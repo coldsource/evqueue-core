@@ -29,7 +29,7 @@
 #include <Schedule/Retrier.h>
 #include <Queue/QueuePool.h>
 #include <Configuration/ConfigurationEvQueue.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <API/Statistics.h>
 #include <WorkflowInstance/WorkflowInstances.h>
@@ -117,19 +117,19 @@ void tools_flush_retrier(void)
 	retrier->Flush();
 }
 
-bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool tools_handle_query(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
-	if(saxh->GetQueryGroup()=="control")
+	if(query->GetQueryGroup()=="control")
 	{
 		if(!user.IsAdmin())
 			User::InsufficientRights();
 		
 		if(action=="reload")
 		{
-			string module = saxh->GetRootAttribute("module","");
-			bool notify = saxh->GetRootAttributeBool("notify",true);
+			string module = query->GetRootAttribute("module","");
+			bool notify = query->GetRootAttributeBool("notify",true);
 			if(module.length()==0)
 				tools_config_reload("all",notify);
 			else
@@ -144,7 +144,7 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 		}
 		else if(action=="syncnotifications")
 		{
-			bool notify = saxh->GetRootAttributeBool("notify",true);
+			bool notify = query->GetRootAttributeBool("notify",true);
 			tools_sync_notifications(notify);
 			return true;
 		}
@@ -156,11 +156,11 @@ bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryRes
 			return true;
 		}
 	}
-	else if(saxh->GetQueryGroup()=="status")
+	else if(query->GetQueryGroup()=="status")
 	{
 		if(action=="query")
 		{
-			string type = saxh->GetRootAttribute("type");
+			string type = query->GetRootAttribute("type");
 			
 			Statistics *stats = Statistics::GetInstance();
 			

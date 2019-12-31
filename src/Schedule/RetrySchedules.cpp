@@ -20,7 +20,7 @@
 #include <Schedule/RetrySchedules.h>
 #include <Schedule/RetrySchedule.h>
 #include <Exception/Exception.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Logger/Logger.h>
 #include <DB/DB.h>
@@ -70,14 +70,14 @@ void RetrySchedules::Reload(bool notify)
 	}
 }
 
-bool RetrySchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool RetrySchedules::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
 	RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{

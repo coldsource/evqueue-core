@@ -22,7 +22,7 @@
 #include <Workflow/Workflows.h>
 #include <Workflow/Workflow.h>
 #include <WorkflowInstance/WorkflowInstances.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <DB/SequenceGenerator.h>
 #include <API/QueryResponse.h>
 #include <API/Statistics.h>
@@ -90,30 +90,30 @@ void WorkflowInstanceAPI::Untag(unsigned int id, unsigned int tag_id)
 		throw Exception("WorkflowInstanceAPI", "Instance ID or tag ID not found","UNKNOWN_TAG_OR_INSTANCE");
 }
 
-bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	Statistics *stats = Statistics::GetInstance();
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
 	if(action=="launch")
 	{
-		string name = saxh->GetRootAttribute("name");
+		string name = query->GetRootAttribute("name");
 		
 		Workflow workflow = Workflows::GetInstance()->Get(name);
 		if(!user.HasAccessToWorkflow(workflow.GetID(), "exec"))
 			User::InsufficientRights();
 		
-		string username = saxh->GetRootAttribute("user","");
-		string host = saxh->GetRootAttribute("host","");
-		string mode = saxh->GetRootAttribute("mode","asynchronous");
-		string comment = saxh->GetRootAttribute("comment","");
+		string username = query->GetRootAttribute("user","");
+		string host = query->GetRootAttribute("host","");
+		string mode = query->GetRootAttribute("mode","asynchronous");
+		string comment = query->GetRootAttribute("comment","");
 		
 		if(mode!="synchronous" && mode!="asynchronous")
 			throw Exception("WorkflowInstance","mode must be 'synchronous' or 'asynchronous'","INVALID_PARAMETER");
 		
-		int timeout = saxh->GetRootAttributeInt("timeout",0);
+		int timeout = query->GetRootAttributeInt("timeout",0);
 		
 		WorkflowInstance *wi;
 		bool workflow_terminated;
@@ -122,7 +122,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		
 		try
 		{
-			wi = new WorkflowInstance(name,saxh->GetWorkflowParameters(),0,host,username,comment);
+			wi = new WorkflowInstance(name,query->GetWorkflowParameters(),0,host,username,comment);
 		}
 		catch(Exception &e)
 		{
@@ -151,7 +151,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 	}
 	else
 	{
-		unsigned int workflow_instance_id = saxh->GetRootAttributeInt("id");
+		unsigned int workflow_instance_id = query->GetRootAttributeInt("id");
 		
 		if(action=="debugresume")
 		{
@@ -290,7 +290,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		}
 		else if(action=="wait")
 		{
-			int timeout = saxh->GetRootAttributeInt("timeout",0);
+			int timeout = query->GetRootAttributeInt("timeout",0);
 			
 			if(!WorkflowInstances::GetInstance()->Wait(user, response,workflow_instance_id,timeout))
 				throw Exception("WorkflowInstance","Wait timed out","TIMED_OUT");
@@ -299,7 +299,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 		}
 		else if(action=="killtask")
 		{
-			unsigned int task_pid = saxh->GetRootAttributeInt("pid");
+			unsigned int task_pid = query->GetRootAttributeInt("pid");
 			
 			if(!WorkflowInstances::GetInstance()->KillTask(user, workflow_instance_id,task_pid))
 				throw Exception("WorkflowInstance","Unknown workflow instance","UNKNOWN_INSTANCE");
@@ -322,7 +322,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			if(!user.HasAccessToWorkflow(workflow_instance_id, "exec") && !user.HasAccessToWorkflow(workflow_instance_id, "edit"))
 				User::InsufficientRights();
 			
-			unsigned int tag_id = saxh->GetRootAttributeInt("tag_id");
+			unsigned int tag_id = query->GetRootAttributeInt("tag_id");
 			
 			Tag(workflow_instance_id,tag_id);
 			
@@ -333,7 +333,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, SocketQuerySAX2Handler *
 			if(!user.HasAccessToWorkflow(workflow_instance_id, "exec") && !user.HasAccessToWorkflow(workflow_instance_id, "edit"))
 				User::InsufficientRights();
 			
-			unsigned int tag_id = saxh->GetRootAttributeInt("tag_id");
+			unsigned int tag_id = query->GetRootAttributeInt("tag_id");
 			
 			Untag(workflow_instance_id,tag_id);
 			

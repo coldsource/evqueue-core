@@ -28,7 +28,7 @@
 #include <Logger/Logger.h>
 #include <WorkflowInstance/WorkflowInstance.h>
 #include <IO/Sockets.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Process/ProcessExec.h>
 #include <Crypto/base64.h>
@@ -239,16 +239,16 @@ void Notification::subscribe_all_workflows(unsigned int id)
 	}
 }
 
-bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
@@ -256,24 +256,24 @@ bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Q
 	}
 	else if(action=="create" || action=="edit")
 	{
-		string name = saxh->GetRootAttribute("name");
+		string name = query->GetRootAttribute("name");
 		
-		string parameters_base64 = saxh->GetRootAttribute("parameters");
+		string parameters_base64 = query->GetRootAttribute("parameters");
 		string parameters;
 		if(parameters_base64.length())
 			base64_decode_string(parameters,parameters_base64);
 		
-		bool subscribe_all = saxh->GetRootAttributeBool("subscribe_all",false);
+		bool subscribe_all = query->GetRootAttributeBool("subscribe_all",false);
 		
 		if(action=="create")
 		{
-			unsigned int type_id = saxh->GetRootAttributeInt("type_id");
+			unsigned int type_id = query->GetRootAttributeInt("type_id");
 			
 			Create(type_id, name, subscribe_all, parameters);
 		}
 		else
 		{
-			unsigned int id = saxh->GetRootAttributeInt("id");
+			unsigned int id = query->GetRootAttributeInt("id");
 			
 			Edit(id, name, subscribe_all, parameters);
 		}
@@ -286,7 +286,7 @@ bool Notification::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Q
 	}
 	else if(action=="delete")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Delete(id);
 		

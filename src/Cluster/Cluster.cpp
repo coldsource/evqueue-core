@@ -20,7 +20,6 @@
 #include <Cluster/Cluster.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
-#include <API/SocketResponseSAX2Handler.h>
 #include <API/SocketSAX2Handler.h>
 #include <IO/Sockets.h>
 #include <Logger/Logger.h>
@@ -110,7 +109,7 @@ bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
 			}
 			
 			if(response)
-				client.Exec(command, true);
+				client.Exec(command);
 			else
 				client.Exec(command);
 			

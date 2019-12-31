@@ -55,13 +55,13 @@ Events::en_types Events::get_type(const std::string &type_str)
 	return NONE;
 }
 
-void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int instance_filter, const string &api_cmd)
+void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id, const string &api_cmd)
 {
 	unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);
 	
-	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{instance_filter, api_cmd}));
+	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{instance_filter, api_cmd, external_id}));
 }
 
 void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int instance_filter)
@@ -120,7 +120,7 @@ void Events::Create(en_types type, unsigned int instance_id)
 			continue;
 		
 		// Push the event to the subscriber
-		events[it2->first].insert(it2->second.api_cmd);
+		events[it2->first].push_back({it2->second.api_cmd,it2->second.external_id});
 		
 		lws_callback_on_writable(it2->first);
 	}
@@ -129,7 +129,7 @@ void Events::Create(en_types type, unsigned int instance_id)
 	lws_cancel_service(ws_context);
 }
 
-bool Events::Get(struct lws *wsi, string &api_cmd)
+bool Events::Get(struct lws *wsi, int *external_id, string &api_cmd)
 {
 	unique_lock<mutex> llock(lock);
 	
@@ -137,12 +137,12 @@ bool Events::Get(struct lws *wsi, string &api_cmd)
 	if(it==events.end())
 		return false;
 	
-	auto it2 = it->second.begin();
-	if(it2==it->second.end())
+	if(it->second.size()==0)
 		return false;
 	
-	api_cmd = *it2;
-	it->second.erase(api_cmd);
+	api_cmd = it->second.front().api_cmd;
+	*external_id = it->second.front().external_id;
+	it->second.erase(it->second.begin());
 	
 	return true;
 }

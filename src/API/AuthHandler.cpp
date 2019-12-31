@@ -19,8 +19,6 @@
 
 #include <API/AuthHandler.h>
 #include <Logger/Logger.h>
-#include <API/SocketSAX2Handler.h>
-#include <API/SocketResponseSAX2Handler.h>
 #include <Exception/Exception.h>
 #include <API/Statistics.h>
 #include <Configuration/ConfigurationEvQueue.h>
@@ -29,7 +27,7 @@
 #include <Crypto/Random.h>
 #include <Crypto/Sha1String.h>
 #include <Crypto/hmac.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -59,14 +57,14 @@ string AuthHandler::GetChallenge()
 	return challenge;
 }
 
-User AuthHandler::HandleChallenge(SocketQuerySAX2Handler *saxh) const
+User AuthHandler::HandleChallenge(XMLQuery *query) const
 {
 	// Check response
-	if(saxh->GetQueryGroup()!="auth")
+	if(query->GetQueryGroup()!="auth")
 		throw Exception("Authentication Handler","Expected 'auth' node","AUTH_ERROR");
 	
-	const string response = saxh->GetRootAttribute("response");
-	const string user_name = saxh->GetRootAttribute("user");
+	const string response = query->GetRootAttribute("response");
+	const string user_name = query->GetRootAttribute("user");
 	
 	User user;
 	

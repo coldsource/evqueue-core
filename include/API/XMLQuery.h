@@ -17,29 +17,25 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <API/QueryHandlers.h>
-#include <Logger/Logger.h>
+#ifndef _XMLQUERY_H_
+#define _XMLQUERY_H_
 
-QueryHandlers *QueryHandlers::instance=0;
+#include <API/XMLMessage.h>
+#include <Workflow/WorkflowParameters.h>
 
-QueryHandlers::QueryHandlers(void)
+#include <string>
+
+class XMLQuery:public XMLMessage
 {
-	instance = this;
-}
-
-void QueryHandlers::RegisterHandler(const std::string &type, t_query_handler handler)
-{
-	// No mutexes are used, RegisterHandler must be called within one thread only
-	handlers[type] = handler;
-}
-
-bool QueryHandlers::HandleQuery(const User &user, const std::string &type, XMLQuery *query, QueryResponse *response)
-{
-	auto it = handlers.find(type);
-	if(it==handlers.end())
-		return false;
+	WorkflowParameters *parameters = 0;
 	
-	Logger::Log(LOG_DEBUG, "API : Found handler for group '"+type+"'");
-	
-	return it->second(user, query, response);
-}
+	public:
+		XMLQuery(const std::string &context, int s);
+		XMLQuery(const std::string &context, const std::string &xml);
+		~XMLQuery();
+		
+		std::string GetQueryGroup();
+		WorkflowParameters *GetWorkflowParameters();
+};
+
+#endif

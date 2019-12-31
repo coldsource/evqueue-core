@@ -22,7 +22,7 @@
 #include <DB/DB.h>
 #include <Exception/Exception.h>
 #include <Logger/Logger.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
 #include <User/User.h>
@@ -125,14 +125,14 @@ void NotificationTypes::SyncBinaries(bool notify)
 	}
 }
 
-bool NotificationTypes::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool NotificationTypes::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
 	NotificationTypes *notification_types = NotificationTypes::GetInstance();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{

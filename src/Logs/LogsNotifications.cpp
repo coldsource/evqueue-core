@@ -20,7 +20,7 @@
 #include <Logs/LogsNotifications.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Workflow/Workflows.h>
 #include <Workflow/Workflow.h>
@@ -34,14 +34,14 @@
 
 using namespace std;
 
-bool LogsNotifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool LogsNotifications::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	string action = saxh->GetRootAttribute("action");
+	string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
-		unsigned int limit = saxh->GetRootAttributeInt("limit",100);
-		unsigned int offset = saxh->GetRootAttributeInt("offset",0);
+		unsigned int limit = query->GetRootAttributeInt("limit",100);
+		unsigned int offset = query->GetRootAttributeInt("offset",0);
 		
 		DB db;
 		

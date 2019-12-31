@@ -18,7 +18,7 @@
  */
 
 #include <API/handle_connection.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <Exception/Exception.h>
 #include <IO/NetworkInputSource.h>
 #include <Logger/Logger.h>
@@ -75,10 +75,8 @@ void handle_connection(int s)
 		session.SendChallenge();
 		if(session.GetStatus()==APISession::en_status::WAITING_CHALLENGE_RESPONSE)
 		{
-			SocketQuerySAX2Handler saxh("Authentication Handler");
-			SocketSAX2Handler socket_sax2_handler(s);
-			socket_sax2_handler.HandleQuery(&saxh);
-			session.ChallengeReceived(&saxh);
+			XMLQuery query("Authentication Handler",s);
+			session.ChallengeReceived(&query);
 		}
 		
 		session.SendGreeting();
@@ -87,14 +85,10 @@ void handle_connection(int s)
 		{
 			{
 				// Wait for a query
-				SocketQuerySAX2Handler saxh("API");
-				SocketSAX2Handler socket_sax2_handler(s);
-				
 				Logger::Log(LOG_DEBUG,"API : Waiting request");
+				XMLQuery query("API",s);
 				
-				socket_sax2_handler.HandleQuery(&saxh);
-				
-				if(session.QueryReceived(&saxh))
+				if(session.QueryReceived(&query))
 					break; // Quit requested
 				
 				session.SendResponse();

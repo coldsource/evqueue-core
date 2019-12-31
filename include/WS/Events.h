@@ -24,7 +24,7 @@
 
 #include <thread>
 #include <mutex>
-#include <set>
+#include <vector>
 #include <map>
 
 class Events
@@ -50,13 +50,20 @@ class Events
 		{
 			unsigned int instance_filter;
 			std::string api_cmd;
+			int external_id;
+		};
+		
+		struct st_event
+		{
+			std::string api_cmd;
+			int external_id;
 		};
 		
 		static Events *instance;
 		
 		std::mutex lock;
 		
-		std::map<struct lws *, std::set<std::string>> events;
+		std::map<struct lws *, std::vector<st_event>> events;
 		std::map<en_types, std::multimap<struct lws *, st_subscription>> subscriptions;
 		
 		struct lws_context *ws_context;
@@ -68,12 +75,12 @@ class Events
 		
 		static Events *GetInstance() { return instance; }
 		
-		void Subscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, const std::string &api_cmd);
+		void Subscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id, const std::string &api_cmd);
 		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter);
 		void UnsubscribeAll(struct lws *wsi);
 		
 		void Create(en_types type, unsigned int instance_id);
-		bool Get(struct lws *wsi, std::string &api_cmd);
+		bool Get(struct lws *wsi, int *external_id, std::string &api_cmd);
 };
 
 #endif

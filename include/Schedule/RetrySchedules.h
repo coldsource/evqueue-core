@@ -26,7 +26,7 @@
 #include <string>
 
 class RetrySchedule;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -44,7 +44,7 @@ class RetrySchedules:public APIObjectList<RetrySchedule>
 		
 		void Reload(bool notify = true);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
 
 #endif

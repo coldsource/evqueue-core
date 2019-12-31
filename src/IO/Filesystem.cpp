@@ -20,7 +20,7 @@
 #include <IO/Filesystem.h>
 #include <Exception/Exception.h>
 #include <API/QueryResponse.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <User/User.h>
 #include <Configuration/ConfigurationEvQueue.h>
 
@@ -73,13 +73,13 @@ void Filesystem::List(const string &path,QueryResponse *response)
 	closedir(dh);
 }
 		
-bool Filesystem::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Filesystem::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
-		string path = saxh->GetRootAttribute("path");
+		string path = query->GetRootAttribute("path");
 		
 		List(path,response);
 		

@@ -24,7 +24,7 @@
 
 #include <DOM/DOMDocument.h>
 
-class SocketResponseSAX2Handler;
+class XMLResponse;
 
 class ClientBase
 {
@@ -48,7 +48,7 @@ class ClientBase
 	protected:
 		int s = -1;
 	
-		SocketResponseSAX2Handler *saxh = 0;
+		XMLResponse *response = 0;
 	
 	public:
 		ClientBase(const std::string &connection_str, const std::string &user, const std::string &password);
@@ -57,9 +57,9 @@ class ClientBase
 		const std::string &Connect(void);
 		void Disconnect(void);
 		
-		void Exec(const std::string &cmd, bool record = false);
+		void Exec(const std::string &cmd);
 		DOMDocument *GetResponseDOM();
-		SocketResponseSAX2Handler *GetResponseHandler() { return saxh; }
+		XMLResponse *GetResponseHandler() { return response; }
 		const std::string &GetNode() { return node; }
 		
 		void SetTimeouts(int cnx_timeout,int snd_timeout,int rcv_timeout);
@@ -67,7 +67,7 @@ class ClientBase
 	protected:
 		void connect();
 		void send(const std::string &cmd);
-		void recv(bool record = false);
+		void recv();
 		void authenticate();
 		void disconnect();
 };

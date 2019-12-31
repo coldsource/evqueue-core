@@ -27,7 +27,7 @@
 
 class WorkflowSchedule;
 class WorkflowParameters;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 
 class WorkflowScheduler:public Scheduler

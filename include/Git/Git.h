@@ -20,7 +20,7 @@
 #ifndef _GIT_H_
 #define _GIT_H_
 
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class LibGit2;
 class User;
@@ -59,7 +59,7 @@ class Git
 		void ListWorkflows(QueryResponse *response);
 #endif
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
 #ifdef USELIBGIT2

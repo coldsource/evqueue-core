@@ -23,7 +23,7 @@
 #include <string>
 
 class DB;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -48,7 +48,7 @@ class RetrySchedule
 		static void Edit(unsigned int id,const std::string &name, const std::string &base64);
 		static void Delete(unsigned int id);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
 		static std::string create_edit_check(const std::string &name, const std::string &base64);

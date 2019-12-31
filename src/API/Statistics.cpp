@@ -19,7 +19,7 @@
 
 #include <API/Statistics.h>
 #include <API/ActiveConnections.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Exception/Exception.h>
 #include <Queue/QueuePool.h>
@@ -166,15 +166,15 @@ void Statistics::ResetGlobalStatistics()
 	workflow_instance_errors = 0;
 }
 
-bool Statistics::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Statistics::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	Statistics *stats = Statistics::GetInstance();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="query")
 	{
-		const string type = saxh->GetRootAttribute("type");
+		const string type = query->GetRootAttribute("type");
 		
 		if(type=="global")
 		{
@@ -201,7 +201,7 @@ bool Statistics::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Que
 		if(!user.IsAdmin())
 			User::InsufficientRights();
 		
-		const string type = saxh->GetRootAttribute("type");
+		const string type = query->GetRootAttribute("type");
 		
 		if(type=="global")
 		{

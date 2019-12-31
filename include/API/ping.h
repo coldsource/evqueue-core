@@ -20,10 +20,10 @@
 #ifndef _PING_H_
 #define _PING_H_
 
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
-bool ping_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+bool ping_handle_query(const User &user, XMLQuery *query, QueryResponse *response);
 
 #endif

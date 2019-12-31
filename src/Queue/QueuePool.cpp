@@ -24,7 +24,7 @@
 #include <WorkflowInstance/WorkflowInstance.h>
 #include <Logger/Logger.h>
 #include <Configuration/ConfigurationEvQueue.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
 #include <User/User.h>
@@ -431,14 +431,14 @@ bool QueuePool::Exists(unsigned int id)
 	return true;
 }
 
-bool QueuePool::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool QueuePool::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
 	QueuePool *qp = QueuePool::GetInstance();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{

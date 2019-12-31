@@ -33,7 +33,7 @@
 #define QUEUE_SCHEDULER_PRIO 2
 
 class WorkflowInstance;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -107,7 +107,7 @@ class Queue
 		static void Edit(unsigned int id,const std::string &name, int concurrency, const std::string &scheduler, int dynamic);
 		static void Delete(unsigned int id);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
 		void enqueue_task(WorkflowInstance *workflow_instance,DOMElement task);

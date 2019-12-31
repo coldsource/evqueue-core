@@ -19,7 +19,7 @@
 
 #include <API/ClientBase.h>
 #include <Exception/Exception.h>
-#include <API/SocketResponseSAX2Handler.h>
+#include <API/XMLResponse.h>
 #include <Crypto/hmac.h>
 
 #include <sys/types.h>
@@ -31,6 +31,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -103,8 +104,8 @@ ClientBase::~ClientBase()
 	if(s!=-1)
 		close(s);
 	
-	if(saxh)
-		delete saxh;
+	if(response)
+		delete response;
 }
 
 const string& ClientBase::Connect(void)
@@ -119,7 +120,7 @@ void ClientBase::Disconnect(void)
 	disconnect();
 }
 
-void ClientBase::Exec(const std::string &cmd, bool record)
+void ClientBase::Exec(const std::string &cmd)
 {
 	if(!connected)
 		connect();
@@ -128,16 +129,16 @@ void ClientBase::Exec(const std::string &cmd, bool record)
 	
 	do
 	{
-		recv(record);
-	} while(saxh->GetGroup()=="ping"); // Skip DPD pings from engine
+		recv();
+	} while(response->GetGroup()=="ping"); // Skip DPD pings from engine
 	
-	if(saxh->GetGroup()!="response")
+	if(response->GetGroup()!="response")
 		throw Exception("Client","Invalid response from server");
 	
-	if(saxh->GetRootAttribute("status")!="OK")
+	if(response->GetRootAttribute("status")!="OK")
 	{
-		string error = saxh->GetRootAttribute("error");
-		string error_code = saxh->GetRootAttribute("error-code","");
+		string error = response->GetRootAttribute("error");
+		string error_code = response->GetRootAttribute("error-code","");
 		
 		string message = "Error executing command : "+error;
 		if(error_code!="")
@@ -151,10 +152,10 @@ void ClientBase::Exec(const std::string &cmd, bool record)
 
 DOMDocument *ClientBase::GetResponseDOM()
 {
-	if(!saxh)
+	if(!response)
 		return 0;
 	
-	return saxh->GetDOM();
+	return response->GetDOM();
 }
 
 void ClientBase::SetTimeouts(int cnx_timeout,int snd_timeout,int rcv_timeout)
@@ -242,10 +243,10 @@ void ClientBase::connect()
 	// Read server greeting
 	recv();
 	
-	if(saxh->GetGroup()=="ready")
+	if(response->GetGroup()=="ready")
 	{
 		authenticated = true;
-		node = saxh->GetRootAttribute("node");
+		node = response->GetRootAttribute("node");
 	}
 	else
 		authenticate();
@@ -257,16 +258,13 @@ void ClientBase::send(const std::string &cmd)
 		throw Exception("Client","Error sending data to server");
 }
 
-void ClientBase::recv(bool record)
+void ClientBase::recv()
 {
 	// Remplace old handler
-	if(saxh)
-		delete saxh;
+	if(response)
+		delete response;
 	
-	saxh = new SocketResponseSAX2Handler("Client",record);
-	
-	SocketSAX2Handler socket_sax2_handler(s);
-	socket_sax2_handler.HandleQuery(saxh);
+	response = new XMLResponse("Client",s);
 }
 
 void ClientBase::authenticate()
@@ -277,16 +275,16 @@ void ClientBase::authenticate()
 	if(user.length()==0 || password.length()==0)
 		throw Exception("Client","Authentication is required but no user/password has been provided");
 	
-	string response = hash_hmac(password, saxh->GetRootAttribute("challenge"));
+	string challenge_response = hash_hmac(password, response->GetRootAttribute("challenge"));
 	
-	send("<auth response='"+response+"' user='"+user+"' />");
+	send("<auth response='"+challenge_response+"' user='"+user+"' />");
 	recv();
 	
-	if(saxh->GetGroup()!="ready")
+	if(response->GetGroup()!="ready")
 		throw Exception("Client","Authentication error");
 	
 	authenticated = true;
-	node = saxh->GetRootAttribute("node");
+	node = response->GetRootAttribute("node");
 }
 
 void ClientBase::disconnect()

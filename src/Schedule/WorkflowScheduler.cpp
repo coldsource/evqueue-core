@@ -27,7 +27,6 @@
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
-#include <API/SocketQuerySAX2Handler.h>
 #include <API/QueryResponse.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Cluster/Cluster.h>

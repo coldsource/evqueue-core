@@ -18,7 +18,7 @@
  */
 
 #include <API/ClientBase.h>
-#include <API/SocketResponseSAX2Handler.h>
+#include <API/XMLResponse.h>
 #include <Exception/Exception.h>
 #include <XML/XMLString.h>
 #include <Crypto/sha1.h>
@@ -231,8 +231,8 @@ int main(int argc, char  **argv)
 			ClientBase client(connection_str,user,password);
 			client.Exec(workflow_xml);
 			
-			SocketResponseSAX2Handler *saxh = client.GetResponseHandler();
-			string wfid = saxh->GetRootAttribute("workflow-instance-id");
+			XMLResponse *response = client.GetResponseHandler();
+			string wfid = response->GetRootAttribute("workflow-instance-id");
 			printf("Launched instance %s\n",wfid.c_str());
 			
 		}

@@ -22,7 +22,7 @@
 
 #include <string>
 
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -31,6 +31,6 @@ void tools_sync_tasks(bool notify);
 void tools_sync_notifications(bool notify);
 void tools_flush_retrier(void);
 
-bool tools_handle_query(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+bool tools_handle_query(const User &user, XMLQuery *query, QueryResponse *response);
 
 #endif

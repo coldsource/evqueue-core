@@ -23,7 +23,7 @@
 #include <Logger/Logger.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <User/User.h>
 
@@ -81,15 +81,15 @@ const vector<WorkflowSchedule *> &WorkflowSchedules::GetActiveWorkflowSchedules(
 	return active_schedules;
 }
 
-bool WorkflowSchedules::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool WorkflowSchedules::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
 	WorkflowSchedules *workflow_schedules = WorkflowSchedules::GetInstance();
 	
-	string action = saxh->GetRootAttribute("action");
-	bool display_parameters = saxh->GetRootAttributeBool("display_parameters",false);
+	string action = query->GetRootAttribute("action");
+	bool display_parameters = query->GetRootAttributeBool("display_parameters",false);
 	
 	if(action=="list")
 	{

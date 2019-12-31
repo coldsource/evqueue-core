@@ -23,7 +23,7 @@
 #include <string>
 
 class DB;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -58,7 +58,7 @@ class NotificationType
 		static void GetConf(unsigned int id, QueryResponse *response);
 		static void SetConf(unsigned int id, const std::string &data);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
 
 #endif

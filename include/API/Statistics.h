@@ -22,7 +22,7 @@
 
 #include <mutex>
 
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -67,7 +67,7 @@ class Statistics
 		void SendGlobalStatistics(QueryResponse *response);
 		void ResetGlobalStatistics();
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
 
 #endif

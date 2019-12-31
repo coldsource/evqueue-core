@@ -27,7 +27,7 @@
 #include <Logger/Logger.h>
 #include <Logger/LoggerAPI.h>
 #include <Crypto/Sha1String.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Schedule/WorkflowScheduler.h>
 #include <User/Users.h>
@@ -354,16 +354,16 @@ string Workflow::create_edit_check(const string &name, const string &base64, con
 	return workflow_xml;
 }
 
-bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
@@ -371,26 +371,26 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 	}
 	else if(action=="create" || action=="edit")
 	{
-		string name = saxh->GetRootAttribute("name");
-		string content = saxh->GetRootAttribute("content");
-		string group = saxh->GetRootAttribute("group","");
-		string comment = saxh->GetRootAttribute("comment","");
+		string name = query->GetRootAttribute("name");
+		string content = query->GetRootAttribute("content");
+		string group = query->GetRootAttribute("group","");
+		string comment = query->GetRootAttribute("comment","");
 		
 		if(action=="create")
 		{
 			unsigned int id = Create(name, content, group, comment);
 			
-			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
 			response->GetDOM()->getDocumentElement().setAttribute("workflow-id",to_string(id));
 		}
 		else
 		{
-			unsigned int id = saxh->GetRootAttributeInt("id");
+			unsigned int id = query->GetRootAttributeInt("id");
 			
 			Edit(id, name, content, group, comment);
 			
-			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 		}
 		
 		Workflows::GetInstance()->Reload();
@@ -399,23 +399,23 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 	}
 	else if(action=="delete")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Delete(id);
 		
-		LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
+		LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 		
 		return true;
 	}
 	else if(action=="subscribe_notification" || action=="unsubscribe_notification" || action=="clear_notifications" || action=="list_notifications")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		if(action=="clear_notifications")
 		{
 			ClearNotifications(id);
 			
-			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
 			Workflows::GetInstance()->Reload();
 			
@@ -429,14 +429,14 @@ bool Workflow::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, Query
 		}
 		else if(action=="subscribe_notification" || action=="unsubscribe_notification")
 		{
-			unsigned int notification_id = saxh->GetRootAttributeInt("notification_id");
+			unsigned int notification_id = query->GetRootAttributeInt("notification_id");
 						
 			if(action=="subscribe_notification")
 				SubscribeNotification(id,notification_id);
 			else
 				UnsubscribeNotification(id,notification_id);
 			
-			LoggerAPI::LogAction(user,id,"Workflow",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
 			Workflows::GetInstance()->Reload();
 			

@@ -165,7 +165,7 @@ int main(int argc, char  **argv)
 		try
 		{
 			ClientBase client(connection_str,user,password);
-			client.Exec(query_xml,true);
+			client.Exec(query_xml);
 			
 			DOMDocument *xmldoc = client.GetResponseDOM();
 			

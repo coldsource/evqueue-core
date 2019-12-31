@@ -26,7 +26,7 @@
 
 class DB;
 class WorkflowInstance;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -62,7 +62,7 @@ class Notification
 		static void Edit(unsigned int id,const std::string &name, int subscribe_all, const std::string parameters);
 		static void Delete(unsigned int id);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
 		std::string json_escape(const std::string &str);

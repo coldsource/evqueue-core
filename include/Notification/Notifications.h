@@ -27,7 +27,7 @@
 
 class Notification;
 class WorkflowInstance;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 
@@ -63,7 +63,7 @@ class Notifications:public APIObjectList<Notification>
 		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
 		void Exit(pid_t pid, int status, char retcode);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
 		void store_log(pid_t pid,unsigned int instance_id, unsigned int notification_id);

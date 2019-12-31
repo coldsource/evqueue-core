@@ -21,7 +21,7 @@
 #include <DB/DB.h>
 #include <Exception/Exception.h>
 #include <API/QueryResponse.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <Crypto/base64.h>
 #include <Configuration/ConfigurationEvQueue.h>
 
@@ -59,13 +59,13 @@ string Datastore::gzip(const string &str)
 	return output;
 }
 
-bool Datastore::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Datastore::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
-		unsigned int datastore_id = saxh->GetRootAttributeInt("id");
+		unsigned int datastore_id = query->GetRootAttributeInt("id");
 		
 		DB db;
 		db.QueryPrintf("SELECT datastore_value FROM t_datastore WHERE datastore_id=%i",&datastore_id);

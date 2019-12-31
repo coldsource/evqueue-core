@@ -24,7 +24,7 @@
 #include <Logger/Logger.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <WorkflowInstance/WorkflowInstance.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
 #include <User/User.h>
@@ -151,14 +151,14 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 	}
 }
 
-bool Notifications::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Notifications::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
 	Notifications *notifications = Notifications::GetInstance();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{

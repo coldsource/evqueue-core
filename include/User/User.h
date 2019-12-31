@@ -25,7 +25,7 @@
 #include <vector>
 
 class DB;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 
 class User
@@ -76,7 +76,7 @@ class User
 		static void GrantRight(const std::string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);
 		static void RevokeRight(const std::string &name, unsigned int workflow_id);
 		
-		static bool HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
 		static void create_edit_check(const std::string &name, const std::string &password, const std::string &profile);

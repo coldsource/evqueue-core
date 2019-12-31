@@ -30,7 +30,7 @@ namespace task_output_method { enum task_output_method {XML,TEXT,UNKNOWN}; }
 namespace task_type { enum task_type {BINARY,SCRIPT}; }
 
 class DB;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 class QueryResponse;
 class User;
 class DOMDocument;

@@ -23,7 +23,7 @@
 #include <Workflow/Workflows.h>
 #include <Logger/LoggerAPI.h>
 #include <Exception/Exception.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <DB/DB.h>
 #include <global.h>
@@ -95,16 +95,16 @@ void Tag::Delete(unsigned int id)
 	db.CommitTransaction();
 }
 
-bool Tag::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
 	if(action=="get")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
@@ -112,11 +112,11 @@ bool Tag::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	else if(action=="create")
 	{
-		string label = saxh->GetRootAttribute("label");
+		string label = query->GetRootAttribute("label");
 		
 		unsigned int id = Create(label);
 		
-		LoggerAPI::LogAction(user,id,"Tag",saxh->GetQueryGroup(),action);
+		LoggerAPI::LogAction(user,id,"Tag",query->GetQueryGroup(),action);
 		
 		response->GetDOM()->getDocumentElement().setAttribute("tag-id",to_string(id));
 		
@@ -126,12 +126,12 @@ bool Tag::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	else if(action=="edit")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
-		string label = saxh->GetRootAttribute("label");
+		unsigned int id = query->GetRootAttributeInt("id");
+		string label = query->GetRootAttribute("label");
 		
 		Edit(id,label);
 		
-		LoggerAPI::LogAction(user,id,"Tag",saxh->GetQueryGroup(),action);
+		LoggerAPI::LogAction(user,id,"Tag",query->GetQueryGroup(),action);
 		
 		Tags::GetInstance()->Reload();
 		
@@ -139,11 +139,11 @@ bool Tag::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryRespo
 	}
 	else if(action=="delete")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Delete(id);
 		
-		LoggerAPI::LogAction(user,id,"Tag",saxh->GetQueryGroup(),action);
+		LoggerAPI::LogAction(user,id,"Tag",query->GetQueryGroup(),action);
 		
 		Tags::GetInstance()->Reload();
 		

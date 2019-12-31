@@ -24,7 +24,7 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <API/QueryHandlers.h>
 #include <Exception/Exception.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -99,9 +99,9 @@ void APISession::SendChallenge()
 	status = WAITING_CHALLENGE_RESPONSE;
 }
 
-void APISession::ChallengeReceived(SocketQuerySAX2Handler *saxh)
+void APISession::ChallengeReceived(XMLQuery *query)
 {
-	user = ah.HandleChallenge(saxh);
+	user = ah.HandleChallenge(query);
 	
 	status = AUTHENTICATED;
 	
@@ -135,15 +135,17 @@ void APISession::SendGreeting()
 	status = READY;
 }
 
-bool APISession::QueryReceived(SocketQuerySAX2Handler *saxh)
+bool APISession::QueryReceived(XMLQuery *query,int external_id)
 {
 	status=QUERY_RECEIVED; // Query received, we will now need to send the response before receiving another query
 	
 	// Empty previous response
 	is_xpath_response = false;
 	response.Empty();
+	if(external_id)
+		response.SetAttribute("external-id",to_string(external_id));
 	
-	if(saxh->GetQueryGroup()=="quit")
+	if(query->GetQueryGroup()=="quit")
 	{
 		Logger::Log(LOG_DEBUG,"API : Received quit command, exiting channel");
 		return true;
@@ -151,7 +153,7 @@ bool APISession::QueryReceived(SocketQuerySAX2Handler *saxh)
 	
 	try
 	{
-		if(!QueryHandlers::GetInstance()->HandleQuery(user, saxh->GetQueryGroup(),saxh, &response))
+		if(!QueryHandlers::GetInstance()->HandleQuery(user, query->GetQueryGroup(),query, &response))
 			throw Exception("API","Unknown command or action","UNKNOWN_COMMAND");
 	}
 	catch (Exception &e)
@@ -166,13 +168,15 @@ bool APISession::QueryReceived(SocketQuerySAX2Handler *saxh)
 	Logger::Log(LOG_DEBUG,"API : Successfully called, sending response");
 				
 	// Apply XPath filter if requested
-	string xpath = saxh->GetRootAttribute("xpathfilter","");
+	string xpath = query->GetRootAttribute("xpathfilter","");
 	if(xpath!="")
 	{
 		unique_ptr<DOMXPathResult> res(response.GetDOM()->evaluate(xpath,response.GetDOM()->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
 		
 		is_xpath_response = true;
 		xpath_response.Empty();
+		if(external_id)
+			xpath_response.SetAttribute("external-id",to_string(external_id));
 		xpath_response.GetDOM()->ImportXPathResult(res.get(),xpath_response.GetDOM()->getDocumentElement());
 	}
 	
@@ -189,9 +193,9 @@ void APISession::SendResponse()
 		response.SendResponse();
 }
 
-void APISession::Query(const std::string &xml)
+void APISession::Query(const std::string &xml,int external_id)
 {
-	SocketQuerySAX2Handler saxh(context,xml);
-	QueryReceived(&saxh);
+	XMLQuery query(context,xml);
+	QueryReceived(&query,external_id);
 	SendResponse();
 }

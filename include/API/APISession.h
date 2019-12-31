@@ -28,7 +28,7 @@
 
 #include <string>
 
-class SocketQuerySAX2Handler;
+class XMLQuery;
 
 class APISession
 {
@@ -69,13 +69,13 @@ class APISession
 		en_status GetStatus() { return status; }
 		
 		void SendChallenge();
-		void ChallengeReceived(SocketQuerySAX2Handler *saxh);
+		void ChallengeReceived(XMLQuery *query);
 		
 		void SendGreeting();
 		
-		bool QueryReceived(SocketQuerySAX2Handler *saxh);
+		bool QueryReceived(XMLQuery *query,int external_id=0);
 		void SendResponse();
-		void Query(const std::string &xml);
+		void Query(const std::string &xml, int external_id=0);
 };
 
 #endif

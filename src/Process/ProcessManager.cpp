@@ -26,7 +26,7 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Schedule/Retrier.h>
 #include <API/Statistics.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Logger/Logger.h>
 #include <User/User.h>
@@ -375,17 +375,17 @@ pid_t ProcessManager::ExecuteTask(
 	return pid;
 }
 
-bool ProcessManager::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool ProcessManager::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="tail")
 	{
-		unsigned int tid = saxh->GetRootAttributeInt("tid");
-		string type_str= saxh->GetRootAttribute("type");
+		unsigned int tid = query->GetRootAttributeInt("tid");
+		string type_str= query->GetRootAttribute("type");
 		int type_int;
 		if(type_str=="stdout")
 			type_int = STDOUT_FILENO;

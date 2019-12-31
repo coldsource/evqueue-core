@@ -23,7 +23,7 @@
 #include <string>
 
 class User;
-class SocketQuerySAX2Handler;
+class XMLQuery;
 
 class AuthHandler
 {
@@ -38,7 +38,7 @@ class AuthHandler
 		void SetRemote(const std::string &remote_host, int remote_port);
 		
 		std::string GetChallenge();
-		User HandleChallenge(SocketQuerySAX2Handler *saxh) const;
+		User HandleChallenge(XMLQuery *query) const;
 	
 	private:
 		std::string generate_challenge() const;

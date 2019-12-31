@@ -22,7 +22,7 @@
 #include <Exception/Exception.h>
 #include <Logger/LoggerAPI.h>
 #include <DB/DB.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <XML/XMLUtils.h>
 #include <User/User.h>
@@ -116,16 +116,16 @@ std::string RetrySchedule::create_edit_check(const std::string &name, const std:
 	return retry_schedule_xml;
 }
 
-bool RetrySchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	const string action = saxh->GetRootAttribute("action");
+	const string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Get(id,response);
 		
@@ -133,22 +133,22 @@ bool RetrySchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 	}
 	else if(action=="create" || action=="edit")
 	{
-		string name = saxh->GetRootAttribute("name");
-		string content = saxh->GetRootAttribute("content");
+		string name = query->GetRootAttribute("name");
+		string content = query->GetRootAttribute("content");
 		
 		if(action=="create")
 		{
 			unsigned int id = Create(name, content);
 			
-			LoggerAPI::LogAction(user,id,"RetrySchedule",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 			
 			response->GetDOM()->getDocumentElement().setAttribute("retry-schedule-id",to_string(id));
 		}
 		else
 		{
-			unsigned int id = saxh->GetRootAttributeInt("id");
+			unsigned int id = query->GetRootAttributeInt("id");
 			
-			LoggerAPI::LogAction(user,id,"RetrySchedule",saxh->GetQueryGroup(),action);
+			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 			
 			Edit(id,name, content);
 		}
@@ -159,11 +159,11 @@ bool RetrySchedule::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, 
 	}
 	else if(action=="delete")
 	{
-		unsigned int id = saxh->GetRootAttributeInt("id");
+		unsigned int id = query->GetRootAttributeInt("id");
 		
 		Delete(id);
 		
-		LoggerAPI::LogAction(user,id,"RetrySchedule",saxh->GetQueryGroup(),action);
+		LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 		
 		RetrySchedules::GetInstance()->Reload();
 		

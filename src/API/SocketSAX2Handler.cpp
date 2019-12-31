@@ -20,7 +20,10 @@
 #include <API/SocketSAX2Handler.h>
 #include <IO/NetworkInputSource.h>
 #include <Exception/Exception.h>
+#include <XML/XMLString.h>
 
+#include <xercesc/sax2/Attributes.hpp>
+#include <xercesc/dom/DOM.hpp>
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp>
@@ -28,128 +31,32 @@
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 
 using namespace std;
-using namespace xercesc;
 
-SocketSAX2HandlerInterface::SocketSAX2HandlerInterface(const string &context)
+SocketSAX2Handler::SocketSAX2Handler()
 {
-	this->context = context;
+	level = 0;
+	ready = false;
 }
 
-const std::string &SocketSAX2HandlerInterface::GetRootAttribute(const std::string &name)
+void SocketSAX2Handler::HandleQuery(int socket, DOMDocument *xmldoc)
 {
-	auto it = root_attributes.find(name);
-	if(it==root_attributes.end())
-		throw Exception(context,"Missing '"+name+"' attribute","MISSING_PARAMETER");
-	
-	return it->second;
-}
-
-const std::string &SocketSAX2HandlerInterface::GetRootAttribute(const std::string &name, const std::string &default_value)
-{
-	auto it = root_attributes.find(name);
-	if(it==root_attributes.end())
-		return default_value;
-	
-	return it->second;
-}
-
-int SocketSAX2HandlerInterface::GetRootAttributeInt(const std::string &name)
-{
-	auto it = root_attributes.find(name);
-	if(it==root_attributes.end())
-		throw Exception(context,"Missing '"+name+"' attribute","MISSING_PARAMETER");
+	xercesc::SAX2XMLReader *parser = 0;
+	this->xmldoc = xmldoc;
 	
 	try
 	{
-		return std::stoi(it->second);
-	}
-	catch(...)
-	{
-		throw Exception(context,"Attribute '"+name+"' has invalid integer value","INVALID_INTEGER");
-	}
-}
-
-int SocketSAX2HandlerInterface::GetRootAttributeInt(const std::string &name, int default_value)
-{
-	auto it = root_attributes.find(name);
-	if(it==root_attributes.end())
-		return default_value;
-
-	try
-	{
-		return std::stoi(it->second);
-	}
-	catch(...)
-	{
-		throw Exception(context,"Attribute '"+name+"' has invalid integer value","INVALID_INTEGER");
-	}
-}
-
-bool SocketSAX2HandlerInterface::GetRootAttributeBool(const std::string &name)
-{
-	auto it = root_attributes.find(name);
-	if(it==root_attributes.end())
-		throw Exception(context,"Missing '"+name+"' attribute","MISSING_PARAMETER");
-	
-	if(it->second=="yes")
-		return true;
-	else if(it->second=="no")
-		return false;
-	
-	try
-	{
-		return std::stoi(it->second)?true:false;
-	}
-	catch(...)
-	{
-		throw Exception(context,"Attribute '"+name+"' has invalid boolean value","INVALID_BOOLEAN");
-	}
-}
-
-bool SocketSAX2HandlerInterface::GetRootAttributeBool(const std::string &name, bool default_value)
-{
-	auto it = root_attributes.find(name);
-	if(it==root_attributes.end())
-		return default_value;
-	
-	if(it->second=="yes")
-		return true;
-	else if(it->second=="no")
-		return false;
-
-	try
-	{
-		return std::stoi(it->second)?true:false;
-	}
-	catch(...)
-	{
-		throw Exception(context,"Attribute '"+name+"' has invalid boolean value","INVALID_BOOLEAN");
-	}
-}
-
-SocketSAX2Handler::SocketSAX2Handler(int socket)
-{
-	this->socket = socket;
-}
-
-void SocketSAX2Handler::HandleQuery(SocketSAX2HandlerInterface *handler)
-{
-	SAX2XMLReader *parser = 0;
-	
-	try
-	{
-		parser = XMLReaderFactory::createXMLReader();
-		parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-		parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
+		parser = xercesc::XMLReaderFactory::createXMLReader();
+		parser->setFeature(xercesc::XMLUni::fgSAX2CoreValidation, true);
+		parser->setFeature(xercesc::XMLUni::fgSAX2CoreNameSpaces, true);
 		
 		XMLSize_t lowWaterMark = 0;
-		parser->setProperty(XMLUni::fgXercesLowWaterMark, &lowWaterMark);
+		parser->setProperty(xercesc::XMLUni::fgXercesLowWaterMark, &lowWaterMark);
 		
-		parser->setContentHandler(handler);
-		parser->setErrorHandler(handler);
+		parser->setContentHandler(this);
+		parser->setErrorHandler(this);
 		
 		// Create a progressive scan token
-		XMLPScanToken token;
+		xercesc::XMLPScanToken token;
 		NetworkInputSource source(socket);
 		
 		try
@@ -158,16 +65,16 @@ void SocketSAX2Handler::HandleQuery(SocketSAX2HandlerInterface *handler)
 				throw Exception("core","parseFirst failed");
 			
 			bool gotMore = true;
-			while (gotMore && !handler->IsReady()) {
+			while (gotMore && !this->IsReady()) {
 				gotMore = parser->parseNext(token);
 			}
 		}
-		catch (const SAXParseException& toCatch)
+		catch (const xercesc::SAXParseException& toCatch)
 		{
-			char *message = XMLString::transcode(toCatch.getMessage());
+			char *message = xercesc::XMLString::transcode(toCatch.getMessage());
 			string excpt_msg = "Invalid query XML structure : ";
 			excpt_msg.append(message);
-			XMLString::release(&message);
+			xercesc::XMLString::release(&message);
 			
 			throw Exception("Query XML parsing",excpt_msg);
 		}
@@ -194,4 +101,59 @@ void SocketSAX2Handler::HandleQuery(SocketSAX2HandlerInterface *handler)
 	
 	if (parser!=0)
 		delete parser;
+}
+
+void SocketSAX2Handler::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname, const xercesc::Attributes& attrs)
+{
+	XMLString node_name(localname);
+	
+	level++;
+	
+	// Store XML in DOM document, recreating all elements
+	DOMElement node = xmldoc->createElement(node_name);
+	
+	for(int i=0;i<attrs.getLength();i++)
+	{
+		const XMLCh *attr_name, *attr_value;
+		attr_name = attrs.getLocalName(i);
+		attr_value = attrs.getValue(i);
+		
+		node.setAttribute(XMLString(attr_name),XMLString(attr_value));
+	}
+	
+	if(level==1)
+		xmldoc->appendChild(node);
+	else
+		current_node.at(level-2).appendChild(node);
+	
+	current_node.push_back(node);
+}
+
+void SocketSAX2Handler::endElement (const XMLCh *const uri, const XMLCh *const localname, const XMLCh *const qname)
+{
+	level--;
+	
+	current_node.pop_back();
+	
+	if (level==0) {
+		ready = true;
+		throw 0;  // get out of the parseNext loop
+	}
+}
+
+void SocketSAX2Handler::characters(const XMLCh *const chars, const XMLSize_t length)
+{
+	XMLCh *chars_nt = new XMLCh[length+1];
+	memcpy(chars_nt,chars,length*sizeof(XMLCh));
+	chars_nt[length] = 0;
+	
+	current_text_node = xmldoc->createTextNode(XMLString(chars_nt));
+	current_node.at(level-1).appendChild(current_text_node);
+	
+	delete[] chars_nt;
+}
+
+void SocketSAX2Handler::endDocument ()
+{
+	ready = true;
 }

@@ -23,7 +23,7 @@
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
-#include <API/SocketQuerySAX2Handler.h>
+#include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
 
@@ -67,14 +67,14 @@ void Tags::Reload(bool notify)
 	}
 }
 
-bool Tags::HandleQuery(const User &user, SocketQuerySAX2Handler *saxh, QueryResponse *response)
+bool Tags::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
 	Tags *tags = Tags::GetInstance();
 	
-	string action = saxh->GetRootAttribute("action");
+	string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
