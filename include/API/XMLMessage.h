@@ -46,6 +46,7 @@ class XMLMessage
 		
 		const std::map<std::string,std::string> &GetRootAttributes() { return root_attributes; }
 		
+		bool HasRootAttribute(const std::string &name);
 		const std::string &GetRootAttribute(const std::string &name);
 		const std::string &GetRootAttribute(const std::string &name, const std::string &default_value);
 		int GetRootAttributeInt(const std::string &name);

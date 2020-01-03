@@ -63,6 +63,14 @@ void XMLMessage::XMLMessage::init()
 	}
 }
 
+bool XMLMessage::HasRootAttribute(const std::string &name)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		return false;
+	return true;
+}
+
 const std::string &XMLMessage::GetRootAttribute(const std::string &name)
 {
 	auto it = root_attributes.find(name);

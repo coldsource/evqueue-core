@@ -204,7 +204,17 @@ bool Workflow::CheckWorkflowName(const string &workflow_name)
 void Workflow::Get(unsigned int id, QueryResponse *response)
 {
 	Workflow workflow = Workflows::GetInstance()->Get(id);
-	
+	get(workflow,response);
+}
+
+void Workflow::Get(const string &name, QueryResponse *response)
+{
+	Workflow workflow = Workflows::GetInstance()->Get(name);
+	get(workflow,response);
+}
+
+void Workflow::get(const Workflow &workflow, QueryResponse *response)
+{
 	DOMElement node = (DOMElement)response->AppendXML("<workflow />");
 	response->AppendXML(workflow.GetXML(), node);
 	node.setAttribute("name",workflow.GetName());
@@ -363,9 +373,18 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 	
 	if(action=="get")
 	{
-		unsigned int id = query->GetRootAttributeInt("id");
-		
-		Get(id,response);
+		if(query->HasRootAttribute("id"))
+		{
+			unsigned int id = query->GetRootAttributeInt("id");
+			Get(id,response);
+		}
+		else if(query->HasRootAttribute("name"))
+		{
+			string name = query->GetRootAttribute("name");
+			Get(name,response);
+		}
+		else
+			throw Exception("Workflow","Missing 'id' or 'name' parameter","MISSING_PARAMETER");
 		
 		return true;
 	}

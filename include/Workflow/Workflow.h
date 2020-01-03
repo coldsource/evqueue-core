@@ -65,6 +65,7 @@ class Workflow
 		
 		static bool CheckWorkflowName(const std::string &workflow_name);
 		static void Get(unsigned int id, QueryResponse *response);
+		static void Get(const std::string &name, QueryResponse *response);
 		static unsigned int Create(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment, const std::string &lastcommit = "");
 		static void Edit(unsigned int id, const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
 		static void Delete(unsigned int id);
@@ -81,6 +82,7 @@ class Workflow
 	
 	private:
 		static std::string create_edit_check(const std::string &name, const std::string &base64, const std::string &group, const std::string &comment);
+		static void get(const Workflow &workflow, QueryResponse *response);
 };
 
 #endif
