@@ -64,7 +64,7 @@ void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int ins
 	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{instance_filter, api_cmd, external_id}));
 }
 
-void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int instance_filter)
+void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id)
 {
 	unique_lock<mutex> llock(lock);
 	
@@ -77,10 +77,10 @@ void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int i
 	auto it2 = it->second.begin();
 	while(it2!=it->second.end())
 	{
-		if(it2->first==wsi && it2->second.instance_filter==instance_filter)
+		if(it2->first==wsi && it2->second.instance_filter==instance_filter && (external_id==0 || external_id==it2->second.external_id))
 			it2 = it->second.erase(it2);
 		else
-			++it;
+			++it2;
 	}
 	
 	if(it->second.size()==0)

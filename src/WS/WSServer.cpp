@@ -165,7 +165,8 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 						{
 							string type = query.GetRootAttribute("type");
 							unsigned int instance_id = query.GetRootAttributeInt("instance_id",0);
-							Events::GetInstance()->Unsubscribe(type,wsi,instance_id);
+							int external_id = query.GetRootAttributeInt("external_id",0);
+							Events::GetInstance()->Unsubscribe(type,wsi,instance_id,external_id);
 						}
 						else if(query.GetRootAttribute("action")=="unsubscribeall")
 						{

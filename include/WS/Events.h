@@ -76,7 +76,7 @@ class Events
 		static Events *GetInstance() { return instance; }
 		
 		void Subscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id, const std::string &api_cmd);
-		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter);
+		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id);
 		void UnsubscribeAll(struct lws *wsi);
 		
 		void Create(en_types type, unsigned int instance_id);
