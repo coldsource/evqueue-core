@@ -37,6 +37,10 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return INSTANCE_TERMINATED;
 	else if(type_str=="INSTANCE_REMOVED")
 		return INSTANCE_REMOVED;
+	else if(type_str=="INSTANCE_TAGGED")
+		return INSTANCE_TAGGED;
+	else if(type_str=="INSTANCE_UNTAGGED")
+		return INSTANCE_UNTAGGED;
 	else if(type_str=="TASK_ENQUEUE")
 		return TASK_ENQUEUE;
 	else if(type_str=="TASK_EXECUTE")
@@ -51,6 +55,12 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return QUEUE_EXECUTE;
 	else if(type_str=="QUEUE_TERMINATE")
 		return QUEUE_TERMINATE;
+	else if(type_str=="TAG_CREATED")
+		return TAG_CREATED;
+	else if(type_str=="TAG_MODIFIED")
+		return TAG_MODIFIED;
+	else if(type_str=="TAG_REMOVED")
+		return TAG_REMOVED;
 	
 	return NONE;
 }

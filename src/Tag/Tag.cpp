@@ -26,6 +26,7 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <DB/DB.h>
+#include <WS/Events.h>
 #include <global.h>
 
 using namespace std;
@@ -122,6 +123,8 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Tags::GetInstance()->Reload();
 		
+		Events::GetInstance()->Create(Events::en_types::TAG_CREATED);
+		
 		return true;
 	}
 	else if(action=="edit")
@@ -135,6 +138,8 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Tags::GetInstance()->Reload();
 		
+		Events::GetInstance()->Create(Events::en_types::TAG_MODIFIED);
+		
 		return true;
 	}
 	else if(action=="delete")
@@ -146,6 +151,8 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		LoggerAPI::LogAction(user,id,"Tag",query->GetQueryGroup(),action);
 		
 		Tags::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(Events::en_types::TAG_REMOVED);
 		
 		return true;
 	}

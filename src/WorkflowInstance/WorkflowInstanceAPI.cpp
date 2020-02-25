@@ -326,6 +326,8 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			
 			Tag(workflow_instance_id,tag_id);
 			
+			Events::GetInstance()->Create(Events::en_types::INSTANCE_TAGGED,workflow_instance_id);
+			
 			return true;
 		}
 		else if(action=="untag")
@@ -336,6 +338,8 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			unsigned int tag_id = query->GetRootAttributeInt("tag_id");
 			
 			Untag(workflow_instance_id,tag_id);
+			
+			Events::GetInstance()->Create(Events::en_types::INSTANCE_UNTAGGED,workflow_instance_id);
 			
 			return true;
 		}

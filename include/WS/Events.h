@@ -36,13 +36,18 @@ class Events
 			INSTANCE_STARTED,
 			INSTANCE_TERMINATED,
 			INSTANCE_REMOVED,
+			INSTANCE_TAGGED,
+			INSTANCE_UNTAGGED,
 			TASK_ENQUEUE,
 			TASK_EXECUTE,
 			TASK_TERMINATE,
 			QUEUE_ENQUEUE,
 			QUEUE_DEQUEUE,
 			QUEUE_EXECUTE,
-			QUEUE_TERMINATE
+			QUEUE_TERMINATE,
+			TAG_CREATED,
+			TAG_MODIFIED,
+			TAG_REMOVED
 		};
 		
 	private:
@@ -79,7 +84,7 @@ class Events
 		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id);
 		void UnsubscribeAll(struct lws *wsi);
 		
-		void Create(en_types type, unsigned int instance_id);
+		void Create(en_types type, unsigned int instance_id = 0);
 		bool Get(struct lws *wsi, int *external_id, std::string &api_cmd);
 };
 
