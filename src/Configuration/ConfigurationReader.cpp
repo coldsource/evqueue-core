@@ -159,7 +159,6 @@ void ConfigurationReader::Read(const char *filename, Configuration *config)
 	{
 		if(f)
 			fclose(f);
-		delete config;
 		throw e;
 	}
 	
