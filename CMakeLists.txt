@@ -117,6 +117,13 @@ else()
 	 message(FATAL_ERROR "Needing lib mysqlclient or mariadbclient")
 endif()
 
+find_path(MYSQL_INCLUDE DOM.hpp /usr/include/mysql/mysql.h)
+if(MYSQL_INCLUDE)
+	add_definitions(-DMYSQL_PATH_MYSQL)
+else()
+	add_definitions(-DMYSQL_PATH_MARIADB)
+endif()
+
 find_path(XERCES_INCLUDE DOM.hpp /usr/include/xercesc/dom)
 if(XERCES_INCLUDE)
 	message("xerces-c development library is installed")

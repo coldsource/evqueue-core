@@ -27,7 +27,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-#include <mysql/mysql.h>
 
 using namespace std;
 
@@ -72,7 +71,7 @@ void GarbageCollector::WaitForShutdown(void)
 
 void *GarbageCollector::gc_thread(GarbageCollector *gc)
 {
-	mysql_thread_init();
+	DB::StartThread();
 	
 	Logger::Log(LOG_NOTICE,"Garbage Collector started");
 	
@@ -87,7 +86,7 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 			{
 				Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 				
-				mysql_thread_end();
+				DB::StopThread();
 				
 				return 0;
 			}

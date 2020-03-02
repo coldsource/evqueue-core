@@ -41,7 +41,6 @@
 #include <string>
 #include <stdexcept>
 
-#include <mysql/mysql.h>
 
 #ifdef USELIBGIT2
 #include <git2.h>
@@ -220,8 +219,8 @@ int main(int argc,const char **argv)
 	}
 	
 	// Initialize external libraries
-	mysql_library_init(0,0,0);
-	mysql_thread_init();
+	DB::InitLibrary();
+	DB::StartThread();
 	
 #ifdef USELIBGIT2
 	git_libgit2_init();
@@ -694,8 +693,8 @@ int main(int argc,const char **argv)
 				delete logger;
 				delete config;
 				
-				mysql_thread_end();
-				mysql_library_end();
+				DB::StopThread();
+				DB::FreeLibrary();
 				
 #ifdef USELIBGIT2
 				git_libgit2_shutdown();

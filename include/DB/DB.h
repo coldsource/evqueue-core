@@ -20,7 +20,19 @@
 #ifndef __DB_H__
 #define __DB_H__
 
+#if defined (MYSQL_PATH_MYSQL) || defined (MYSQL_PATH_MARIADB)
+
+#ifdef MYSQL_PATH_MYSQL
 #include <mysql/mysql.h>
+#endif
+
+#ifdef MYSQL_PATH_MARIADB
+#include <mariadb/mysql.h>
+#endif
+
+#else
+#include <mysql/mysql.h>
+#endif
 
 #include <string>
 #include <vector>
@@ -43,6 +55,12 @@ public:
 	~DB(void);
 	
 	DB *Clone(void);
+	
+	static void InitLibrary(void);
+	static void FreeLibrary(void);
+	
+	static void StartThread(void);
+	static void StopThread(void);
 	
 	void Ping(void);
 	void Query(const char *query);
