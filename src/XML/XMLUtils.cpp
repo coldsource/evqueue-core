@@ -43,6 +43,8 @@ class XMLUtilsErrorHandler: public xercesc::DOMErrorHandler
 			errors += " on line "+ std::to_string(loc->getLineNumber());
 			
 			xercesc::XMLString::release(&exception_str);
+			
+			return false;
 		}
 		
 		const string &GetErrors() { return  errors; }

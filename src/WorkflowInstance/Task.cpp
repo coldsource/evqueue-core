@@ -172,6 +172,8 @@ string Task::GetTypeStr() const
 		return "BINARY";
 	else if(type==task_type::SCRIPT)
 		return "SCRIPT";
+	
+	throw Exception("Task","Unknown task type");
 }
 
 string Task::GetScript() const
