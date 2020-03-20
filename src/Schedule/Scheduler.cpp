@@ -19,11 +19,11 @@
 
 #include <Schedule/Scheduler.h>
 #include <Logger/Logger.h>
+#include <DB/DB.h>
 
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-#include <mysql/mysql.h>
 
 #include <chrono>
 #include <atomic>
@@ -157,7 +157,7 @@ void *Scheduler::retry_thread(Scheduler *scheduler)
 {
 	Event *event;
 	
-	mysql_thread_init();
+	DB::StartThread();
 	
 	Logger::Log(LOG_INFO,"%s started",scheduler->self_name);
 	
@@ -178,7 +178,7 @@ void *Scheduler::retry_thread(Scheduler *scheduler)
 			
 			scheduler->retry_thread_handle.detach(); // We are not in shutdown status, we won't be joined
 			
-			mysql_thread_end();
+			DB::StopThread();
 			
 			Logger::Log(LOG_INFO,"%s exited",scheduler->self_name);
 			return 0;
@@ -193,7 +193,7 @@ void *Scheduler::retry_thread(Scheduler *scheduler)
 				{
 					Logger::Log(LOG_NOTICE,"Shutdown in progress exiting %s",scheduler->self_name);
 					
-					mysql_thread_end();
+					DB::StopThread();
 					
 					return 0; // Shutdown in progress
 				}
@@ -204,7 +204,7 @@ void *Scheduler::retry_thread(Scheduler *scheduler)
 				{
 					Logger::Log(LOG_NOTICE,"Shutdown in progress exiting %s",scheduler->self_name);
 					
-					mysql_thread_end();
+					DB::StopThread();
 					
 					return 0; // Shutdown in progress
 				}

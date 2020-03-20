@@ -241,6 +241,8 @@ unsigned int Queue::Create(const string &name, int concurrency, const string &sc
 	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler,queue_dynamic) VALUES(%s,%i,%s,%i)",&name,&concurrency,&scheduler,&dynamic);
+	
+	return db.InsertID();
 }
 
 void Queue::Edit(unsigned int id,const string &name, int concurrency, const string &scheduler, int dynamic)

@@ -91,6 +91,10 @@ void Configuration::check_f_is_exec(const string &filename)
 {
 	uid_t uid = geteuid();
 	gid_t gid = getegid();
+	
+	// Special check for root
+	if(uid==0)
+		return;
 
 	struct stat ste;
 	if(stat(filename.c_str(),&ste)!=0)
