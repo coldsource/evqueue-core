@@ -8,8 +8,7 @@
 #include <API/QueryHandlers.h>
 #include <WS/Events.h>
 #include <Crypto/base64.h>
-
-#include <mysql/mysql.h>
+#include <DB/DB.h>
 
 using namespace std;
 
@@ -228,7 +227,7 @@ void WSServer::WaitForShutdown(void)
 
 void WSServer::event_loop(WSServer *ws)
 {
-	mysql_thread_init();
+	DB::StartThread();
 	
 	while( 1 )
 	{
@@ -237,5 +236,5 @@ void WSServer::event_loop(WSServer *ws)
 			break;
 	}
 	
-	mysql_thread_end();
+	DB::StopThread();
 }
