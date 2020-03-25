@@ -33,6 +33,7 @@
 #include <Crypto/Sha1String.h>
 #include <XML/XMLFormatter.h>
 #include <Crypto/base64.h>
+#include <WS/Events.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -197,6 +198,8 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 	{
 		Git::GetInstance()->repo->Pull();
 		
+		Events::GetInstance()->Create(Events::en_types::GIT_PULLED);
+		
 		return true;
 	}
 	if(action=="save_workflow")
@@ -207,6 +210,8 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Git::GetInstance()->SaveWorkflow(name,commit_log,force);
 		
+		Events::GetInstance()->Create(Events::en_types::GIT_SAVED);
+		
 		return true;
 	}
 	else if(action=="load_workflow")
@@ -214,6 +219,8 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		string name = query->GetRootAttribute("name");
 		
 		Git::GetInstance()->LoadWorkflow(name);
+		
+		Events::GetInstance()->Create(Events::en_types::GIT_LOADED);
 		
 		return true;
 	}
@@ -231,6 +238,8 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		string commit_log = query->GetRootAttribute("commit_log");
 		
 		Git::GetInstance()->RemoveWorkflow(name,commit_log);
+		
+		Events::GetInstance()->Create(Events::en_types::GIT_REMOVED);
 		
 		return true;
 	}
