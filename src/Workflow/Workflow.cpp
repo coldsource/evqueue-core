@@ -37,6 +37,7 @@
 #include <global.h>
 #include <Crypto/base64.h>
 #include <DOM/DOMDocument.h>
+#include <WS/Events.h>
 
 #include <string.h>
 
@@ -402,6 +403,8 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
 			response->GetDOM()->getDocumentElement().setAttribute("workflow-id",to_string(id));
+			
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_CREATED);
 		}
 		else
 		{
@@ -410,6 +413,8 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			Edit(id, name, content, group, comment);
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
+			
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_MODIFIED);
 		}
 		
 		Workflows::GetInstance()->Reload();
@@ -423,6 +428,8 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 		Delete(id);
 		
 		LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
+		
+		Events::GetInstance()->Create(Events::en_types::WORKFLOW_REMOVED);
 		
 		return true;
 	}

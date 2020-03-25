@@ -61,6 +61,13 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return TAG_MODIFIED;
 	else if(type_str=="TAG_REMOVED")
 		return TAG_REMOVED;
+	else if(type_str=="WORKFLOW_CREATED")
+		return WORKFLOW_CREATED;
+	else if(type_str=="WORKFLOW_MODIFIED")
+		return WORKFLOW_MODIFIED;
+	else if(type_str=="WORKFLOW_REMOVED")
+		return WORKFLOW_REMOVED;
+	
 	
 	return NONE;
 }
