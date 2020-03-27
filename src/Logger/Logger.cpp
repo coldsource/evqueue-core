@@ -21,6 +21,7 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <DB/DB.h>
 #include <Exception/Exception.h>
+#include <WS/Events.h>
 
 #include <string.h>
 #include <syslog.h>
@@ -62,18 +63,7 @@ void Logger::Log(int level,const char *msg,...)
 	if(n<0)
 		return;
 	
-	if(instance->log_syslog && level<=instance->syslog_filter)
-		syslog(LOG_NOTICE,"%s",buf);
-	
-	if(instance->log_db && level<=instance->db_filter)
-	{
-		try
-		{
-			DB db;
-			db.QueryPrintfC("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,buf);
-		}
-		catch(Exception &e) { } // Logger should never send exceptions on database error to prevent exception storm
-	}
+	Log(level,string(buf));
 }
 
 void Logger::Log(int level,const string &msg)
@@ -87,6 +77,8 @@ void Logger::Log(int level,const string &msg)
 		{
 			DB db;
 			db.QueryPrintfC("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,msg.c_str());
+			
+			Events::GetInstance()->Create(Events::en_types::LOG_ENGINE);
 		}
 		catch(Exception &e) { } // Logger should never send exceptions on database error to prevent exception storm
 	}
