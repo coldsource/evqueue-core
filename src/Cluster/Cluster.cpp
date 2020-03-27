@@ -108,10 +108,7 @@ bool Cluster::ExecuteCommand(const string &command, DOMDocument *response )
 				continue;
 			}
 			
-			if(response)
-				client.Exec(command);
-			else
-				client.Exec(command);
+			client.Exec(command);
 			
 			if(response)
 				response->getDocumentElement().appendChild(response->importNode(client.GetResponseDOM()->getDocumentElement(),true));
