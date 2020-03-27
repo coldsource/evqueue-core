@@ -23,10 +23,15 @@ using namespace std;
 
 Events *Events::instance = 0;
 
-Events::Events(struct lws_context *ws_context)
+Events::Events()
+{
+	this->ws_context = 0;
+	instance = this;
+}
+
+void Events::SetContext(struct lws_context *ws_context)
 {
 	this->ws_context = ws_context;
-	instance = this;
 }
 
 Events::en_types Events::get_type(const std::string &type_str)
@@ -75,7 +80,8 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return GIT_SAVED;
 	else if(type_str=="GIT_REMOVED")
 		return GIT_REMOVED;
-	
+	else if(type_str=="LOG_ENGINE")
+		return LOG_ENGINE;
 	
 	return NONE;
 }
@@ -131,6 +137,9 @@ void Events::UnsubscribeAll(struct lws *wsi)
 
 void Events::Create(en_types type, unsigned int instance_id)
 {
+	if(!this->ws_context)
+		return; // Prevent events from being creating before server is ready
+	
 	unique_lock<mutex> llock(lock);
 	
 	// Find which client has subscribed to this event

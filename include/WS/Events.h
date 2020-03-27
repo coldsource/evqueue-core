@@ -54,7 +54,8 @@ class Events
 			GIT_PULLED,
 			GIT_SAVED,
 			GIT_LOADED,
-			GIT_REMOVED
+			GIT_REMOVED,
+			LOG_ENGINE
 		};
 		
 	private:
@@ -83,9 +84,11 @@ class Events
 		en_types get_type(const std::string &type_str);
 	
 	public:
-		Events(struct lws_context *ws_context);
+		Events();
 		
 		static Events *GetInstance() { return instance; }
+		
+		void SetContext(struct lws_context *ws_context);
 		
 		void Subscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id, const std::string &api_cmd);
 		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id);

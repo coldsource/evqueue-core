@@ -59,14 +59,14 @@ WSServer::WSServer()
 	if(!context)
 		throw Exception("Websocket","Unable to bind port "+to_string(info.port));
 	
-	events = new Events(context);
+	Events::GetInstance()->SetContext(context);
 	
 	instance = this;
 }
 
 WSServer::~WSServer()
 {
-	delete events;
+	
 }
  
 int WSServer::callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )

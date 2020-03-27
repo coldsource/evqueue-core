@@ -96,6 +96,7 @@
 #include <Process/tools_ipc.h>
 #include <DB/tools_db.h>
 #include <API/ping.h>
+#include <WS/Events.h>
 #include <WS/WSServer.h>
 
 #include <xercesc/util/PlatformUtils.hpp>
@@ -267,8 +268,9 @@ int main(int argc,const char **argv)
 		else if(ipc_terminate_tid!=-1)
 			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,ipc_terminate_tid,-1);
 		
-		// Create logger as soon as possible
+		// Create logger and events as soon as possible
 		Logger *logger = new Logger();
+		Events *events = new Events();
 		
 		// Create API logger
 		LoggerAPI *logger_api = new LoggerAPI();
@@ -693,6 +695,7 @@ int main(int argc,const char **argv)
 				delete random;
 				delete logger_api;
 				delete logger_notifications;
+				delete events;
 				delete ws;
 				
 				xercesc::XMLPlatformUtils::Terminate();
