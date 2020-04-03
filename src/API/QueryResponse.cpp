@@ -110,6 +110,10 @@ void QueryResponse::Empty()
 	xmldoc->appendChild(response_node);
 	
 	response_node.setAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
+	
+	status_ok = true;
+	error = "";
+	error_code = "";
 }
 
 void QueryResponse::SendResponse()
