@@ -85,6 +85,7 @@ class Events
 	
 	public:
 		Events();
+		~Events();
 		
 		static Events *GetInstance() { return instance; }
 		

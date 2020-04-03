@@ -78,7 +78,8 @@ void Logger::Log(int level,const string &msg)
 			DB db;
 			db.QueryPrintfC("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,msg.c_str());
 			
-			Events::GetInstance()->Create(Events::en_types::LOG_ENGINE);
+			if(Events::GetInstance())
+				Events::GetInstance()->Create(Events::en_types::LOG_ENGINE);
 		}
 		catch(Exception &e) { } // Logger should never send exceptions on database error to prevent exception storm
 	}

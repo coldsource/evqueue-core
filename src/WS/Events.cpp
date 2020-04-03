@@ -29,6 +29,11 @@ Events::Events()
 	instance = this;
 }
 
+Events::~Events()
+{
+	instance = 0;
+}
+
 void Events::SetContext(struct lws_context *ws_context)
 {
 	this->ws_context = ws_context;
