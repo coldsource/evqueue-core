@@ -98,7 +98,7 @@ void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
 		{
 			ExceptionWorkflowContext ctx(current_input,"Error computing input value");
 			
-			// Replace <value> nodes par their literal value
+			// Replace <value> nodes by their literal value
 			unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//value",current_input,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 			values_index = 0;
 			while(values->snapshotItem(values_index++))
@@ -116,7 +116,7 @@ void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
 		{
 			ExceptionWorkflowContext ctx(current_input,"Error computing input values from copy node");
 			
-			// Replace <copy> nodes par their value
+			// Replace <copy> nodes by their value
 			unique_ptr<DOMXPathResult> values(xmldoc->evaluate(".//copy",current_input,DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 			values_index = 0;
 			while(values->snapshotItem(values_index++))

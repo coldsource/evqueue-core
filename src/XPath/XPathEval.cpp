@@ -560,3 +560,21 @@ Token *XPathEval::Evaluate(const string &xpath,DOMNode context)
 		throw e;
 	}
 }
+
+void XPathEval::Parse(const std::string &xpath)
+{
+	XPathParser parser;
+	TokenExpr *parsed_expr = 0;
+	try
+	{
+		parsed_expr = parser.Parse(xpath);
+	}
+	catch(Exception &e)
+	{
+		if(parsed_expr)
+			delete parsed_expr;
+		throw e;
+	}
+	
+	delete parsed_expr;
+}

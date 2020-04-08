@@ -96,6 +96,7 @@
 #include <Process/tools_ipc.h>
 #include <DB/tools_db.h>
 #include <API/ping.h>
+#include <XPath/XPathAPI.h>
 #include <WS/Events.h>
 #include <WS/WSServer.h>
 
@@ -523,6 +524,7 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("filesystem",Filesystem::HandleQuery);
 		qh->RegisterHandler("datastore",Datastore::HandleQuery);
 		qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
+		qh->RegisterHandler("xpath",XPathAPI::HandleQuery);
 		
 		// Create sockets set
 		Sockets *sockets = new Sockets();

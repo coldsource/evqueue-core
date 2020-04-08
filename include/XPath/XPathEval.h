@@ -98,6 +98,7 @@ public:
 	void RegisterFunction(std::string name,func_desc f);
 	
 	Token *Evaluate(const std::string &xpath,DOMNode context);
+	void Parse(const std::string &xpath);
 };
 
 #endif
