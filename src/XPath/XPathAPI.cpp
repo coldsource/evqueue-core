@@ -43,7 +43,14 @@ bool XPathAPI::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 		DOMDocument doc;
 		XPathEval xpath(&doc);
 		
-		xpath.Parse(expression);
+		try
+		{
+			xpath.Parse(expression);
+		}
+		catch(Exception &e)
+		{
+			response->GetDOM()->getDocumentElement().setAttribute("parse-error",e.error);
+		}
 		
 		return true;
 	}
