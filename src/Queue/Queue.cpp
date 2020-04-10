@@ -28,6 +28,7 @@
 #include <User/User.h>
 #include <DB/DB.h>
 #include <DOM/DOMDocument.h>
+#include <WS/Events.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -304,6 +305,8 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			
 			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 			
+			Events::GetInstance()->Create(Events::en_types::QUEUE_CREATED);
+			
 			response->GetDOM()->getDocumentElement().setAttribute("queue-id",to_string(id));
 		}
 		else
@@ -311,6 +314,8 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			unsigned int id = query->GetRootAttributeInt("id");
 			
 			Edit(id,name, iconcurrency, scheduler, dynamic);
+			
+			Events::GetInstance()->Create(Events::en_types::QUEUE_MODIFIED);
 			
 			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 		}
@@ -326,6 +331,8 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		Delete(id);
 		
 		LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
+		
+		Events::GetInstance()->Create(Events::en_types::QUEUE_REMOVED);
 		
 		QueuePool::GetInstance()->Reload();
 		

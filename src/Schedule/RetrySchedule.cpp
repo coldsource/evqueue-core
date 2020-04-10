@@ -27,6 +27,7 @@
 #include <XML/XMLUtils.h>
 #include <User/User.h>
 #include <Crypto/base64.h>
+#include <WS/Events.h>
 #include <global.h>
 
 #include <string.h>
@@ -142,6 +143,8 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 			
 			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 			
+			Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_CREATED);
+			
 			response->GetDOM()->getDocumentElement().setAttribute("retry-schedule-id",to_string(id));
 		}
 		else
@@ -149,6 +152,8 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 			unsigned int id = query->GetRootAttributeInt("id");
 			
 			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
+			
+			Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_MODIFIED);
 			
 			Edit(id,name, content);
 		}
@@ -164,6 +169,8 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 		Delete(id);
 		
 		LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
+		
+		Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_REMOVED);
 		
 		RetrySchedules::GetInstance()->Reload();
 		

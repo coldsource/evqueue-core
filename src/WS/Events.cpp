@@ -65,6 +65,12 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return QUEUE_EXECUTE;
 	else if(type_str=="QUEUE_TERMINATE")
 		return QUEUE_TERMINATE;
+	else if(type_str=="QUEUE_CREATED")
+		return QUEUE_CREATED;
+	else if(type_str=="QUEUE_MODIFIED")
+		return QUEUE_MODIFIED;
+	else if(type_str=="QUEUE_REMOVED")
+		return QUEUE_REMOVED;
 	else if(type_str=="TAG_CREATED")
 		return TAG_CREATED;
 	else if(type_str=="TAG_MODIFIED")
@@ -87,6 +93,12 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return GIT_REMOVED;
 	else if(type_str=="LOG_ENGINE")
 		return LOG_ENGINE;
+	else if(type_str=="RETRYSCHEDULE_CREATED")
+		return RETRYSCHEDULE_CREATED;
+	else if(type_str=="RETRYSCHEDULE_MODIFIED")
+		return RETRYSCHEDULE_MODIFIED;
+	else if(type_str=="RETRYSCHEDULE_REMOVED")
+		return RETRYSCHEDULE_REMOVED;
 	
 	return NONE;
 }
