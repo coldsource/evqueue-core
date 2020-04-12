@@ -152,6 +152,7 @@ void ConfigurationEvQueue::Check(void)
 	check_f_is_exec(entries["notifications.monitor.path"]);
 	check_d_is_writeable(entries["processmanager.logs.directory"]);
 	check_d_is_writeable(entries["notifications.logs.directory"]);
+	check_d_is_writeable(entries["notifications.tasks.directory"]);
 
 	check_bool_entry("core.auth.enable");
 	check_bool_entry("core.fastshutdown");
