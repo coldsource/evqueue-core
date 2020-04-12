@@ -88,7 +88,6 @@ class WorkflowInstance
 		void TaskUpdateProgression(DOMElement task, int prct);
 		bool KillTask(pid_t pid);
 		
-		
 		// savepoint.cpp
 		void RecordSavepoint();
 		
@@ -128,6 +127,9 @@ class WorkflowInstance
 		void update_job_statistics(const std::string &name,int delta,DOMElement node);
 		void clear_statistics();
 		bool workflow_ended(void);
+		
+		// custom_filters
+		void fill_custom_filters();
 };
 
 #endif

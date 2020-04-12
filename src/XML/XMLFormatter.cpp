@@ -21,6 +21,8 @@
 #include <XML/XMLString.h>
 #include <DOM/DOMNamedNodeMap.h>
 
+#include <regex>
+
 using namespace std;
 
 XMLFormatter::XMLFormatter(DOMDocument *xmldoc)
@@ -110,8 +112,12 @@ void XMLFormatter::display_element_start(DOMElement element)
 		DOMNode attribute = attributes.item(i);
 		string name = attribute.getNodeName();
 		string value = attribute.getNodeValue();
+		
+		regex re_quot ("\\\"");
+		string value_escaped = regex_replace (value,re_quot,"&quot;");
+		
 		if(display_output)
-			printf(" %s=\"%s\"",name.c_str(),value.c_str());
+			printf(" %s=\"%s\"",name.c_str(),value_escaped.c_str());
 		else
 			output += " "+name+"=\""+value+"\"";
 	}

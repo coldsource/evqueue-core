@@ -33,8 +33,7 @@
 #include <WorkflowInstance/Task.h>
 #include <Process/ProcessExec.h>
 #include <Process/tools_ipc.h>
-
-#include <mysql/mysql.h>
+#include <DB/DB.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -107,7 +106,7 @@ void *ProcessManager::Fork(ProcessManager *pm)
 	bool workflow_terminated;
 	pid_t pid,tid;
 	
-	mysql_thread_init();
+	DB::StartThread();
 	
 	Logger::Log(LOG_NOTICE,"Forker started");
 	
@@ -117,7 +116,7 @@ void *ProcessManager::Fork(ProcessManager *pm)
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Forker");
 			
-			mysql_thread_end();
+			DB::StopThread();
 			
 			return 0; // Lock has been released because we are shutting down, nothing to execute
 		}
@@ -159,7 +158,7 @@ void *ProcessManager::Gather(ProcessManager *pm)
 	WorkflowInstance *workflow_instance;
 	DOMElement task;
 	
-	mysql_thread_init();
+	DB::StartThread();
 	
 	Logger::Log(LOG_NOTICE,"Gatherer started");
 	
@@ -179,7 +178,7 @@ void *ProcessManager::Gather(ProcessManager *pm)
 			
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Gatherer");
 			
-			mysql_thread_end();
+			DB::StopThread();
 			
 			return 0; // Shutdown requested
 		}
@@ -245,7 +244,7 @@ void *ProcessManager::Gather(ProcessManager *pm)
 	}
 	
 	Logger::Log(LOG_CRIT,"[ ProcessManager ] msgrcv() returned error %d, exiting Gatherer",errno);
-	mysql_thread_end();
+	DB::StopThread();
 	return 0;
 }
 

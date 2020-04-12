@@ -70,6 +70,26 @@ DB *DB::Clone(void)
 	return new DB(this);
 }
 
+void DB::InitLibrary(void)
+{
+	mysql_library_init(0,0,0);
+}
+
+void DB::FreeLibrary(void)
+{
+	mysql_library_end();
+}
+
+void DB::StartThread(void)
+{
+	mysql_thread_init();
+}
+
+void DB::StopThread(void)
+{
+	mysql_thread_end();
+}
+
 void DB::Ping(void)
 {
 	connect();

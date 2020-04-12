@@ -41,7 +41,6 @@
 #include <string>
 #include <stdexcept>
 
-#include <mysql/mysql.h>
 
 #ifdef USELIBGIT2
 #include <git2.h>
@@ -220,8 +219,8 @@ int main(int argc,const char **argv)
 	}
 	
 	// Initialize external libraries
-	mysql_library_init(0,0,0);
-	mysql_thread_init();
+	DB::InitLibrary();
+	DB::StartThread();
 	
 #ifdef USELIBGIT2
 	git_libgit2_init();
@@ -331,9 +330,6 @@ int main(int argc,const char **argv)
 				throw Exception("core","Unable to change working directory");
 		}
 
-		// Sanity checks on configuration values and access rights
-		config->Check();
-		
 		// Create directory for PID (usually in /var/run)
 		char *pid_file2 = strdup(config->Get("core.pidfile").c_str());
 		char *pid_directory = dirname(pid_file2);
@@ -361,6 +357,9 @@ int main(int argc,const char **argv)
 		
 		if(uid!=0 && setreuid(uid,uid)!=0)
 			throw Exception("core","Unable to set requested UID");
+		
+		// Sanity checks on configuration values and access rights
+		config->Check();
 		
 		// Open pid file before fork to eventually print errors
 		FILE *pidfile = fopen(config->Get("core.pidfile").c_str(),"w");
@@ -694,8 +693,8 @@ int main(int argc,const char **argv)
 				delete logger;
 				delete config;
 				
-				mysql_thread_end();
-				mysql_library_end();
+				DB::StopThread();
+				DB::FreeLibrary();
 				
 #ifdef USELIBGIT2
 				git_libgit2_shutdown();
