@@ -29,6 +29,10 @@
 #include <Crypto/base64.h>
 #include <DB/DB.h>
 #include <User/User.h>
+#include <Zip/Zip.h>
+#include <DOM/DOMDocument.h>
+
+#include <memory>
 
 using namespace std;
 
@@ -81,10 +85,41 @@ void NotificationType::Get(unsigned int id, QueryResponse *response)
 	response->AppendXML(type.GetManifest());
 }
 
-void NotificationType::Register(const string &name, const string &description, const string &manifest, const string &binary_content)
+void NotificationType::Register(const string &zip_data)
 {
+	// Open Zip archive
+	Zip zip(zip_data);
+	string manifest = zip.GetFile("manifest.xml");
+	
+	// Load manifest file
+	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(manifest));
+	
+	// Read name
+	unique_ptr<DOMXPathResult> res_name(xmldoc->evaluate("/plugin/name",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+	if(!res_name->isNode())
+		throw Exception("NotificationType","Invalid manifest, could not find 'name' tag","INVALID_PARAMETER");
+
+	string name = res_name->getNodeValue().getTextContent();
+	
 	if(name.length()==0)
 		throw Exception("NotificationType","Name cannot be empty","INVALID_PARAMETER");
+	
+	// Read description
+	unique_ptr<DOMXPathResult> res_desc(xmldoc->evaluate("/plugin/description",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+	if(!res_desc->isNode())
+		throw Exception("NotificationType","Invalid manifest, could not find 'description' tag","INVALID_PARAMETER");
+
+	string description = res_desc->getNodeValue().getTextContent();
+	
+	// Read file name
+	unique_ptr<DOMXPathResult> res_bin(xmldoc->evaluate("/plugin/binary",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+	if(!res_bin->isNode())
+		throw Exception("NotificationType","Invalid manifest, could not find 'binary' tag","INVALID_PARAMETER");
+
+	string binary = res_bin->getNodeValue().getTextContent();
+	
+	// Read binary from Zip archive
+	string binary_data = zip.GetFile(binary);
 	
 	DB db;
 	db.QueryPrintf(
@@ -92,7 +127,7 @@ void NotificationType::Register(const string &name, const string &description, c
 		&name,
 		&description,
 		&manifest,
-		binary_content.length()?&binary_content:0
+		binary_data
 		);
 }
 
@@ -165,18 +200,12 @@ bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 	}
 	else if(action=="register")
 	{
-		string name = query->GetRootAttribute("name");
-		string description = query->GetRootAttribute("description");
-		string manifest_base64 = query->GetRootAttribute("manifest","");
-		string manifest;
-		if(manifest_base64.length())
-			base64_decode_string(manifest,manifest_base64);
-		string binary_content_base64 = query->GetRootAttribute("binary_content","");
-		string binary_content;
-		if(binary_content_base64.length())
-			base64_decode_string(binary_content,binary_content_base64);
+		string zip_data_base64 = query->GetRootAttribute("zip");
+		string zip_data;
+		if(!base64_decode_string(zip_data,zip_data_base64))
+			throw Exception("NotificationType","Invalid base64 zip","INVALID_PARAMETER");
 		
-		Register(name,description,manifest,binary_content);
+		Register(zip_data);
 		
 		NotificationTypes::GetInstance()->Reload();
 		NotificationTypes::GetInstance()->SyncBinaries();

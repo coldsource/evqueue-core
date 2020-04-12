@@ -48,6 +48,7 @@ aux_source_directory(src/IO srcIO)
 aux_source_directory(src/Queue srcQueue)
 aux_source_directory(src/Git srcGit)
 aux_source_directory(src/WS srcWS)
+aux_source_directory(src/Zip srcZip)
 
 add_executable(evqueue
 	${srcWorkflowInstance}
@@ -72,6 +73,7 @@ add_executable(evqueue
 	${srcQueue}
 	${srcGit}
 	${srcWS}
+	${srcZip}
 	
 	src/evqueue.cpp
 	)
@@ -149,11 +151,19 @@ else()
 	message(FATAL_ERROR "websockets development library is not installed")
 endif()
 
+find_path(WEBSOCKETS_INCLUDE zip.h /usr/include)
+if(WEBSOCKETS_INCLUDE)
+	message("zip development library is installed")
+else()
+	message(FATAL_ERROR "zip development library is not installed")
+endif()
+
 target_link_libraries(evqueue z)
 target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
 target_link_libraries(evqueue pcrecpp)
 target_link_libraries(evqueue websockets)
+target_link_libraries(evqueue zip)
 
 
 
