@@ -99,6 +99,11 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return RETRYSCHEDULE_MODIFIED;
 	else if(type_str=="RETRYSCHEDULE_REMOVED")
 		return RETRYSCHEDULE_REMOVED;
+	else if(type_str=="NOTIFICATION_TYPE_CREATED")
+		return NOTIFICATION_TYPE_CREATED;
+	else if(type_str=="NOTIFICATION_TYPE_REMOVED")
+		return NOTIFICATION_TYPE_REMOVED;
+	
 	
 	return NONE;
 }

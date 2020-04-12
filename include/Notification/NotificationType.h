@@ -52,7 +52,7 @@ class NotificationType
 		static void RemoveFile(const std::string &filename);
 		
 		static void Get(unsigned int id, QueryResponse *response);
-		static void Register(const std::string &zip_data);
+		static unsigned int Register(const std::string &zip_data);
 		static void Unregister(unsigned int id);
 		
 		static void GetConf(unsigned int id, QueryResponse *response);

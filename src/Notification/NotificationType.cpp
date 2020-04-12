@@ -31,6 +31,7 @@
 #include <User/User.h>
 #include <Zip/Zip.h>
 #include <DOM/DOMDocument.h>
+#include <WS/Events.h>
 
 #include <memory>
 
@@ -85,7 +86,7 @@ void NotificationType::Get(unsigned int id, QueryResponse *response)
 	response->AppendXML(type.GetManifest());
 }
 
-void NotificationType::Register(const string &zip_data)
+unsigned int NotificationType::Register(const string &zip_data)
 {
 	// Open Zip archive
 	Zip zip(zip_data);
@@ -129,6 +130,8 @@ void NotificationType::Register(const string &zip_data)
 		&manifest,
 		binary_data
 		);
+	
+	return db.InsertID();
 }
 
 void NotificationType::Unregister(unsigned int id)
@@ -145,7 +148,7 @@ void NotificationType::Unregister(unsigned int id)
 	// Remove binary
 	try
 	{
-		RemoveFile(notification_type.name);
+		RemoveFile(to_string(notification_type.id));
 	}
 	catch(Exception &e) {}
 	
@@ -205,12 +208,14 @@ bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		if(!base64_decode_string(zip_data,zip_data_base64))
 			throw Exception("NotificationType","Invalid base64 zip","INVALID_PARAMETER");
 		
-		Register(zip_data);
+		unsigned int id = Register(zip_data);
 		
 		NotificationTypes::GetInstance()->Reload();
 		NotificationTypes::GetInstance()->SyncBinaries();
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_TYPE_CREATED);
 		
 		return true;
 	}
@@ -224,6 +229,8 @@ bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		NotificationTypes::GetInstance()->SyncBinaries();
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_TYPE_REMOVED);
 		
 		return true;
 	}
