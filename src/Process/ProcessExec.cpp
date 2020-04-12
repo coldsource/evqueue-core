@@ -215,7 +215,8 @@ pid_t ProcessExec::Exec()
 #else
 			// Send data to the child's stdin
 			// It is possible that the child process dies before reading the whole data so we do not want to check the return value of write
-			write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length());
+			if(write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length())!=stdin_data.length())
+				throw Exception("ProcessExec","Could not pipe data to child");
 		
 			close(stdin_pipe[1]);
 #endif
