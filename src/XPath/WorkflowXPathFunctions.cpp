@@ -97,7 +97,7 @@ Token *WorkflowXPathFunctions::evqGetOutput(XPathEval::func_context context, con
 	else
 		context_node = *((DOMNode *)context.custom_context);
 	
-	return context.eval->Evaluate("tasks/task[@path='"+task_path+"']/output",context_node);
+	return context.eval->Evaluate("tasks/task[@path='"+task_path+"' or @name='"+task_path+"']/output",context_node);
 }
 
 Token *WorkflowXPathFunctions::evqGetInput(XPathEval::func_context context, const vector<Token *> &args)
