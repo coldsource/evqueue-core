@@ -20,6 +20,7 @@
 #include <Logger/LoggerNotifications.h>
 #include <DB/DB.h>
 #include <User/User.h>
+#include <WS/Events.h>
 #include <Configuration/ConfigurationEvQueue.h>
 
 using namespace std;
@@ -41,4 +42,6 @@ void LoggerNotifications::Log(pid_t pid, const string &log)
 		&pid,
 		&log
 		);
+	
+	Events::GetInstance()->Create(Events::en_types::LOG_NOTIFICATION);
 }

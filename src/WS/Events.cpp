@@ -93,6 +93,8 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return GIT_REMOVED;
 	else if(type_str=="LOG_ENGINE")
 		return LOG_ENGINE;
+	else if(type_str=="LOG_NOTIFICATION")
+		return LOG_NOTIFICATION;
 	else if(type_str=="RETRYSCHEDULE_CREATED")
 		return RETRYSCHEDULE_CREATED;
 	else if(type_str=="RETRYSCHEDULE_MODIFIED")
