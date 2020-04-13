@@ -59,7 +59,7 @@ class Notification
 		
 		static void Get(unsigned int id,QueryResponse *response);
 		static void Create(unsigned int type_id,const std::string &name, int subscribe_all, const std::string parameters);
-		static void Edit(unsigned int id,const std::string &name, int subscribe_all, const std::string parameters);
+		static void Edit(unsigned int id,unsigned int type_id, const std::string &name, int subscribe_all, const std::string parameters);
 		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);

@@ -103,7 +103,12 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return NOTIFICATION_TYPE_CREATED;
 	else if(type_str=="NOTIFICATION_TYPE_REMOVED")
 		return NOTIFICATION_TYPE_REMOVED;
-	
+	else if(type_str=="NOTIFICATION_CREATED")
+		return NOTIFICATION_CREATED;
+	else if(type_str=="NOTIFICATION_REMOVED")
+		return NOTIFICATION_REMOVED;
+	else if(type_str=="NOTIFICATION_MODIFIED")
+		return NOTIFICATION_MODIFIED;
 	
 	return NONE;
 }

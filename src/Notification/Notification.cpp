@@ -36,6 +36,7 @@
 #include <Process/tools_ipc.h>
 #include <global.h>
 #include <Workflow/Workflow.h>
+#include <WS/Events.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -161,7 +162,7 @@ void Notification::Create(unsigned int type_id,const string &name, int subscribe
 	}
 }
 
-void Notification::Edit(unsigned int id,const string &name, int subscribe_all, const string parameters)
+void Notification::Edit(unsigned int id, unsigned int type_id, const string &name, int subscribe_all, const string parameters)
 {
 	if(!Notifications::GetInstance()->Exists(id))
 		throw Exception("Notification","Unable to find notification","UNKNOWN_NOTIFICATION");
@@ -169,7 +170,7 @@ void Notification::Edit(unsigned int id,const string &name, int subscribe_all, c
 	create_edit_check(0,name,parameters);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification SET notification_name=%s,notification_subscribe_all=%i,notification_parameters=%s WHERE notification_id=%i",&name,&subscribe_all,&parameters,&id);
+	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_subscribe_all=%i,notification_parameters=%s WHERE notification_id=%i",&type_id,&name,&subscribe_all,&parameters,&id);
 	
 	
 	if(subscribe_all)
@@ -270,12 +271,17 @@ bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 			unsigned int type_id = query->GetRootAttributeInt("type_id");
 			
 			Create(type_id, name, subscribe_all, parameters);
+			
+			Events::GetInstance()->Create(Events::en_types::NOTIFICATION_CREATED);
 		}
 		else
 		{
 			unsigned int id = query->GetRootAttributeInt("id");
+			unsigned int type_id = query->GetRootAttributeInt("type_id");
 			
-			Edit(id, name, subscribe_all, parameters);
+			Edit(id, type_id, name, subscribe_all, parameters);
+			
+			Events::GetInstance()->Create(Events::en_types::NOTIFICATION_MODIFIED);
 		}
 		
 		Notifications::GetInstance()->Reload();
@@ -292,6 +298,8 @@ bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 		
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_REMOVED);
 		
 		return true;
 	}
