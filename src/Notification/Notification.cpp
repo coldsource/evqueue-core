@@ -138,7 +138,7 @@ void Notification::Get(unsigned int id,QueryResponse *response)
 	DOMElement node = (DOMElement)response->AppendXML("<notification />");
 	node.setAttribute("type_id",to_string(notification.GetTypeID()));
 	node.setAttribute("name",notification.GetName());
-	node.setAttribute("subscribe_all",to_string(notification.GetSubscribeAll()));
+	node.setAttribute("subscribe_all",notification.GetSubscribeAll()?"yes":"no");
 	
 	string  parameters_base64;
 	base64_encode_string(notification.GetConfiguration(),parameters_base64);
