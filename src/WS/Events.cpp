@@ -83,6 +83,10 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return WORKFLOW_MODIFIED;
 	else if(type_str=="WORKFLOW_REMOVED")
 		return WORKFLOW_REMOVED;
+	else if(type_str=="WORKFLOW_SUBSCRIBED")
+		return WORKFLOW_SUBSCRIBED;
+	else if(type_str=="WORKFLOW_UNSUBSCRIBED")
+		return WORKFLOW_UNSUBSCRIBED;
 	else if(type_str=="GIT_PULLED")
 		return GIT_PULLED;
 	else if(type_str=="GIT_LOADED")

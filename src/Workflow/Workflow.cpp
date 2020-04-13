@@ -405,6 +405,7 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			response->GetDOM()->getDocumentElement().setAttribute("workflow-id",to_string(id));
 			
 			Events::GetInstance()->Create(Events::en_types::WORKFLOW_CREATED);
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_SUBSCRIBED); // Workflow might have been subscribed to auto notifications
 		}
 		else
 		{
@@ -443,6 +444,8 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_UNSUBSCRIBED);
+			
 			Workflows::GetInstance()->Reload();
 			
 			return true;
@@ -458,9 +461,17 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			unsigned int notification_id = query->GetRootAttributeInt("notification_id");
 						
 			if(action=="subscribe_notification")
+			{
 				SubscribeNotification(id,notification_id);
+				
+				Events::GetInstance()->Create(Events::en_types::WORKFLOW_SUBSCRIBED);
+			}
 			else
+			{
 				UnsubscribeNotification(id,notification_id);
+				
+				Events::GetInstance()->Create(Events::en_types::WORKFLOW_UNSUBSCRIBED);
+			}
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
