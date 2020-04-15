@@ -394,6 +394,7 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 			}
 		}
 		
+		// Parameters base on nodes
 		WorkflowParameters *parameters = query->GetWorkflowParameters();
 		string *name, *value;
 		
@@ -405,23 +406,48 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 			query_where_values.push_back(value);
 		}
 		
-		// Custom filters
-		auto filters = query->GetRootAttributes();
-		string customfilter_names[query->GetRootAttributes().size()];
-		string customfilter_values[query->GetRootAttributes().size()];
-		int customfilter_idx = 0;
-		for(auto it = filters.begin();it!=filters.end();++it)
+		// Parameters based on attributes
+		string parameter_names[query->GetRootAttributes().size()];
+		string parameter_values[query->GetRootAttributes().size()];
 		{
-			if(it->first.substr(0,13)=="customfilter_")
+			auto filters = query->GetRootAttributes();
+			
+			int parameter_idx = 0;
+			for(auto it = filters.begin();it!=filters.end();++it)
 			{
-				customfilter_names[customfilter_idx] = it->first.substr(13);
-				customfilter_values[customfilter_idx] = it->second;
-				
-				query_where += " AND EXISTS(SELECT * FROM t_workflow_instance_filters wif WHERE wif.workflow_instance_id=wi.workflow_instance_id AND workflow_instance_filter=%s AND workflow_instance_filter_value=%s)";
-				
-				query_where_values.push_back(&customfilter_names[customfilter_idx]);
-				query_where_values.push_back(&customfilter_values[customfilter_idx]);
-				customfilter_idx++;
+				if(it->first.substr(0,10)=="parameter_" && it->second!="")
+				{
+					parameter_names[parameter_idx] = it->first.substr(10);
+					parameter_values[parameter_idx] = it->second;
+					
+					query_where += " AND EXISTS(SELECT * FROM t_workflow_instance_parameters wip WHERE wip.workflow_instance_id=wi.workflow_instance_id AND workflow_instance_parameter=%s AND workflow_instance_parameter_value=%s)";
+					
+					query_where_values.push_back(&parameter_names[parameter_idx]);
+					query_where_values.push_back(&parameter_values[parameter_idx]);
+					parameter_idx++;
+				}
+			}
+		}
+		
+		// Custom attributes
+		string customattribute_names[query->GetRootAttributes().size()];
+		string customattribute_values[query->GetRootAttributes().size()];
+		{
+			auto filters = query->GetRootAttributes();
+			int customattribute_idx = 0;
+			for(auto it = filters.begin();it!=filters.end();++it)
+			{
+				if(it->first.substr(0,16)=="customattribute_" && it->second!="")
+				{
+					customattribute_names[customattribute_idx] = it->first.substr(16);
+					customattribute_values[customattribute_idx] = it->second;
+					
+					query_where += " AND EXISTS(SELECT * FROM t_workflow_instance_filters wif WHERE wif.workflow_instance_id=wi.workflow_instance_id AND workflow_instance_filter=%s AND workflow_instance_filter_value=%s)";
+					
+					query_where_values.push_back(&customattribute_names[customattribute_idx]);
+					query_where_values.push_back(&customattribute_values[customattribute_idx]);
+					customattribute_idx++;
+				}
 			}
 		}
 		
