@@ -36,6 +36,17 @@ Token *WorkflowXPathFunctions::evqGetWorkflowParameter(XPathEval::func_context c
 	return new TokenString((string)(*ret));
 }
 
+Token *WorkflowXPathFunctions::evqGetJob(XPathEval::func_context context, const vector<Token *> &args)
+{
+	if(args.size()!=1)
+		throw Exception("evqGetOutput()","Expecting 1 parameter");
+	
+	string job_name = (string)(*args.at(0));
+	DOMNode context_node = *((DOMNode *)context.custom_context);
+	
+	return context.eval->Evaluate("//subjobs/job[@name='"+job_name+"']",context_node);
+}
+
 Token *WorkflowXPathFunctions::evqGetCurrentJob(XPathEval::func_context context, const vector<Token *> &args)
 {
 	if(args.size()!=0)

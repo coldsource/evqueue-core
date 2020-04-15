@@ -31,6 +31,7 @@ class WorkflowXPathFunctions
 {
 public:
 	static Token *evqGetWorkflowParameter(XPathEval::func_context context,const std::vector<Token *> &args);
+	static Token *evqGetJob(XPathEval::func_context context,const std::vector<Token *> &args);
 	static Token *evqGetCurrentJob(XPathEval::func_context context,const std::vector<Token *> &args);
 	static Token *evqGetParentJob(XPathEval::func_context context,const std::vector<Token *> &args);
 	static Token *evqGetOutput(XPathEval::func_context context,const std::vector<Token *> &args);

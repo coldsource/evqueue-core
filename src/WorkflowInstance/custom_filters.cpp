@@ -20,6 +20,7 @@
 #include <WorkflowInstance/WorkflowInstance.h>
 #include <Exception/Exception.h>
 #include <WorkflowInstance/ExceptionWorkflowContext.h>
+#include <XPath/WorkflowXPathFunctions.h>
 #include <Logger/Logger.h>
 #include <DB/DB.h>
 
@@ -33,9 +34,13 @@ void WorkflowInstance::fill_custom_filters()
 {
 	DB db;
 	
+	
+	DOMElement root = xmldoc->getDocumentElement();
+	xmldoc->getXPath()->RegisterFunction("evqGetJob",{WorkflowXPathFunctions::evqGetJob,&root});
+	
 	try
 	{
-		unique_ptr<DOMXPathResult> filters(xmldoc->evaluate("/workflow/custom-filters/custom-filter",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
+		unique_ptr<DOMXPathResult> filters(xmldoc->evaluate("/workflow/custom-attributes/custom-attribute",xmldoc->getDocumentElement(),DOMXPathResult::SNAPSHOT_RESULT_TYPE));
 		int filters_index = 0;
 		while(filters->snapshotItem(filters_index++))
 		{

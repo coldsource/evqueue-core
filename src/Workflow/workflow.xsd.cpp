@@ -32,7 +32,7 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 	<xs:complexType name=\"workflowType\"> \
 		<xs:sequence> \
 			<xs:element name=\"parameters\" type=\"parametersType\" minOccurs=\"0\" /> \
-			<xs:element name=\"custom-filters\" type=\"customfiltersType\" minOccurs=\"0\" /> \
+			<xs:element name=\"custom-attributes\" type=\"customattributesType\" minOccurs=\"0\" /> \
 			<xs:element name=\"subjobs\" type=\"subjobsType\" /> \
 		</xs:sequence> \
 		<xs:attribute name=\"version\" type=\"xs:string\" use=\"optional\" /> \
@@ -51,14 +51,14 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 	</xs:complexType> \
 	 \
 	 \
-	<xs:complexType name=\"customfiltersType\"> \
+	<xs:complexType name=\"customattributesType\"> \
 		<xs:sequence> \
-			<xs:element name=\"custom-filter\" type=\"customfilterType\" minOccurs=\"0\" maxOccurs=\"unbounded\" /> \
+			<xs:element name=\"custom-attribute\" type=\"customattributeType\" minOccurs=\"0\" maxOccurs=\"unbounded\" /> \
 		</xs:sequence> \
 	</xs:complexType> \
 	 \
 	 \
-	<xs:complexType name=\"customfilterType\"> \
+	<xs:complexType name=\"customattributeType\"> \
 		<xs:attribute name=\"name\" type=\"xs:string\" use=\"required\" /> \
 		<xs:attribute name=\"select\" type=\"xs:string\" use=\"required\" /> \
 		<xs:attribute name=\"description\" type=\"xs:string\" use=\"optional\" /> \
