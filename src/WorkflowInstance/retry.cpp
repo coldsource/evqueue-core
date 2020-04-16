@@ -88,7 +88,11 @@ void WorkflowInstance::retry_task(DOMElement task)
 
 	// If retry_retval is specified, only retry on specified retval
 	if(task.hasAttribute("retry_retval") && task.getAttribute("retry_retval")!=task.getAttribute("retval"))
-		return;
+	{
+			error_tasks++; // We won't retry this task, set error
+			update_job_statistics("error_tasks",1,task);
+			return;
+		}
 
 	// Retry task
 	time_t t;
