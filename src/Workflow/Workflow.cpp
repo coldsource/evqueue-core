@@ -221,6 +221,7 @@ void Workflow::get(const Workflow &workflow, QueryResponse *response)
 	node.setAttribute("name",workflow.GetName());
 	node.setAttribute("group",workflow.GetGroup());
 	node.setAttribute("comment",workflow.GetComment());
+	node.setAttribute("id",to_string(workflow.GetID()));
 }
 
 unsigned int Workflow::Create(const string &name, const string &base64, const string &group, const string &comment, const string &lastcommit)
