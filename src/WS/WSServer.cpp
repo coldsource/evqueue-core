@@ -146,7 +146,7 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 						if(query.GetRootAttribute("action")=="subscribe")
 						{
 							string type = query.GetRootAttribute("type");
-							unsigned int instance_id = query.GetRootAttributeInt("instance_id",0);
+							unsigned int object_id = query.GetRootAttributeInt("object_id",0);
 							int external_id = query.GetRootAttributeInt("external_id",0);
 							string api_cmd_base64 = query.GetRootAttribute("api_cmd");
 							string api_cmd;
@@ -154,7 +154,7 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 								throw Exception("Websocket","Invalid base64 sequence","INVALID_PARAMETER");
 							
 							// Subscribre event
-							Events::GetInstance()->Subscribe(type,wsi,instance_id,external_id,api_cmd);
+							Events::GetInstance()->Subscribe(type,wsi,object_id,external_id,api_cmd);
 							
 							// Sent API command immediatly for initialization
 							if(query.GetRootAttributeBool("send_now",false))
@@ -163,9 +163,9 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 						else if(query.GetRootAttribute("action")=="unsubscribe")
 						{
 							string type = query.GetRootAttribute("type");
-							unsigned int instance_id = query.GetRootAttributeInt("instance_id",0);
+							unsigned int object_id = query.GetRootAttributeInt("object_id",0);
 							int external_id = query.GetRootAttributeInt("external_id",0);
-							Events::GetInstance()->Unsubscribe(type,wsi,instance_id,external_id);
+							Events::GetInstance()->Unsubscribe(type,wsi,object_id,external_id);
 						}
 						else if(query.GetRootAttribute("action")=="unsubscribeall")
 						{
@@ -188,9 +188,10 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 				{
 					string api_cmd;
 					int external_id;
-					if(Events::GetInstance()->Get(wsi,&external_id,api_cmd))
+					unsigned int object_id;
+					if(Events::GetInstance()->Get(wsi, &external_id, &object_id, api_cmd))
 					{
-						context->session->Query(api_cmd,external_id);
+						context->session->Query(api_cmd, external_id, object_id);
 						lws_callback_on_writable(wsi); // Set writable again in case we have more than one event
 					}
 				}

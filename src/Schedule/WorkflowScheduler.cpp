@@ -31,6 +31,7 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Cluster/Cluster.h>
 #include <Cluster/UniqueAction.h>
+#include <WS/Events.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -107,6 +108,8 @@ void WorkflowScheduler::ScheduledWorkflowInstanceStop(unsigned int workflow_sche
 {
 	unique_lock<recursive_mutex> llock(wfs_mutex);
 	
+	Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_STOPPED, workflow_schedule_id);
+	
 	int i = lookup_wfs(workflow_schedule_id);
 	if(i==-1)
 	{
@@ -141,7 +144,8 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 		
 		WorkflowInstance *wi = 0;
 		
-		int i = lookup_wfs(scheduled_wf->workflow_schedule->GetID());
+		unsigned int workflow_schedule_id = scheduled_wf->workflow_schedule->GetID();
+		int i = lookup_wfs(workflow_schedule_id);
 		
 		try
 		{
@@ -196,6 +200,8 @@ void WorkflowScheduler::event_removed(Event *e, event_reasons reason)
 			wfs_mutex.unlock();
 			
 			Logger::Log(LOG_NOTICE,"[WID %d] Instantiated by workflow scheduler",wi->GetInstanceID());
+			
+			Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_STARTED, workflow_schedule_id);
 			
 			wi->Start(&workflow_terminated);
 			

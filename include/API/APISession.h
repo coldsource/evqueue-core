@@ -73,9 +73,9 @@ class APISession
 		
 		void SendGreeting();
 		
-		bool QueryReceived(XMLQuery *query,int external_id=0);
-		void SendResponse();
-		void Query(const std::string &xml, int external_id=0);
+		bool QueryReceived(XMLQuery *query);
+		void SendResponse(int external_id=0, unsigned int object_id=0);
+		void Query(const std::string &xml, int external_id=0, unsigned int object_id=0);
 };
 
 #endif

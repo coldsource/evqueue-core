@@ -135,15 +135,13 @@ void APISession::SendGreeting()
 	status = READY;
 }
 
-bool APISession::QueryReceived(XMLQuery *query,int external_id)
+bool APISession::QueryReceived(XMLQuery *query)
 {
 	status=QUERY_RECEIVED; // Query received, we will now need to send the response before receiving another query
 	
 	// Empty previous response
 	is_xpath_response = false;
 	response.Empty();
-	if(external_id)
-		response.SetAttribute("external-id",to_string(external_id));
 	
 	if(query->GetQueryGroup()=="quit")
 	{
@@ -175,27 +173,39 @@ bool APISession::QueryReceived(XMLQuery *query,int external_id)
 		
 		is_xpath_response = true;
 		xpath_response.Empty();
-		if(external_id)
-			xpath_response.SetAttribute("external-id",to_string(external_id));
 		xpath_response.GetDOM()->ImportXPathResult(res.get(),xpath_response.GetDOM()->getDocumentElement());
 	}
 	
 	return false;
 }
 
-void APISession::SendResponse()
+void APISession::SendResponse(int external_id, unsigned int object_id)
 {
 	status=READY; // Response send, ready to received another query
 	
 	if(is_xpath_response)
+	{
+		if(external_id)
+			xpath_response.SetAttribute("external-id",to_string(external_id));
+		if(object_id)
+			xpath_response.SetAttribute("object-id",to_string(object_id));
+		
 		xpath_response.SendResponse();
+	}
 	else
+	{
+		if(external_id)
+			response.SetAttribute("external-id",to_string(external_id));
+		if(object_id)
+			response.SetAttribute("object-id",to_string(object_id));
+		
 		response.SendResponse();
+	}
 }
 
-void APISession::Query(const std::string &xml,int external_id)
+void APISession::Query(const std::string &xml,int external_id, unsigned int object_id)
 {
 	XMLQuery query(context,xml);
-	QueryReceived(&query,external_id);
-	SendResponse();
+	QueryReceived(&query);
+	SendResponse(external_id, object_id);
 }

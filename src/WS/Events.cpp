@@ -105,6 +105,16 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return RETRYSCHEDULE_MODIFIED;
 	else if(type_str=="RETRYSCHEDULE_REMOVED")
 		return RETRYSCHEDULE_REMOVED;
+	else if(type_str=="WORKFLOWSCHEDULE_CREATED")
+		return WORKFLOWSCHEDULE_CREATED;
+	else if(type_str=="WORKFLOWSCHEDULE_MODIFIED")
+		return WORKFLOWSCHEDULE_MODIFIED;
+	else if(type_str=="WORKFLOWSCHEDULE_REMOVED")
+		return WORKFLOWSCHEDULE_REMOVED;
+	else if(type_str=="WORKFLOWSCHEDULE_STARTED")
+		return WORKFLOWSCHEDULE_STARTED;
+	else if(type_str=="WORKFLOWSCHEDULE_STOPPED")
+		return WORKFLOWSCHEDULE_STOPPED;
 	else if(type_str=="NOTIFICATION_TYPE_CREATED")
 		return NOTIFICATION_TYPE_CREATED;
 	else if(type_str=="NOTIFICATION_TYPE_REMOVED")
@@ -119,16 +129,16 @@ Events::en_types Events::get_type(const std::string &type_str)
 	return NONE;
 }
 
-void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id, const string &api_cmd)
+void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int object_filter, int external_id, const string &api_cmd)
 {
 	unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);
 	
-	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{instance_filter, api_cmd, external_id}));
+	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{object_filter, api_cmd, external_id}));
 }
 
-void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id)
+void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int object_filter, int external_id)
 {
 	unique_lock<mutex> llock(lock);
 	
@@ -141,7 +151,7 @@ void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int i
 	auto it2 = it->second.begin();
 	while(it2!=it->second.end())
 	{
-		if(it2->first==wsi && it2->second.instance_filter==instance_filter && (external_id==0 || external_id==it2->second.external_id))
+		if(it2->first==wsi && it2->second.object_filter==object_filter && (external_id==0 || external_id==it2->second.external_id))
 			it2 = it->second.erase(it2);
 		else
 			++it2;
@@ -168,7 +178,7 @@ void Events::UnsubscribeAll(struct lws *wsi)
 	events.erase(wsi);
 }
 
-void Events::Create(en_types type, unsigned int instance_id)
+void Events::Create(en_types type, unsigned int object_id)
 {
 	if(!this->ws_context)
 		return; // Prevent events from being creating before server is ready
@@ -182,12 +192,12 @@ void Events::Create(en_types type, unsigned int instance_id)
 	
 	for(auto it2 = it->second.begin();it2!=it->second.end();++it2)
 	{
-		// Check instance filter
-		if(it2->second.instance_filter!=0 && it2->second.instance_filter!=instance_id)
+		// Check object filter
+		if(it2->second.object_filter!=0 && it2->second.object_filter!=object_id)
 			continue;
 		
 		// Push the event to the subscriber
-		events[it2->first].push_back({it2->second.api_cmd,it2->second.external_id});
+		events[it2->first].push_back({it2->second.api_cmd, it2->second.external_id, object_id});
 		
 		lws_callback_on_writable(it2->first);
 	}
@@ -196,7 +206,7 @@ void Events::Create(en_types type, unsigned int instance_id)
 	lws_cancel_service(ws_context);
 }
 
-bool Events::Get(struct lws *wsi, int *external_id, string &api_cmd)
+bool Events::Get(struct lws *wsi, int *external_id, unsigned int *object_id, string &api_cmd)
 {
 	unique_lock<mutex> llock(lock);
 	
@@ -209,6 +219,7 @@ bool Events::Get(struct lws *wsi, int *external_id, string &api_cmd)
 	
 	api_cmd = it->second.front().api_cmd;
 	*external_id = it->second.front().external_id;
+	*object_id = it->second.front().object_id;
 	it->second.erase(it->second.begin());
 	
 	return true;

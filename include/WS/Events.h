@@ -65,6 +65,11 @@ class Events
 			RETRYSCHEDULE_CREATED,
 			RETRYSCHEDULE_MODIFIED,
 			RETRYSCHEDULE_REMOVED,
+			WORKFLOWSCHEDULE_CREATED,
+			WORKFLOWSCHEDULE_MODIFIED,
+			WORKFLOWSCHEDULE_REMOVED,
+			WORKFLOWSCHEDULE_STARTED,
+			WORKFLOWSCHEDULE_STOPPED,
 			NOTIFICATION_TYPE_CREATED,
 			NOTIFICATION_TYPE_REMOVED,
 			NOTIFICATION_CREATED,
@@ -75,7 +80,7 @@ class Events
 	private:
 		struct st_subscription
 		{
-			unsigned int instance_filter;
+			unsigned int object_filter;
 			std::string api_cmd;
 			int external_id;
 		};
@@ -84,6 +89,7 @@ class Events
 		{
 			std::string api_cmd;
 			int external_id;
+			unsigned int object_id;
 		};
 		
 		static Events *instance;
@@ -105,12 +111,12 @@ class Events
 		
 		void SetContext(struct lws_context *ws_context);
 		
-		void Subscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id, const std::string &api_cmd);
-		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int instance_filter, int external_id);
+		void Subscribe(const std::string &type_str, struct lws *wsi, unsigned int object_filter, int external_id, const std::string &api_cmd);
+		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int object_filter, int external_id);
 		void UnsubscribeAll(struct lws *wsi);
 		
-		void Create(en_types type, unsigned int instance_id = 0);
-		bool Get(struct lws *wsi, int *external_id, std::string &api_cmd);
+		void Create(en_types type, unsigned int object_id = 0);
+		bool Get(struct lws *wsi, int *external_id, unsigned int *object_id, std::string &api_cmd);
 };
 
 #endif

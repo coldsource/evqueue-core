@@ -30,6 +30,7 @@
 #include <Logger/Logger.h>
 #include <Logger/LoggerAPI.h>
 #include <User/User.h>
+#include <WS/Events.h>
 
 #include <string.h>
 
@@ -325,6 +326,8 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 			
+			Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_CREATED,id);
+			
 			response->GetDOM()->getDocumentElement().setAttribute("schedule-id",to_string(id));
 		}
 		else
@@ -332,6 +335,8 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 			unsigned int id = query->GetRootAttributeInt("id");
 			
 			Edit(id, workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
+			
+			Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		}
@@ -348,6 +353,8 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
+		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_REMOVED,id);
+		
 		WorkflowScheduler::GetInstance()->Reload();
 		
 		return true;
@@ -360,6 +367,8 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
+		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
+		
 		WorkflowScheduler::GetInstance()->Reload();
 		
 		return true;
@@ -371,6 +380,8 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		SetIsActive(id,true);
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
+		
+		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		
