@@ -485,41 +485,6 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 	return false;
 }
 
-string Workflow::CreateSimpleWorkflow(const string &task_name, const vector<std::string> &inputs)
-{
-	DOMDocument xmldoc;
-	
-	DOMElement workflow_node = xmldoc.createElement("workflow");
-	xmldoc.appendChild(workflow_node);
-	
-	DOMElement parameters_node = xmldoc.createElement("parameters");
-	workflow_node.appendChild(parameters_node);
-	
-	DOMElement subjobs_node = xmldoc.createElement("subjobs");
-	workflow_node.appendChild(subjobs_node);
-	
-	DOMElement job_node = xmldoc.createElement("job");
-	subjobs_node.appendChild(job_node);
-	
-	DOMElement tasks_node = xmldoc.createElement("tasks");
-	job_node.appendChild(tasks_node);
-	
-	DOMElement task_node = xmldoc.createElement("task");
-	task_node.setAttribute("name",task_name);
-	task_node.setAttribute("queue","default");
-	tasks_node.appendChild(task_node);
-	
-	for(int i = 0;i<inputs.size();i++)
-	{
-		DOMElement input_node = xmldoc.createElement("input");
-		input_node.setAttribute("name",(string("argument_")+to_string(i)));
-		input_node.appendChild(xmldoc.createTextNode(inputs.at(i)));
-		task_node.appendChild(input_node);
-	}
-	
-	return xmldoc.Serialize(workflow_node);
-}
-
 void Workflow::ValidateXML(const string &xml_str)
 {
 	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(xml_str));

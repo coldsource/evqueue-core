@@ -77,7 +77,6 @@ class Workflow
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 		
-		static std::string CreateSimpleWorkflow(const std::string &task_name, const std::vector<std::string> &inputs);
 		static void ValidateXML(const std::string &xml_str);
 	
 	private:
