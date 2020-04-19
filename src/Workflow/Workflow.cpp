@@ -405,8 +405,8 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			
 			response->GetDOM()->getDocumentElement().setAttribute("workflow-id",to_string(id));
 			
-			Events::GetInstance()->Create(Events::en_types::WORKFLOW_CREATED);
-			Events::GetInstance()->Create(Events::en_types::WORKFLOW_SUBSCRIBED); // Workflow might have been subscribed to auto notifications
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_CREATED, id);
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_SUBSCRIBED, id); // Workflow might have been subscribed to auto notifications
 		}
 		else
 		{
@@ -416,7 +416,7 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::WORKFLOW_MODIFIED);
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_MODIFIED, id);
 		}
 		
 		Workflows::GetInstance()->Reload();
@@ -431,7 +431,7 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 		
 		LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::WORKFLOW_REMOVED);
+		Events::GetInstance()->Create(Events::en_types::WORKFLOW_REMOVED, id);
 		
 		return true;
 	}
@@ -445,7 +445,7 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::WORKFLOW_UNSUBSCRIBED);
+			Events::GetInstance()->Create(Events::en_types::WORKFLOW_UNSUBSCRIBED, id);
 			
 			Workflows::GetInstance()->Reload();
 			
@@ -465,13 +465,13 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			{
 				SubscribeNotification(id,notification_id);
 				
-				Events::GetInstance()->Create(Events::en_types::WORKFLOW_SUBSCRIBED);
+				Events::GetInstance()->Create(Events::en_types::WORKFLOW_SUBSCRIBED, id);
 			}
 			else
 			{
 				UnsubscribeNotification(id,notification_id);
 				
-				Events::GetInstance()->Create(Events::en_types::WORKFLOW_UNSUBSCRIBED);
+				Events::GetInstance()->Create(Events::en_types::WORKFLOW_UNSUBSCRIBED, id);
 			}
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
