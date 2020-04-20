@@ -94,7 +94,7 @@ bool WorkflowSchedules::HandleQuery(const User &user, XMLQuery *query, QueryResp
 	if(action=="list")
 	{
 		DB db;
-		db.Query("SELECT ws.workflow_schedule_id, ws.node_name, ws.workflow_id, ws.workflow_schedule, ws.workflow_schedule_onfailure, ws.workflow_schedule_user, ws.workflow_schedule_host, ws.workflow_schedule_active, ws.workflow_schedule_comment, w.workflow_name FROM t_workflow_schedule ws, t_workflow w WHERE ws.workflow_id=w.workflow_id");
+		db.Query("SELECT ws.workflow_schedule_id, ws.node_name, ws.workflow_id, ws.workflow_schedule, ws.workflow_schedule_onfailure, ws.workflow_schedule_user, ws.workflow_schedule_host, ws.workflow_schedule_active, ws.workflow_schedule_comment, w.workflow_name, w.workflow_group FROM t_workflow_schedule ws, t_workflow w WHERE ws.workflow_id=w.workflow_id");
 		
 		while(db.FetchRow())
 		{
@@ -111,6 +111,7 @@ bool WorkflowSchedules::HandleQuery(const User &user, XMLQuery *query, QueryResp
 			node.setAttribute("active",db.GetField(7));
 			node.setAttribute("comment",db.GetField(8));
 			node.setAttribute("workflow_name",db.GetField(9));
+			node.setAttribute("workflow_group",db.GetField(10));
 			
 			if(display_parameters)
 			{
