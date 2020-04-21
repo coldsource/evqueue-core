@@ -21,6 +21,7 @@
 #include <DB/DB.h>
 #include <User/User.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <WS/Events.h>
 
 using namespace std;
 
@@ -49,4 +50,6 @@ void LoggerAPI::LogAction(const User &user, unsigned int object_id, const string
 		&group,
 		&action
 		);
+	
+	Events::GetInstance()->Create(Events::en_types::LOG_API);
 }
