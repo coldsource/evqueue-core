@@ -153,9 +153,6 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 
 bool Notifications::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	if(!user.IsAdmin())
-		User::InsufficientRights();
-	
 	Notifications *notifications = Notifications::GetInstance();
 	
 	const string action = query->GetRootAttribute("action");

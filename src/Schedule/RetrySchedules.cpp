@@ -72,9 +72,6 @@ void RetrySchedules::Reload(bool notify)
 
 bool RetrySchedules::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	if(!user.IsAdmin())
-		User::InsufficientRights();
-	
 	RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
 	
 	const string action = query->GetRootAttribute("action");

@@ -433,9 +433,6 @@ bool QueuePool::Exists(unsigned int id)
 
 bool QueuePool::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	if(!user.IsAdmin())
-		User::InsufficientRights();
-	
 	QueuePool *qp = QueuePool::GetInstance();
 	
 	const string action = query->GetRootAttribute("action");

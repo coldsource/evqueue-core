@@ -266,7 +266,7 @@ void User::GrantRight(unsigned int id, unsigned int workflow_id, bool edit, bool
 	DB db;
 	int iedit = edit, iread = read, iexec = exec, ikill = kill;
 	db.QueryPrintf(
-		"INSERT INTO t_user_right(user_id, workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill) VALUES(%i,%i,%i,%i,%i,%i)",
+		"REPLACE INTO t_user_right(user_id, workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill) VALUES(%i,%i,%i,%i,%i,%i)",
 		&id, &workflow_id, &iedit, &iread, &iexec, &ikill
 	);
 }
@@ -292,7 +292,7 @@ void User::create_edit_check(const std::string &name, const std::string &passwor
 		throw Exception("User","Invalid profile, should be 'ADMIN' or 'USER'","INVALID_PARAMETER");
 }
 
-unsigned int get_id_from_query(XMLQuery *query)
+unsigned int User::get_id_from_query(XMLQuery *query)
 {
 	unsigned int id = query->GetRootAttributeInt("id", 0);
 	if(id!=0)

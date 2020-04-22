@@ -208,12 +208,6 @@ void Workflow::Get(unsigned int id, QueryResponse *response)
 	get(workflow,response);
 }
 
-void Workflow::Get(const string &name, QueryResponse *response)
-{
-	Workflow workflow = Workflows::GetInstance()->Get(name);
-	get(workflow,response);
-}
-
 void Workflow::get(const Workflow &workflow, QueryResponse *response)
 {
 	DOMElement node = (DOMElement)response->AppendXML("<workflow />");
@@ -366,27 +360,31 @@ string Workflow::create_edit_check(const string &name, const string &base64, con
 	return workflow_xml;
 }
 
+unsigned int Workflow::get_id_from_query(XMLQuery *query)
+{
+	unsigned int id = query->GetRootAttributeInt("id", 0);
+	if(id!=0)
+		return id;
+	
+	string name = query->GetRootAttribute("name","");
+	if(name=="")
+		throw Exception("Workflow","Missing 'id' or 'name' attribute","MISSING_PARAMETER");
+	
+	return Workflows::GetInstance()->Get(name).GetID();
+}
+
 bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	if(!user.IsAdmin())
-		User::InsufficientRights();
-	
 	const string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
 	{
-		if(query->HasRootAttribute("id"))
-		{
-			unsigned int id = query->GetRootAttributeInt("id");
-			Get(id,response);
-		}
-		else if(query->HasRootAttribute("name"))
-		{
-			string name = query->GetRootAttribute("name");
-			Get(name,response);
-		}
-		else
-			throw Exception("Workflow","Missing 'id' or 'name' parameter","MISSING_PARAMETER");
+		unsigned int id = get_id_from_query(query);
+		
+		if(!user.HasAccessToWorkflow(id, "read"))
+			User::InsufficientRights();
+		
+		Get(id,response);
 		
 		return true;
 	}
@@ -399,6 +397,9 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 		
 		if(action=="create")
 		{
+			if(!user.IsAdmin())
+				User::InsufficientRights();
+			
 			unsigned int id = Create(name, content, group, comment);
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
@@ -410,7 +411,10 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 		}
 		else
 		{
-			unsigned int id = query->GetRootAttributeInt("id");
+			unsigned int id = get_id_from_query(query);
+			
+			if(!user.HasAccessToWorkflow(id, "edit"))
+				User::InsufficientRights();
 			
 			Edit(id, name, content, group, comment);
 			
@@ -425,7 +429,10 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 	}
 	else if(action=="delete")
 	{
-		unsigned int id = query->GetRootAttributeInt("id");
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
+		unsigned int id = get_id_from_query(query);
 		
 		Delete(id);
 		
@@ -437,10 +444,13 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 	}
 	else if(action=="subscribe_notification" || action=="unsubscribe_notification" || action=="clear_notifications" || action=="list_notifications")
 	{
-		unsigned int id = query->GetRootAttributeInt("id");
+		unsigned int id = get_id_from_query(query);
 		
 		if(action=="clear_notifications")
 		{
+			if(!user.HasAccessToWorkflow(id, "edit"))
+				User::InsufficientRights();
+			
 			ClearNotifications(id);
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
@@ -453,12 +463,18 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 		}
 		else if(action=="list_notifications")
 		{
+			if(!user.HasAccessToWorkflow(id, "read"))
+				User::InsufficientRights();
+			
 			ListNotifications(id, response);
 			
 			return true;
 		}
 		else if(action=="subscribe_notification" || action=="unsubscribe_notification")
 		{
+			if(!user.HasAccessToWorkflow(id, "edit"))
+				User::InsufficientRights();
+			
 			unsigned int notification_id = query->GetRootAttributeInt("notification_id");
 						
 			if(action=="subscribe_notification")

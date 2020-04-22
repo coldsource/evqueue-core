@@ -82,6 +82,7 @@ class User
 	
 	private:
 		static void create_edit_check(const std::string &name, const std::string &password, const std::string &profile);
+		static unsigned int get_id_from_query(XMLQuery *query);
 };
 
 #endif
