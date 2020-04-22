@@ -41,10 +41,11 @@ void LoggerAPI::LogAction(const User &user, unsigned int object_id, const string
 		return;
 	
 	DB db;
+	unsigned int user_id = user.GetID();
 	
-	db.QueryPrintf("INSERT INTO t_log_api(node_name,user_login,log_api_object_id,log_api_object_type,log_api_group,log_api_action) VALUES(%s,%s,%i,%s,%s,%s)",
+	db.QueryPrintf("INSERT INTO t_log_api(node_name,user_id,log_api_object_id,log_api_object_type,log_api_group,log_api_action) VALUES(%s,%i,%i,%s,%s,%s)",
 		&instance->node_name,
-		&user.GetName(),
+		&user_id,
 		&object_id,
 		&object_type,
 		&group,

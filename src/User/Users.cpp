@@ -52,10 +52,10 @@ void Users::Reload(bool notify)
 	// Update
 	DB db;
 	DB db2(&db);
-	db.Query("SELECT user_login FROM t_user");
+	db.Query("SELECT user_id, user_login FROM t_user");
 	
 	while(db.FetchRow())
-		add(0,db.GetField(0),new User(&db2,db.GetField(0)));
+		add(db.GetFieldInt(0),db.GetField(1),new User(&db2,db.GetFieldInt(0)));
 	
 	llock.unlock();
 	
@@ -83,6 +83,7 @@ bool Users::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		{
 			User it_user = *it->second;
 			DOMElement node = (DOMElement)response->AppendXML("<user />");
+			node.setAttribute("id",to_string(it_user.GetID()));
 			node.setAttribute("name",it_user.GetName());
 			node.setAttribute("profile",it_user.GetProfile());
 		}

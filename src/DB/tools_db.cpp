@@ -208,6 +208,23 @@ void tools_upgrade_v22_v30(void)
 	
 	DB db;
 	
+	// Adding ID as primary key for users
+	db.Query("ALTER TABLE t_user DROP PRIMARY KEY");
+	db.Query("ALTER TABLE t_user ADD COLUMN `user_id` int(10) unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT FIRST");
+	db.Query("ALTER TABLE t_user ADD UNIQUE(user_login)");
+
+	db.Query("ALTER TABLE t_log_api ADD COLUMN user_id INT UNSIGNED NOT NULL AFTER node_name");
+	db.Query("ALTER TABLE t_log_api CHANGE COLUMN user_login user_login varchar(32) COLLATE utf8_unicode_ci NOT NULL");
+	db.Query("UPDATE t_log_api INNER JOIN t_user ON(t_log_api.user_login=t_user.user_login) SET t_log_api.user_id=t_user.user_id");
+	db.Query("ALTER TABLE t_log_api DROP COLUMN user_login");
+
+	db.Query("ALTER TABLE t_user_right DROP INDEX user_login");
+	db.Query("ALTER TABLE t_user_right ADD COLUMN user_id INT UNSIGNED NOT NULL FIRST");
+	db.Query("UPDATE t_user_right INNER JOIN t_user ON(t_user_right.user_login=t_user.user_login) SET t_user_right.user_id=t_user.user_id");
+	db.Query("ALTER TABLE t_user_right DROP COLUMN user_login");
+	db.Query("ALTER TABLE t_user_right ADD PRIMARY KEY(user_id, workflow_id)");
+	
+	// Update tables version
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 	{
 		string version = "v" EVQUEUE_VERSION;

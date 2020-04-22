@@ -30,6 +30,8 @@
 #include <Schedule/RetrySchedule.h>
 #include <Tag/Tags.h>
 #include <Tag/Tag.h>
+#include <User/Users.h>
+#include <User/User.h>
 #include <Queue/QueuePool.h>
 
 using namespace std;
@@ -45,7 +47,7 @@ bool LogsAPI::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		
 		DB db;
 		
-		db.QueryPrintf("SELECT node_name,user_login,log_api_object_id,log_api_object_type,log_api_group,log_api_action,log_api_timestamp FROM t_log_api ORDER BY log_api_timestamp DESC,log_api_id DESC LIMIT %i,%i",&offset,&limit);
+		db.QueryPrintf("SELECT log.node_name,user.user_login,log.log_api_object_id,log.log_api_object_type,log.log_api_group,log.log_api_action,log.log_api_timestamp FROM t_log_api log LEFT JOIN t_user user ON log.user_id=user.user_id ORDER BY log_api_timestamp DESC,log_api_id DESC LIMIT %i,%i",&offset,&limit);
 		while(db.FetchRow())
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<log />");
@@ -68,6 +70,8 @@ bool LogsAPI::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 					object_name = Tags::GetInstance()->Get(db.GetFieldInt(2)).GetLabel();
 				else if(db.GetField(3)=="Queue")
 					object_name = QueuePool::GetQueueName(db.GetFieldInt(2));
+				else if(db.GetField(3)=="User")
+					object_name = Users::GetInstance()->Get(db.GetFieldInt(2)).GetName();
 			}
 			catch(Exception &e) {}
 			node.setAttribute("object_name",object_name);

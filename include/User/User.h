@@ -38,6 +38,7 @@ class User
 		bool kill;
 	};
 	
+	unsigned int user_id;
 	std::string user_name;
 	std::string user_password;
 	std::string user_profile;
@@ -49,10 +50,11 @@ class User
 		static User anonymous;
 		
 		User();
-		User(DB *db,const std::string &user_name);
+		User(DB *db,unsigned int user_id);
 		
 		static void InitAnonymous();
 		
+		unsigned int GetID() const { return user_id; }
 		const std::string &GetName() const { return user_name; }
 		const std::string &GetPassword() const { return user_password; }
 		const std::string &GetProfile() const { return user_profile; }
@@ -64,17 +66,17 @@ class User
 		static bool InsufficientRights();
 		
 		static bool CheckUserName(const std::string &user_name);
-		static void Get(const std::string &name, QueryResponse *response);
+		static void Get(unsigned int id, QueryResponse *response);
 		static unsigned int Create(const std::string &name, const std::string &password, const std::string &profile);
-		static void Edit(const std::string &name, const std::string &password, const std::string &profile);
-		static void Delete(const std::string &name);
-		static void ChangePassword(const std::string &name, const std::string &password);
-		static void UpdatePreferences(const std::string &name, const std::string &preferences);
+		static void Edit(unsigned int id, const std::string &name, const std::string &password, const std::string &profile);
+		static void Delete(unsigned int id);
+		static void ChangePassword(unsigned int id, const std::string &password);
+		static void UpdatePreferences(unsigned int id, const std::string &preferences);
 		
-		static void ClearRights(const std::string &name);
-		static void ListRights(const std::string &name, QueryResponse *response);
-		static void GrantRight(const std::string &name, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);
-		static void RevokeRight(const std::string &name, unsigned int workflow_id);
+		static void ClearRights(unsigned int id);
+		static void ListRights(unsigned int id, QueryResponse *response);
+		static void GrantRight(unsigned int id, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);
+		static void RevokeRight(unsigned int id, unsigned int workflow_id);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
