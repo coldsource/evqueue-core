@@ -127,6 +127,12 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return NOTIFICATION_REMOVED;
 	else if(type_str=="NOTIFICATION_MODIFIED")
 		return NOTIFICATION_MODIFIED;
+	else if(type_str=="USER_CREATED")
+		return USER_CREATED;
+	else if(type_str=="USER_MODIFIED")
+		return USER_MODIFIED;
+	else if(type_str=="USER_REMOVED")
+		return USER_REMOVED;
 	
 	return NONE;
 }
