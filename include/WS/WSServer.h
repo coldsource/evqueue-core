@@ -23,6 +23,7 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <vector>
 
 #include <libwebsockets.h>
 
@@ -40,7 +41,7 @@ class WSServer
 	struct lws_context_creation_info info;
 	struct lws_context *context;
 	
-	std::thread event_loop_thread;
+	std::vector<std::thread> threads;
 	
 	Events *events;
 	
@@ -62,16 +63,16 @@ class WSServer
 		
 		static WSServer *GetInstance() { return instance; }
 		
-		void Start();
+		void Adopt(int fd);
+		
 		void Shutdown();
 		void WaitForShutdown();
 		
 	public:
 		static int callback_http( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
-		static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
-	
-	private:
-		static void event_loop(WSServer *ws);
+		static int callback_evq(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
+		
+		static void event_loop(int tsi);
 };
 
 #endif

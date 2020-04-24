@@ -9,6 +9,10 @@
 #include <WS/Events.h>
 #include <Crypto/base64.h>
 #include <DB/DB.h>
+#include <IO/Sockets.h>
+#include <API/ActiveConnections.h>
+#include <Logger/Logger.h>
+#include <API/Statistics.h>
 
 using namespace std;
 
@@ -19,14 +23,14 @@ const struct lws_protocols protocols[] =
 	{"http-only", WSServer::callback_http, 0, 0},
 	{
 		"api",
-		WSServer::callback_minimal,
+		WSServer::callback_evq,
 		sizeof(WSServer::per_session_data),
 		32768,
 		WSServer::en_protocols::API
 	},
 	{
 		"events",
-		WSServer::callback_minimal,
+		WSServer::callback_evq,
 		sizeof(WSServer::per_session_data),
 		32768,
 		WSServer::en_protocols::EVENTS
@@ -36,17 +40,18 @@ const struct lws_protocols protocols[] =
 
 WSServer::WSServer()
 {
-	
+	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
 	memset( &info, 0, sizeof(info) );
 
 	lws_set_log_level(LLL_ERR | LLL_WARN, 0);
 
-	info.keepalive_timeout = 120;
-	info.timeout_secs = 30;
-	info.port = ConfigurationEvQueue::GetInstance()->GetInt("ws.bind.port");
+	info.keepalive_timeout = config->GetInt("ws.keepalive");
+	info.timeout_secs = config->GetInt("ws.rcv.timeout");
+	info.port = CONTEXT_PORT_NO_LISTEN; // CONTEXT_PORT_NO_LISTEN_SERVER Should be used but is not available in this version of LWS
 	info.protocols = protocols;
 	info.gid = -1;
 	info.uid = -1;
+	info.count_threads = config->GetInt("ws.workers");
 	info.server_string = "evQueue websockets server";
 	info.vhost_name = "default";
 	/*{
@@ -62,6 +67,11 @@ WSServer::WSServer()
 	Events::GetInstance()->SetContext(context);
 	
 	instance = this;
+	
+	for(int i=0;i<info.count_threads;i++)
+		threads.emplace_back(thread(event_loop, i));
+	
+	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(info.count_threads)+" threads");
 }
 
 WSServer::~WSServer()
@@ -83,10 +93,12 @@ int WSServer::callback_http(struct lws *wsi, enum lws_callback_reasons reason, v
 	return 0;
 }
  
-int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
+int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
 	per_session_data *context = (per_session_data *)user;
 	const lws_protocols *protocol = lws_get_protocol(wsi);
+	
+	Logger::Log(LOG_DEBUG, "WS callback called for reason :"+to_string(reason));
 	
 	try
 	{
@@ -100,6 +112,8 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 			
 			case LWS_CALLBACK_ESTABLISHED:
 			{
+				Statistics::GetInstance()->IncWSAcceptedConnections();
+				
 				// Init context data
 				context->session = new APISession("Websocket",wsi);
 				
@@ -113,6 +127,11 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 				// Clean context data
 				delete context->session;
 				Events::GetInstance()->UnsubscribeAll(wsi);
+				
+				// Notify that connection is over
+				int s = lws_get_socket_fd(wsi);
+				ActiveConnections::GetInstance()->EndWSConnection(s);
+				Sockets::GetInstance()->UnregisterSocket(s);
 				break;
 			}
 			
@@ -201,16 +220,12 @@ int WSServer::callback_minimal(struct lws *wsi, enum lws_callback_reasons reason
 	}
 	catch(Exception &e)
 	{
+		Statistics::GetInstance()->IncAPIExceptions();
 		lws_close_reason(wsi,LWS_CLOSE_STATUS_UNEXPECTED_CONDITION,(unsigned char *)e.error.c_str(),e.error.length());
 		return -1;
 	}
 	
 	return 0;
-}
-
-void WSServer::Start(void)
-{
-	event_loop_thread = thread(WSServer::event_loop,this);
 }
 
 void WSServer::Shutdown(void)
@@ -221,18 +236,43 @@ void WSServer::Shutdown(void)
 
 void WSServer::WaitForShutdown(void)
 {
-	event_loop_thread.join();
+	int nthreads = ConfigurationEvQueue::GetInstance()->GetInt("ws.workers");
+	for(int i=0;i<nthreads;i++)
+		threads[i].join();
 	
 	lws_context_destroy(context);
 }
 
-void WSServer::event_loop(WSServer *ws)
+void WSServer::Adopt(int fd)
 {
+	// Configure socket
+	Configuration *config = ConfigurationEvQueue::GetInstance();
+	struct timeval tv;
+	
+	tv.tv_sec = config->GetInt("ws.rcv.timeout");
+	tv.tv_usec = 0;
+	setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
+	
+	tv.tv_sec = config->GetInt("ws.snd.timeout");
+	tv.tv_usec = 0;
+	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
+	
+	lws_adopt_socket(context, fd);
+	lws_cancel_service(context);
+}
+
+void WSServer::event_loop(int tsi)
+{
+	WSServer *ws = WSServer::GetInstance();
+	
 	DB::StartThread();
+	
+	Logger::Log(LOG_INFO, "WS thread #"+to_string(tsi)+" starting service");
 	
 	while( 1 )
 	{
-		lws_service(ws->context, 10000);
+		lws_service_tsi(ws->context,10000, tsi);
+		
 		if(ws->is_cancelling)
 			break;
 	}

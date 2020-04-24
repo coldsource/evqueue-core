@@ -63,10 +63,10 @@ void handle_connection(int s)
 	int read_size;
 	
 	Statistics *stats = Statistics::GetInstance();
-	stats->IncAcceptedConnections();
+	stats->IncAPIAcceptedConnections();
 	
 	// Init mysql library
-	mysql_thread_init();
+	DB::StartThread();
 	
 	try
 	{
@@ -97,6 +97,7 @@ void handle_connection(int s)
 	}
 	catch (Exception &e)
 	{
+		stats->IncAPIExceptions();
 		Logger::Log(LOG_INFO,"Unexpected exception in context "+e.context+" : "+e.error);
 		
 		QueryResponse response(s);
@@ -107,22 +108,21 @@ void handle_connection(int s)
 			response.SetErrorCode("UNEXPECTED_EXCEPTION");
 		response.SendResponse();
 		
-		Sockets::GetInstance()->UnregisterSocket(s);
-		
-		mysql_thread_end();
+		DB::StopThread();
 		
 		// Notify that we exit
-		ActiveConnections::GetInstance()->EndConnection(this_thread::get_id());
+		ActiveConnections::GetInstance()->EndAPIConnection(this_thread::get_id());
+		Sockets::GetInstance()->UnregisterSocket(s);
 		
 		return;
 		
 	}
 	
-	Sockets::GetInstance()->UnregisterSocket(s);
-	mysql_thread_end();
+	DB::StopThread();
 	
 	// Notify that we exit
-	ActiveConnections::GetInstance()->EndConnection(this_thread::get_id());
+	ActiveConnections::GetInstance()->EndAPIConnection(this_thread::get_id());
+	Sockets::GetInstance()->UnregisterSocket(s);
 	
 	return;
 }

@@ -102,8 +102,12 @@
 
 #include <xercesc/util/PlatformUtils.hpp>
 
+#define CNX_TYPE_API 1
+#define CNX_TYPE_WS 2
+
 int listen_socket = -1;
 int listen_socket_unix = -1;
+int listen_socket_ws = -1;
 time_t evqueue_start_time = 0;
 
 void signal_callback_handler(int signum)
@@ -151,6 +155,9 @@ void fork_child_handler(void)
 	
 	if(listen_socket_unix!=-1)
 		close(listen_socket_unix); // Close listen socket in child to allow process to restart when children are still running
+		
+	if(listen_socket_ws!=-1)
+		close(listen_socket_ws); // Close WS listen socket in child to allow process to restart when children are still running
 	
 	Sockets::GetInstance()->CloseSockets(); // Close all open sockets to prevent hanged connections
 }
@@ -568,15 +575,15 @@ int main(int argc,const char **argv)
 			local_addr.sin_port = htons(config->GetInt("network.bind.port"));
 			re=bind(listen_socket,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
 			if(re==-1)
-				throw Exception("core","Unable to bind listen socket");
+				throw Exception("core","Unable to bind API listen socket");
 			
 			// Listen on socket
 			re=listen(listen_socket,config->GetInt("network.listen.backlog"));
 			if(re==-1)
-				throw Exception("core","Unable to listen on socket");
-			Logger::Log(LOG_NOTICE,"Listen backlog set to %d (tcp socket)",config->GetInt("network.listen.backlog"));
+				throw Exception("core","Unable to listen on API socket");
+			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (tcp socket)",config->GetInt("network.listen.backlog"));
 			
-			Logger::Log(LOG_NOTICE,"Accepting connection on port %d",config->GetInt("network.bind.port"));
+			Logger::Log(LOG_NOTICE,"API accepting connections on port %d",config->GetInt("network.bind.port"));
 		}
 		
 		if(config->Get("network.bind.path").length()>0)
@@ -590,40 +597,86 @@ int main(int argc,const char **argv)
 			unlink(local_addr_unix.sun_path);
 			re=bind(listen_socket_unix,(struct sockaddr *)&local_addr_unix,sizeof(struct sockaddr_un));
 			if(re==-1)
-				throw Exception("core","Unable to bind unix listen socket");
+				throw Exception("core","Unable to bind API unix listen socket");
 			
 			// Listen on socket
 			chmod(config->Get("network.bind.path").c_str(),0777);
 			re=listen(listen_socket_unix,config->GetInt("network.listen.backlog"));
 			if(re==-1)
-				throw Exception("core","Unable to listen on unix socket");
-			Logger::Log(LOG_NOTICE,"Listen backlog set to %d (unix socket)",config->GetInt("network.listen.backlog"));
+				throw Exception("core","Unable to listen on API unix socket");
+			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (unix socket)",config->GetInt("network.listen.backlog"));
 			
-			Logger::Log(LOG_NOTICE,"Accepting connection on unix socket %s",config->Get("network.bind.path").c_str());
+			Logger::Log(LOG_NOTICE,"API accepting connections on unix socket %s",config->Get("network.bind.path").c_str());
+		}
+		
+		if(config->Get("ws.bind.ip").length()>0)
+		{
+			int optval;
+			
+			// Create listen socket
+			listen_socket_ws=socket(PF_INET,SOCK_STREAM,0);
+			
+			// Configure socket
+			optval=1;
+			setsockopt(listen_socket_ws,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(int));
+			
+			// Bind socket
+			memset(&local_addr,0,sizeof(struct sockaddr_in));
+			local_addr.sin_family=AF_INET;
+			if(config->Get("ws.bind.ip")=="*")
+				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+			else
+				local_addr.sin_addr.s_addr=inet_addr(config->Get("ws.bind.ip").c_str());
+			local_addr.sin_port = htons(config->GetInt("ws.bind.port"));
+			re=bind(listen_socket_ws,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
+			if(re==-1)
+				throw Exception("core","Unable to bind WS listen socket");
+			
+			// Listen on socket
+			re=listen(listen_socket_ws,config->GetInt("ws.listen.backlog"));
+			if(re==-1)
+				throw Exception("core","Unable to listen on WS socket");
+			Logger::Log(LOG_NOTICE,"WS listen backlog set to %d (tcp socket)",config->GetInt("ws.listen.backlog"));
+			
+			Logger::Log(LOG_NOTICE,"WS accepting connections on port %d",config->GetInt("ws.bind.port"));
 		}
 		
 		if(listen_socket==-1 && listen_socket_unix==-1)
 			throw Exception("core","You have to specify at least one listen socket");
 		
-		unsigned int max_conn = config->GetInt("network.connections.max");
+		unsigned int max_conn_api = config->GetInt("network.connections.max");
+		unsigned int max_conn_ws = config->GetInt("ws.connections.max");
 		
 		WSServer *ws = new WSServer();
-		ws->Start();
 		
 		// Loop for incoming connections
+		int cnx_type;
 		int len,*sp;
 		fd_set rfds;
 		while(1)
 		{
 			FD_ZERO(&rfds);
+			int fdmax = -1;
 			
 			if(listen_socket>=0)
+			{
 				FD_SET(listen_socket,&rfds);
+				fdmax = MAX(fdmax,listen_socket);
+			}
 			
 			if(listen_socket_unix>=0)
+			{
 				FD_SET(listen_socket_unix,&rfds);
+				fdmax = MAX(fdmax,listen_socket_unix);
+			}
 			
-			re = select(MAX(listen_socket,listen_socket_unix)+1,&rfds,0,0,0);
+			if(listen_socket_ws>=0)
+			{
+				FD_SET(listen_socket_ws,&rfds);
+				fdmax = MAX(fdmax,listen_socket_ws);
+			}
+			
+			re = select(fdmax+1,&rfds,0,0,0);
 			
 			if(re<0)
 			{
@@ -649,16 +702,16 @@ int main(int argc,const char **argv)
 				retrier->Shutdown();
 				retrier->WaitForShutdown();
 				
-				// Request shutdown on websockets server and wait
-				ws->Shutdown();
-				ws->WaitForShutdown();
-				
 				// Shutdown sockets to end active connections earlier
 				if(config->GetBool("core.fastshutdown"))
 				{
 					Logger::Log(LOG_NOTICE,"Fast shutdown is enabled, shutting down sockets");
 					sockets->ShutdownSockets();
 				}
+				
+				// Request shutdown on websockets server and wait
+				ws->Shutdown();
+				ws->WaitForShutdown();
 				
 				// Wait for active connections to end
 				Logger::Log(LOG_NOTICE,"Waiting for active connections to end...");
@@ -722,23 +775,41 @@ int main(int argc,const char **argv)
 				// Got data on UNIX socket
 				remote_addr_len_unix=sizeof(struct sockaddr);
 				s = accept(listen_socket_unix,(struct sockaddr *)&remote_addr_unix,&remote_addr_len_unix);
+				cnx_type = CNX_TYPE_API;
 			}
 			else if(FD_ISSET(listen_socket,&rfds))
 			{
 				// Got data on TCP socket
 				remote_addr_len=sizeof(struct sockaddr);
 				s = accept(listen_socket,(struct sockaddr *)&remote_addr,&remote_addr_len);
+				cnx_type = CNX_TYPE_API;
+			}
+			else if(FD_ISSET(listen_socket_ws,&rfds))
+			{
+				// Got data on TCP socket
+				remote_addr_len=sizeof(struct sockaddr);
+				s = accept(listen_socket_ws,(struct sockaddr *)&remote_addr,&remote_addr_len);
+				cnx_type = CNX_TYPE_WS;
 			}
 			
 			if(s<0)
 				continue; // We were interrupted or sockets were closed due to shutdown request, loop as select will also return an error
 			
 			// Check for max connections
-			if(active_connections->GetNumber()==max_conn)
+			if(cnx_type==CNX_TYPE_API && active_connections->GetAPINumber()==max_conn_api)
 			{
 				close(s);
 				
-				Logger::Log(LOG_WARNING,"Max connections reached, dropping connection");
+				Logger::Log(LOG_WARNING,"Max API connections reached, dropping connection");
+				
+				continue;
+			}
+			
+			if(cnx_type==CNX_TYPE_WS && active_connections->GetWSNumber()==max_conn_ws)
+			{
+				close(s);
+				
+				Logger::Log(LOG_WARNING,"Max WS connections reached, dropping connection");
 				
 				continue;
 			}
@@ -746,8 +817,17 @@ int main(int argc,const char **argv)
 			// Register socket so it can be closed on fork
 			sockets->RegisterSocket(s);
 			
-			// Start thread
-			active_connections->StartConnection(s);
+			if(cnx_type==CNX_TYPE_API)
+			{
+				// Start thread
+				active_connections->StartAPIConnection(s);
+			}
+			
+			if(cnx_type==CNX_TYPE_WS)
+			{
+				// Transfer the socket to LWS
+				active_connections->StartWSConnection(s);
+			}
 		}
 	}
 	catch(Exception &e)

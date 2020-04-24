@@ -20,6 +20,7 @@
 #include <API/ActiveConnections.h>
 #include <Logger/Logger.h>
 #include <API/handle_connection.h>
+#include <WS/WSServer.h>
 
 using namespace std;
 
@@ -31,37 +32,71 @@ ActiveConnections::ActiveConnections()
 	is_shutting_down = false;
 }
 
-void ActiveConnections::StartConnection(int s)
+void ActiveConnections::StartAPIConnection(int s)
 {
 	unique_lock<mutex> llock(lock);
 	
 	if(is_shutting_down)
 		return;
 	
-	Logger::Log(LOG_DEBUG, "Accepting new connection, current connections : %d",active_threads.size()+1);
+	Logger::Log(LOG_DEBUG, "Accepting new connection, current connections : %d",active_api_threads.size()+1);
 	
 	thread t(handle_connection, s);
-	active_threads[t.get_id()] = move(t);
+	active_api_threads[t.get_id()] = move(t);
 }
 
-void ActiveConnections::EndConnection(thread::id thread_id)
+void ActiveConnections::EndAPIConnection(thread::id thread_id)
 {
 	unique_lock<mutex> llock(lock);
 	
 	if(is_shutting_down)
 		return;
 	
-	active_threads.at(thread_id).detach();
-	active_threads.erase(thread_id);
+	active_api_threads.at(thread_id).detach();
+	active_api_threads.erase(thread_id);
 	
-	Logger::Log(LOG_DEBUG, "Ending connection, current connections : %d",active_threads.size());
+	Logger::Log(LOG_DEBUG, "Ending connection, current connections : %d",active_api_threads.size());
 }
 
-unsigned int ActiveConnections::GetNumber()
+void ActiveConnections::StartWSConnection(int s)
 {
 	unique_lock<mutex> llock(lock);
 	
-	int n = active_threads.size();
+	if(is_shutting_down)
+		return;
+	
+	Logger::Log(LOG_DEBUG, "Accepting new WS connection, current connections : %d",active_ws_sockets.size()+1);
+	
+	active_ws_sockets.insert(s);
+	WSServer::GetInstance()->Adopt(s);
+}
+
+void ActiveConnections::EndWSConnection(int s)
+{
+	unique_lock<mutex> llock(lock);
+	
+	if(is_shutting_down)
+		return;
+	
+	active_ws_sockets.erase(s);
+	
+	Logger::Log(LOG_DEBUG, "Ending WS connection, current connections : %d",active_ws_sockets.size());
+}
+
+unsigned int ActiveConnections::GetAPINumber()
+{
+	unique_lock<mutex> llock(lock);
+	
+	int n = active_api_threads.size();
+	
+	return n;
+}
+
+unsigned int ActiveConnections::GetWSNumber()
+{
+	unique_lock<mutex> llock(lock);
+	
+	int n = active_ws_sockets.size();
 	
 	return n;
 }
@@ -76,6 +111,6 @@ void ActiveConnections::Shutdown(void)
 void ActiveConnections::WaitForShutdown()
 {
 	// Join all threads to ensure no more connections are active
-	for(auto it=active_threads.begin();it!=active_threads.end();it++)
+	for(auto it=active_api_threads.begin();it!=active_api_threads.end();it++)
 		it->second.join();
 }

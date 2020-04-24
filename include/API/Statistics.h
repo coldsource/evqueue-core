@@ -31,8 +31,9 @@ class Statistics
 	private:
 		static Statistics *instance;
 		
-		unsigned int accepted_connections;
-		unsigned int input_errors;
+		unsigned int accepted_api_connections;
+		unsigned int accepted_ws_connections;
+		unsigned int api_exceptions;
 		unsigned int workflow_queries;
 		unsigned int workflow_status_queries;
 		unsigned int workflow_cancel_queries;
@@ -51,8 +52,9 @@ class Statistics
 		static Statistics *GetInstance(void) { return instance; }
 		
 		unsigned int GetAcceptedConnections(void);
-		void IncAcceptedConnections(void);
-		void IncInputErrors(void);
+		void IncAPIAcceptedConnections(void);
+		void IncWSAcceptedConnections(void);
+		void IncAPIExceptions(void);
 		void IncWorkflowQueries(void);
 		void IncWorkflowStatusQueries(void);
 		void IncWorkflowCancelQueries(void);

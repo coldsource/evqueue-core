@@ -71,7 +71,14 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";
 	entries["network.snd.timeout"] = "30";
+	entries["ws.bind.ip"] = "";
 	entries["ws.bind.port"] = "5001";
+	entries["ws.connections.max"] = "128";
+	entries["ws.listen.backlog"] = "64";
+	entries["ws.rcv.timeout"] = "30";
+	entries["ws.snd.timeout"] = "30";
+	entries["ws.keepalive"] = "30";
+	entries["ws.workers"] = "8";
 	entries["notifications.monitor.path"] = "/usr/bin/evqueue_notification_monitor";
 	entries["notifications.tasks.directory"] = "/usr/share/evqueue/plugins/notifications";
 	entries["notifications.tasks.timeout"] = "5";
@@ -181,6 +188,12 @@ void ConfigurationEvQueue::Check(void)
 	check_int_entry("network.listen.backlog");
 	check_int_entry("network.rcv.timeout");
 	check_int_entry("network.snd.timeout");
+	check_int_entry("ws.connections.max");
+	check_int_entry("ws.listen.backlog");
+	check_int_entry("ws.rcv.timeout");
+	check_int_entry("ws.snd.timeout");
+	check_int_entry("ws.keepalive");
+	check_int_entry("ws.workers");
 	check_int_entry("notifications.tasks.timeout");
 	check_int_entry("notifications.tasks.concurrency");
 	check_int_entry("cluster.cnx.timeout");
@@ -204,6 +217,12 @@ void ConfigurationEvQueue::Check(void)
 
 	if(Get("queuepool.scheduler")!="fifo" && Get("queuepool.scheduler")!="prio")
 		throw Exception("Configuration","queuepool.scheduler: invalid value '"+entries["queuepool.scheduler"]+"'. Value muse be 'fifo' or 'prio'");
+	
+	if(GetInt("ws.workers")<1)
+		throw Exception("Configuration","ws.workers must be greater than 0");
+	
+	if(GetInt("ws.workers")>LWS_MAX_SMP)
+		throw Exception("Configuration","ws.workers is limited by libwebsockets to "+to_string(LWS_MAX_SMP));
 }
 
 void ConfigurationEvQueue::SendConfiguration(QueryResponse *response)

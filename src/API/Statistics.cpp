@@ -39,8 +39,9 @@ Statistics::Statistics(void)
 {
 	instance = this;
 	
-	accepted_connections = 0;
-	input_errors = 0;
+	accepted_api_connections = 0;
+	accepted_ws_connections = 0;
+	api_exceptions = 0;
 	workflow_queries = 0;
 	workflow_status_queries = 0;
 	workflow_cancel_queries = 0;
@@ -55,19 +56,25 @@ Statistics::Statistics(void)
 unsigned int Statistics::GetAcceptedConnections(void)
 {
 	unique_lock<mutex> llock(lock);
-	return accepted_connections;
+	return accepted_api_connections + accepted_ws_connections;
 }
 
-void Statistics::IncAcceptedConnections(void)
+void Statistics::IncAPIAcceptedConnections(void)
 {
 	unique_lock<mutex> llock(lock);
-	accepted_connections++;
+	accepted_api_connections++;
 }
 
-void Statistics::IncInputErrors(void)
+void Statistics::IncWSAcceptedConnections(void)
 {
 	unique_lock<mutex> llock(lock);
-	input_errors++;
+	accepted_ws_connections++;
+}
+
+void Statistics::IncAPIExceptions(void)
+{
+	unique_lock<mutex> llock(lock);
+	api_exceptions++;
 }
 
 void Statistics::IncWorkflowQueries(void)
@@ -138,9 +145,11 @@ void Statistics::SendGlobalStatistics(QueryResponse *response)
 	
 	DOMElement statistics_node = xmldoc->createElement("statistics");
 	xmldoc->getDocumentElement().appendChild(statistics_node);
-	statistics_node.setAttribute("accepted_connections",to_string(accepted_connections));
-	statistics_node.setAttribute("current_connections",to_string(ActiveConnections::GetInstance()->GetNumber()));
-	statistics_node.setAttribute("input_errors",to_string(input_errors));
+	statistics_node.setAttribute("accepted_api_connections",to_string(accepted_api_connections));
+	statistics_node.setAttribute("accepted_ws_connections",to_string(accepted_ws_connections));
+	statistics_node.setAttribute("current_api_connections",to_string(ActiveConnections::GetInstance()->GetAPINumber()));
+	statistics_node.setAttribute("current_ws_connections",to_string(ActiveConnections::GetInstance()->GetWSNumber()));
+	statistics_node.setAttribute("api_exceptions",to_string(api_exceptions));
 	statistics_node.setAttribute("workflow_queries",to_string(workflow_queries));
 	statistics_node.setAttribute("workflow_status_queries",to_string(workflow_status_queries));
 	statistics_node.setAttribute("workflow_cancel_queries",to_string(workflow_cancel_queries));
@@ -155,8 +164,9 @@ void Statistics::SendGlobalStatistics(QueryResponse *response)
 void Statistics::ResetGlobalStatistics()
 {
 	unique_lock<mutex> llock(lock);
-	accepted_connections = 0;
-	input_errors = 0;
+	accepted_api_connections = 0;
+	accepted_ws_connections = 0;
+	api_exceptions = 0;
 	workflow_queries = 0;
 	workflow_status_queries = 0;
 	workflow_cancel_queries = 0;

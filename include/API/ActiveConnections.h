@@ -22,7 +22,7 @@
 
 #include <thread>
 #include <mutex>
-
+#include <set>
 #include <map>
 
 class ActiveConnections
@@ -31,7 +31,8 @@ class ActiveConnections
 	
 	bool is_shutting_down;
 	
-	std::map<std::thread::id,std::thread> active_threads;
+	std::map<std::thread::id,std::thread> active_api_threads;
+	std::set<int> active_ws_sockets;
 	
 	std::mutex lock;
 	
@@ -40,10 +41,14 @@ class ActiveConnections
 		
 		static ActiveConnections *GetInstance() { return  instance; }
 		
-		void StartConnection(int s);
-		void EndConnection(std::thread::id thread_id);
+		void StartAPIConnection(int s);
+		void EndAPIConnection(std::thread::id thread_id);
 		
-		unsigned int GetNumber();
+		void StartWSConnection(int s);
+		void EndWSConnection(int s);
+		
+		unsigned int GetAPINumber();
+		unsigned int GetWSNumber();
 		
 		void Shutdown(void);
 		
