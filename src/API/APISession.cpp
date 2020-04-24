@@ -25,6 +25,7 @@
 #include <API/QueryHandlers.h>
 #include <Exception/Exception.h>
 #include <API/XMLQuery.h>
+#include <API/Statistics.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -137,6 +138,11 @@ void APISession::SendGreeting()
 
 bool APISession::QueryReceived(XMLQuery *query)
 {
+	if(wsi)
+		Statistics::GetInstance()->IncWSQueries();
+	else
+		Statistics::GetInstance()->IncAPIQueries();
+	
 	status=QUERY_RECEIVED; // Query received, we will now need to send the response before receiving another query
 	
 	// Empty previous response

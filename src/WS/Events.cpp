@@ -18,6 +18,7 @@
  */
 
 #include <WS/Events.h>
+#include <API/Statistics.h>
 
 using namespace std;
 
@@ -144,6 +145,8 @@ void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int obj
 	en_types type = get_type(type_str);
 	
 	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{object_filter, api_cmd, external_id}));
+	
+	Statistics::GetInstance()->IncWSSubscriptions();
 }
 
 void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int object_filter, int external_id)
@@ -160,7 +163,10 @@ void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int o
 	while(it2!=it->second.end())
 	{
 		if(it2->first==wsi && it2->second.object_filter==object_filter && (external_id==0 || external_id==it2->second.external_id))
+		{
 			it2 = it->second.erase(it2);
+			Statistics::GetInstance()->DecWSSubscriptions();
+		}
 		else
 			++it2;
 	}
@@ -176,7 +182,9 @@ void Events::UnsubscribeAll(struct lws *wsi)
 	auto it = subscriptions.begin();
 	while(it!=subscriptions.end())
 	{
-		it->second.erase(wsi);
+		int removed = it->second.erase(wsi);
+		Statistics::GetInstance()->DecWSSubscriptions(removed);
+		
 		if(it->second.size()==0)
 			it = subscriptions.erase(it);
 		else
@@ -206,6 +214,8 @@ void Events::Create(en_types type, unsigned int object_id)
 		
 		// Push the event to the subscriber
 		events[it2->first].push_back({it2->second.api_cmd, it2->second.external_id, object_id});
+		
+		Statistics::GetInstance()->IncWSEvents();
 		
 		lws_callback_on_writable(it2->first);
 	}

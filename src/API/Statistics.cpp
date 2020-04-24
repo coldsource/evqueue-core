@@ -41,6 +41,10 @@ Statistics::Statistics(void)
 	
 	accepted_api_connections = 0;
 	accepted_ws_connections = 0;
+	api_queries = 0;
+	ws_queries = 0;
+	ws_events = 0;
+	ws_subscriptions = 0;
 	api_exceptions = 0;
 	workflow_queries = 0;
 	workflow_status_queries = 0;
@@ -69,6 +73,36 @@ void Statistics::IncWSAcceptedConnections(void)
 {
 	unique_lock<mutex> llock(lock);
 	accepted_ws_connections++;
+}
+
+void Statistics::IncAPIQueries(void)
+{
+	unique_lock<mutex> llock(lock);
+	api_queries++;
+}
+
+void Statistics::IncWSQueries(void)
+{
+	unique_lock<mutex> llock(lock);
+	ws_queries++;
+}
+
+void Statistics::IncWSEvents(void)
+{
+	unique_lock<mutex> llock(lock);
+	ws_events++;
+}
+
+void Statistics::IncWSSubscriptions(void)
+{
+	unique_lock<mutex> llock(lock);
+	ws_subscriptions++;
+}
+
+void Statistics::DecWSSubscriptions(int n)
+{
+	unique_lock<mutex> llock(lock);
+	ws_subscriptions-=n;
 }
 
 void Statistics::IncAPIExceptions(void)
@@ -149,6 +183,10 @@ void Statistics::SendGlobalStatistics(QueryResponse *response)
 	statistics_node.setAttribute("accepted_ws_connections",to_string(accepted_ws_connections));
 	statistics_node.setAttribute("current_api_connections",to_string(ActiveConnections::GetInstance()->GetAPINumber()));
 	statistics_node.setAttribute("current_ws_connections",to_string(ActiveConnections::GetInstance()->GetWSNumber()));
+	statistics_node.setAttribute("api_queries",to_string(api_queries));
+	statistics_node.setAttribute("ws_queries",to_string(ws_queries));
+	statistics_node.setAttribute("ws_events",to_string(ws_events));
+	statistics_node.setAttribute("ws_subscriptions",to_string(ws_subscriptions));
 	statistics_node.setAttribute("api_exceptions",to_string(api_exceptions));
 	statistics_node.setAttribute("workflow_queries",to_string(workflow_queries));
 	statistics_node.setAttribute("workflow_status_queries",to_string(workflow_status_queries));
@@ -166,6 +204,9 @@ void Statistics::ResetGlobalStatistics()
 	unique_lock<mutex> llock(lock);
 	accepted_api_connections = 0;
 	accepted_ws_connections = 0;
+	api_queries = 0;
+	ws_queries = 0;
+	ws_events = 0;
 	api_exceptions = 0;
 	workflow_queries = 0;
 	workflow_status_queries = 0;

@@ -33,6 +33,10 @@ class Statistics
 		
 		unsigned int accepted_api_connections;
 		unsigned int accepted_ws_connections;
+		unsigned int api_queries;
+		unsigned int ws_queries;
+		unsigned int ws_events;
+		unsigned int ws_subscriptions;
 		unsigned int api_exceptions;
 		unsigned int workflow_queries;
 		unsigned int workflow_status_queries;
@@ -54,6 +58,11 @@ class Statistics
 		unsigned int GetAcceptedConnections(void);
 		void IncAPIAcceptedConnections(void);
 		void IncWSAcceptedConnections(void);
+		void IncAPIQueries(void);
+		void IncWSQueries(void);
+		void IncWSEvents(void);
+		void IncWSSubscriptions(void);
+		void DecWSSubscriptions(int n = 1);
 		void IncAPIExceptions(void);
 		void IncWorkflowQueries(void);
 		void IncWorkflowStatusQueries(void);
