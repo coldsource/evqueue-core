@@ -247,6 +247,8 @@ unsigned int Workflow::Create(const string &name, const string &base64, const st
 		db2.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&workflow_id,&notification_id);
 	}
 	
+	Workflows::GetInstance()->Reload();
+	
 	return workflow_id;
 }
 
@@ -265,6 +267,8 @@ void Workflow::Edit(unsigned int id,const string &name, const string &base64, co
 		&comment,
 		&id
 	);
+	
+	Workflows::GetInstance()->Reload();
 }
 
 void Workflow::Delete(unsigned int id)
@@ -422,8 +426,6 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			
 			Events::GetInstance()->Create(Events::en_types::WORKFLOW_MODIFIED, id);
 		}
-		
-		Workflows::GetInstance()->Reload();
 		
 		return true;
 	}
