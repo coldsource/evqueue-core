@@ -224,6 +224,9 @@ void tools_upgrade_v22_v30(void)
 	db.Query("ALTER TABLE t_user_right DROP COLUMN user_login");
 	db.Query("ALTER TABLE t_user_right ADD PRIMARY KEY(user_id, workflow_id)");
 	
+	// Drop unsed column workflow schedule bound
+	db.Query("ALTER TABLE t_workflow DROP COLUMN workflow_bound");
+	
 	// Update tables version
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 	{

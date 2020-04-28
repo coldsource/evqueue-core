@@ -37,7 +37,6 @@ class Workflow
 	std::string workflow_xml;
 	std::string group;
 	std::string comment;
-	bool bound_schedule;
 	std::string lastcommit;
 	
 	std::vector<unsigned int> notifications;
@@ -51,7 +50,6 @@ class Workflow
 		const std::string GetXML() const { return workflow_xml; }
 		const std::string GetGroup() const { return group; }
 		const std::string GetComment() const { return comment; }
-		bool GetIsBoundSchedule() const { return bound_schedule; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
 		
 		void CheckInputParameters(WorkflowParameters *parameters);
