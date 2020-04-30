@@ -65,7 +65,7 @@ Workflow::Workflow(DB *db,const string &workflow_name)
 	workflow_xml = db->GetField(2);
 	group = db->GetField(3);
 	comment = db->GetField(4);
-	lastcommit = db->GetField(6);
+	lastcommit = db->GetField(5);
 	
 	db->QueryPrintf("SELECT notification_id FROM t_workflow_notification WHERE workflow_id=%i",&workflow_id);
 	while(db->FetchRow())
