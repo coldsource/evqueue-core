@@ -104,7 +104,6 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_xml` longtext COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_group` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_comment` text COLLATE utf8_unicode_ci NOT NULL, \
-  `workflow_bound` tinyint(1) NOT NULL DEFAULT '0', \
   `workflow_lastcommit` varchar(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL, \
   UNIQUE KEY `workflow_id` (`workflow_id`), \
   UNIQUE KEY `workflow_name` (`workflow_name`) \
