@@ -188,12 +188,14 @@ void ConfigurationEvQueue::Check(void)
 	check_int_entry("network.listen.backlog");
 	check_int_entry("network.rcv.timeout");
 	check_int_entry("network.snd.timeout");
+	check_int_entry("network.bind.port");
 	check_int_entry("ws.connections.max");
 	check_int_entry("ws.listen.backlog");
 	check_int_entry("ws.rcv.timeout");
 	check_int_entry("ws.snd.timeout");
 	check_int_entry("ws.keepalive");
 	check_int_entry("ws.workers");
+	check_int_entry("ws.bind.port");
 	check_int_entry("notifications.tasks.timeout");
 	check_int_entry("notifications.tasks.concurrency");
 	check_int_entry("cluster.cnx.timeout");
