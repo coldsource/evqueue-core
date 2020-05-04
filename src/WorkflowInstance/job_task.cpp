@@ -268,6 +268,8 @@ void WorkflowInstance::TaskUpdateProgression(DOMElement task, int prct)
 	unique_lock<recursive_mutex> llock(lock);
 	
 	task.setAttribute("progression",to_string(prct));
+	
+	Events::GetInstance()->Create(Events::en_types::TASK_PROGRESS, workflow_instance_id);
 }
 
 void WorkflowInstance::register_job_functions(DOMElement node)

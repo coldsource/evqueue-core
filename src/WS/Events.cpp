@@ -58,6 +58,8 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return TASK_EXECUTE;
 	else if(type_str=="TASK_TERMINATE")
 		return TASK_TERMINATE;
+	else if(type_str=="TASK_PROGRESS")
+		return TASK_PROGRESS;
 	else if(type_str=="QUEUE_ENQUEUE")
 		return QUEUE_ENQUEUE;
 	else if(type_str=="QUEUE_DEQUEUE")
