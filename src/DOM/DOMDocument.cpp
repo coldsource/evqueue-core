@@ -24,7 +24,6 @@
 #include <DOM/DOMText.h>
 #include <Exception/Exception.h>
 #include <XML/XMLString.h>
-#include <Logger/Logger.h>
 
 #include <pcrecpp.h>
 
@@ -133,8 +132,6 @@ DOMDocument *DOMDocument::ParseFile(const string &filename)
 
 string DOMDocument::Serialize(DOMNode node) const
 {
-	xmldoc->getDOMConfig()->setParameter(xercesc::XMLUni::fgDOMErrorHandler, this);
-	
 	XMLCh *xml_output = serializer->writeToString(node.node);
 	char *xml_output_c = xercesc::XMLString::transcode(xml_output);
 	
@@ -310,12 +307,6 @@ void DOMDocument::ImportXPathResult(DOMXPathResult *res, DOMNode node)
 	}
 	else
 		node.appendChild(createTextNode("unknown"));
-}
-
-bool DOMDocument::handleError(const xercesc::DOMError &domError)
-{
-	printf("DOM Error\n");
-	return true;
 }
 
 void DOMDocument::initialize_evqid()

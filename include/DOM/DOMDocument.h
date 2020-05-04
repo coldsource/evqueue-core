@@ -32,7 +32,7 @@
 #include <string>
 #include <map>
 
-class DOMDocument:public DOMNode, public xercesc::DOMErrorHandler
+class DOMDocument:public DOMNode
 {
 private:
 	xercesc::DOMDocument *xmldoc;
@@ -65,9 +65,6 @@ public:
 	DOMElement getNodeFromEvqID(const std::string &evqid);
 	
 	void ImportXPathResult(DOMXPathResult *res, DOMNode node);
-	
-protected:
-	bool handleError(const xercesc::DOMError &domError);
 	
 private:
 	void initialize_evqid();
