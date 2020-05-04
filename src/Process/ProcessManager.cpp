@@ -464,7 +464,7 @@ char *ProcessManager::read_log_file(pid_t pid,pid_t tid,int log_fileno)
 		if(output[i]==0x19)
 		{
 			output[i] = '?'; // Remove buggy characters from output (not properly handled by xerces on Serialize)
-			Logger::Log(LOG_WARNING, "Removed invalid character 0x19 (End of Medium) from output, pid %d, tid %d",pid, tid);
+			Logger::Log(LOG_WARNING, "[ ProcessManager ] Removed invalid character 0x19 (End of Medium) from output, pid %d, tid %d",pid, tid);
 		}
 	}
 	
