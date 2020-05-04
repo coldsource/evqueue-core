@@ -21,6 +21,8 @@
 #define _DOMDOCUMENT_H_
 
 #include <xercesc/dom/DOM.hpp>
+#include <xercesc/dom/DOMErrorHandler.hpp>
+#include <xercesc/dom/DOMError.hpp>
 
 #include <DOM/DOMXPathResult.h>
 #include <DOM/DOMElement.h>
@@ -30,7 +32,7 @@
 #include <string>
 #include <map>
 
-class DOMDocument:public DOMNode
+class DOMDocument:public DOMNode, public xercesc::DOMErrorHandler
 {
 private:
 	xercesc::DOMDocument *xmldoc;
@@ -63,6 +65,9 @@ public:
 	DOMElement getNodeFromEvqID(const std::string &evqid);
 	
 	void ImportXPathResult(DOMXPathResult *res, DOMNode node);
+	
+protected:
+	bool handleError(const xercesc::DOMError &domError);
 	
 private:
 	void initialize_evqid();
