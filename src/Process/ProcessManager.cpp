@@ -448,6 +448,15 @@ char *ProcessManager::read_log_file(pid_t pid,pid_t tid,int log_fileno)
 		output[log_size] = '\0';
 		
 		fclose(f);
+		
+		for(int i=0;i<log_size;i++)
+		{
+			if(output[i]==0x19)
+			{
+				output[i] = '?'; // Remove buggy characters from output (not properly handled by xerces on Serialize)
+				Logger::Log(LOG_WARNING, "[ ProcessManager ] Removed invalid character 0x19 (End of Medium) from output, pid %d, tid %d",pid, tid);
+			}
+		}
 	}
 	else
 	{
@@ -458,15 +467,6 @@ char *ProcessManager::read_log_file(pid_t pid,pid_t tid,int log_fileno)
 	
 	if(logs_delete)
 		unlink(log_filename.c_str()); // Delete log file since it is not usefull anymore
-	
-	for(int i=0;i<log_size;i++)
-	{
-		if(output[i]==0x19)
-		{
-			output[i] = '?'; // Remove buggy characters from output (not properly handled by xerces on Serialize)
-			Logger::Log(LOG_WARNING, "[ ProcessManager ] Removed invalid character 0x19 (End of Medium) from output, pid %d, tid %d",pid, tid);
-		}
-	}
 	
 	return output;
 }
