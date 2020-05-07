@@ -47,7 +47,7 @@ class APISession
 		std::string context;
 		
 		std::string remote_host;
-		int remote_port;
+		int remote_port = 0;
 		
 		AuthHandler ah;
 		User user;

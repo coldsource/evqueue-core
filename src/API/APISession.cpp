@@ -75,7 +75,7 @@ void APISession::init(const std::string& context)
 	
 	ah.SetRemote(remote_host,remote_port);
 	
-	Logger::Log(LOG_INFO,"Accepted "+context+" connection from "+remote_addr_str+":"+to_string(remote_port));
+	Logger::Log(LOG_INFO,"Accepted "+context+" connection from "+remote_host+":"+to_string(remote_port));
 }
 
 void APISession::SendChallenge()
