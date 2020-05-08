@@ -25,7 +25,6 @@
 #include <User/User.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <API/Statistics.h>
-#include <IO/Sockets.h>
 #include <API/QueryResponse.h>
 #include <API/QueryHandlers.h>
 #include <API/AuthHandler.h>
@@ -112,7 +111,6 @@ void handle_connection(int s)
 		
 		// Notify that we exit
 		ActiveConnections::GetInstance()->EndAPIConnection(this_thread::get_id());
-		Sockets::GetInstance()->UnregisterSocket(s);
 		
 		return;
 		
@@ -122,7 +120,6 @@ void handle_connection(int s)
 	
 	// Notify that we exit
 	ActiveConnections::GetInstance()->EndAPIConnection(this_thread::get_id());
-	Sockets::GetInstance()->UnregisterSocket(s);
 	
 	return;
 }

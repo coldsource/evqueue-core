@@ -21,6 +21,7 @@
 #include <Logger/Logger.h>
 #include <API/handle_connection.h>
 #include <WS/WSServer.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 using namespace std;
 
@@ -43,6 +44,7 @@ void ActiveConnections::StartAPIConnection(int s)
 	
 	thread t(handle_connection, s);
 	active_api_threads[t.get_id()] = move(t);
+	active_api_sockets.insert(s);
 }
 
 void ActiveConnections::EndAPIConnection(thread::id thread_id)
@@ -104,6 +106,18 @@ unsigned int ActiveConnections::GetWSNumber()
 void ActiveConnections::Shutdown(void)
 {
 	unique_lock<mutex> llock(lock);
+	
+	// Shutdown sockets to end active connections earlier
+	if(ConfigurationEvQueue::GetInstance()->GetBool("core.fastshutdown"))
+	{
+		Logger::Log(LOG_NOTICE,"Fast shutdown is enabled, shutting down sockets");
+		
+		for(auto it = active_api_sockets.begin();it!=active_api_sockets.end();++it)
+			close(*it);
+		
+		for(auto it = active_ws_sockets.begin();it!=active_ws_sockets.end();++it)
+			close(*it);
+	}
 	
 	is_shutting_down = true;
 }

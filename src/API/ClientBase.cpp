@@ -75,7 +75,7 @@ ClientBase::ClientBase(const string &connection_str, const string &user, const s
 			}
 		}
 		
-		s =  socket(AF_INET, SOCK_STREAM, 0);
+		s =  socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
 		if(s==-1)
 			throw Exception("Client","Unable to create TCP socket");
 	}
@@ -91,7 +91,7 @@ ClientBase::ClientBase(const string &connection_str, const string &user, const s
 		if(path_len>=sizeof(sockaddr_un::sun_path))
 			throw Exception("Client","Unix socket path is too long");
 		
-		s =  socket(AF_UNIX, SOCK_STREAM, 0);
+		s =  socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 		if(s==-1)
 			throw Exception("Client","Unable to create UNIX socket");
 	}

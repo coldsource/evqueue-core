@@ -27,7 +27,6 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Logger/Logger.h>
 #include <WorkflowInstance/WorkflowInstance.h>
-#include <IO/Sockets.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Process/ProcessExec.h>

@@ -19,7 +19,6 @@
 
 #include <API/Client.h>
 #include <Exception/Exception.h>
-#include <IO/Sockets.h>
 #include <Logger/Logger.h>
 #include <Crypto/hmac.h>
 
@@ -35,16 +34,12 @@ using namespace std;
 
 Client::Client(const string &connection_str, const string &user, const string &password):ClientBase(connection_str,user,password)
 {
-	Sockets::GetInstance()->RegisterSocket(s);
 }
 
 Client::~Client()
 {
 	if(s!=-1)
-	{
-		Sockets::GetInstance()->UnregisterSocket(s);
 		s = -1;
-	}
 }
 
 void Client::Exec(const std::string &cmd)

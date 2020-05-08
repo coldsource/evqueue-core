@@ -82,7 +82,6 @@
 #include <User/Users.h>
 #include <Tag/Tag.h>
 #include <Tag/Tags.h>
-#include <IO/Sockets.h>
 #include <Crypto/Random.h>
 #include <Process/DataPiper.h>
 #include <WorkflowInstance/Datastore.h>
@@ -133,35 +132,6 @@ void signal_callback_handler(int signum)
 	}
 }
 
-void fork_parent_pre_handler(void)
-{
-	// We must fork with sockets locked to prevent operations on it during fork
-	Sockets::GetInstance()->Lock();
-}
-
-void fork_parent_post_handler(void)
-{
-	// We entered the child in locked state, it is now safe to unlock
-	Sockets::GetInstance()->Unlock();
-}
-
-void fork_child_handler(void)
-{
-	// We entered in locked state, unlock before following calls
-	Sockets::GetInstance()->Unlock();
-	
-	if(listen_socket!=-1)
-		close(listen_socket); // Close listen socket in child to allow process to restart when children are still running
-	
-	if(listen_socket_unix!=-1)
-		close(listen_socket_unix); // Close listen socket in child to allow process to restart when children are still running
-		
-	if(listen_socket_ws!=-1)
-		close(listen_socket_ws); // Close WS listen socket in child to allow process to restart when children are still running
-	
-	Sockets::GetInstance()->CloseSockets(); // Close all open sockets to prevent hanged connections
-}
-
 void tools_print_usage()
 {
 	fprintf(stderr,"Usage :\n");
@@ -174,7 +144,7 @@ void tools_print_usage()
 
 using namespace std;
 
-int main(int argc,const char **argv)
+int main(int argc,char **argv)
 {
 	// Check parameters
 	const char *config_filename = 0;
@@ -533,10 +503,6 @@ int main(int argc,const char **argv)
 		qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
 		qh->RegisterHandler("xpath",XPathAPI::HandleQuery);
 		
-		// Create sockets set
-		Sockets *sockets = new Sockets();
-		pthread_atfork(fork_parent_pre_handler,fork_parent_post_handler,fork_child_handler);
-		
 		// Create active connections set
 		ActiveConnections *active_connections = new ActiveConnections();
 		
@@ -559,7 +525,7 @@ int main(int argc,const char **argv)
 			int optval;
 			
 			// Create listen socket
-			listen_socket=socket(PF_INET,SOCK_STREAM,0);
+			listen_socket=socket(PF_INET,SOCK_STREAM | SOCK_CLOEXEC,0);
 			
 			// Configure socket
 			optval=1;
@@ -589,7 +555,7 @@ int main(int argc,const char **argv)
 		if(config->Get("network.bind.path").length()>0)
 		{
 			// Create UNIX socket
-			listen_socket_unix=socket(AF_UNIX,SOCK_STREAM,0);
+			listen_socket_unix=socket(AF_UNIX,SOCK_STREAM | SOCK_CLOEXEC,0);
 			
 			// Bind socket
 			local_addr_unix.sun_family=AF_UNIX;
@@ -614,7 +580,7 @@ int main(int argc,const char **argv)
 			int optval;
 			
 			// Create listen socket
-			listen_socket_ws=socket(PF_INET,SOCK_STREAM,0);
+			listen_socket_ws=socket(PF_INET,SOCK_STREAM | SOCK_CLOEXEC,0);
 			
 			// Configure socket
 			optval=1;
@@ -702,13 +668,6 @@ int main(int argc,const char **argv)
 				retrier->Shutdown();
 				retrier->WaitForShutdown();
 				
-				// Shutdown sockets to end active connections earlier
-				if(config->GetBool("core.fastshutdown"))
-				{
-					Logger::Log(LOG_NOTICE,"Fast shutdown is enabled, shutting down sockets");
-					sockets->ShutdownSockets();
-				}
-				
 				// Request shutdown on websockets server and wait
 				ws->Shutdown();
 				ws->WaitForShutdown();
@@ -742,7 +701,6 @@ int main(int argc,const char **argv)
 				delete gc;
 				delete seq;
 				delete qh;
-				delete sockets;
 				delete cluster;
 				delete users;
 				delete tags;
@@ -774,21 +732,21 @@ int main(int argc,const char **argv)
 			{
 				// Got data on UNIX socket
 				remote_addr_len_unix=sizeof(struct sockaddr);
-				s = accept(listen_socket_unix,(struct sockaddr *)&remote_addr_unix,&remote_addr_len_unix);
+				s = accept4(listen_socket_unix,(struct sockaddr *)&remote_addr_unix,&remote_addr_len_unix,SOCK_CLOEXEC);
 				cnx_type = CNX_TYPE_API;
 			}
 			else if(FD_ISSET(listen_socket,&rfds))
 			{
 				// Got data on TCP socket
 				remote_addr_len=sizeof(struct sockaddr);
-				s = accept(listen_socket,(struct sockaddr *)&remote_addr,&remote_addr_len);
+				s = accept4(listen_socket,(struct sockaddr *)&remote_addr,&remote_addr_len,SOCK_CLOEXEC);
 				cnx_type = CNX_TYPE_API;
 			}
 			else if(FD_ISSET(listen_socket_ws,&rfds))
 			{
 				// Got data on TCP socket
 				remote_addr_len=sizeof(struct sockaddr);
-				s = accept(listen_socket_ws,(struct sockaddr *)&remote_addr,&remote_addr_len);
+				s = accept4(listen_socket_ws,(struct sockaddr *)&remote_addr,&remote_addr_len,SOCK_CLOEXEC);
 				cnx_type = CNX_TYPE_WS;
 			}
 			
@@ -813,9 +771,6 @@ int main(int argc,const char **argv)
 				
 				continue;
 			}
-			
-			// Register socket so it can be closed on fork
-			sockets->RegisterSocket(s);
 			
 			if(cnx_type==CNX_TYPE_API)
 			{

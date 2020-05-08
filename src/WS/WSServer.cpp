@@ -9,7 +9,6 @@
 #include <WS/Events.h>
 #include <Crypto/base64.h>
 #include <DB/DB.h>
-#include <IO/Sockets.h>
 #include <API/ActiveConnections.h>
 #include <Logger/Logger.h>
 #include <API/Statistics.h>
@@ -131,7 +130,6 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 				// Notify that connection is over
 				int s = lws_get_socket_fd(wsi);
 				ActiveConnections::GetInstance()->EndWSConnection(s);
-				Sockets::GetInstance()->UnregisterSocket(s);
 				break;
 			}
 			

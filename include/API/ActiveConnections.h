@@ -32,6 +32,7 @@ class ActiveConnections
 	bool is_shutting_down;
 	
 	std::map<std::thread::id,std::thread> active_api_threads;
+	std::set<int> active_api_sockets;
 	std::set<int> active_ws_sockets;
 	
 	std::mutex lock;
