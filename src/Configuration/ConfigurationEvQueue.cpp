@@ -38,7 +38,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	// Load default configuration
 	entries["core.ipc.qid"] = "0xEA023E3C";
 	entries["core.gid"] = "0";
-	entries["core.pidfile"] = "/var/run/evqueue/evqueue.pid";
+	entries["core.pidfile"] = "/tmp/evqueue.pid";
 	entries["core.uid"] = "0";
 	entries["core.wd"] = "";
 	entries["core.locale"] = "C.UTF-8";
@@ -64,14 +64,14 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["mysql.host"] = "localhost";
 	entries["mysql.password"] = "";
 	entries["mysql.user"] = "";
-	entries["network.bind.ip"] = "";
+	entries["network.bind.ip"] = "127.0.0.1";
 	entries["network.bind.path"] = "";
 	entries["network.bind.port"] = "5000";
 	entries["network.connections.max"] = "128";
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";
 	entries["network.snd.timeout"] = "30";
-	entries["ws.bind.ip"] = "";
+	entries["ws.bind.ip"] = "127.0.0.1";
 	entries["ws.bind.port"] = "5001";
 	entries["ws.connections.max"] = "128";
 	entries["ws.listen.backlog"] = "64";
@@ -79,8 +79,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["ws.snd.timeout"] = "30";
 	entries["ws.keepalive"] = "30";
 	entries["ws.workers"] = "8";
-	entries["notifications.monitor.path"] = "/usr/bin/evqueue_notification_monitor";
-	entries["notifications.tasks.directory"] = "/usr/share/evqueue/plugins/notifications";
+	entries["notifications.tasks.directory"] = "/tmp";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["notifications.tasks.concurrency"] = "16";
 	entries["notifications.logs.directory"] = "/tmp";
@@ -89,13 +88,13 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["processmanager.logs.delete"] = "yes";
 	entries["processmanager.logs.directory"] = "/tmp";
 	entries["processmanager.logs.tailsize"] = "20K";
-	entries["processmanager.monitor.path"] = "/usr/bin/evqueue_monitor";
 	entries["processmanager.monitor.ssh_key"] = "";
 	entries["processmanager.monitor.ssh_path"] = "/usr/bin/ssh";
 	entries["processmanager.agent.path"] = "/usr/bin/evqueue_agent";
 	entries["processmanager.tasks.directory"] = ".";
 	entries["processmanager.scripts.directory"] = "/tmp";
 	entries["processmanager.scripts.delete"] = "yes";
+	entries["forker.pipes.directory"] = "/tmp";
 	entries["datastore.dom.maxsize"] = "500K";
 	entries["datastore.db.maxsize"] = "50M";
 	entries["datastore.gzip.level"] = "9";
@@ -155,8 +154,6 @@ void ConfigurationEvQueue::Substitute(void)
 
 void ConfigurationEvQueue::Check(void)
 {
-	check_f_is_exec(entries["processmanager.monitor.path"]);
-	check_f_is_exec(entries["notifications.monitor.path"]);
 	check_d_is_writeable(entries["processmanager.logs.directory"]);
 	check_d_is_writeable(entries["notifications.logs.directory"]);
 	check_d_is_writeable(entries["notifications.tasks.directory"]);
@@ -214,7 +211,7 @@ void ConfigurationEvQueue::Check(void)
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
 		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");
 
-	if(GetInt("workflowinstance.savepoint.level")>3)
+	if(GetInt("workflowinstance.savepoint.level")<0 || GetInt("workflowinstance.savepoint.level")>3)
 		throw Exception("Configuration","workflowinstance.savepoint.level: invalid value '"+entries["workflowinstance.savepoint.level"]+"'. Value must be between O and 3");
 
 	if(Get("queuepool.scheduler")!="fifo" && Get("queuepool.scheduler")!="prio")
