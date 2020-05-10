@@ -125,6 +125,15 @@ void ProcessExec::FileRedirect(int fd, const string &filename)
 	file_rdr.insert(pair<int,int>(fd,fno));
 }
 
+void ProcessExec::SelfFileRedirect(int fd, const string &filename)
+{
+	int fno = open_log_file(filename,fd);
+	if(fno<0)
+		throw Exception("ProcessExec","Unable to redirect fd "+to_string(fd)+" to file "+filename);
+	
+	rdr_file(fno, fd);
+}
+
 void ProcessExec::FDRedirect(int src_fd, int dst_fd)
 {
 	fd_rdr.insert(pair<int,int>(src_fd,dst_fd));
@@ -151,17 +160,27 @@ pid_t ProcessExec::Exec()
 	{
 		setsid(); // This is used to avoid CTRL+C killing all child processes
 		
+		if(wd!="")
+		{
+			if(chdir(wd.c_str())!=0)
+			{
+				fprintf(stderr,"Unable to change directory to %s\n",wd.c_str());
+				return pid;
+			}
+		}
+		
 		if(stdin_pipe[0]!=-1)
 		{
 			// Redirect STDIN
-			dup2(stdin_pipe[0],STDIN_FILENO);
 			close(stdin_pipe[1]);
+			dup2(stdin_pipe[0],STDIN_FILENO);
+			close(stdin_pipe[0]);
 		}
 		
 		// Do files redirections
 		for(auto it = file_rdr.begin();it!=file_rdr.end();++it)
 		{
-			if(dup2(it->second,it->first)<0)
+			if(rdr_file(it->second,it->first)<0)
 				return pid;
 		}
 		
@@ -175,10 +194,11 @@ pid_t ProcessExec::Exec()
 		// Do parent redirections
 		for(auto it = parent_rdr.begin();it!=parent_rdr.end();++it)
 		{
+			close(it->second.read_end);
 			if(dup2(it->second.write_end,it->first)<0)
 				return pid;
 			
-			close(it->second.read_end);
+			close(it->second.write_end);
 		}
 		
 		// Prepare ENV
@@ -209,17 +229,17 @@ pid_t ProcessExec::Exec()
 		
 		if(stdin_pipe[0]!=-1)
 		{
-#ifdef USE_DATA_PIPER
+			/*
 			// Use of a threaded data piper is required for evqueue core engine as write can block and thus hold the whole engine
 			DataPiper::GetInstance()->PipeData(stdin_pipe[1],stdin_data);
-#else
+			*/
+			
 			// Send data to the child's stdin
 			// It is possible that the child process dies before reading the whole data so we do not want to check the return value of write
 			if(write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length())!=stdin_data.length())
 				throw Exception("ProcessExec","Could not pipe data to child");
 		
 			close(stdin_pipe[1]);
-#endif
 		}
 	}
 	
@@ -252,4 +272,15 @@ int ProcessExec::open_log_file(const string &filename_base, int log_fileno)
 		throw Exception("ProcessExec","Unable to open task output log file: "+filename);
 
 	return fno;
+}
+
+int ProcessExec::rdr_file(int fno, int fd)
+{
+	if(fno==fd)
+		return 0;
+	
+	int re = dup2(fno,fd);
+	close(fno);
+	
+	return re;
 }

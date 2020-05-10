@@ -167,27 +167,6 @@ target_link_libraries(evqueue zip)
 
 
 
-project(evqueue_monitor)
-
-add_executable(evqueue_monitor
-	${srcException}
-	src/Configuration/Configuration.cpp
-	src/Process/ProcessExec.cpp src/Process/tools_ipc.cpp src/Process/DataSerializer.cpp
-	
-	src/evqueue_monitor.cpp
-	)
-
-include_directories(src/include /usr/include)
-
-
-
-project(evqueue_notification_monitor)
-
-add_executable(evqueue_notification_monitor src/evqueue_notification_monitor.cpp src/Process/tools_ipc.cpp)
-
-include_directories(src/include /usr/include)
-
-
 
 project(evqueue_wfmanager)
 
@@ -268,7 +247,7 @@ ADD_CUSTOM_COMMAND(
 
 
 
-install(TARGETS evqueue evqueue_monitor evqueue_notification_monitor DESTINATION bin COMPONENT core)
+install(TARGETS evqueue DESTINATION bin COMPONENT core)
 install(FILES debian/etc/evqueue.conf DESTINATION /etc COMPONENT core)
 install(FILES debian/etc/rsyslog.d/90-evqueue.conf DESTINATION /etc/rsyslog.d PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ COMPONENT core)
 install(DIRECTORY src/plugins DESTINATION /usr/share/evqueue-core DIRECTORY_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_WRITE GROUP_READ WORLD_EXECUTE WORLD_READ COMPONENT core)

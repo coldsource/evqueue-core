@@ -112,3 +112,25 @@ int ipc_send_exit_msg(const char *qid_str,int type,int tid,char retcode)
 	msgbuf.mtext.retcode = retcode;
 	return msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0);
 }
+
+bool ipc_send_progress_message(int msgqid,const char* buf,pid_t tid)
+{
+	if(buf[0]!='%' || buf[1]=='%')
+		return  false;
+	
+	int prct = atoi(buf+1);
+	if(prct<0)
+		prct = 0;
+	else if(prct>100)
+		prct = 100;
+	
+	st_msgbuf msgbuf_progress;
+	msgbuf_progress.type = 3;
+	msgbuf_progress.mtext.pid = getpid();
+	msgbuf_progress.mtext.tid = tid;
+	msgbuf_progress.mtext.retcode = prct;
+	
+	msgsnd(msgqid,&msgbuf_progress,sizeof(st_msgbuf::mtext),0);
+	
+	return  true;
+}

@@ -31,7 +31,8 @@
 #include <Logger/Logger.h>
 #include <User/User.h>
 #include <WorkflowInstance/Task.h>
-#include <Process/ProcessExec.h>
+#include <Process/Forker.h>
+#include <Process/DataSerializer.h>
 #include <Process/tools_ipc.h>
 #include <DB/DB.h>
 
@@ -202,8 +203,6 @@ void *ProcessManager::Gather(ProcessManager *pm)
 			continue; // Not process is terminated, skip waitpid
 		}
 		
-		waitpid(pid,&status,0); // We only do this to avoid zombie processes (retcode has already been returned by the task monitor)
-		
 		if(msgbuf.type==1)
 		{
 			// Fetch task output in log files before releasing tid
@@ -281,9 +280,9 @@ pid_t ProcessManager::ExecuteTask(
 	pid_t tid
 	)
 {
-	Configuration *config = ConfigurationEvQueue::GetInstance();
-	
-	ProcessExec proc(config->Get("processmanager.monitor.path"));
+	// Sanity check
+	if(task.GetType()==task_type::SCRIPT && task.GetHost()!="" && !task.GetUseAgent())
+		throw Exception("ProcessManager", "Script tasks cannot be remote without using evQueue agent");
 	
 	// Compute task filename
 	string task_filename;
@@ -292,46 +291,13 @@ pid_t ProcessManager::ExecuteTask(
 	else
 		task_filename = ConfigurationEvQueue::GetInstance()->Get("processmanager.tasks.directory")+"/"+task.GetPath();
 	
-	// Static process arguments
-	proc.AddArgument(task_filename);
-	proc.AddArgument(to_string(tid));
+	// Prepare arguments
+	vector<string> task_arguments;
+	auto static_args = task.GetArguments();
+	for(int i=0;i<static_args.size();i++)
+		task_arguments.push_back(static_args.at(i));
 	
-	auto task_arguments = task.GetArguments();
-	for (int i = 0; i<task_arguments.size(); i++)
-		proc.AddArgument(task_arguments.at(i));
-	
-	// Redirect to files
-	proc.FileRedirect(STDOUT_FILENO,logs_directory+"/"+to_string(tid));
-	
-	if(task.GetMergeStderr())
-		proc.FDRedirect(STDERR_FILENO,STDIN_FILENO);
-	else
-		proc.FileRedirect(STDERR_FILENO,logs_directory+"/"+to_string(tid));
-	
-	proc.FileRedirect(LOG_FILENO,logs_directory+"/"+to_string(tid));
-	
-	// Sanity check
-	if(task.GetType()==task_type::SCRIPT && task.GetHost()!="" && !task.GetUseAgent())
-		throw Exception("ProcessManager", "Script tasks cannot be remote without using evQueue agent");
-	
-	// Prepare monitor config
-	map<string,string> monitor_config;
-	monitor_config["core.ipc.qid"] = config->Get("core.ipc.qid");
-	monitor_config["processmanager.agent.path"] = config->Get("processmanager.agent.path");
-	monitor_config["processmanager.monitor.ssh_key"] = config->Get("processmanager.monitor.ssh_key");
-	monitor_config["processmanager.monitor.ssh_path"] = config->Get("processmanager.monitor.ssh_path");
-	monitor_config["processmanager.scripts.directory"] = config->Get("processmanager.scripts.directory");
-	monitor_config["processmanager.scripts.delete"] = config->Get("processmanager.scripts.delete");
-	
-	monitor_config["monitor.ssh.useagent"] = task.GetUseAgent()?"yes":"no";
-	monitor_config["monitor.ssh.host"] = task.GetHost();
-	monitor_config["monitor.ssh.user"] = task.GetUser();
-	monitor_config["monitor.wd"] = task.GetWorkingDirectory();
-	monitor_config["monitor.task.type"] = task.GetTypeStr();
-	
-	proc.PipeMap(monitor_config);
-	
-	// Task arguments from WF
+	// Dynamic arguments from WF
 	vector<string> parameters_name;
 	vector<string> parameters_value;
 	task.GetParameters(parameters_name,parameters_value);
@@ -339,9 +305,10 @@ pid_t ProcessManager::ExecuteTask(
 	if(task.GetParametersMode()==task_parameters_mode::CMDLINE)
 	{
 		for(int i=0;i<parameters_value.size();i++)
-			proc.AddArgument(parameters_value.at(i));
+			task_arguments.push_back(parameters_value.at(i));
 	}
 	
+	// Prepare ENV
 	map<string,string> env;
 	env["EVQUEUE_IPC_QID"] = "0"; // Backward compatibility, to be removed
 	env["EVQUEUE_ENV"] = "true";
@@ -350,27 +317,35 @@ pid_t ProcessManager::ExecuteTask(
 		for(int i=0;i<parameters_value.size();i++)
 			env[parameters_name.at(i)] = parameters_value.at(i);
 	}
-	proc.PipeMap(env);
+	
+	// Prepare monitor config
+	map<string,string> monitor_config;
+	monitor_config["monitor.ssh.useagent"] = task.GetUseAgent()?"yes":"no";
+	monitor_config["monitor.ssh.host"] = task.GetHost();
+	monitor_config["monitor.ssh.user"] = task.GetUser();
+	monitor_config["monitor.wd"] = task.GetWorkingDirectory();
+	monitor_config["monitor.merge_stderr"] = task.GetMergeStderr()?"yes":"no";
+	monitor_config["monitor.task.type"] = task.GetTypeStr();
+	
+	// Serialize all data beforore sending to the monitor
+	string data;
+	data += DataSerializer::Serialize(task_filename);
+	data += DataSerializer::Serialize(tid);
+	data += DataSerializer::Serialize(task_arguments);
+	data += DataSerializer::Serialize(monitor_config);
+	data += DataSerializer::Serialize(env);
 	
 	// Send script content if needed
 	if(task.GetType()==task_type::SCRIPT)
-		proc.PipeString(task.GetScript());
+		data += DataSerializer::Serialize(task.GetScript());
 	
 	// Stdin
-	proc.Pipe(task.GetStdin());
+	data += DataSerializer::Serialize(task.GetStdin());
 	
-	pid_t pid = proc.Exec();
-	
+	pid_t pid = Forker::GetInstance()->Execute("evq_monitor",data);
 	if(pid<0)
-		throw Exception("ProcessManager","Unable to execute task '"+task.GetPath()+"' : could not fork");
+		throw Exception("WorkflowInstance", "Could not fork task monitor, see engine logs");
 	
-	if(pid==0)
-	{
-		// Could not properly call monitor
-		ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,tid,-1);
-		exit(-1);
-	}
-
 	return pid;
 }
 

@@ -17,8 +17,12 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <global.h>
+#include <Process/NotificationMonitor.h>
+#include <Process/DataSerializer.h>
 #include <Process/tools_ipc.h>
+#include <Process/ProcessExec.h>
+#include <Configuration/ConfigurationEvQueue.h>
+#include <global.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,16 +32,22 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/wait.h>
+#include <unistd.h>
+
+#include <string>
+#include <vector>
+
+using namespace std;
 
 pid_t pid = 0;
 st_msgbuf msgbuf;
 
-void signal_callback_handler(int signum)
+static void signal_callback_handler(int signum)
 {
 	if(signum==SIGTERM)
 	{
 		// Forward signal to our child
-		fprintf(stderr,"evqueue_notification_monitor : received SIGTERM, killing task...\n");
+		fprintf(stderr,"evq_nf_monitor : received SIGTERM, killing task...\n");
 		if(pid)
 			kill(pid,SIGKILL);
 		
@@ -45,7 +55,7 @@ void signal_callback_handler(int signum)
 	}
 	else if(signum==SIGALRM)
 	{
-		fprintf(stderr,"evqueue_notification_monitor : task timed out...\n");
+		fprintf(stderr,"evq_nf_monitor : task timed out...\n");
 		if(pid)
 			kill(pid,SIGKILL);
 		
@@ -53,31 +63,34 @@ void signal_callback_handler(int signum)
 	}
 }
 
-int main(int argc,char ** argv)
+int NotificationMonitor::main()
 {
-	if(argc<=5)
+	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	
+	// Create message queue
+	int msgqid = ipc_openq(config->Get("core.ipc.qid").c_str());
+	if(msgqid==-1)
 		return -1;
+	
+	memset(&msgbuf, 0, sizeof(st_msgbuf));
+	
+	vector<string> args;
+	DataSerializer::Unserialize(fd, args);
+	
+	string plugin_conf;
+	DataSerializer::Unserialize(fd, plugin_conf);
+	
+	int nid = stoi(args[0]);
+	int timeout = stoi(args[2]);
+	int workflow_instance_id = stoi(args[3]);
+	
+	// Redirect to files
+	string logs_directory = config->Get("processmanager.logs.directory");
+	ProcessExec::SelfFileRedirect(STDERR_FILENO,logs_directory+"/notif_"+to_string(workflow_instance_id)+"_"+to_string(nid));
 	
 	// Catch signals
 	signal(SIGTERM,signal_callback_handler);
 	signal(SIGALRM,signal_callback_handler);
-	
-	// Unblock SIGTERM (blocked by evqueue)
-	sigset_t signal_mask;
-	sigemptyset(&signal_mask);
-	sigaddset(&signal_mask, SIGTERM);
-	sigprocmask(SIG_UNBLOCK,&signal_mask,0);
-	
-	// Create message queue
-	int msgqid = ipc_openq(getenv("EVQUEUE_IPC_QID"));
-	if(msgqid==-1)
-		return -1;
-	
-	int timeout = atoi(argv[2]);
-	char *cmd_filename = argv[1];
-	char *wfi_id = argv[3];
-	char *wfi_errors = argv[4];
-	char *unix_socket_path = argv[5];
 	
 	int status;
 	
@@ -85,26 +98,17 @@ int main(int argc,char ** argv)
 	msgbuf.mtext.pid = getpid();
 	msgbuf.mtext.tid = 0; // Normal condition
 	
-	pid = fork();
+	ProcessExec proc(args[1]);
+	proc.AddArgument(args[3]);
+	proc.AddArgument(args[4]);
+	proc.AddArgument(args[5]);
+	proc.Pipe(plugin_conf);
+	proc.SetWorkingDirectory(config->Get("notifications.tasks.directory"));
+	
+	pid = proc.Exec();
 	
 	if(pid==0)
-	{
-		const char *working_directory = getenv("EVQUEUE_WORKING_DIRECTORY");
-		
-		if(working_directory && working_directory[0]!='\0')
-		{
-			if(chdir(working_directory)!=0)
-			{
-				fprintf(stderr,"Unable to change directory to %s\n",working_directory);
-				return -1;
-			}
-		}
-		
-		status = execl(cmd_filename,cmd_filename,wfi_id,wfi_errors,unix_socket_path,(char *)0);
-		
-		fprintf(stderr,"Unable to execute command '%s'. execv() returned %d\n",cmd_filename,status);
-		return -1;
-	}
+		return -2; // We are in child but execution failed, die with error code
 	
 	if(pid<0)
 	{

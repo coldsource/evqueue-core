@@ -17,17 +17,17 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _TOOLS_IPC_H_
-#define _TOOLS_IPC_H_
+#ifndef _NOTIFICATION_MONITOR_H_
+#define _NOTIFICATION_MONITOR_H_
 
-#include <sys/types.h>
-
-key_t ipc_get_qid(const char *qid_istr);
-int ipc_openq(const char *qid_str);
-
-int ipc_queue_destroy(const char *qid_str);
-int ipc_queue_stats(const char *qid_str);
-int ipc_send_exit_msg(const char *qid_str,int type,int tid,char retcode);
-bool ipc_send_progress_message(int msgqid,const char* buf,pid_t tid);
+class NotificationMonitor
+{
+	int fd;
+	
+public:
+	NotificationMonitor(int fd) { this->fd = fd; }
+	
+	int main();
+};
 
 #endif

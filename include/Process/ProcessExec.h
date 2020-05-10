@@ -33,6 +33,7 @@ class ProcessExec
 	};
 	
 	std::string path;
+	std::string wd;
 	std::vector<std::string> arguments;
 	std::map<std::string,std::string> env;
 	
@@ -52,6 +53,8 @@ class ProcessExec
 		std::string GetPath() { return path; }
 		void SetScript(const std::string &path, const std::string &script);
 		
+		void SetWorkingDirectory(const std::string &wd) { this->wd = wd; }
+		
 		void AddArgument(const std::string &value, bool escape=false);
 		
 		void AddEnv(const std::string &name, const std::string &value);
@@ -64,11 +67,14 @@ class ProcessExec
 		void FDRedirect(int src_fd, int dst_fd);
 		int ParentRedirect(int fd);
 		
+		static void SelfFileRedirect(int fd, const std::string &filename);
+		
 		pid_t Exec();
 	
 	private:
 		void init_stdin_pipe();
-		int open_log_file(const std::string &filename_base, int log_fileno);
+		static int open_log_file(const std::string &filename_base, int log_fileno);
+		static int rdr_file(int fno, int fd);
 };
 
 #endif

@@ -22,6 +22,24 @@ string DataSerializer::Serialize(const map<string,string> &map)
 	return data;
 }
 
+string DataSerializer::Serialize(const vector<string> &vector)
+{
+	string data;
+	char buf[32];
+	
+	sprintf(buf,"%03ld",vector.size());
+	data += buf;
+	
+	for (int i = 0; i<vector.size(); i++)
+	{
+		sprintf(buf,"%09ld",vector.at(i).length());
+		data += buf;
+		data += vector.at(i);
+	}
+	
+	return data;
+}
+
 string DataSerializer::Serialize(const string &str)
 {
 	string data;
@@ -34,6 +52,14 @@ string DataSerializer::Serialize(const string &str)
 	
 	return data;
 }
+
+string DataSerializer::Serialize(int n)
+{
+	string str = to_string(n);
+	
+	return Serialize(str);
+}
+
 
 bool DataSerializer::Unserialize(int fd, map<string,string> &map)
 {
@@ -50,7 +76,7 @@ bool DataSerializer::Unserialize(int fd, map<string,string> &map)
 	
 	for(int i=0;i<nparameters;i++)
 	{
-		// Read the number of arguments
+		// Read the size of arguments
 		read_size = read(fd,buf,18);
 		if(read_size!=18)
 			return false;
@@ -86,6 +112,43 @@ bool DataSerializer::Unserialize(int fd, map<string,string> &map)
 	return true;
 }
 
+bool DataSerializer::Unserialize(int fd, vector<string> &vector)
+{
+	int read_size;
+	char buf[32];
+	
+	// Read the number of arguments
+	read_size = read(fd,buf,3);
+	if(read_size!=3)
+		return false;
+	
+	buf[read_size] = '\0';
+	int nparameters = atoi(buf);
+	
+	for(int i=0;i<nparameters;i++)
+	{
+		// Read the size of string
+		read_size = read(fd,buf,9);
+		if(read_size!=9)
+			return false;
+			
+		buf[9] = '\0';
+		int len = atoi(buf);
+		
+		char value[len];
+		read_size = read(fd,value,len);
+		if(read_size!=len)
+			return false;
+		
+		string str;
+		str.assign(value,len);
+		
+		vector.push_back(str);
+	}
+	
+	return true;
+}
+
 bool DataSerializer::Unserialize(int fd, string &str)
 {
 	int read_size;
@@ -106,4 +169,21 @@ bool DataSerializer::Unserialize(int fd, string &str)
 	str.assign(value,value_len);
 	
 	return true;
+}
+
+bool DataSerializer::Unserialize(int fd, int *n)
+{
+	string str;
+	if(!Unserialize(fd,str))
+		return false;
+	
+	try
+	{
+		*n = stoi(str);
+		return true;
+	}
+	catch(...)
+	{
+		return false;
+	}
 }

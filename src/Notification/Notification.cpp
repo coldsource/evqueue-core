@@ -29,10 +29,11 @@
 #include <WorkflowInstance/WorkflowInstance.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
-#include <Process/ProcessExec.h>
+#include <Process/Forker.h>
+#include <Process/DataSerializer.h>
+#include <Process/tools_ipc.h>
 #include <Crypto/base64.h>
 #include <User/User.h>
-#include <Process/tools_ipc.h>
 #include <global.h>
 #include <Workflow/Workflow.h>
 #include <WS/Events.h>
@@ -60,8 +61,6 @@ Notification::Notification(DB *db,unsigned int notification_id)
 		throw Exception("Notification","Unknown notification");
 	
 	unix_socket_path = ConfigurationEvQueue::GetInstance()->Get("network.bind.path");
-	
-	notification_monitor_path = ConfigurationEvQueue::GetInstance()->Get("notifications.monitor.path");
 	
 	logs_directory = ConfigurationEvQueue::GetInstance()->Get("notifications.logs.directory");
 	
@@ -94,26 +93,19 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 		configuration += json_escape(workflow_instance->GetDOM()->Serialize(workflow_instance->GetDOM()->getDocumentElement()));
 		configuration += "\"}";
 		
-		ProcessExec proc(notification_monitor_path);
-		proc.AddArgument(notification_binary);
-		proc.AddArgument(timeout);
-		proc.AddArgument(to_string(workflow_instance->GetInstanceID()));
-		proc.AddArgument(to_string(workflow_instance->GetErrors()));
-		proc.AddArgument(unix_socket_path);
+		vector<string> parameters;
+		parameters.push_back(to_string(id));
+		parameters.push_back(notification_binary);
+		parameters.push_back(timeout);
+		parameters.push_back(to_string(workflow_instance->GetInstanceID()));
+		parameters.push_back(to_string(workflow_instance->GetErrors()));
+		parameters.push_back(unix_socket_path);
 		
-		proc.AddEnv("EVQUEUE_IPC_QID",ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid"));
-		proc.AddEnv("EVQUEUE_WORKING_DIRECTORY",ConfigurationEvQueue::GetInstance()->Get("notifications.tasks.directory"));
+		string data;
+		data += DataSerializer::Serialize(parameters);
+		data += DataSerializer::Serialize(configuration);
 		
-		proc.FileRedirect(STDERR_FILENO,logs_directory+"/notif_"+to_string(workflow_instance->GetInstanceID())+"_"+to_string(id));
-		
-		proc.Pipe(configuration);
-		
-		pid_t pid = proc.Exec();
-		if(pid==0)
-		{
-			ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),2,0,-1);
-			exit(-1);
-		}
+		pid_t pid = Forker::GetInstance()->Execute("evq_nf_monitor", data);
 		
 		if(pid<0)
 		{

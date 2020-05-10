@@ -48,6 +48,13 @@ struct st_msgbuf
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+
+extern int g_argc;
+extern char **g_argv;
+
 // Logs fileno
 #define LOG_FILENO 3
 

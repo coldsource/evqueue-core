@@ -98,6 +98,8 @@
 #include <XPath/XPathAPI.h>
 #include <WS/Events.h>
 #include <WS/WSServer.h>
+#include <Process/tools_proc.h>
+#include <Process/Forker.h>
 
 #include <xercesc/util/PlatformUtils.hpp>
 
@@ -144,8 +146,15 @@ void tools_print_usage()
 
 using namespace std;
 
+int g_argc;
+char **g_argv;
+
 int main(int argc,char **argv)
 {
+	// Set global argc / argv to allow process name change
+	g_argc = argc;
+	g_argv = argv;
+	
 	// Check parameters
 	const char *config_filename = 0;
 	bool daemonize = false;
@@ -198,46 +207,51 @@ int main(int argc,char **argv)
 		return -1;
 	}
 	
-	// Initialize external libraries
-	DB::InitLibrary();
-	DB::StartThread();
-	
-#ifdef USELIBGIT2
-	git_libgit2_init();
-#endif
-	
 	openlog("evqueue",0,LOG_DAEMON);
-	
-	struct sigaction sa;
-	sigset_t block_mask;
-	
-	sigemptyset(&block_mask);
-	sigaddset(&block_mask, SIGINT);
-	sigaddset(&block_mask, SIGTERM);
-	sigaddset(&block_mask, SIGHUP);
-	sigaddset(&block_mask, SIGUSR1);
-	
-	sa.sa_handler = signal_callback_handler;
-	sa.sa_mask = block_mask;
-	sa.sa_flags = 0;
-	
-	sigaction(SIGHUP,&sa,0);
-	sigaction(SIGINT,&sa,0);
-	sigaction(SIGTERM,&sa,0);
-	sigaction(SIGUSR1,&sa,0);
 	
 	// Get start time for computing uptime
 	time(&evqueue_start_time);
 	
 	try
 	{
+		// Sanitize ENV
+		sanitize_fds(3);
+		
 		// Read configuration
-		ConfigurationEvQueue *config = new ConfigurationEvQueue();
-		ConfigurationReader::Read(config_filename, config);
+		ConfigurationEvQueue config;
+		ConfigurationReader::Read(config_filename, &config);
 		
 		// Substitute configuration variables with environment if needed
-		config->Substitute();
-
+		config.Substitute();
+		
+		// Start forker very early to get cleanest ENV as possible (we still need configuration so)
+		Forker forker;
+		pid_t forker_pid = forker.Start();
+		if(forker_pid==0)
+			return 0; // Forker clean exit
+		
+		if(forker_pid<0)
+			throw Exception("core", "Could not start forker, fork() returned error");
+		
+		// Position signal handlers
+		struct sigaction sa;
+		sigset_t block_mask;
+		
+		sigemptyset(&block_mask);
+		sigaddset(&block_mask, SIGINT);
+		sigaddset(&block_mask, SIGTERM);
+		sigaddset(&block_mask, SIGHUP);
+		sigaddset(&block_mask, SIGUSR1);
+		
+		sa.sa_handler = signal_callback_handler;
+		sa.sa_mask = block_mask;
+		sa.sa_flags = 0;
+		
+		sigaction(SIGHUP,&sa,0);
+		sigaction(SIGINT,&sa,0);
+		sigaction(SIGTERM,&sa,0);
+		sigaction(SIGUSR1,&sa,0);
+		
 		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
 		if(ipcq_remove)
 			return ipc_queue_destroy(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
@@ -245,6 +259,14 @@ int main(int argc,char **argv)
 			return ipc_queue_stats(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
 		else if(ipc_terminate_tid!=-1)
 			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,ipc_terminate_tid,-1);
+		
+		// Initialize external libraries
+		DB::InitLibrary();
+		DB::StartThread();
+		
+#ifdef USELIBGIT2
+		git_libgit2_init();
+#endif
 		
 		// Create logger and events as soon as possible
 		Logger *logger = new Logger();
@@ -257,9 +279,9 @@ int main(int argc,char **argv)
 		LoggerNotifications *logger_notifications = new LoggerNotifications();
 		
 		// Set locale
-		if(!setlocale(LC_ALL,config->Get("core.locale").c_str()))
+		if(!setlocale(LC_ALL,config.Get("core.locale").c_str()))
 		{
-			Logger::Log(LOG_ERR,"Unknown locale : %s",config->Get("core.locale").c_str());
+			Logger::Log(LOG_ERR,"Unknown locale : %s",config.Get("core.locale").c_str());
 			throw Exception("core","Unable to set locale");
 		}
 		
@@ -270,11 +292,11 @@ int main(int argc,char **argv)
 		int gid;
 		try
 		{
-			gid = std::stoi(config->Get("core.gid"));
+			gid = std::stoi(config.Get("core.gid"));
 		}
 		catch(const std::invalid_argument& excpt)
 		{
-			struct group *group_entry = getgrnam(config->Get("core.gid").c_str());
+			struct group *group_entry = getgrnam(config.Get("core.gid").c_str());
 			if(!group_entry)
 				throw Exception("core","Unable to find group");
 			
@@ -289,11 +311,11 @@ int main(int argc,char **argv)
 		int uid;
 		try
 		{
-			uid = std::stoi(config->Get("core.uid"));
+			uid = std::stoi(config.Get("core.uid"));
 		}
 		catch(const std::invalid_argument& excpt)
 		{
-			struct passwd *user_entry = getpwnam(config->Get("core.uid").c_str());
+			struct passwd *user_entry = getpwnam(config.Get("core.uid").c_str());
 			if(!user_entry)
 				throw Exception("core","Unable to find user");
 			
@@ -305,14 +327,14 @@ int main(int argc,char **argv)
 		}
 		
 		// Change working directory
-		if(config->Get("core.wd").length()>0)
+		if(config.Get("core.wd").length()>0)
 		{
-			if(chdir(config->Get("core.wd").c_str())!=0)
+			if(chdir(config.Get("core.wd").c_str())!=0)
 				throw Exception("core","Unable to change working directory");
 		}
 
 		// Create directory for PID (usually in /var/run)
-		char *pid_file2 = strdup(config->Get("core.pidfile").c_str());
+		char *pid_file2 = strdup(config.Get("core.pidfile").c_str());
 		char *pid_directory = dirname(pid_file2);
 		
 		if(mkdir(pid_directory,0755)==0)
@@ -340,10 +362,10 @@ int main(int argc,char **argv)
 			throw Exception("core","Unable to set requested UID");
 		
 		// Sanity checks on configuration values and access rights
-		config->Check();
+		config.Check();
 		
 		// Open pid file before fork to eventually print errors
-		FILE *pidfile = fopen(config->Get("core.pidfile").c_str(),"w");
+		FILE *pidfile = fopen(config.Get("core.pidfile").c_str(),"w");
 		if(pidfile==0)
 			throw Exception("core","Unable to open pid file");
 		
@@ -402,7 +424,7 @@ int main(int argc,char **argv)
 		RetrySchedules *retry_schedules = new RetrySchedules();
 		
 		// Check if workflows are to resume (we have to resume them before starting ProcessManager)
-		db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",&config->Get("cluster.node.name"));
+		db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",&config.Get("cluster.node.name"));
 		while(db.FetchRow())
 		{
 			Logger::Log(LOG_NOTICE,"[WID %d] Resuming",db.GetFieldInt(0));
@@ -431,8 +453,8 @@ int main(int argc,char **argv)
 		
 		// Load workflow schedules
 		db.QueryPrintf("SELECT ws.workflow_schedule_id, w.workflow_name, wi.workflow_instance_id FROM t_workflow_schedule ws LEFT JOIN t_workflow_instance wi ON(wi.workflow_schedule_id=ws.workflow_schedule_id AND wi.workflow_instance_status='EXECUTING' AND wi.node_name=%s) INNER JOIN t_workflow w ON(ws.workflow_id=w.workflow_id) WHERE ws.node_name IN(%s,'all','any') AND ws.workflow_schedule_active=1",
-				&config->Get("cluster.node.name"),
-				&config->Get("cluster.node.name")
+				&config.Get("cluster.node.name"),
+				&config.Get("cluster.node.name")
 			);
 		while(db.FetchRow())
 		{
@@ -508,7 +530,7 @@ int main(int argc,char **argv)
 		
 		// Initialize cluster
 		Cluster *cluster = new Cluster();
-		cluster->ParseConfiguration(config->Get("cluster.nodes"));
+		cluster->ParseConfiguration(config.Get("cluster.nodes"));
 		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
@@ -520,7 +542,7 @@ int main(int argc,char **argv)
 		socklen_t remote_addr_len;
 		
 		// Create TCP socket
-		if(config->Get("network.bind.ip").length()>0)
+		if(config.Get("network.bind.ip").length()>0)
 		{
 			int optval;
 			
@@ -534,48 +556,48 @@ int main(int argc,char **argv)
 			// Bind socket
 			memset(&local_addr,0,sizeof(struct sockaddr_in));
 			local_addr.sin_family=AF_INET;
-			if(config->Get("network.bind.ip")=="*")
+			if(config.Get("network.bind.ip")=="*")
 				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
 			else
-				local_addr.sin_addr.s_addr=inet_addr(config->Get("network.bind.ip").c_str());
-			local_addr.sin_port = htons(config->GetInt("network.bind.port"));
+				local_addr.sin_addr.s_addr=inet_addr(config.Get("network.bind.ip").c_str());
+			local_addr.sin_port = htons(config.GetInt("network.bind.port"));
 			re=bind(listen_socket,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
 			if(re==-1)
 				throw Exception("core","Unable to bind API listen socket");
 			
 			// Listen on socket
-			re=listen(listen_socket,config->GetInt("network.listen.backlog"));
+			re=listen(listen_socket,config.GetInt("network.listen.backlog"));
 			if(re==-1)
 				throw Exception("core","Unable to listen on API socket");
-			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (tcp socket)",config->GetInt("network.listen.backlog"));
+			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (tcp socket)",config.GetInt("network.listen.backlog"));
 			
-			Logger::Log(LOG_NOTICE,"API accepting connections on port %d",config->GetInt("network.bind.port"));
+			Logger::Log(LOG_NOTICE,"API accepting connections on port %d",config.GetInt("network.bind.port"));
 		}
 		
-		if(config->Get("network.bind.path").length()>0)
+		if(config.Get("network.bind.path").length()>0)
 		{
 			// Create UNIX socket
 			listen_socket_unix=socket(AF_UNIX,SOCK_STREAM | SOCK_CLOEXEC,0);
 			
 			// Bind socket
 			local_addr_unix.sun_family=AF_UNIX;
-			strcpy(local_addr_unix.sun_path,config->Get("network.bind.path").c_str());
+			strcpy(local_addr_unix.sun_path,config.Get("network.bind.path").c_str());
 			unlink(local_addr_unix.sun_path);
 			re=bind(listen_socket_unix,(struct sockaddr *)&local_addr_unix,sizeof(struct sockaddr_un));
 			if(re==-1)
 				throw Exception("core","Unable to bind API unix listen socket");
 			
 			// Listen on socket
-			chmod(config->Get("network.bind.path").c_str(),0777);
-			re=listen(listen_socket_unix,config->GetInt("network.listen.backlog"));
+			chmod(config.Get("network.bind.path").c_str(),0777);
+			re=listen(listen_socket_unix,config.GetInt("network.listen.backlog"));
 			if(re==-1)
 				throw Exception("core","Unable to listen on API unix socket");
-			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (unix socket)",config->GetInt("network.listen.backlog"));
+			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (unix socket)",config.GetInt("network.listen.backlog"));
 			
-			Logger::Log(LOG_NOTICE,"API accepting connections on unix socket %s",config->Get("network.bind.path").c_str());
+			Logger::Log(LOG_NOTICE,"API accepting connections on unix socket %s",config.Get("network.bind.path").c_str());
 		}
 		
-		if(config->Get("ws.bind.ip").length()>0)
+		if(config.Get("ws.bind.ip").length()>0)
 		{
 			int optval;
 			
@@ -589,29 +611,29 @@ int main(int argc,char **argv)
 			// Bind socket
 			memset(&local_addr,0,sizeof(struct sockaddr_in));
 			local_addr.sin_family=AF_INET;
-			if(config->Get("ws.bind.ip")=="*")
+			if(config.Get("ws.bind.ip")=="*")
 				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
 			else
-				local_addr.sin_addr.s_addr=inet_addr(config->Get("ws.bind.ip").c_str());
-			local_addr.sin_port = htons(config->GetInt("ws.bind.port"));
+				local_addr.sin_addr.s_addr=inet_addr(config.Get("ws.bind.ip").c_str());
+			local_addr.sin_port = htons(config.GetInt("ws.bind.port"));
 			re=bind(listen_socket_ws,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
 			if(re==-1)
 				throw Exception("core","Unable to bind WS listen socket");
 			
 			// Listen on socket
-			re=listen(listen_socket_ws,config->GetInt("ws.listen.backlog"));
+			re=listen(listen_socket_ws,config.GetInt("ws.listen.backlog"));
 			if(re==-1)
 				throw Exception("core","Unable to listen on WS socket");
-			Logger::Log(LOG_NOTICE,"WS listen backlog set to %d (tcp socket)",config->GetInt("ws.listen.backlog"));
+			Logger::Log(LOG_NOTICE,"WS listen backlog set to %d (tcp socket)",config.GetInt("ws.listen.backlog"));
 			
-			Logger::Log(LOG_NOTICE,"WS accepting connections on port %d",config->GetInt("ws.bind.port"));
+			Logger::Log(LOG_NOTICE,"WS accepting connections on port %d",config.GetInt("ws.bind.port"));
 		}
 		
 		if(listen_socket==-1 && listen_socket_unix==-1)
 			throw Exception("core","You have to specify at least one listen socket");
 		
-		unsigned int max_conn_api = config->GetInt("network.connections.max");
-		unsigned int max_conn_ws = config->GetInt("ws.connections.max");
+		unsigned int max_conn_api = config.GetInt("network.connections.max");
+		unsigned int max_conn_ws = config.GetInt("ws.connections.max");
 		
 		WSServer *ws = new WSServer();
 		
@@ -713,10 +735,9 @@ int main(int argc,char **argv)
 				
 				xercesc::XMLPlatformUtils::Terminate();
 				
-				unlink(config->Get("core.pidfile").c_str());
+				unlink(config.Get("core.pidfile").c_str());
 				Logger::Log(LOG_NOTICE,"Clean exit");
 				delete logger;
-				delete config;
 				
 				DB::StopThread();
 				DB::FreeLibrary();

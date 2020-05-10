@@ -135,6 +135,13 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 			}
 			else
 				Logger::Log(LOG_NOTICE,"Notification task '%s' (pid %d) for workflow instance %d executed successuflly",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+			
+			if(logs_delete)
+			{
+				string filename = logs_directory+"/notif_"+to_string(ni.workflow_instance_id)+"_"+to_string(ni.notification_id)+".stderr";
+				if(unlink(filename.c_str())!=0)
+					Logger::Log(LOG_WARNING,"Error removing log file "+filename);
+			}
 		}
 		else if(status==1)
 			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d was killed",ni.notification_type.c_str(),pid,ni.workflow_instance_id);

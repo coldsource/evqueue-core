@@ -34,7 +34,6 @@ class Notification
 {
 	unsigned int id;
 	unsigned int type_id;
-	std::string notification_monitor_path;
 	std::string notification_binary;
 	std::string notification_name;
 	int notification_subscribe_all;
