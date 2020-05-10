@@ -37,7 +37,6 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 
 	Logger::Log(LOG_INFO,"[WID %d] Started",workflow_instance_id);
 
-	xmldoc->getDocumentElement().setAttribute("id",to_string(workflow_instance_id));
 	xmldoc->getDocumentElement().setAttribute("status","EXECUTING");
 	xmldoc->getDocumentElement().setAttribute("start_time",format_datetime());
 

@@ -205,6 +205,8 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 		this->workflow_instance_id = SequenceGenerator::GetInstance()->GetInc();
 	}
 	
+	xmldoc->getDocumentElement().setAttribute("id",to_string(workflow_instance_id));
+	
 	// Save workflow
 	record_savepoint();
 
