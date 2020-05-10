@@ -111,6 +111,7 @@ void handle_connection(int s)
 		
 		// Notify that we exit
 		ActiveConnections::GetInstance()->EndAPIConnection(this_thread::get_id());
+		close(s);
 		
 		return;
 		
@@ -120,6 +121,7 @@ void handle_connection(int s)
 	
 	// Notify that we exit
 	ActiveConnections::GetInstance()->EndAPIConnection(this_thread::get_id());
+	close(s);
 	
 	return;
 }
