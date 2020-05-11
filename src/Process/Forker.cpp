@@ -94,10 +94,7 @@ pid_t Forker::Start()
 		{
 			string type;
 			if(!DataSerializer::Unserialize(pipe_evq_to_forker[0], type))
-			{
-				syslog(LOG_CRIT, "forker: could not read from communication pipe, exiting...");
-				return 0;
-			}
+				return 0; // Other end of the pipe has been close, daemon is terminating
 			
 			string pipe_path;
 			if(!DataSerializer::Unserialize(pipe_evq_to_forker[0], pipe_path))
