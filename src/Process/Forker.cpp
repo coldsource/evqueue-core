@@ -180,7 +180,7 @@ pid_t Forker::Execute(const string &type, const string &data)
 	}
 	
 	if(write(pipe_evq_to_forker[1], pipe_data.c_str(), pipe_data.length())!=pipe_data.length())
-		syslog(LOG_CRIT, "Could contact forker through communication pipe");
+		syslog(LOG_CRIT, "Could not contact forker through communication pipe");
 	
 	pid_t proc_pid;
 	DataSerializer::Unserialize(pipe_forker_to_evq[0], &proc_pid);
