@@ -36,6 +36,7 @@ class Forker
 	
 	unsigned int pipe_id = 0;
 	std::string pipes_directory;
+	std::string node_name;
 	
 	std::mutex lock;
 	

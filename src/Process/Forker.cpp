@@ -65,6 +65,7 @@ Forker::Forker()
 	
 	
 	pipes_directory = ConfigurationEvQueue::GetInstance()->Get("forker.pipes.directory");
+	node_name = ConfigurationEvQueue::GetInstance()->Get("cluster.node.name");
 	
 	instance = this;
 }
@@ -164,7 +165,7 @@ pid_t Forker::Execute(const string &type, const string &data)
 {
 	unique_lock<mutex> llock(lock);
 	
-	string pipe_path = pipes_directory+"/evq_forker_fifo_"+to_string(pipe_id++);
+	string pipe_path = pipes_directory+"/evq_forker_fifo_"+node_name+"_"+to_string(pipe_id++);
 	
 	string pipe_data;
 	pipe_data += DataSerializer::Serialize(type);
@@ -180,10 +181,17 @@ pid_t Forker::Execute(const string &type, const string &data)
 	}
 	
 	if(write(pipe_evq_to_forker[1], pipe_data.c_str(), pipe_data.length())!=pipe_data.length())
-		syslog(LOG_CRIT, "Could not contact forker through communication pipe");
+	{
+		Logger::Log(LOG_CRIT, "Could not contact forker through communication pipe");
+		return -1;
+	}
 	
 	pid_t proc_pid;
-	DataSerializer::Unserialize(pipe_forker_to_evq[0], &proc_pid);
+	if(!DataSerializer::Unserialize(pipe_forker_to_evq[0], &proc_pid))
+	{
+		Logger::Log(LOG_CRIT, "Could not read PID from forker FIFO "+pipe_path);
+		return -1;
+	}
 	
 	unlink(pipe_path.c_str());
 	
