@@ -426,10 +426,10 @@ char *ProcessManager::read_log_file(pid_t pid,pid_t tid,int log_fileno)
 		
 		for(int i=0;i<log_size;i++)
 		{
-			if(output[i]==0x19)
+			if(output[i]!='\r' && output[i]!='\n' && iscntrl(output[i]))
 			{
+				Logger::Log(LOG_WARNING, "[ ProcessManager ] Removed invalid character 0x%02x from output, pid %d, tid %d",output[i],pid, tid);
 				output[i] = '?'; // Remove buggy characters from output (not properly handled by xerces on Serialize)
-				Logger::Log(LOG_WARNING, "[ ProcessManager ] Removed invalid character 0x19 (End of Medium) from output, pid %d, tid %d",pid, tid);
 			}
 		}
 	}
