@@ -384,6 +384,9 @@ int main(int argc,char **argv)
 			daemonized = true;
 		}
 		
+		// Init forker (close pipes) after eventual fork made by daemon()
+		forker.Init();
+		
 		// Write pid after daemonization
 		fprintf(pidfile,"%d\n",getpid());
 		fclose(pidfile);

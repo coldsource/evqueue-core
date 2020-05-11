@@ -50,9 +50,6 @@ void Forker::signal_callback_handler(int signum)
 		int status;
 		wait(&status);
 	}
-	
-	if(signum==SIGTERM)
-		close(Forker::GetInstance()->pipe_evq_to_forker[0]);
 }
 
 Forker::Forker()
@@ -77,18 +74,10 @@ pid_t Forker::Start()
 	{
 		setsid(); // This is used to avoid CTRL+C killing all child processes
 		
-		// We want to die if evqueue daemon exists (for any reason)
-		prctl(PR_SET_PDEATHSIG, SIGTERM);
-		
 		// Change display in ps
 		setproctitle("evq_forker");
 		
-		// Close other pipes ends
-		close(pipe_evq_to_forker[1]);
-		close(pipe_forker_to_evq[0]);
-		
 		signal(SIGCHLD,signal_callback_handler); // Reap children
-		signal(SIGTERM,signal_callback_handler); // Term cleanly
 		
 		while(true)
 		{
@@ -97,6 +86,14 @@ pid_t Forker::Start()
 			{
 				syslog(LOG_NOTICE, "forker: daemon is gone, exiting...");
 				return 0; // Other end of the pipe has been close, daemon is terminating
+			}
+			
+			if(type=="init")
+			{
+				// Close other pipes ends
+				close(pipe_evq_to_forker[1]);
+				close(pipe_forker_to_evq[0]);
+				continue;
 			}
 			
 			string pipe_path;
@@ -159,6 +156,14 @@ pid_t Forker::Start()
 	close(pipe_forker_to_evq[1]);
 	
 	return forker_pid;
+}
+
+void Forker::Init()
+{
+	string pipe_data = DataSerializer::Serialize("init");
+	
+	if(write(pipe_evq_to_forker[1], pipe_data.c_str(), pipe_data.length())!=pipe_data.length())
+		throw Exception("core", "Could not init forker");
 }
 
 pid_t Forker::Execute(const string &type, const string &data)

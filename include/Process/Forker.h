@@ -48,6 +48,7 @@ public:
 	static Forker *GetInstance() { return instance; }
 	
 	pid_t Start();
+	void Init();
 	
 	pid_t Execute(const std::string &type, const std::string &data);
 };
