@@ -48,7 +48,7 @@ void Forker::signal_callback_handler(int signum)
 	if(signum==SIGCHLD)
 	{
 		int status;
-		wait(&status);
+		while(waitpid(-1,&status,WNOHANG)>0);
 	}
 }
 
