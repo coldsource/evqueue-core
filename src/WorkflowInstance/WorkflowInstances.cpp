@@ -203,20 +203,26 @@ bool WorkflowInstances::KillTask(const User &user, unsigned int workflow_instanc
 	return found;
 }
 
-void WorkflowInstances::SendStatus(const User &user, QueryResponse *response)
+void WorkflowInstances::SendStatus(const User &user, QueryResponse *response, int limit)
 {
 	unique_lock<mutex> llock(lock);
 	
-	for(std::map<unsigned int,WorkflowInstance *>::iterator i = wi.begin();i!=wi.end();++i)
+	response->GetDOM()->getDocumentElement().setAttribute("count",to_string(wi.size()));
+	int n = 0;
+	for(auto i = wi.begin();i!=wi.end();++i)
 	{
 		if(!user.HasAccessToWorkflow(i->second->GetWorkflowID(), "read"))
 			continue;
 		
 		i->second->SendStatus(response,false);
+		
+		n++;
+		if(limit!=0 && n>=limit)
+			break;
 	}
 }
 
-bool WorkflowInstances::SendStatus(const User &user, QueryResponse *response,unsigned int workflow_instance_id)
+bool WorkflowInstances::SendInstanceStatus(const User &user, QueryResponse *response,unsigned int workflow_instance_id)
 {
 	bool found = false;
 	

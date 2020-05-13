@@ -53,8 +53,8 @@ class WorkflowInstances
 		bool Wait(const User &user, QueryResponse *response, unsigned int workflow_instance_id, int timeout=0);
 		bool KillTask(const User &user, unsigned int workflow_instance_id, pid_t pid);
 		
-		void SendStatus(const User &user, QueryResponse *response);
-		bool SendStatus(const User &user, QueryResponse *response,unsigned int workflow_instance_id);
+		void SendStatus(const User &user, QueryResponse *response, int limit = 0);
+		bool SendInstanceStatus(const User &user, QueryResponse *response,unsigned int workflow_instance_id);
 		void RecordSavepoint();
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);

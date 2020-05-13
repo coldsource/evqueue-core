@@ -168,8 +168,10 @@ bool tools_handle_query(const User &user, XMLQuery *query, QueryResponse *respon
 			{
 				stats->IncStatisticsQueries();
 				
+				int limit = query->GetRootAttributeInt("limit",0);
+				
 				WorkflowInstances *workflow_instances = WorkflowInstances::GetInstance();
-				workflow_instances->SendStatus(user, response);
+				workflow_instances->SendStatus(user, response, limit);
 				
 				return true;
 			}

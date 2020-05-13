@@ -249,7 +249,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			
 			WorkflowInstances *wfi = WorkflowInstances::GetInstance();
 			
-			if(!wfi->SendStatus(user, response,workflow_instance_id))
+			if(!wfi->SendInstanceStatus(user, response,workflow_instance_id))
 			{
 				// Workflow is not executing, lookup in database
 				db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_id, workflow_instance_status FROM t_workflow_instance WHERE workflow_instance_id=%i",&workflow_instance_id);
