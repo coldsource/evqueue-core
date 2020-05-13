@@ -325,6 +325,8 @@ void Workflow::SubscribeNotification(unsigned int id, unsigned int notification_
 	
 	DB db;
 	db.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&id,&notification_id);
+	
+	Workflows::GetInstance()->Reload();
 }
 
 void Workflow::UnsubscribeNotification(unsigned int id, unsigned int notification_id)
@@ -334,12 +336,16 @@ void Workflow::UnsubscribeNotification(unsigned int id, unsigned int notificatio
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Workflow","Workflow was not subscribed to this notification","UNKNOWN_NOTIFICATION");
+	
+	Workflows::GetInstance()->Reload();
 }
 
 void Workflow::ClearNotifications(unsigned int id)
 {
 	DB db;
 	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
+	
+	Workflows::GetInstance()->Reload();
 }
 
 string Workflow::create_edit_check(const string &name, const string &base64, const string &group, const string &comment)
@@ -458,8 +464,6 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			
 			Events::GetInstance()->Create(Events::en_types::WORKFLOW_UNSUBSCRIBED, id);
 			
-			Workflows::GetInstance()->Reload();
-			
 			return true;
 		}
 		else if(action=="list_notifications")
@@ -492,8 +496,6 @@ bool Workflow::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			}
 			
 			LoggerAPI::LogAction(user,id,"Workflow",query->GetQueryGroup(),action);
-			
-			Workflows::GetInstance()->Reload();
 			
 			return true;
 		}
