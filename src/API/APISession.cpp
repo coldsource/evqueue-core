@@ -185,7 +185,7 @@ bool APISession::QueryReceived(XMLQuery *query)
 	return false;
 }
 
-void APISession::SendResponse(int external_id, unsigned int object_id)
+void APISession::SendResponse(int external_id, const string &object_id, unsigned long long event_id)
 {
 	status=READY; // Response send, ready to received another query
 	
@@ -193,8 +193,10 @@ void APISession::SendResponse(int external_id, unsigned int object_id)
 	{
 		if(external_id)
 			xpath_response.SetAttribute("external-id",to_string(external_id));
-		if(object_id)
-			xpath_response.SetAttribute("object-id",to_string(object_id));
+		if(object_id!="")
+			xpath_response.SetAttribute("object-id",object_id);
+		if(event_id)
+			xpath_response.SetAttribute("event-id",to_string(event_id));
 		
 		xpath_response.SendResponse();
 	}
@@ -202,16 +204,18 @@ void APISession::SendResponse(int external_id, unsigned int object_id)
 	{
 		if(external_id)
 			response.SetAttribute("external-id",to_string(external_id));
-		if(object_id)
-			response.SetAttribute("object-id",to_string(object_id));
+		if(object_id!="")
+			response.SetAttribute("object-id",object_id);
+		if(event_id)
+			response.SetAttribute("event-id",to_string(event_id));
 		
 		response.SendResponse();
 	}
 }
 
-void APISession::Query(const std::string &xml,int external_id, unsigned int object_id)
+void APISession::Query(const string &xml,int external_id, const string &object_id, unsigned long long event_id)
 {
 	XMLQuery query(context,xml);
 	QueryReceived(&query);
-	SendResponse(external_id, object_id);
+	SendResponse(external_id, object_id, event_id);
 }

@@ -79,6 +79,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["ws.snd.timeout"] = "30";
 	entries["ws.keepalive"] = "30";
 	entries["ws.workers"] = "8";
+	entries["ws.events.throttling"] = "yes";
 	entries["notifications.tasks.directory"] = "/tmp";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["notifications.tasks.concurrency"] = "16";
@@ -171,6 +172,7 @@ void ConfigurationEvQueue::Check(void)
 	check_bool_entry("workflowinstance.saveparameters");
 	check_bool_entry("workflowinstance.savepoint.retry.enable");
 	check_bool_entry("cluster.notify");
+	check_bool_entry("ws.events.throttling");
 
 	check_int_entry("dpd.interval");
 	check_int_entry("gc.delay");

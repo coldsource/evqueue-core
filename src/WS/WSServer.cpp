@@ -188,6 +188,11 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 						{
 							Events::GetInstance()->UnsubscribeAll(wsi);
 						}
+						else if(query.GetRootAttribute("action")=="ack")
+						{
+							unsigned long long event_id = query.GetRootAttributeLL("event_id");
+							Events::GetInstance()->Ack(wsi, event_id);
+						}
 					}
 				}
 				break;
@@ -205,10 +210,11 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 				{
 					string api_cmd;
 					int external_id;
-					unsigned int object_id;
-					if(Events::GetInstance()->Get(wsi, &external_id, &object_id, api_cmd))
+					string object_id;
+					unsigned long long event_id;
+					if(Events::GetInstance()->Get(wsi, &external_id, object_id, &event_id, api_cmd))
 					{
-						context->session->Query(api_cmd, external_id, object_id);
+						context->session->Query(api_cmd, external_id, object_id, event_id);
 						lws_callback_on_writable(wsi); // Set writable again in case we have more than one event
 					}
 				}

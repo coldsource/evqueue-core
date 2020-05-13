@@ -83,6 +83,10 @@ class Events
 		};
 		
 	private:
+		bool throttling;
+		
+		unsigned long long event_id = 0;
+		
 		struct st_subscription
 		{
 			unsigned int object_filter;
@@ -94,7 +98,20 @@ class Events
 		{
 			std::string api_cmd;
 			int external_id;
-			unsigned int object_id;
+			std::string object_id;
+			unsigned long long event_id;
+			
+			bool operator==(const st_event &r)
+			{
+				return api_cmd==r.api_cmd && external_id==r.external_id;
+			}
+		};
+		
+		struct st_online_event
+		{
+			st_event event;
+			bool need_resend = false;
+			std::string object_ids;
 		};
 		
 		static Events *instance;
@@ -102,11 +119,14 @@ class Events
 		std::mutex lock;
 		
 		std::map<struct lws *, std::vector<st_event>> events;
+		std::map<struct lws *, std::vector<st_online_event>> online_events;
 		std::map<en_types, std::multimap<struct lws *, st_subscription>> subscriptions;
 		
 		struct lws_context *ws_context;
 		
 		en_types get_type(const std::string &type_str);
+		
+		void insert_event(struct lws *wsi, const st_event &event);
 	
 	public:
 		Events();
@@ -121,7 +141,8 @@ class Events
 		void UnsubscribeAll(struct lws *wsi);
 		
 		void Create(en_types type, unsigned int object_id = 0);
-		bool Get(struct lws *wsi, int *external_id, unsigned int *object_id, std::string &api_cmd);
+		bool Get(struct lws *wsi, int *external_id, std::string &object_id, unsigned long long *event_id, std::string &api_cmd);
+		void Ack(struct lws *wsi, unsigned long long event_id);
 };
 
 #endif

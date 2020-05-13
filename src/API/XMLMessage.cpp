@@ -121,6 +121,22 @@ int XMLMessage::GetRootAttributeInt(const std::string &name, int default_value)
 	}
 }
 
+unsigned long long XMLMessage::GetRootAttributeLL(const std::string &name)
+{
+	auto it = root_attributes.find(name);
+	if(it==root_attributes.end())
+		throw Exception(context,"Missing '"+name+"' attribute","MISSING_PARAMETER");
+	
+	try
+	{
+		return std::stoll(it->second);
+	}
+	catch(...)
+	{
+		throw Exception(context,"Attribute '"+name+"' has invalid integer value","INVALID_INTEGER");
+	}
+}
+
 bool XMLMessage::GetRootAttributeBool(const std::string &name)
 {
 	auto it = root_attributes.find(name);

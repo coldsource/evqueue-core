@@ -19,6 +19,8 @@
 
 #include <WS/Events.h>
 #include <API/Statistics.h>
+#include <Logger/Logger.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 using namespace std;
 
@@ -26,6 +28,7 @@ Events *Events::instance = 0;
 
 Events::Events()
 {
+	throttling = ConfigurationEvQueue::GetInstance()->GetBool("ws.events.throttling");
 	this->ws_context = 0;
 	instance = this;
 }
@@ -196,6 +199,21 @@ void Events::UnsubscribeAll(struct lws *wsi)
 	events.erase(wsi);
 }
 
+void Events::insert_event(struct lws *wsi, const st_event &event)
+{
+	events[wsi].push_back(event);
+	
+	st_online_event oev;
+	oev.event = event;
+	
+	if(throttling)
+		online_events[wsi].push_back(oev);
+	
+	Statistics::GetInstance()->IncWSEvents();
+	
+	lws_callback_on_writable(wsi);
+}
+
 void Events::Create(en_types type, unsigned int object_id)
 {
 	if(!this->ws_context)
@@ -210,23 +228,54 @@ void Events::Create(en_types type, unsigned int object_id)
 	
 	for(auto it2 = it->second.begin();it2!=it->second.end();++it2)
 	{
+		struct lws *wsi = it2->first;
+		const st_subscription &sub = it2->second;
+		
 		// Check object filter
-		if(it2->second.object_filter!=0 && it2->second.object_filter!=object_id)
+		if(sub.object_filter!=0 && sub.object_filter!=object_id)
 			continue;
 		
+		st_event ev = {sub.api_cmd, sub.external_id, to_string(object_id), ++event_id};
+		
+		if(throttling)
+		{
+			// Check if this event has in online (ie: it has been sent to client but not yet acknowleged)
+			auto it_oe = online_events.find(wsi);
+			bool skip = false;
+			if(it_oe!=online_events.end())
+			{
+				for(int i=0;i<it_oe->second.size();i++)
+				{
+					if(it_oe->second[i].event==ev)
+					{
+						it_oe->second[i].need_resend = true; // Delay event, it will be sent uppon acknowlegement
+						if(object_id)
+						{
+							if(it_oe->second[i].object_ids!="")
+								it_oe->second[i].object_ids += ",";
+							it_oe->second[i].object_ids += to_string(object_id);
+						}
+						
+						skip = true;
+						Logger::Log(LOG_DEBUG, "Throttling: skiped event");
+						break;
+					}
+				}
+			}
+			
+			if(skip)
+				continue; // Event has been delayed, we will send it when current event is acknowleged
+		}
+		
 		// Push the event to the subscriber
-		events[it2->first].push_back({it2->second.api_cmd, it2->second.external_id, object_id});
-		
-		Statistics::GetInstance()->IncWSEvents();
-		
-		lws_callback_on_writable(it2->first);
+		insert_event(wsi, ev);
 	}
 	
 	// Cancel LWS event loop to handle this event
 	lws_cancel_service(ws_context);
 }
 
-bool Events::Get(struct lws *wsi, int *external_id, unsigned int *object_id, string &api_cmd)
+bool Events::Get(struct lws *wsi, int *external_id, string &object_id, unsigned long long *event_id, string &api_cmd)
 {
 	unique_lock<mutex> llock(lock);
 	
@@ -237,10 +286,49 @@ bool Events::Get(struct lws *wsi, int *external_id, unsigned int *object_id, str
 	if(it->second.size()==0)
 		return false;
 	
-	api_cmd = it->second.front().api_cmd;
-	*external_id = it->second.front().external_id;
-	*object_id = it->second.front().object_id;
+	const st_event &ev = it->second.front();
+	
+	api_cmd = ev.api_cmd;
+	*external_id = ev.external_id;
+	object_id = ev.object_id;
+	*event_id = ev.event_id;
 	it->second.erase(it->second.begin());
 	
 	return true;
+}
+
+void Events::Ack(struct lws *wsi, unsigned long long ack_event_id)
+{
+	if(!throttling)
+		return;
+	
+	unique_lock<mutex> llock(lock);
+	
+	auto it = online_events.find(wsi);
+	if(it==online_events.end())
+		return;
+	
+	for(int i=0;i<it->second.size();i++)
+	{
+		if(it->second[i].event.event_id==ack_event_id)
+		{
+			st_online_event oev = it->second[i];
+			
+			// Event is no more online
+			it->second.erase(it->second.begin()+i);
+			
+			if(!oev.need_resend)
+				return;
+			
+			// An event of this type has been delayed, we need to send delayed event now
+			st_event ev = oev.event;
+			ev.event_id = ++event_id;
+			ev.object_id = oev.object_ids;
+			
+			insert_event(wsi, ev);
+			
+			lws_cancel_service(ws_context);
+			return;
+		}
+	}
 }
