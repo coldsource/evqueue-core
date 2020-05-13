@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <syslog.h>
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -39,7 +40,6 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <syslog.h>
 
 static pid_t pid = 0;
 
@@ -337,7 +337,9 @@ int Monitor::main()
 		else
 			msgbuf.mtext.retcode = -1;
 		
-		msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0); // Notify evqueue
+		// Notify evqueue
+		if(msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0)==-1)
+			syslog(LOG_CRIT, "evq_monitor: failed to send daemon notification");
 		
 		return msgbuf.mtext.retcode;
 	}
