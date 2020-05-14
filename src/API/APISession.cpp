@@ -129,6 +129,7 @@ void APISession::SendGreeting()
 	
 	ready_response.SetAttribute("profile",user.GetProfile());
 	ready_response.SetAttribute("version",EVQUEUE_VERSION);
+	ready_response.SetAttribute("git",GIT_HASH);
 	ready_response.SetAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
 	ready_response.SetAttribute("time",time_str);
 	ready_response.SendResponse();

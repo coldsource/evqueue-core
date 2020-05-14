@@ -190,7 +190,7 @@ int main(int argc,char **argv)
 		}
 		else if(strcmp(argv[i],"--version")==0)
 		{
-			printf("evQueue version " EVQUEUE_VERSION " (built " __DATE__ ")\n");
+			printf("evQueue version " EVQUEUE_VERSION " (git " GIT_HASH ")\n");
 			return 0;
 		}
 		else

@@ -34,6 +34,7 @@ bool ping_handle_query(const User &user, XMLQuery *query, QueryResponse *respons
 	const std::map<std::string,std::string> attrs = query->GetRootAttributes();
 	
 	response->SetAttribute("version",EVQUEUE_VERSION);
+	response->SetAttribute("git",GIT_HASH);
 #ifdef USELIBGIT2
 	response->SetAttribute("git-support","enabled");
 #else
