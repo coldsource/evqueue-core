@@ -4,8 +4,6 @@ set(EVQUEUE_VERSION "3.0")
 
 set(CMAKE_BUILD_TYPE Release)
 
-execute_process(COMMAND git rev-parse HEAD RESULT_VARIABLE GIT_HASH_RESULT OUTPUT_VARIABLE GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
-
 project(evqueue)
 
 # Detect libgit2 library
@@ -27,7 +25,6 @@ else()
 endif(HAS_LIBGIT2)
 
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
-add_definitions(-DGIT_HASH="${GIT_HASH}")
 
 aux_source_directory(src/WorkflowInstance srcWorkflowInstance)
 aux_source_directory(src/DOM srcDOM)
