@@ -224,6 +224,14 @@ int main(int argc,char **argv)
 		// Substitute configuration variables with environment if needed
 		config.Substitute();
 		
+		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
+		if(ipcq_remove)
+			return ipc_queue_destroy(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
+		else if(ipcq_stats)
+			return ipc_queue_stats(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
+		else if(ipc_terminate_tid!=-1)
+			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,ipc_terminate_tid,-1);
+		
 		// Get/Compute GID
 		int gid;
 		try
@@ -303,14 +311,6 @@ int main(int argc,char **argv)
 		sigaction(SIGINT,&sa,0);
 		sigaction(SIGTERM,&sa,0);
 		sigaction(SIGUSR1,&sa,0);
-		
-		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
-		if(ipcq_remove)
-			return ipc_queue_destroy(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
-		else if(ipcq_stats)
-			return ipc_queue_stats(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
-		else if(ipc_terminate_tid!=-1)
-			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,ipc_terminate_tid,-1);
 		
 		// Initialize external libraries
 		DB::InitLibrary();
