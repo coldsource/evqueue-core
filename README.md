@@ -20,7 +20,7 @@ CMake:
 ``` 
 mkdir build
 cd build
-cmake ../
+cmake ..
 make
 ```
 
@@ -30,14 +30,22 @@ These packages are required to build from the source:
 
 - build-essential
 - cmake
-- libmysqlclient-dev or libmariadbclient-dev
+- libmariadbclient-dev
 - libxerces-c-dev
 - libpcre++-dev
-- libgit2-dev (optional)
+- libgit2-dev
+- libwebsockets-dev
+- libzip-dev
 
 ### Packages
 
 If you are looking for pre-compiled packages, see [our debian repository](https://packagecloud.io/coldsource/evqueue).
+
+If you want to build your own debian package from this source, use :
+
+```
+debuild -us -uc -b
+```
 
 ### Docker
 

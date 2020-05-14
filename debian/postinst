@@ -13,6 +13,7 @@ if [ "$1" = "configure" ]; then
 
 	chown evqueue:evqueue /usr/share/evqueue-core/plugins
 	chown evqueue:evqueue /usr/share/evqueue-core/plugins/notifications
+	chown evqueue:evqueue /usr/share/evqueue-core/tasks
 	
 	. /usr/share/debconf/confmodule
 	db_get evqueue-core/hostname

@@ -288,10 +288,21 @@ int main(int argc,char **argv)
 		Forker forker;
 		pid_t forker_pid = forker.Start();
 		if(forker_pid==0)
+		{
+			unlink(config.Get("forker.pidfile").c_str());
 			return 0; // Forker clean exit
+		}
 		
 		if(forker_pid<0)
 			throw Exception("core", "Could not start forker, fork() returned error");
+		
+		// Open pid file before fork to eventually print errors
+		FILE *forker_pidfile = fopen(config.Get("forker.pidfile").c_str(),"w");
+		if(forker_pidfile==0)
+			throw Exception("core","Unable to open forker pid file");
+		
+		fprintf(forker_pidfile,"%d\n",forker_pid);
+		fclose(forker_pidfile);
 		
 		// Position signal handlers
 		struct sigaction sa;
@@ -343,17 +354,17 @@ int main(int argc,char **argv)
 		// Sanity checks on configuration values and access rights
 		config.Check();
 		
-		// Open pid file before fork to eventually print errors
-		FILE *pidfile = fopen(config.Get("core.pidfile").c_str(),"w");
-		if(pidfile==0)
-			throw Exception("core","Unable to open pid file");
-		
 		// Check database connection
 		DB db;
 		db.Ping();
 		
 		// Initialize DB
 		tools_init_db();
+		
+		// Open pid file before fork to eventually print errors
+		FILE *pidfile = fopen(config.Get("core.pidfile").c_str(),"w");
+		if(pidfile==0)
+			throw Exception("core","Unable to open pid file");
 		
 		if(daemonize)
 		{
@@ -718,6 +729,8 @@ int main(int argc,char **argv)
 				xercesc::XMLPlatformUtils::Terminate();
 				
 				unlink(config.Get("core.pidfile").c_str());
+				if(config.Get("network.bind.path").length()>0)
+					unlink(config.Get("network.bind.path").c_str());
 				Logger::Log(LOG_NOTICE,"Clean exit");
 				delete logger;
 				
@@ -791,10 +804,10 @@ int main(int argc,char **argv)
 	catch(Exception &e)
 	{
 		// We have to use only syslog here because the logger might not be instantiated yet
-		syslog(LOG_CRIT,"Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
+		syslog(LOG_CRIT,"Unexpected exception in %s : %s\n",e.context.c_str(),e.error.c_str());
 		
 		if(!daemonized)
-			fprintf(stderr,"Unexpected exception : [ %s ] %s\n",e.context.c_str(),e.error.c_str());
+			fprintf(stderr,"Unexpected exception in %s : %s\n",e.context.c_str(),e.error.c_str());
 		
 		if(ConfigurationEvQueue::GetInstance())
 			unlink(ConfigurationEvQueue::GetInstance()->Get("core.pidfile").c_str());

@@ -38,12 +38,13 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	// Load default configuration
 	entries["core.ipc.qid"] = "0xEA023E3C";
 	entries["core.gid"] = "0";
-	entries["core.pidfile"] = "/tmp/evqueue.pid";
+	entries["core.pidfile"] = "/tmp/evqueue-core.pid";
 	entries["core.uid"] = "0";
 	entries["core.wd"] = "";
 	entries["core.locale"] = "C.UTF-8";
 	entries["core.auth.enable"] = "yes";
 	entries["core.fastshutdown"] = "yes";
+	entries["forker.pidfile"] = "/tmp/evqueue-forker.pid";
 	entries["dpd.interval"] = "10";
 	entries["queuepool.scheduler"] = "fifo";
 	entries["gc.delay"] = "2";
@@ -60,7 +61,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["logger.syslog.enable"] = "yes";
 	entries["logger.syslog.filter"] = "LOG_NOTICE";
 	entries["loggerapi.enable"] = "yes";
-	entries["mysql.database"] = "queueing";
+	entries["mysql.database"] = "evqueue";
 	entries["mysql.host"] = "localhost";
 	entries["mysql.password"] = "";
 	entries["mysql.user"] = "";

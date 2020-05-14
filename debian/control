@@ -2,7 +2,7 @@ Source: evqueue-core
 Section: net
 Priority: optional
 Maintainer: Thibault KUMMER <bob@coldsource.net>
-Build-Depends: debhelper (>= 10), cmake, libxerces-c-dev, libpcre3-dev, default-libmysqlclient-dev
+Build-Depends: debhelper (>= 10), cmake, libxerces-c-dev, libpcre3-dev, libmariadbclient-dev, libgit2-dev, libwebsockets-dev, libzip-dev
 Standards-Version: 4.1.1
 Homepage: http://www.evqueue.net
 Vcs-Git: https://github.com/coldsource/evqueue-core.git

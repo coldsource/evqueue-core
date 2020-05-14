@@ -1,12 +1,16 @@
 [Unit]
 Description=evQueue core daemon
 Documentation=man:evqueue(8)
-After=network.target
-After=mysql.service
+After=mariadb.service
 
 [Service]
 Type=forking
 KillMode=process
+User=evqueue
+Group=evqueue
+PIDFile=/run/evqueue/core.pid
+ExecStartPre=+/bin/mkdir -p /run/evqueue
+ExecStartPre=+/bin/chown evqueue:evqueue /run/evqueue
 ExecStart=/usr/bin/evqueue --daemon --config /etc/evqueue.conf
 
 [Install]
