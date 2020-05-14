@@ -224,6 +224,58 @@ int main(int argc,char **argv)
 		// Substitute configuration variables with environment if needed
 		config.Substitute();
 		
+		// Get/Compute GID
+		int gid;
+		try
+		{
+			gid = std::stoi(config.Get("core.gid"));
+		}
+		catch(const std::invalid_argument& excpt)
+		{
+			struct group *group_entry = getgrnam(config.Get("core.gid").c_str());
+			if(!group_entry)
+				throw Exception("core","Unable to find group");
+			
+			gid = group_entry->gr_gid;
+		}
+		catch(const std::out_of_range & excpt)
+		{
+			throw Exception("core","Invalid GID");
+		}
+		
+		// Get/Compute UID
+		int uid;
+		try
+		{
+			uid = std::stoi(config.Get("core.uid"));
+		}
+		catch(const std::invalid_argument& excpt)
+		{
+			struct passwd *user_entry = getpwnam(config.Get("core.uid").c_str());
+			if(!user_entry)
+				throw Exception("core","Unable to find user");
+			
+			uid = user_entry->pw_uid;
+		}
+		catch(const std::out_of_range & excpt)
+		{
+			throw Exception("core","Invalid UID");
+		}
+		
+		// Change working directory
+		if(config.Get("core.wd").length()>0)
+		{
+			if(chdir(config.Get("core.wd").c_str())!=0)
+				throw Exception("core","Unable to change working directory");
+		}
+		
+		// Set uid/gid if requested
+		if(gid!=0 && setregid(gid,gid)!=0)
+			throw Exception("core","Unable to set requested GID");
+		
+		if(uid!=0 && setreuid(uid,uid)!=0)
+			throw Exception("core","Unable to set requested UID");
+		
 		// Start forker very early to get cleanest ENV as possible (we still need configuration so)
 		Forker forker;
 		pid_t forker_pid = forker.Start();
@@ -287,79 +339,6 @@ int main(int argc,char **argv)
 		
 		// Init Xerces after locale
 		xercesc::XMLPlatformUtils::Initialize();
-		
-		// Get/Compute GID
-		int gid;
-		try
-		{
-			gid = std::stoi(config.Get("core.gid"));
-		}
-		catch(const std::invalid_argument& excpt)
-		{
-			struct group *group_entry = getgrnam(config.Get("core.gid").c_str());
-			if(!group_entry)
-				throw Exception("core","Unable to find group");
-			
-			gid = group_entry->gr_gid;
-		}
-		catch(const std::out_of_range & excpt)
-		{
-			throw Exception("core","Invalid GID");
-		}
-		
-		// Get/Compute UID
-		int uid;
-		try
-		{
-			uid = std::stoi(config.Get("core.uid"));
-		}
-		catch(const std::invalid_argument& excpt)
-		{
-			struct passwd *user_entry = getpwnam(config.Get("core.uid").c_str());
-			if(!user_entry)
-				throw Exception("core","Unable to find user");
-			
-			uid = user_entry->pw_uid;
-		}
-		catch(const std::out_of_range & excpt)
-		{
-			throw Exception("core","Invalid UID");
-		}
-		
-		// Change working directory
-		if(config.Get("core.wd").length()>0)
-		{
-			if(chdir(config.Get("core.wd").c_str())!=0)
-				throw Exception("core","Unable to change working directory");
-		}
-
-		// Create directory for PID (usually in /var/run)
-		char *pid_file2 = strdup(config.Get("core.pidfile").c_str());
-		char *pid_directory = dirname(pid_file2);
-		
-		if(mkdir(pid_directory,0755)==0)
-		{
-			if(uid!=0)
-			{
-				if(chown(pid_directory,uid,-1)!=0)
-					throw Exception("core","Unable to change pid file uid");
-			}
-			
-			if(gid!=0)
-			{
-				if(chown(pid_directory,-1,gid)!=0)
-					throw Exception("core","Unable to change pid file gid");
-			}
-		}
-		
-		free(pid_file2);
-		
-		// Set uid/gid if requested
-		if(gid!=0 && setregid(gid,gid)!=0)
-			throw Exception("core","Unable to set requested GID");
-		
-		if(uid!=0 && setreuid(uid,uid)!=0)
-			throw Exception("core","Unable to set requested UID");
 		
 		// Sanity checks on configuration values and access rights
 		config.Check();
