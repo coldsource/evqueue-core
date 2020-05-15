@@ -1,6 +1,6 @@
 # Sample configuration files
 
-Here you can find several configuration file corresponding to difference situations.
+Here you can find several configuration file corresponding to different situations.
 
 ## evqueue-mini.conf
 
