@@ -21,3 +21,9 @@ Same as above but including network configuration. This is mandatory if you want
 A sample cluster configuration for two nodes running on the same machine. Ports have been changed to allow both engines to start.
 
 Also note that **core.ipc.qid** must be changed if multiple engines run on the same machine. This is not necessary if they run on different machines. This is the ID of the message queue used for children to communicate with their parent daemon.
+
+## Production configuration
+
+Please have a look on our packaged configuration file in **debian/etc/evqueue.conf**.
+
+Your probably also want to launch daemon with Systemd, see service file in **evqueue-core.evqueue.service**.
