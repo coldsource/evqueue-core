@@ -24,6 +24,12 @@ cmake ..
 make
 ```
 
+Adjust configuration and launch :
+
+```
+./evqueue --config ../doc/config/evqueue-mini.conf
+```
+
 ### Debian
 
 These packages are required to build from the source:
