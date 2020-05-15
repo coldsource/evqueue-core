@@ -257,7 +257,7 @@ void Events::Create(en_types type, unsigned int object_id)
 						}
 						
 						skip = true;
-						Logger::Log(LOG_DEBUG, "Throttling: skiped event");
+						Logger::Log(LOG_DEBUG, "Throttling: skipped event");
 						break;
 					}
 				}
