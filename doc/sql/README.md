@@ -1,5 +1,11 @@
 # Creating evQueue database
 
+Install an SQL server :
+
+```
+sudo apt-get install mariadb-server
+```
+
 Edit the **init.sql** file and change user and password according to your needs.
 
 Use an SQL administrator user to run SQL script :
