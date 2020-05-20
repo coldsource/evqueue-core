@@ -31,15 +31,15 @@ make
 
 Before launching evQueue, you need to set a configuration file and create a database *(see below)*.
 
+### Creating a database
+
+See [sql init](doc/sql).
+
 ### Configuring
 
 We provide [sample configuration files](doc/config). For the impatients, start with **evqueue-mini.conf**, you just need to set your SQL configuration.
 
 For a full description of the configuration file, please have a look at [configuration documentation](http://www.evqueue.net/doc/configuration-file).
-
-### Creating a database
-
-See [sql init](doc/sql).
 
 ### Running
 
