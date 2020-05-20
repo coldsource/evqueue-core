@@ -39,7 +39,7 @@ See [sql init](doc/sql).
 
 We provide [sample configuration files](doc/config). For the impatients, start with **evqueue-mini.conf**, you just need to set your SQL configuration.
 
-For a full description of the configuration file, please have a look at [configuration documentation](http://www.evqueue.net/doc/configuration-file).
+For a full description of the configuration file, please have a look at [configuration documentation](src/Configuration).
 
 ### Running
 
