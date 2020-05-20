@@ -12,10 +12,15 @@ We provide debian packages. For other distributions you can easily compile from 
 
 For documentation and binary download, [visit the official website!](http://www.evqueue.net/)
 
-## Building
+### Building
 
-Once you met the dependancy requirements (see below), you can build it using
-CMake:
+First, you need to install build dependencies :
+
+```
+sudo apt-get install git build-essential libmariadbclient-dev libxerces-c-dev libpcre++-dev libgit2-dev libwebsockets-dev libzip-dev
+```
+
+You can then build core using CMake :
 
 ``` 
 mkdir build
@@ -24,24 +29,23 @@ cmake ..
 make
 ```
 
-Adjust configuration and launch :
+Before launching evQueue, you need to set a configuration file and create a database *(see below)*.
+
+### Configuring
+
+We provide [sample configuration files](doc/config). For the impatients, start with **evqueue-mini.conf**, you just need to set your SQL configuration.
+
+For a full description of the configuration file, please have a look at [configuration documentation](http://www.evqueue.net/doc/configuration-file).
+
+### Creating a database
+
+See [sql init](doc/sql).
+
+### Running
 
 ```
 ./evqueue --config ../doc/config/evqueue-mini.conf
 ```
-
-### Debian
-
-These packages are required to build from the source:
-
-- build-essential
-- cmake
-- libmariadbclient-dev
-- libxerces-c-dev
-- libpcre++-dev
-- libgit2-dev
-- libwebsockets-dev
-- libzip-dev
 
 ### Packages
 
