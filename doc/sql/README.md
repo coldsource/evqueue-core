@@ -19,3 +19,5 @@ Test everything works as expected :
 ```
 mysql -h localhost -u evqueue -p evqueue
 ```
+
+If you did not changed **init.sql**, the default password is " *evqueue* ".
