@@ -381,7 +381,6 @@ int main(int argc,char **argv)
 					continue;
 				}
 				
-				printf("err = %d\n",e.codeno);
 				throw e;
 			}
 			
