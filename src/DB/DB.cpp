@@ -95,7 +95,7 @@ void DB::Ping(void)
 	connect();
 	
 	if(mysql_ping(mysql)!=0)
-		throw Exception("DB",mysql_error(mysql),"SQL_ERROR");
+		throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
 }
 
 void DB::Query(const char *query)
@@ -115,14 +115,14 @@ void DB::Query(const char *query)
 		if(transaction_started)
 			RollbackTransaction();
 		
-		throw Exception("DB",mysql_error(mysql),"SQL_ERROR");
+		throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
 	}
 
 	res=mysql_store_result(mysql);
 	if(res==0)
 	{
 		if(mysql_field_count(mysql)!=0)
-			throw Exception("DB",mysql_error(mysql),"SQL_ERROR");
+			throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
 	}
 }
 
@@ -554,7 +554,7 @@ int DB::GetFieldInt(int n)
 	}
 	catch(...)
 	{
-		throw Exception("DB",v+" is not an integer value","SQL_ERROR");
+		throw Exception("DB",v+" is not an integer value","SQL_ERROR",mysql_errno(mysql));
 	}
 	return ival;
 }
@@ -594,7 +594,7 @@ void DB::connect(void)
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
 	if(!mysql_real_connect(mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
-		throw Exception("DB",mysql_error(mysql),"SQL_ERROR");
+		throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
 	
 	is_connected = true;
 }

@@ -39,6 +39,16 @@ Exception::Exception(const string &context, const string &error, const string &c
 	ExceptionManager::RegisterException(this);
 }
 
+Exception::Exception(const string &context, const string &error, const string &code, int codeno)
+{
+	this->context = context;
+	this->error = error;
+    this->code = code;
+	this->codeno = codeno;
+	
+	ExceptionManager::RegisterException(this);
+}
+
 Exception::~Exception()
 {
 	ExceptionManager::UnregisterException(this);

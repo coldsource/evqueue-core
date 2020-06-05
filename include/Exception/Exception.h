@@ -28,9 +28,11 @@ class Exception
 		std::string context;
 		std::string error;
 		std::string code;
+		int codeno;
 		
 		Exception(const std::string &context,const std::string &error);
 		Exception(const std::string &context,const std::string &error,const std::string &code);
+		Exception(const std::string &context,const std::string &error,const std::string &code,int codeno);
 		~Exception();
 };
 
