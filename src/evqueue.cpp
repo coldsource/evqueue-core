@@ -122,6 +122,9 @@ void signal_callback_handler(int signum)
 		
 		if(listen_socket_unix!=-1)
 			close(listen_socket_unix);
+		
+		if(listen_socket==-1 && listen_socket_unix==-1 && listen_socket_unix==-1)
+			exit(-1); // Server not yet started, just exit
 	}
 	else if(signum==SIGHUP)
 	{
@@ -160,6 +163,8 @@ int main(int argc,char **argv)
 	bool daemonize = false;
 	bool daemonized = false;
 	
+	bool wait_db = false;
+	
 	bool ipcq_remove = false;
 	bool ipcq_stats = false;
 	int ipc_terminate_tid = -1;
@@ -172,6 +177,11 @@ int main(int argc,char **argv)
 		{
 			config_filename = argv[i+1];
 			i++;
+		}
+		else if(strcmp(argv[i],"--wait-db")==0)
+		{
+			wait_db = true;
+			break;
 		}
 		else if(strcmp(argv[i],"--ipcq-remove")==0)
 		{
@@ -356,7 +366,27 @@ int main(int argc,char **argv)
 		
 		// Check database connection
 		DB db;
-		db.Ping();
+		while(true)
+		{
+			try
+			{
+				db.Ping();
+			}
+			catch(Exception &e)
+			{
+				if(wait_db && (e.codeno==2002 || e.codeno==2013))
+				{
+					Logger::Log(LOG_WARNING, "Database not yet ready, retrying...");
+					sleep(1);
+					continue;
+				}
+				
+				printf("err = %d\n",e.codeno);
+				throw e;
+			}
+			
+			break;
+		}
 		
 		// Initialize DB
 		tools_init_db();
