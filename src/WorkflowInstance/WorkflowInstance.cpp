@@ -189,7 +189,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 	if(savepoint_level>=2)
 	{
 		// Insert workflow instance in DB
-		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s)",&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host,&workflow_comment);
+		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment, workflow_instance_savepoint, workflow_instance_errors) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s,'',0)",&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host,&workflow_comment);
 		this->workflow_instance_id = db.InsertID();
 
 		// Save workflow parameters

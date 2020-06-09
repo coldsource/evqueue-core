@@ -176,7 +176,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			int new_instance_id = 0;
 			if(savepoint_level<2)
 				SequenceGenerator::GetInstance()->GetInc();
-			db.QueryPrintf("INSERT INTO t_workflow_instance(workflow_instance_id,node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment,workflow_instance_savepoint) VALUES(%i,%s,%i,0,%s,'EXECUTING',NOW(),%s,%s)",savepoint_level<2?new_instance_id:0,&node_name,&workflow_id,&workflow_host,&instance_comment,&savepoint);
+			db.QueryPrintf("INSERT INTO t_workflow_instance(workflow_instance_id,node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment,workflow_instance_savepoint,workflow_instance_errors) VALUES(%i,%s,%i,0,%s,'EXECUTING',NOW(),%s,%s,0)",savepoint_level<2?new_instance_id:0,&node_name,&workflow_id,&workflow_host,&instance_comment,&savepoint);
 			
 			if(savepoint_level>=2)
 				new_instance_id = db.InsertID();
