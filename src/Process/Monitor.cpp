@@ -131,10 +131,8 @@ int Monitor::main()
 		// Task might read stdin slowly (which is blocking), so read the full data here to release the core engine
 		// Then stream the data from here to the child process
 		string stdin_data;
-		char stdin_buf[4096];
-		int read_bytes;
-		while((read_bytes = read(fd,stdin_buf,4096)) > 0)
-			stdin_data.append(stdin_buf,read_bytes);
+		if(!DataSerializer::Unserialize(fd, stdin_data))
+			throw Exception("evq_monitor","Could not read stdin");
 		
 		// Done reading, close FD
 		close(fd);
