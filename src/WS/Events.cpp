@@ -214,6 +214,12 @@ void Events::insert_event(struct lws *wsi, const st_event &event)
 	lws_callback_on_writable(wsi);
 }
 
+void Events::Create(const string &type_str, unsigned int object_id)
+{
+	en_types type = get_type(type_str);
+	Create(type, object_id);
+}
+
 void Events::Create(en_types type, unsigned int object_id)
 {
 	if(!this->ws_context)
