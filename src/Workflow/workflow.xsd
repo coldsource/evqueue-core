@@ -106,7 +106,6 @@
       <xs:element name="value" type="valueType" />
 			<xs:element name="copy" type="valueType" />
     </xs:choice>      
-		<xs:attribute name="mode" type="StrNonEmpty" use="required" />
 	</xs:complexType>
 	
 	

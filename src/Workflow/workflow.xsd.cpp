@@ -127,7 +127,6 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
       <xs:element name=\"value\" type=\"valueType\" /> \
 			<xs:element name=\"copy\" type=\"valueType\" /> \
     </xs:choice>       \
-		<xs:attribute name=\"mode\" type=\"StrNonEmpty\" use=\"required\" /> \
 	</xs:complexType> \
 	 \
 	 \
