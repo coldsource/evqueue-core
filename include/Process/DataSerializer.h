@@ -7,6 +7,8 @@
 
 class DataSerializer
 {
+	static int readlen(int fd, char *value, int value_len);
+	
 	public:
 		static std::string Serialize(const std::map<std::string,std::string> &map);
 		static std::string Serialize(const std::vector<std::string> &vector);

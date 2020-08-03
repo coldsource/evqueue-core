@@ -4,6 +4,15 @@
 
 using namespace std;
 
+int DataSerializer::readlen(int fd, char *value, int value_len)
+{
+	int read_size = 0;
+	int re;
+	while(read_size<value_len && (re = read(fd,value+read_size,value_len-read_size)) > 0)
+		read_size += re;
+	return read_size;
+}
+
 string DataSerializer::Serialize(const map<string,string> &map)
 {
 	string data;
@@ -67,7 +76,7 @@ bool DataSerializer::Unserialize(int fd, map<string,string> &map)
 	char buf[4096];
 	
 	// Read the number of arguments
-	read_size = read(fd,buf,3);
+	read_size = readlen(fd,buf,3);
 	if(read_size!=3)
 		return false;
 		
@@ -77,7 +86,7 @@ bool DataSerializer::Unserialize(int fd, map<string,string> &map)
 	for(int i=0;i<nparameters;i++)
 	{
 		// Read the size of arguments
-		read_size = read(fd,buf,18);
+		read_size = readlen(fd,buf,18);
 		if(read_size!=18)
 			return false;
 			
@@ -91,13 +100,13 @@ bool DataSerializer::Unserialize(int fd, map<string,string> &map)
 			return false;
 		
 		char name[4097],value[4097];
-		read_size = read(fd,name,name_len);
+		read_size = readlen(fd,name,name_len);
 		if(read_size!=name_len)
 			return false;
 		
 		name[read_size] = '\0';
 		
-		read_size = read(fd,value,value_len);
+		read_size = readlen(fd,value,value_len);
 		if(read_size!=value_len)
 			return false;
 		
@@ -118,7 +127,7 @@ bool DataSerializer::Unserialize(int fd, vector<string> &vector)
 	char buf[32];
 	
 	// Read the number of arguments
-	read_size = read(fd,buf,3);
+	read_size = readlen(fd,buf,3);
 	if(read_size!=3)
 		return false;
 	
@@ -128,7 +137,7 @@ bool DataSerializer::Unserialize(int fd, vector<string> &vector)
 	for(int i=0;i<nparameters;i++)
 	{
 		// Read the size of string
-		read_size = read(fd,buf,9);
+		read_size = readlen(fd,buf,9);
 		if(read_size!=9)
 			return false;
 			
@@ -136,7 +145,7 @@ bool DataSerializer::Unserialize(int fd, vector<string> &vector)
 		int len = atoi(buf);
 		
 		char value[len];
-		read_size = read(fd,value,len);
+		read_size = readlen(fd,value,len);
 		if(read_size!=len)
 			return false;
 		
@@ -154,7 +163,7 @@ bool DataSerializer::Unserialize(int fd, string &str)
 	int read_size;
 	char buf[32];
 	
-	read_size = read(fd,buf,9);
+	read_size = readlen(fd,buf,9);
 	if(read_size!=9)
 		return false;
 	
@@ -162,7 +171,7 @@ bool DataSerializer::Unserialize(int fd, string &str)
 	int value_len = atoi(buf);
 	
 	char value[value_len];
-	read_size = read(fd,value,value_len);
+	read_size = readlen(fd,value,value_len);
 	if(read_size!=value_len)
 		return false;
 	
