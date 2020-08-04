@@ -111,6 +111,9 @@ void ProcessExec::PipeString(const string &data)
 
 void ProcessExec::Pipe(const string &data)
 {
+	if(data=="")
+		return;
+	
 	init_stdin_pipe();
 	
 	stdin_data += data;
@@ -229,17 +232,11 @@ pid_t ProcessExec::Exec()
 		
 		if(stdin_pipe[0]!=-1)
 		{
-			/*
 			// Use of a threaded data piper is required for evqueue core engine as write can block and thus hold the whole engine
-			DataPiper::GetInstance()->PipeData(stdin_pipe[1],stdin_data);
-			*/
+			if(!DataPiper::GetInstance())
+				new DataPiper(); // Forked process have no data piper thread, we need to create one on the fly
 			
-			// Send data to the child's stdin
-			// It is possible that the child process dies before reading the whole data so we do not want to check the return value of write
-			if(write(stdin_pipe[1],stdin_data.c_str(),stdin_data.length())!=stdin_data.length())
-				throw Exception("ProcessExec","Could not pipe data to child");
-		
-			close(stdin_pipe[1]);
+			DataPiper::GetInstance()->PipeData(stdin_pipe[1],stdin_data);
 		}
 	}
 	

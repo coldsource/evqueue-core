@@ -18,13 +18,13 @@
  */
 
 #include <Process/DataPiper.h>
-#include <Logger/Logger.h>
 #include <Exception/Exception.h>
 
 #include <signal.h>
 #include <poll.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <syslog.h>
 
 using namespace std;
 
@@ -63,7 +63,7 @@ void DataPiper::PipeData(int fd, const string &data)
 
 void DataPiper::dp_thread(DataPiper *dp)
 {
-	Logger::Log(LOG_NOTICE,"Data piper started");
+	syslog(LOG_NOTICE,"Data piper started");
 	
 	while(true)
 	{
@@ -94,12 +94,12 @@ void DataPiper::dp_thread(DataPiper *dp)
 			// We were woken by self pipe, read the byte to avoid looping
 			size_t read_size = read(fds[nfds].fd,buf,1);
 			if(read_size!=1)
-				Logger::Log(LOG_WARNING,"DataPiper : unable to read self pipe");
+				syslog(LOG_WARNING,"DataPiper : unable to read self pipe");
 			
 			if(dp->pipe_data.size()==0 && dp->is_shutting_down)
 			{
 				// Shutdown is requested and we are done piping data, we can exit now
-				Logger::Log(LOG_NOTICE,"Shutdown requested, exiting data piper");
+				syslog(LOG_NOTICE,"Shutdown requested, exiting data piper");
 				return;
 			}
 		}
@@ -136,7 +136,7 @@ void DataPiper::dp_thread(DataPiper *dp)
 					if(dp->pipe_data.size()==0 && dp->is_shutting_down)
 					{
 						// Shutdown is requested and we are done piping data, we can exit now
-						Logger::Log(LOG_NOTICE,"Shutdown requested, exiting data piper");
+						syslog(LOG_NOTICE,"Shutdown requested, exiting data piper");
 						return;
 					}
 				}
@@ -156,7 +156,7 @@ void DataPiper::Shutdown()
 	// Wake poll()
 	static char buf[1] = {'\0'};
 	if(write(self_pipe[1],buf,1)!=1)
-		Logger::Log(LOG_WARNING,"DataPiper: could not write to selfpipe, shutdown cancelled");
+		syslog(LOG_WARNING,"DataPiper: could not write to selfpipe, shutdown cancelled");
 }
 	
 void DataPiper::WaitForShutdown()

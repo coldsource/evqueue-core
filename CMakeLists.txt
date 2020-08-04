@@ -215,12 +215,14 @@ project(evqueue_agent)
 add_executable(evqueue_agent
 	${srcException}
 	src/Configuration/Configuration.cpp
-	src/Process/DataSerializer.cpp src/Process/ProcessExec.cpp
+	src/Process/DataSerializer.cpp src/Process/ProcessExec.cpp src/Process/DataPiper.cpp
 
 	src/evqueue_agent.cpp
 	)
 
 include_directories(src/include /usr/include)
+
+target_link_libraries(evqueue_agent pthread)
 
 
 

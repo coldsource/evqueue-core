@@ -25,6 +25,8 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <sys/select.h> 
+#include <syslog.h>
+
 #include <Process/DataSerializer.h>
 #include <Configuration/Configuration.h>
 #include <Exception/Exception.h>
@@ -32,6 +34,7 @@
 
 #include <map>
 #include <string>
+
 
 using namespace std;
 
@@ -42,6 +45,8 @@ int main(int argc,char ** argv)
 		fprintf(stderr,"Usage : evqueue_agent <command> <parameters...>\n");
 		return -1;
 	}
+	
+	openlog("evqueue_agent",0,LOG_DAEMON);
 	
 	try
 	{
