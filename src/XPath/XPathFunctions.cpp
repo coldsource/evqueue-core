@@ -151,7 +151,7 @@ Token *XPathFunctions::last(XPathEval::func_context context, const vector<Token 
 Token *XPathFunctions::string_length(XPathEval::func_context context, const vector<Token *> &args)
 {
 	if(args.size()!=1)
-		throw Exception("substring()","Expecting 1 parameter");
+		throw Exception("string-length()","Expecting 1 parameter");
 	
 	string s = (string)(*args.at(0));
 	return new TokenInt(s.length());
