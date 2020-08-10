@@ -49,11 +49,12 @@ For a full description of the configuration file, please have a look at [configu
 
 ### Packages
 
-If you are looking for pre-compiled packages, see [our debian repository](https://packagecloud.io/coldsource/evqueue).
+If you are looking for pre-compiled packages, see [our debian packages](http://www.evqueue.net/downloads).
 
 If you want to build your own debian package from this source, use :
 
 ```
+sudo apt-get install devscripts
 debuild -us -uc -b
 ```
 
