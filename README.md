@@ -58,6 +58,8 @@ sudo apt-get install devscripts
 debuild -us -uc -b
 ```
 
+Be sure you have installed the build dependencies (see **Building** above).
+
 ### Docker
 
 We also provide [docker images](https://hub.docker.com/u/coldsource).
