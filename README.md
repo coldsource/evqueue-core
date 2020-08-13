@@ -1,6 +1,6 @@
 # evQueue
 
-evQueue is an open source job scheduler and queueing engine. It features an event-driven C++ engine and a Javascript (also event-driven) control interface which provides tasks monitoring and creation. See the [React JS frontend](https://github.com/coldsource/evqueue-frontend-react) or [Firefox addon](https://addons.mozilla.org/fr/firefox/addon/evqueue/).
+evQueue is an open source job scheduler and queueing engine. It features an event-driven C++ engine and a Javascript (also event-driven) control interface which provides tasks monitoring and creation. See the [React JS frontend](https://github.com/coldsource/evqueue-frontend-react) or [Firefox](https://addons.mozilla.org/fr/firefox/addon/evqueue/) / [Chrome](https://chrome.google.com/webstore/detail/evqueue/ioioafegonjmpfegmccmoaehhgddimij) addon.
 
 It provides both simple task execution and complex task chaining (workflow) using XML and XPath description. Workflow description includes output linking, conditions and loops. Queues management provides an easy way for task parallelization and resource control.
 
