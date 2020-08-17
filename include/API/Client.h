@@ -30,7 +30,6 @@ class Client:public ClientBase
 {
 	public:
 		Client(const std::string &connection_str, const std::string &user, const std::string &password);
-		virtual ~Client();
 		
 		void Exec(const std::string &cmd);
 };

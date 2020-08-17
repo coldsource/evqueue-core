@@ -36,12 +36,6 @@ Client::Client(const string &connection_str, const string &user, const string &p
 {
 }
 
-Client::~Client()
-{
-	if(s!=-1)
-		s = -1;
-}
-
 void Client::Exec(const std::string &cmd)
 {
 	try
