@@ -143,6 +143,27 @@ string DOMDocument::Serialize(DOMNode node) const
 	return s;
 }
 
+string DOMDocument::SerializeContent(DOMNode node) const
+{
+	string s;
+	DOMNode cur = node.getFirstChild();
+	while(cur)
+	{
+		
+		XMLCh *xml_output = serializer->writeToString(cur.node);
+		char *xml_output_c = xercesc::XMLString::transcode(xml_output);
+		
+		s += xml_output_c;
+		
+		xercesc::XMLString::release(&xml_output);
+		xercesc::XMLString::release(&xml_output_c);
+		
+		cur = cur.getNextSibling();
+	}
+	
+	return s;
+}
+
 string DOMDocument::ExpandXPathAttribute(const string &attribute,DOMNode context_node)
 {
 	string attribute_expanded = attribute;
