@@ -317,6 +317,8 @@ int Monitor::main()
 						fputs(buf+1,log_out);
 					else
 						fputs(buf,log_out);
+					
+					fflush(log_out);
 				}
 			}
 			fclose(log_in);
