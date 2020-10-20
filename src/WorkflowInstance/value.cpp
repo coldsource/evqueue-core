@@ -95,6 +95,9 @@ void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
 	{
 		DOMElement current_input = inputs.at(i);
 		
+		// By default, inputs are in text mode
+		current_input.setAttribute("mode", "text");
+		
 		{
 			ExceptionWorkflowContext ctx(current_input,"Error computing input value");
 			
@@ -121,6 +124,9 @@ void WorkflowInstance::replace_value(DOMElement input,DOMElement context_node)
 			values_index = 0;
 			while(values->snapshotItem(values_index++))
 			{
+				// If a copy node is used to build input, we switch to XML mode
+				current_input.setAttribute("mode", "xml");
+				
 				value = (DOMElement)values->getNodeValue();
 				string xpath_select = value.getAttribute("select");
 

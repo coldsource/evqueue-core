@@ -196,7 +196,10 @@ string Task::GetStdin() const
 		if(parameters->isNode())
 		{
 			DOMElement stdin_node = (DOMElement)parameters->getNodeValue();
-			stdin_parameter = xmldoc->SerializeContent(stdin_node);
+			if(stdin_node.hasAttribute("mode") && stdin_node.getAttribute("mode")=="text")
+				stdin_parameter = stdin_node.getTextContent();
+			else
+				stdin_parameter = xmldoc->Serialize(stdin_node);
 		}
 	}
 	return stdin_parameter;
