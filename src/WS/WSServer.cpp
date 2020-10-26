@@ -175,10 +175,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 							
 							// Sent API command immediatly for initialization
 							if(query.GetRootAttributeBool("send_now",false))
-							{
 								Events::GetInstance()->Create(type, object_id);
-								lws_callback_on_writable(wsi); // We have to send response
-							}
 						}
 						else if(query.GetRootAttribute("action")=="unsubscribe")
 						{

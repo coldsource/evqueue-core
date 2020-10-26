@@ -178,6 +178,8 @@ void Events::Unsubscribe(const string &type_str, struct lws *wsi, unsigned int o
 	
 	if(it->second.size()==0)
 		subscriptions.erase(type);
+	
+	online_events.erase(wsi);
 }
 
 void Events::UnsubscribeAll(struct lws *wsi)
@@ -197,6 +199,7 @@ void Events::UnsubscribeAll(struct lws *wsi)
 	}
 	
 	events.erase(wsi);
+	online_events.erase(wsi);
 }
 
 void Events::insert_event(struct lws *wsi, const st_event &event)
