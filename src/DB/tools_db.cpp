@@ -68,6 +68,8 @@ void tools_init_db(void)
 					tools_upgrade_v20_v22();
 				else if(db.GetField(0)=="v2.2" && EVQUEUE_VERSION=="3.0")
 					tools_upgrade_v22_v30();
+				else if(db.GetField(0)=="v3.0" && EVQUEUE_VERSION=="3.1")
+					tools_upgrade_v30_v31();
 				else
 					throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
 			}
@@ -226,6 +228,20 @@ void tools_upgrade_v22_v30(void)
 	
 	// Drop unsed column workflow schedule bound
 	db.Query("ALTER TABLE t_workflow DROP COLUMN workflow_bound");
+	
+	// Update tables version
+	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
+	{
+		string version = "v" EVQUEUE_VERSION;
+		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
+	}
+}
+
+void tools_upgrade_v30_v31(void)
+{
+	Logger::Log(LOG_NOTICE,"Detected v3.0 tables, upgrading scheme to v3.1");
+	
+	DB db;
 	
 	// Update tables version
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
