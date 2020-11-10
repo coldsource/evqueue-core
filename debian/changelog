@@ -1,3 +1,9 @@
+evqueue-core (3.1-1) buster; urgency=medium
+
+  * Bugfixes
+
+ -- Thibault KUMMER <bob@coldsource.net>  Tue, 10 Nov 2020 12:30:16 +0200
+
 evqueue-core (3.0-1) buster; urgency=medium
 
   * Websockets support
