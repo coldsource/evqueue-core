@@ -68,6 +68,11 @@ void tools_init_db(void)
 					tools_upgrade_v20_v22();
 				else if(db.GetField(0)=="v2.2" && EVQUEUE_VERSION=="3.0")
 					tools_upgrade_v22_v30();
+				else if(db.GetField(0)=="v2.2" && EVQUEUE_VERSION=="3.1")
+				{
+					tools_upgrade_v22_v30();
+					tools_upgrade_v30_v31();
+				}
 				else if(db.GetField(0)=="v3.0" && EVQUEUE_VERSION=="3.1")
 					tools_upgrade_v30_v31();
 				else
