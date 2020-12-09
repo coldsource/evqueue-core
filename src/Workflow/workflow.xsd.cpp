@@ -33,6 +33,7 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 		<xs:sequence> \
 			<xs:element name=\"parameters\" type=\"parametersType\" minOccurs=\"0\" /> \
 			<xs:element name=\"custom-attributes\" type=\"customattributesType\" minOccurs=\"0\" /> \
+			<xs:element name=\"automatic-tags\" type=\"automatictagsType\" minOccurs=\"0\" /> \
 			<xs:element name=\"subjobs\" type=\"subjobsType\" /> \
 		</xs:sequence> \
 		<xs:attribute name=\"version\" type=\"xs:string\" use=\"optional\" /> \
@@ -61,6 +62,19 @@ std::string workflow_xsd_str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
 	<xs:complexType name=\"customattributeType\"> \
 		<xs:attribute name=\"name\" type=\"xs:string\" use=\"required\" /> \
 		<xs:attribute name=\"select\" type=\"xs:string\" use=\"required\" /> \
+		<xs:attribute name=\"description\" type=\"xs:string\" use=\"optional\" /> \
+	</xs:complexType> \
+	 \
+	<xs:complexType name=\"automatictagsType\"> \
+		<xs:sequence> \
+			<xs:element name=\"automatic-tag\" type=\"automatictagType\" minOccurs=\"0\" maxOccurs=\"unbounded\" /> \
+		</xs:sequence> \
+	</xs:complexType> \
+	 \
+	 \
+	<xs:complexType name=\"automatictagType\"> \
+		<xs:attribute name=\"name\" type=\"xs:string\" use=\"required\" /> \
+		<xs:attribute name=\"condition\" type=\"xs:string\" use=\"required\" /> \
 		<xs:attribute name=\"description\" type=\"xs:string\" use=\"optional\" /> \
 	</xs:complexType> \
 	 \

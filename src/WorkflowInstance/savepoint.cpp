@@ -48,6 +48,7 @@ void WorkflowInstance::record_savepoint(bool force)
 		xmldoc->getDocumentElement().setAttribute("errors",to_string(error_tasks));
 		
 		fill_custom_filters();
+		fill_automatic_tags();
 	}
 	else if(!force && savepoint_level<=2)
 		return; // On level 1 and 2 we only record savepoints on terminated workflows

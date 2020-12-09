@@ -130,6 +130,9 @@ class WorkflowInstance
 		
 		// custom_filters
 		void fill_custom_filters();
+		
+		// automatic_tags
+		void fill_automatic_tags();
 };
 
 #endif
