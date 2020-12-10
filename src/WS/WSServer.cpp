@@ -97,7 +97,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 	per_session_data *context = (per_session_data *)user;
 	const lws_protocols *protocol = lws_get_protocol(wsi);
 	
-	Logger::Log(LOG_DEBUG, "WS callback called for reason :"+to_string(reason));
+	Logger::Log(LOG_DEBUG, "WS callback called for reason : "+to_string(reason));
 	
 	try
 	{
@@ -261,7 +261,11 @@ void WSServer::Adopt(int fd)
 	tv.tv_usec = 0;
 	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
-	lws_adopt_socket(context, fd);
+	lws_sock_file_fd_type sock;
+	sock.sockfd = fd;
+	struct lws_vhost *vhost = lws_get_vhost_by_name(context, "default");
+	lws_adopt_descriptor_vhost(vhost, (lws_adoption_type)(LWS_ADOPT_SOCKET | LWS_ADOPT_HTTP), sock, 0, 0);
+	
 	lws_cancel_service(context);
 }
 
