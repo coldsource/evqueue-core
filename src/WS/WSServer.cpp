@@ -201,7 +201,11 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 			case LWS_CALLBACK_SERVER_WRITEABLE:
 			{
 				if(context->session->GetStatus()==APISession::en_status::INITIALIZED)
+				{
 					context->session->SendChallenge();
+					if(context->session->GetStatus()==APISession::en_status::AUTHENTICATED)
+						lws_callback_on_writable(wsi); // Need to send greeting
+				}
 				else if(context->session->GetStatus()==APISession::en_status::AUTHENTICATED)
 					context->session->SendGreeting();
 				else if(context->session->GetStatus()==APISession::en_status::QUERY_RECEIVED)
