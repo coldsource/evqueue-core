@@ -23,12 +23,15 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <string>
+#include <map>
 
 using namespace std;
 
-void ConfigurationReader::Read(const char *filename, Configuration *config)
+void ConfigurationReader::Read(const string &filename, Configuration *config)
 {
 	FILE *f;
 	int i,len,entry_len,value_len,lineno = 0;
@@ -40,7 +43,7 @@ void ConfigurationReader::Read(const char *filename, Configuration *config)
 	
 	try
 	{
-		f=fopen(filename,"r");
+		f=fopen(filename.c_str(),"r");
 		if(!f)
 			throw Exception("ConfigurationReader","Unable to open configuration file");
 		
@@ -163,4 +166,95 @@ void ConfigurationReader::Read(const char *filename, Configuration *config)
 	}
 	
 	fclose(f);
+}
+
+void ConfigurationReader::ReadDefaultPaths(const string &filename, Configuration *config)
+{
+	{
+		// Try to read global config from /etc
+		string path = "/etc/"+filename;
+		
+		struct stat file_stats;
+		if(stat(path.c_str(), &file_stats)==0)
+			ConfigurationReader::Read(path.c_str(), config);
+	}
+	
+	{
+		// Try to read config from home directory
+		char *home = getenv("HOME");
+		if(home)
+		{
+			string path = home;
+			path += "/."+filename;
+			
+			struct stat file_stats;
+			if(stat(path.c_str(), &file_stats)==0)
+				ConfigurationReader::Read(path, config);
+		}
+	}
+}
+
+int ConfigurationReader::ReadCommandLine(int argc, char **argv, const vector<string> &filter, const string &prefix, Configuration *config)
+{
+	// Compute type of each argument
+	map<string, string> key_type_filter;
+	for(int i=0;i<filter.size();i++)
+	{
+		string f = filter.at(i);
+		string type;
+		string key;
+		
+		if(f.substr(0,7)=="string:")
+		{
+			type = "string";
+			key = f.substr(7);
+		}
+		else if(f.substr(0,5)=="bool:")
+		{
+			type = "bool";
+			key = f.substr(5);
+		}
+		else
+		{
+			type= "string";
+			key = f;
+		}
+		
+		key_type_filter.insert(pair<string, string>(key, type));
+	}
+	
+	// Read command line arguments and add them to the config
+	int cur;
+	for(cur=1;cur<argc;cur++)
+	{
+		string arg = argv[cur];
+		if(arg.substr(0,2)!="--")
+			return -1;
+		
+		if(arg=="--")
+			return cur+1;
+		
+		string key = arg.substr(2);
+		
+		// Check if key is filtred
+		auto it = key_type_filter.find(key);
+		if(it==key_type_filter.end())
+			return cur;
+		string type = it->second;
+		
+		if(type=="string")
+		{
+			if(cur+1>=argc)
+				return -1;
+			
+			config->Set(prefix+"."+key, argv[cur+1]);
+			cur++;
+		}
+		else if(type=="bool")
+		{
+			config->Set(prefix+"."+key, "yes");
+		}
+	}
+	
+	return cur;
 }

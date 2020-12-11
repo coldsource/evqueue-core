@@ -63,6 +63,8 @@ class ClientBase
 		const std::string &GetNode() { return node; }
 		
 		void SetTimeouts(int cnx_timeout,int snd_timeout,int rcv_timeout);
+		
+		static std::string HashPassword(const std::string &password);
 	
 	protected:
 		void connect();

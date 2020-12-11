@@ -26,15 +26,12 @@
 #include <Exception/Exception.h>
 #include <XML/XMLFormatter.h>
 #include <XML/XMLString.h>
-#include <Crypto/sha1.h>
 #include <DOM/DOMDocument.h>
 #include <Configuration/ConfigurationReader.h>
 #include <Configuration/Configuration.h>
 
 #include <map>
 #include <string>
-#include <iomanip>
-#include <sstream>
 #include <algorithm>
 
 using namespace std;
@@ -55,82 +52,25 @@ int main(int argc, char  **argv)
 	
 	try
 	{
-		// Parse cmdline parameters
-		bool format = true;
-
-		Configuration config({{"api.connect","tcp://localhost:5000"}, {"api.user", ""}, {"api.password", ""}});
+		// Default config
+		Configuration config({{"api.connect","tcp://localhost:5000"}, {"api.user", ""}, {"api.password", ""}, {"api.noformat", "no"}});
 		
-		// Try to read config from home directory
-		char *home = getenv("HOME");
-		if(home)
-		{
-			string path = home;
-			path += "/.evqueue.api.conf";
-			
-			struct stat file_stats;
-			if(stat(path.c_str(), &file_stats)==0)
-				ConfigurationReader::Read(path.c_str(), &config);
-		}
-
-		int cur;
-		for(cur=1;cur<argc;cur++)
-		{
-			if(strcmp(argv[cur],"--connect")==0)
-			{
-				if(cur+1>=argc)
-					usage();
-				
-				config.Set("api.connect", argv[cur+1]);
-				cur++;
-			}
-			else if(strcmp(argv[cur],"--user")==0)
-			{
-				if(cur+1>=argc)
-					usage();
-				
-				config.Set("api.user", argv[cur+1]);
-				cur++;
-			}
-			else if(strcmp(argv[cur],"--password")==0)
-			{
-				if(cur+1>=argc)
-					usage();
-				
-				config.Set("api.password", argv[cur+1]);
-				cur++;
-			}
-			else if(strcmp(argv[cur],"--noformat")==0)
-				format = false;
-			else if(strcmp(argv[cur],"--")==0)
-			{
-				cur++;
-				break;
-			}
-			else
-				break;
-		}
+		// Try to read from default paths
+		ConfigurationReader::ReadDefaultPaths("evqueue.api.conf", &config);
+		
+		// Override with command line
+		int cur = ConfigurationReader::ReadCommandLine(argc, argv, {"connect", "user", "password", "bool:noformat"}, "api", &config);
+		if(cur==-1)
+			usage();
 
 		string connection_str = config.Get("api.connect");
 		string user = config.Get("api.user");
 		string password = config.Get("api.password");
+		bool format = !config.GetBool("api.noformat");
 
 		// If we received a password, compute sha1 of it as a real password
 		if(password.length())
-		{
-			sha1_ctx ctx;
-			char c_hash[20];
-			
-			sha1_init_ctx(&ctx);
-			sha1_process_bytes(password.c_str(),password.length(),&ctx);
-			sha1_finish_ctx(&ctx,c_hash);
-			
-			// Format HEX result
-			stringstream sstream;
-			sstream << hex;
-			for(int i=0;i<20;i++)
-				sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
-			password = sstream.str();
-		}
+			password = ClientBase::HashPassword(password);
 
 		// Read group and action
 		if(cur+1>=argc)

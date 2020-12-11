@@ -33,6 +33,11 @@ The API command group, for example --tasks to query task API.
 .TP
 \fB--<action>\fR
 The action to request to API command group, for example --get to query an element.
+.SH "CONFIGURATION FILES"
+.PP
+evqueue_api will read configuration files in /etc/evqueue.api.conf and ~/.evqueue.api.conf
+.PP
+The following options are recognized (but will be overridden by command line parameters) : api.connect, api.user, api.password, api.noformat
 .SH EXAMPLES
 evqueue_api --task --get --id 1
 .br

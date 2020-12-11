@@ -30,6 +30,11 @@ Run in synchronous or asynchronous mode. In synchronous mode, the command will o
 .TP
 \fB--timeout <timeout>\fR
 When running in synchronous mode, do not wait worfklow termination for more than <timeout> seconds.
+.SH "CONFIGURATION FILES"
+.PP
+evqueue_wfmanager will read configuration files in /etc/evqueue.api.conf and ~/.evqueue.api.conf
+.PP
+The following options are recognized (but will be overridden by command line parameters) : api.connect, api.user, api.password
 .SH EXAMPLES
 evqueue_wfmanager --connect tcp://localhost:5000 --user admin --password admin --launch sleep --time 1
 .br

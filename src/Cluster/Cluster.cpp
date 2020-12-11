@@ -51,22 +51,7 @@ void Cluster::ParseConfiguration(const string &conf)
 		Logger::Log(LOG_NOTICE,"Cluster notifications enabled");
 	
 	user = ConfigurationEvQueue::GetInstance()->Get("cluster.notify.user");
-	password = ConfigurationEvQueue::GetInstance()->Get("cluster.notify.password");
-	
-	// Prepare hashed password
-	sha1_ctx ctx;
-	char c_hash[20];
-	
-	sha1_init_ctx(&ctx);
-	sha1_process_bytes(password.c_str(),password.length(),&ctx);
-	sha1_finish_ctx(&ctx,c_hash);
-	
-	// Format HEX result
-	stringstream sstream;
-	sstream << hex;
-	for(int i=0;i<20;i++)
-		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
-	password = sstream.str();
+	password = ClientBase::HashPassword(ConfigurationEvQueue::GetInstance()->Get("cluster.notify.password"));
 	
 	cnx_timeout = ConfigurationEvQueue::GetInstance()->GetInt("cluster.cnx.timeout");
 	snd_timeout = ConfigurationEvQueue::GetInstance()->GetInt("cluster.snd.timeout");

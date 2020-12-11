@@ -176,6 +176,7 @@ add_executable(evqueue_wfmanager
 	${srcXML}
 	${srcCrypto}
 	${srcException}
+	${srcConfiguration}
 	src/API/ClientBase.cpp src/API/XMLResponse.cpp src/API/XMLMessage.cpp src/API/SocketSAX2Handler.cpp
 	src/IO/NetworkInputSource.cpp src/IO/BinNetworkInputStream.cpp
 	

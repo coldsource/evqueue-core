@@ -24,10 +24,16 @@
 
 #include <Configuration/Configuration.h>
 
+#include <string>
+#include <vector>
+
 class ConfigurationReader
 {
 	public:
-		static void Read(const char *filename, Configuration *config);
+		static void Read(const std::string &filename, Configuration *config);
+		static void ReadDefaultPaths(const std::string &filename, Configuration *config);
+		
+		static int ReadCommandLine(int argc, char **argv, const std::vector<std::string> &filter, const std::string &prefix, Configuration *config);
 };
 
 #endif

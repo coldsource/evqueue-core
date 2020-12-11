@@ -21,6 +21,10 @@
 #include <Exception/Exception.h>
 #include <API/XMLResponse.h>
 #include <Crypto/hmac.h>
+#include <Crypto/sha1.h>
+
+#include <sstream>
+#include <iomanip>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -163,6 +167,24 @@ void ClientBase::SetTimeouts(int cnx_timeout,int snd_timeout,int rcv_timeout)
 	this->cnx_timeout = cnx_timeout;
 	this->snd_timeout = snd_timeout;
 	this->rcv_timeout = rcv_timeout;
+}
+
+string ClientBase::HashPassword(const string &password)
+{
+	// Prepare hashed password
+	sha1_ctx ctx;
+	char c_hash[20];
+	
+	sha1_init_ctx(&ctx);
+	sha1_process_bytes(password.c_str(),password.length(),&ctx);
+	sha1_finish_ctx(&ctx,c_hash);
+	
+	// Format HEX result
+	stringstream sstream;
+	sstream << hex;
+	for(int i=0;i<20;i++)
+		sstream << std::setw(2) << setfill('0') << (int)(c_hash[i]&0xFF);
+	return sstream.str();
 }
 
 void ClientBase::connect()
