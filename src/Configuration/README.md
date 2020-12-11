@@ -265,6 +265,44 @@ Send timeout in seconds
 
 Maximum number of simultaneous connections.
 
+## ws
+
+### ws.bind.ip (string) : 127.0.0.1
+
+IP which will be used to bind Websockets server. Use "*" to bind on all interfaces. Use empty string to disable binding.
+
+### ws.bind.port(numeric) : 5001
+
+Port to listen on.
+
+### ws.connections.max (numeric) : 128
+
+Maximum number of concurrent connections on the Websockets server.
+
+### ws.events.throttling (boolean) : yes
+
+Turn on events throttling. Events throttling prevents javascript clients from being flooded with events. This can happen on slow clients or with events triggering very fast. It is not recommended to disable this.
+
+### ws.keepalive (numeric) : 30
+
+Interval in seconds for sending keepalive.
+
+### ws.listen.backlog (numeric) : 64
+
+Size of the listen backlog: this is the maximum number of pending connections.
+
+### ws.rcv.timeout (numeric) : 30
+
+Receive timeout in seconds
+
+### ws.snd.timeout (numeric) : 30
+
+Send timeout in seconds
+
+### ws.workers (numeric) : 8
+
+Number of worker threads used for handling Websockets connections. On some versions of Linux, misscompiled libwebsocket prevents setting this parameter greater than 1. If you have the following error : "ws.workers is limited by libwebsockets to X", adjust configuration accordingly.
+
 ## notifications
 
 ### notifications.tasks.directory (string) : /usr/share/evqueue/plugins/notifications
