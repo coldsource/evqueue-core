@@ -265,10 +265,14 @@ void WSServer::Adopt(int fd)
 	tv.tv_usec = 0;
 	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
+#ifdef LWS_ADOPT_SOCKET
 	lws_sock_file_fd_type sock;
 	sock.sockfd = fd;
 	struct lws_vhost *vhost = lws_get_vhost_by_name(context, "default");
 	lws_adopt_descriptor_vhost(vhost, (lws_adoption_type)(LWS_ADOPT_SOCKET | LWS_ADOPT_HTTP), sock, 0, 0);
+#else
+	lws_adopt_socket(context, fd);
+#endif
 	
 	lws_cancel_service(context);
 }
