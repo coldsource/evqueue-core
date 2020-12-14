@@ -24,6 +24,7 @@ void tools_init_db(void);
 void tools_upgrade_v20_v22(void);
 void tools_upgrade_v22_v30(void);
 void tools_upgrade_v30_v31(void);
+void tools_upgrade_v31_v32(void);
 void tools_upgrade_t_notification(void);
 
 #endif

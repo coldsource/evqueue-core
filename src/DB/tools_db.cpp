@@ -75,6 +75,8 @@ void tools_init_db(void)
 				}
 				else if(db.GetField(0)=="v3.0" && EVQUEUE_VERSION=="3.1")
 					tools_upgrade_v30_v31();
+				else if(db.GetField(0)=="v3.1" && EVQUEUE_VERSION=="3.2")
+					tools_upgrade_v31_v32();
 				else
 					throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
 			}
@@ -245,6 +247,20 @@ void tools_upgrade_v22_v30(void)
 void tools_upgrade_v30_v31(void)
 {
 	Logger::Log(LOG_NOTICE,"Detected v3.0 tables, upgrading scheme to v3.1");
+	
+	DB db;
+	
+	// Update tables version
+	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
+	{
+		string version = "v" EVQUEUE_VERSION;
+		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
+	}
+}
+
+void tools_upgrade_v31_v32(void)
+{
+	Logger::Log(LOG_NOTICE,"Detected v3.1 tables, upgrading scheme to v3.2");
 	
 	DB db;
 	
