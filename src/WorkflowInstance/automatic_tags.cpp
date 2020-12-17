@@ -24,6 +24,8 @@
 #include <Logger/Logger.h>
 #include <DB/DB.h>
 #include <WS/Events.h>
+#include <Tag/Tag.h>
+#include <Tag/Tags.h>
 
 #include <unistd.h>
 
@@ -54,15 +56,7 @@ void WorkflowInstance::fill_automatic_tags()
 			
 			if(test_expr->getBooleanValue())
 			{
-				unsigned int tag_id;
-				db.QueryPrintf("SELECT tag_id FROM t_tag WHERE tag_label=%s",&name);
-				if(!db.FetchRow())
-				{
-					db.QueryPrintf("INSERT INTO t_tag(tag_label) VALUES(%s)",&name);
-					tag_id = db.InsertID();
-				}
-				else
-					tag_id = db.GetFieldInt(0);
+				unsigned int tag_id = Tag::Create(name);
 				
 				db.QueryPrintf(
 					"INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",

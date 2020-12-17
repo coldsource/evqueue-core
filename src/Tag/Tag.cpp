@@ -66,6 +66,11 @@ unsigned int Tag::Create(const string &label)
 		return db.GetFieldInt(0);
 	
 	db.QueryPrintf("INSERT INTO t_tag(tag_label) VALUES(%s)",&label);
+	
+	Tags::GetInstance()->Reload();
+		
+	Events::GetInstance()->Create(Events::en_types::TAG_CREATED);
+	
 	return db.InsertID();
 }
 
@@ -120,10 +125,6 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		LoggerAPI::LogAction(user,id,"Tag",query->GetQueryGroup(),action);
 		
 		response->GetDOM()->getDocumentElement().setAttribute("tag-id",to_string(id));
-		
-		Tags::GetInstance()->Reload();
-		
-		Events::GetInstance()->Create(Events::en_types::TAG_CREATED);
 		
 		return true;
 	}
