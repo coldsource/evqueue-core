@@ -79,6 +79,8 @@ void WorkflowInstanceAPI::Tag(unsigned int id, unsigned int tag_id)
 		throw Exception("WorkflowInstanceAPI", "Instance is already tagged","INSTANCE_ALREADY_TAGGED");
 	
 	db.QueryPrintf("INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",&id,&tag_id);
+	
+	Events::GetInstance()->Create(Events::en_types::INSTANCE_TAGGED,id);
 }
 
 void WorkflowInstanceAPI::Untag(unsigned int id, unsigned int tag_id)
@@ -325,8 +327,6 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			unsigned int tag_id = query->GetRootAttributeInt("tag_id");
 			
 			Tag(workflow_instance_id,tag_id);
-			
-			Events::GetInstance()->Create(Events::en_types::INSTANCE_TAGGED,workflow_instance_id);
 			
 			return true;
 		}

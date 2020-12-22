@@ -46,9 +46,6 @@ void WorkflowInstance::record_savepoint(bool force)
 
 		xmldoc->getDocumentElement().setAttribute("end_time",format_datetime());
 		xmldoc->getDocumentElement().setAttribute("errors",to_string(error_tasks));
-		
-		fill_custom_filters();
-		fill_automatic_tags();
 	}
 	else if(!force && savepoint_level<=2)
 		return; // On level 1 and 2 we only record savepoints on terminated workflows
@@ -92,6 +89,9 @@ void WorkflowInstance::record_savepoint(bool force)
 				{
 					// Update savepoint and status if workflow is terminated
 					db.QueryPrintfC("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",savepoint.c_str(),&error_tasks,&workflow_instance_id);
+					
+					fill_custom_filters();
+					fill_automatic_tags();
 				}
 			}
 			else

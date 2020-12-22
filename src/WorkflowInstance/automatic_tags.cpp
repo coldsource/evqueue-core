@@ -18,6 +18,7 @@
  */
 
 #include <WorkflowInstance/WorkflowInstance.h>
+#include <WorkflowInstance/WorkflowInstanceAPI.h>
 #include <Exception/Exception.h>
 #include <WorkflowInstance/ExceptionWorkflowContext.h>
 #include <XPath/WorkflowXPathFunctions.h>
@@ -57,13 +58,7 @@ void WorkflowInstance::fill_automatic_tags()
 			if(test_expr->getBooleanValue())
 			{
 				unsigned int tag_id = Tag::Create(name);
-				
-				db.QueryPrintf(
-					"INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",
-					&workflow_instance_id,&tag_id
-				);
-				
-				Events::GetInstance()->Create(Events::en_types::INSTANCE_TAGGED,workflow_instance_id);
+				WorkflowInstanceAPI::Tag(workflow_instance_id, tag_id);
 			}
 		}
 	}
