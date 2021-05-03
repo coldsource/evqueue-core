@@ -265,7 +265,7 @@ void WSServer::Adopt(int fd)
 	tv.tv_usec = 0;
 	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
-#ifdef LWS_ADOPT_SOCKET
+#if defined(LWS_ADOPT_SOCKET) || LWS_LIBRARY_VERSION_MAJOR >= 4
 	lws_sock_file_fd_type sock;
 	sock.sockfd = fd;
 	struct lws_vhost *vhost = lws_get_vhost_by_name(context, "default");
