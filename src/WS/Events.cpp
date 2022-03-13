@@ -248,7 +248,7 @@ void Events::Create(en_types type, unsigned int object_id)
 		
 		if(throttling)
 		{
-			// Check if this event has in online (ie: it has been sent to client but not yet acknowleged)
+			// Check if this event is online (ie: it has been sent to client but not yet acknowleged)
 			auto it_oe = online_events.find(wsi);
 			bool skip = false;
 			if(it_oe!=online_events.end())
