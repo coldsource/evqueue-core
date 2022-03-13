@@ -104,7 +104,8 @@ DOMNode QueryResponse::AppendXML(const string &xml, DOMElement node)
 
 void QueryResponse::Empty()
 {
-	xmldoc->removeChild(xmldoc->getDocumentElement());
+	delete xmldoc;
+	xmldoc = new DOMDocument();
 	
 	DOMElement response_node = xmldoc->createElement(root_node_name);
 	xmldoc->appendChild(response_node);
