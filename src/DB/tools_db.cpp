@@ -77,6 +77,8 @@ void tools_init_db(void)
 					tools_upgrade_v30_v31();
 				else if(db.GetField(0)=="v3.1" && EVQUEUE_VERSION=="3.2")
 					tools_upgrade_v31_v32();
+				else if(db.GetField(0)=="v3.2" && EVQUEUE_VERSION=="3.3")
+					tools_upgrade_v32_v33();
 				else
 					throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
 			}
@@ -263,6 +265,22 @@ void tools_upgrade_v31_v32(void)
 	Logger::Log(LOG_NOTICE,"Detected v3.1 tables, upgrading scheme to v3.2");
 	
 	DB db;
+	
+	// Update tables version
+	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
+	{
+		string version = "v" EVQUEUE_VERSION;
+		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
+	}
+}
+
+void tools_upgrade_v32_v33(void)
+{
+	Logger::Log(LOG_NOTICE,"Detected v3.2 tables, upgrading scheme to v3.3");
+	
+	DB db;
+	
+	db.QueryPrintf("ALTER TABLE t_log RENAME TO t_log_engine");
 	
 	// Update tables version
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)

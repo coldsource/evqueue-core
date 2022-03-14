@@ -40,7 +40,7 @@ bool Logs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		DB db;
 		
-		db.QueryPrintf("SELECT node_name,log_level,log_message,log_timestamp FROM t_log WHERE log_level <= %i ORDER BY log_timestamp DESC,log_id DESC LIMIT %i,%i",&ifilter_level,&offset,&limit);
+		db.QueryPrintf("SELECT node_name,log_level,log_message,log_timestamp FROM t_log_engine WHERE log_level <= %i ORDER BY log_timestamp DESC,log_id DESC LIMIT %i,%i",&ifilter_level,&offset,&limit);
 		while(db.FetchRow())
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<log />");

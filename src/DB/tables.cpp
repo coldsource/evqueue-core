@@ -21,7 +21,7 @@
 #include <map>
 
 std::map<std::string,std::string> evqueue_tables = {
-{"t_log",
+{"t_log_engine",
 "CREATE TABLE `t_log` ( \
   `log_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
   `node_name` varchar(32) CHARACTER SET ascii NOT NULL DEFAULT '', \
@@ -29,7 +29,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `log_message` text COLLATE utf8_unicode_ci NOT NULL, \
   `log_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
   PRIMARY KEY (`log_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_notification",
 "CREATE TABLE `t_notification` ( \
@@ -39,7 +39,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `notification_subscribe_all` int(10) unsigned NOT NULL DEFAULT 0, \
   `notification_parameters` longtext COLLATE utf8_unicode_ci NOT NULL, \
   PRIMARY KEY (`notification_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_notification_type",
 "CREATE TABLE `t_notification_type` ( \
@@ -51,7 +51,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `notification_type_conf_content` longblob, \
   PRIMARY KEY (`notification_type_id`), \
   UNIQUE KEY `notification_type_name` (`notification_type_name`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_queue",
 "CREATE TABLE `t_queue` ( \
@@ -62,7 +62,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `queue_dynamic` TINYINT NOT NULL DEFAULT 0, \
   PRIMARY KEY (`queue_id`), \
   UNIQUE KEY `queue_name` (`queue_name`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='v3.3'; \
 "},
 {"t_schedule",
 "CREATE TABLE `t_schedule` ( \
@@ -71,7 +71,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `schedule_xml` text COLLATE utf8_unicode_ci NOT NULL, \
   PRIMARY KEY (`schedule_id`), \
   UNIQUE KEY `schedule_name` (`schedule_name`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_user",
 "CREATE TABLE `t_user` ( \
@@ -84,7 +84,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `user_preferences` text CHARACTER SET ascii NOT NULL, \
   PRIMARY KEY (`user_id`), \
   UNIQUE KEY `user_login` (`user_login`) \
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_user_right",
 "CREATE TABLE `t_user_right` ( \
@@ -95,7 +95,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `user_right_exec` tinyint(1) NOT NULL DEFAULT 0, \
   `user_right_kill` tinyint(4) NOT NULL DEFAULT 0, \
   PRIMARY KEY (`user_id`,`workflow_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow",
 "CREATE TABLE `t_workflow` ( \
@@ -107,7 +107,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_lastcommit` varchar(40) COLLATE 'ascii_general_ci' NULL DEFAULT NULL, \
   UNIQUE KEY `workflow_id` (`workflow_id`), \
   UNIQUE KEY `workflow_name` (`workflow_name`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_instance",
 "CREATE TABLE `t_workflow_instance` ( \
@@ -128,7 +128,7 @@ std::map<std::string,std::string> evqueue_tables = {
   KEY `t_workflow_instance_errors` (`workflow_instance_errors`), \
   KEY `workflow_instance_date_start` (`workflow_instance_start`), \
   KEY `workflow_schedule_id` (`workflow_schedule_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_instance_parameters",
 "CREATE TABLE `t_workflow_instance_parameters` ( \
@@ -136,14 +136,14 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_instance_parameter` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_instance_parameter_value` text COLLATE utf8_unicode_ci NOT NULL, \
   KEY `param_and_value` (`workflow_instance_parameter`,`workflow_instance_parameter_value`(255)) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_notification",
 "CREATE TABLE `t_workflow_notification` ( \
   `workflow_id` int(10) unsigned NOT NULL, \
   `notification_id` int(10) unsigned NOT NULL, \
   PRIMARY KEY (`workflow_id`,`notification_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_schedule",
 "CREATE TABLE `t_workflow_schedule` ( \
@@ -157,7 +157,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_schedule_active` tinyint(4) NOT NULL, \
   `workflow_schedule_comment` text COLLATE utf8_unicode_ci NOT NULL, \
   PRIMARY KEY (`workflow_schedule_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_schedule_parameters",
 "CREATE TABLE `t_workflow_schedule_parameters` ( \
@@ -165,7 +165,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_schedule_parameter` varchar(64) COLLATE utf8_unicode_ci NOT NULL, \
   `workflow_schedule_parameter_value` text COLLATE utf8_unicode_ci NOT NULL, \
   KEY `workflow_schedule_id` (`workflow_schedule_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_datastore",
 "CREATE TABLE `t_datastore` ( \
@@ -174,7 +174,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `datastore_value` longtext COLLATE utf8_unicode_ci NOT NULL, \
   PRIMARY KEY (`datastore_id`), \
   KEY `workflow_instance_id` (`workflow_instance_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_uniqueaction",
 "CREATE TABLE `t_uniqueaction` ( \
@@ -184,7 +184,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `uniqueaction_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \
   PRIMARY KEY (`uniqueaction_id`), \
   KEY `uniqueaction_name` (`uniqueaction_name`,`uniqueaction_time`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_tag",
 "CREATE TABLE `t_tag` ( \
@@ -192,7 +192,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `tag_label` varchar(64) CHARACTER SET utf8 NOT NULL, \
   PRIMARY KEY (`tag_id`), \
   UNIQUE KEY `tag_label` (`tag_label`) \
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_instance_tag",
 "CREATE TABLE `t_workflow_instance_tag` ( \
@@ -200,7 +200,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_instance_id` int(10) unsigned NOT NULL, \
   PRIMARY KEY (`tag_id`,`workflow_instance_id`), \
   KEY `workflow_instance_id` (`workflow_instance_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_log_api",
 "CREATE TABLE `t_log_api` ( \
@@ -213,7 +213,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `log_api_action` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `log_api_timestamp` timestamp NOT NULL DEFAULT current_timestamp(), \
   PRIMARY KEY (`log_api_id`) \
-) ENGINE=InnoDB AUTO_INCREMENT=948 DEFAULT CHARSET=utf8mb4 COMMENT='v3.2'; \
+) ENGINE=InnoDB AUTO_INCREMENT=948 DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
 "},
 {"t_log_notifications",
 "CREATE TABLE `t_log_notifications` ( \
@@ -223,7 +223,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `log_notifications_message` text COLLATE utf8_unicode_ci NOT NULL, \
   `log_notifications_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
   PRIMARY KEY (`log_notifications_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_instance_filters",
 "CREATE TABLE `t_workflow_instance_filters` ( \
@@ -231,6 +231,6 @@ std::map<std::string,std::string> evqueue_tables = {
   `workflow_instance_filter` varchar(64) CHARACTER SET utf8 NOT NULL, \
   `workflow_instance_filter_value` varchar(255) CHARACTER SET utf8 NOT NULL, \
   KEY `workflow_instance_filter` (`workflow_instance_filter`,`workflow_instance_filter_value`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.2'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 };
