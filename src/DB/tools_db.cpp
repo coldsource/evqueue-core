@@ -280,7 +280,7 @@ void tools_upgrade_v32_v33(void)
 	
 	DB db;
 	
-	db.QueryPrintf("ALTER TABLE t_log RENAME TO t_log_engine");
+	db.Query("ALTER TABLE `t_log_api` CHANGE `log_api_object_type` `log_api_object_type` ENUM('Workflow','WorkflowSchedule','RetrySchedule','User','Tag','Queue', 'Channel') CHARACTER SET ascii COLLATE ascii_bin NOT NULL");
 	
 	// Update tables version
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)

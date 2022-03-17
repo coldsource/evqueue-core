@@ -52,6 +52,8 @@
 #include <Logs/Logs.h>
 #include <Logs/LogsAPI.h>
 #include <Logs/LogsNotifications.h>
+#include <Logs/Channel.h>
+#include <Logs/Channels.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
 #include <Workflow/Workflow.h>
@@ -514,6 +516,9 @@ int main(int argc,char **argv)
 		// Load tags
 		Tags *tags = new Tags();
 		
+		// Load channels
+		Channels *channels = new Channels();
+		
 		// Initialize query handlers
 		QueryHandlers *qh = new QueryHandlers();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
@@ -537,6 +542,8 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("logs",Logs::HandleQuery);
 		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
 		qh->RegisterHandler("logsnotifications",LogsNotifications::HandleQuery);
+		qh->RegisterHandler("channel",Channel::HandleQuery);
+		qh->RegisterHandler("channels",Channels::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);

@@ -21,7 +21,7 @@
 #include <map>
 
 std::map<std::string,std::string> evqueue_tables = {
-{"t_log_engine",
+{"t_log",
 "CREATE TABLE `t_log` ( \
   `log_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
   `node_name` varchar(32) CHARACTER SET ascii NOT NULL DEFAULT '', \
