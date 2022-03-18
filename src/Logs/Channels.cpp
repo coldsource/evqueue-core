@@ -18,6 +18,7 @@
  */
 
 #include <Logs/Channels.h>
+#include <Logs/LogStorage.h>
 #include <User/User.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -25,6 +26,9 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
+
+#include <regex>
+#include <map>
 
 Channels *Channels::instance = 0;
 
@@ -63,6 +67,36 @@ void Channels::Reload(bool notify)
 	{
 		// Notify cluster
 		Cluster::GetInstance()->Notify("<control action='reload' module='channels' notify='no' />\n");
+	}
+}
+
+void Channels::Log(const std::string &str)
+{
+	regex r("([a-zA-Z0-9_-]+)[ ]+");
+	
+	smatch matches;
+	
+	try
+	{
+		if(!regex_search(str, matches, r))
+			throw Exception("Channels", "unable to get log message channel");
+		
+		if(matches.size()!=2)
+			throw Exception("Channels", "unable to get log message channel");
+		
+		string channel_name = matches[1];
+		string log_str = str.substr(matches[0].length());
+		
+		Channel channel = Get(channel_name);
+		
+		map<string, string> std, custom;
+		channel.ParseLog(log_str, std, custom);
+		
+		LogStorage::GetInstance()->StoreLog(channel.GetID(), std, custom);
+	}
+	catch(Exception &e)
+	{
+		Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
 	}
 }
 

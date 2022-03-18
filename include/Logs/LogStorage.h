@@ -31,15 +31,25 @@ class LogStorage
 	
 	std::map<std::string, unsigned int> pack_str_id;
 	
+	static LogStorage *instance;
+	
 	public:
 		LogStorage();
 		
+		static LogStorage *GetInstance() { return instance; }
+		
 		void StoreLog(unsigned int channel_id, std::map<std::string, std::string> &std_fields, std::map<std::string, std::string> &custom_fields);
+		
+		int PackInteger(const std::string &str);
+		std::string UnpackInteger(int i);
+		std::string PackIP(const std::string &ip);
+		std::string UnpackIP(const std::string &bin_ip);
+		int PackCrit(const std::string &str);
+		std::string UnpackCrit(int i);
+		unsigned int PackString(const std::string &str);
 	
 	private:
-		unsigned int pack(const std::string &str);
-		void add_query_field_str(std::string &query, const std::string &name, std::map<std::string, std::string> &fields, std::string *val, std::vector<void *> &vals);
-		void add_query_field_int(std::string &query, const std::string &name, std::map<std::string, std::string> &fields, int *val, std::vector<void *> &vals, bool need_pack);
+		void add_query_field(int type, std::string &query, const std::string &name, std::map<std::string, std::string> &fields, void *val, std::vector<void *> &vals);
 };
 
 #endif

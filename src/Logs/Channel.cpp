@@ -94,7 +94,7 @@ void Channel::ParseLog(const string log_str, map<string, string> &std_fields, ma
 		if(crit_idx>=matches.size())
 			throw Exception("StoreLog", "Unable to extract crit from log");
 		
-		if(str_to_crit(matches[crit_idx])>=0)
+		if(str_to_crit(matches[crit_idx])>0)
 			std_fields["crit"] = matches[crit_idx];
 	}
 	

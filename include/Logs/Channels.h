@@ -43,6 +43,8 @@ class Channels:public APIObjectList<Channel>
 		
 		void Reload(bool notify = true);
 		
+		void Log(const std::string &str);
+		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
 

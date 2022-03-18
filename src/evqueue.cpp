@@ -54,6 +54,7 @@
 #include <Logs/LogsNotifications.h>
 #include <Logs/Channel.h>
 #include <Logs/Channels.h>
+#include <Logs/LogStorage.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
 #include <Workflow/Workflow.h>
@@ -516,8 +517,9 @@ int main(int argc,char **argv)
 		// Load tags
 		Tags *tags = new Tags();
 		
-		// Load channels
+		// Load channels and logs storage
 		Channels *channels = new Channels();
+		LogStorage *log_storage = new LogStorage();
 		
 		// Initialize query handlers
 		QueryHandlers *qh = new QueryHandlers();
@@ -755,6 +757,8 @@ int main(int argc,char **argv)
 				delete cluster;
 				delete users;
 				delete tags;
+				delete channels;
+				delete log_storage;
 				delete active_connections;
 				delete random;
 				delete logger_api;
