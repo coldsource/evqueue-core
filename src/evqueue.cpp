@@ -52,6 +52,7 @@
 #include <Logs/Logs.h>
 #include <Logs/LogsAPI.h>
 #include <Logs/LogsNotifications.h>
+#include <Logs/ELogs.h>
 #include <Logs/Channel.h>
 #include <Logs/Channels.h>
 #include <Logs/LogStorage.h>
@@ -106,12 +107,14 @@
 
 #include <xercesc/util/PlatformUtils.hpp>
 
-#define CNX_TYPE_API 1
-#define CNX_TYPE_WS 2
+#define CNX_TYPE_API    1
+#define CNX_TYPE_WS     2
+#define CNX_TYPE_ELOG   3
 
 int listen_socket = -1;
 int listen_socket_unix = -1;
 int listen_socket_ws = -1;
+int listen_socket_elog = -1;
 time_t evqueue_start_time = 0;
 
 void signal_callback_handler(int signum)
@@ -544,6 +547,7 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("logs",Logs::HandleQuery);
 		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
 		qh->RegisterHandler("logsnotifications",LogsNotifications::HandleQuery);
+		qh->RegisterHandler("elogs",ELogs::HandleQuery);
 		qh->RegisterHandler("channel",Channel::HandleQuery);
 		qh->RegisterHandler("channels",Channels::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
@@ -660,6 +664,32 @@ int main(int argc,char **argv)
 			Logger::Log(LOG_NOTICE,"WS accepting connections on port %d",config.GetInt("ws.bind.port"));
 		}
 		
+		if(config.Get("elog.bind.ip").length()>0)
+		{
+			int optval;
+			
+			// Create listen socket
+			listen_socket_elog=socket(PF_INET,SOCK_DGRAM | SOCK_CLOEXEC,0);
+			
+			// Configure socket
+			optval=1;
+			setsockopt(listen_socket_elog,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(int));
+			
+			// Bind socket
+			memset(&local_addr,0,sizeof(struct sockaddr_in));
+			local_addr.sin_family=AF_INET;
+			if(config.Get("elog.bind.ip")=="*")
+				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+			else
+				local_addr.sin_addr.s_addr=inet_addr(config.Get("elog.bind.ip").c_str());
+			local_addr.sin_port = htons(config.GetInt("elog.bind.port"));
+			re=bind(listen_socket_elog,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
+			if(re==-1)
+				throw Exception("core","Unable to bind WS listen socket");
+			
+			Logger::Log(LOG_NOTICE,"Elog waiting UDP messages on port %d",config.GetInt("elog.bind.port"));
+		}
+		
 		if(listen_socket==-1 && listen_socket_unix==-1)
 			throw Exception("core","You have to specify at least one listen socket");
 		
@@ -669,6 +699,8 @@ int main(int argc,char **argv)
 		WSServer *ws = new WSServer();
 		
 		// Loop for incoming connections
+		char elog_buf[ELOG_MAXSIZE];
+		size_t elog_len;
 		int cnx_type;
 		int len,*sp;
 		fd_set rfds;
@@ -693,6 +725,12 @@ int main(int argc,char **argv)
 			{
 				FD_SET(listen_socket_ws,&rfds);
 				fdmax = MAX(fdmax,listen_socket_ws);
+			}
+			
+			if(listen_socket_elog>=0)
+			{
+				FD_SET(listen_socket_elog,&rfds);
+				fdmax = MAX(fdmax,listen_socket_elog);
 			}
 			
 			re = select(fdmax+1,&rfds,0,0,0);
@@ -736,6 +774,10 @@ int main(int argc,char **argv)
 				// Request shutdown on GarbageCollector and wait
 				gc->Shutdown();
 				gc->WaitForShutdown();
+				
+				// Request shutdown on LogStorage and wait
+				log_storage->Shutdown();
+				log_storage->WaitForShutdown();
 				
 				// All threads have exited, we can cleanly exit
 				delete stats;
@@ -798,12 +840,18 @@ int main(int argc,char **argv)
 				s = accept4(listen_socket,(struct sockaddr *)&remote_addr,&remote_addr_len,SOCK_CLOEXEC);
 				cnx_type = CNX_TYPE_API;
 			}
-			else if(FD_ISSET(listen_socket_ws,&rfds))
+			else if(listen_socket_ws>0 && FD_ISSET(listen_socket_ws,&rfds))
 			{
 				// Got data on TCP socket
 				remote_addr_len=sizeof(struct sockaddr);
 				s = accept4(listen_socket_ws,(struct sockaddr *)&remote_addr,&remote_addr_len,SOCK_CLOEXEC);
 				cnx_type = CNX_TYPE_WS;
+			}
+			else if(listen_socket_elog>=0 && FD_ISSET(listen_socket_elog,&rfds))
+			{
+				remote_addr_len=sizeof(struct sockaddr);
+				elog_len = recvfrom(listen_socket_elog, elog_buf, ELOG_MAXSIZE, 0, (struct sockaddr *) &remote_addr, &remote_addr_len);
+				cnx_type = CNX_TYPE_ELOG;
 			}
 			
 			if(s<0)
@@ -838,6 +886,12 @@ int main(int argc,char **argv)
 			{
 				// Transfer the socket to LWS
 				active_connections->StartWSConnection(s);
+			}
+			
+			if(cnx_type==CNX_TYPE_ELOG)
+			{
+				// Store log message
+				log_storage->Log(string(elog_buf, elog_len));
 			}
 		}
 	}

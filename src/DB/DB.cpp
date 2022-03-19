@@ -538,7 +538,7 @@ string DB::GetField(int n)
 	if(!row[n])
 		return "";
 	
-	return string(row[n]);
+	return string(row[n], row_field_length[n]);
 }
 
 int DB::GetFieldInt(int n)

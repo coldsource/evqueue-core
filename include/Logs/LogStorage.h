@@ -23,22 +23,36 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <queue>
 #include <mutex>
+#include <condition_variable>
+#include <thread>
 
 class LogStorage
 {
 	std::mutex lock;
+	std::condition_variable logs_queued;
+	
+	std::thread ls_thread_handle;
 	
 	std::map<std::string, unsigned int> pack_str_id;
 	
+	std::queue<std::string> logs;
+	size_t max_queue_size;
+	
 	static LogStorage *instance;
+	
+	bool is_shutting_down = false;
 	
 	public:
 		LogStorage();
 		
 		static LogStorage *GetInstance() { return instance; }
 		
-		void StoreLog(unsigned int channel_id, std::map<std::string, std::string> &std_fields, std::map<std::string, std::string> &custom_fields);
+		void Shutdown(void);
+		void WaitForShutdown(void);
+		
+		void Log(const std::string &str);
 		
 		int PackInteger(const std::string &str);
 		std::string UnpackInteger(int i);
@@ -49,6 +63,10 @@ class LogStorage
 		unsigned int PackString(const std::string &str);
 	
 	private:
+		static void *ls_thread(LogStorage *ls);
+		
+		void log(const std::string &str);
+		void store_log(unsigned int channel_id, std::map<std::string, std::string> &std_fields, std::map<std::string, std::string> &custom_fields);
 		void add_query_field(int type, std::string &query, const std::string &name, std::map<std::string, std::string> &fields, void *val, std::vector<void *> &vals);
 };
 

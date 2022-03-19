@@ -107,6 +107,8 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return LOG_NOTIFICATION;
 	else if(type_str=="LOG_API")
 		return LOG_API;
+	else if(type_str=="LOG_ELOG")
+		return LOG_ELOG;
 	else if(type_str=="RETRYSCHEDULE_CREATED")
 		return RETRYSCHEDULE_CREATED;
 	else if(type_str=="RETRYSCHEDULE_MODIFIED")

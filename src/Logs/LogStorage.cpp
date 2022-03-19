@@ -21,6 +21,10 @@
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
+#include <WS/Events.h>
+#include <Logs/Channels.h>
+#include <Logs/Channel.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <arpa/inet.h>
 
@@ -43,14 +47,109 @@ LogStorage::LogStorage()
 {
 	DB db;
 	
+	Configuration *config = ConfigurationEvQueue::GetInstance();
+	max_queue_size = config->GetInt("elog.queue.size");
+	
 	db.Query("SELECT elog_pack_id, elog_pack_string FROM t_elog_pack");
 	while(db.FetchRow())
 		pack_str_id[db.GetField(1)] = db.GetFieldInt(0);
 	
 	instance = this;
+	
+	ls_thread_handle = thread(LogStorage::ls_thread,this);
 }
 
-void LogStorage::StoreLog(unsigned int channel_id, map<string, string> &std_fields, map<string, string> &custom_fields)
+void LogStorage::Shutdown(void)
+{
+	is_shutting_down = true;
+	
+	Log("");
+}
+
+void LogStorage::WaitForShutdown(void)
+{
+	ls_thread_handle.join();
+}
+
+void *LogStorage::ls_thread(LogStorage *ls)
+{
+	DB::StartThread();
+	
+	Logger::Log(LOG_NOTICE,"Log storage started");
+	
+	unique_lock<mutex> llock(ls->lock);
+	
+	while(true)
+	{
+		if(ls->logs.empty())
+			ls->logs_queued.wait(llock);
+		
+		if(ls->is_shutting_down)
+		{
+			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Log storage");
+			
+			DB::StopThread();
+			
+			return 0;
+		}
+		
+		string log = ls->logs.front();
+		ls->logs.pop();
+		
+		llock.unlock();
+		
+		ls->log(log);
+		
+		llock.lock();
+	}
+}
+
+void LogStorage::Log(const std::string &str)
+{
+	unique_lock<mutex> llock(lock);
+	
+	if(logs.size()>=max_queue_size)
+	{
+		Logger::Log(LOG_WARNING,"External logs queue size is full, discarding log");
+		return;
+	}
+		
+	
+	logs.push(str);
+	logs_queued.notify_one();
+}
+
+void LogStorage::log(const std::string &str)
+{
+	regex r("([a-zA-Z0-9_-]+)[ ]+");
+	
+	smatch matches;
+	
+	try
+	{
+		if(!regex_search(str, matches, r))
+			throw Exception("LogStorage", "unable to get log message channel");
+		
+		if(matches.size()!=2)
+			throw Exception("LogStorage", "unable to get log message channel");
+		
+		string channel_name = matches[1];
+		string log_str = str.substr(matches[0].length());
+		
+		Channel channel = Channels::GetInstance()->Get(channel_name);
+		
+		map<string, string> std, custom;
+		channel.ParseLog(log_str, std, custom);
+		
+		store_log(channel.GetID(), std, custom);
+	}
+	catch(Exception &e)
+	{
+		Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
+	}
+}
+
+void LogStorage::store_log(unsigned int channel_id, map<string, string> &std_fields, map<string, string> &custom_fields)
 {
 	string query = "INSERT INTO t_elog(elog_channel_id, elog_date, elog_crit, elog_machine, elog_domain, elog_ip, elog_uid, elog_status, elog_fields) VALUES(";
 	
@@ -98,6 +197,8 @@ void LogStorage::StoreLog(unsigned int channel_id, map<string, string> &std_fiel
 	
 	DB db;
 	db.QueryVsPrintf(query, vals);
+	
+	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
 
 void LogStorage::add_query_field(int type, string &query, const string &name, map<string, string> &fields, void *val, vector<void *> &vals)
@@ -239,7 +340,7 @@ string LogStorage::UnpackCrit(int i)
 
 unsigned int LogStorage::PackString(const string &str)
 {
-	std::unique_lock<std::mutex> llock(lock);
+	unique_lock<mutex> llock(lock);
 	
 	auto it = pack_str_id.find(str);
 	

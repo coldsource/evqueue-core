@@ -30,6 +30,7 @@
 #define ERROR_MAX_LEN                  256
 #define USER_NAME_MAX_LEN               32
 #define CHANNEL_NAME_MAX_LEN            32
+#define ELOG_MAXSIZE                    4096
 
 #include <unistd.h>
 

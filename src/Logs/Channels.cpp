@@ -70,36 +70,6 @@ void Channels::Reload(bool notify)
 	}
 }
 
-void Channels::Log(const std::string &str)
-{
-	regex r("([a-zA-Z0-9_-]+)[ ]+");
-	
-	smatch matches;
-	
-	try
-	{
-		if(!regex_search(str, matches, r))
-			throw Exception("Channels", "unable to get log message channel");
-		
-		if(matches.size()!=2)
-			throw Exception("Channels", "unable to get log message channel");
-		
-		string channel_name = matches[1];
-		string log_str = str.substr(matches[0].length());
-		
-		Channel channel = Get(channel_name);
-		
-		map<string, string> std, custom;
-		channel.ParseLog(log_str, std, custom);
-		
-		LogStorage::GetInstance()->StoreLog(channel.GetID(), std, custom);
-	}
-	catch(Exception &e)
-	{
-		Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
-	}
-}
-
 bool Channels::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())

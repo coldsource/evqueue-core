@@ -81,6 +81,9 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["ws.keepalive"] = "30";
 	entries["ws.workers"] = "8";
 	entries["ws.events.throttling"] = "yes";
+	entries["elog.bind.ip"] = "*";
+	entries["elog.bind.port"] = "5002";
+	entries["elog.queue.size"] = "1000";
 	entries["notifications.tasks.directory"] = "/tmp";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["notifications.tasks.concurrency"] = "16";
@@ -196,6 +199,8 @@ void ConfigurationEvQueue::Check(void)
 	check_int_entry("ws.keepalive");
 	check_int_entry("ws.workers");
 	check_int_entry("ws.bind.port");
+	check_int_entry("elog.bind.port");
+	check_int_entry("elog.queue.size");
 	check_int_entry("notifications.tasks.timeout");
 	check_int_entry("notifications.tasks.concurrency");
 	check_int_entry("cluster.cnx.timeout");
