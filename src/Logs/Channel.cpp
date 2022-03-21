@@ -45,12 +45,37 @@ Channel::Channel(DB *db,unsigned int elog_channel_id)
 	if(!db->FetchRow())
 		throw Exception("Channel","Unknown Channel");
 	
-	this->elog_channel_id = db->GetFieldInt(0);
-	elog_channel_name = db->GetField(1);
-	elog_channel_config = db->GetField(2);
+	init(db->GetFieldInt(0), db->GetField(1), db->GetField(2));
+}
+
+Channel::Channel(unsigned int id, const std::string &name, const std::string &config)
+{
+	init(id, name, config);
+}
+
+void Channel::init(unsigned int id, const std::string &name, const std::string &config)
+{
+	this->elog_channel_id = id;
+	elog_channel_name = name;
+	elog_channel_config = config;
 	
-	json_config = json::parse(elog_channel_config);
-	log_regex = regex(json_config["regex"]);
+	try
+	{
+		json_config = json::parse(elog_channel_config);
+	}
+	catch(...)
+	{
+		throw Exception("Channel", "invalid config json");
+	}
+	
+	try
+	{
+		log_regex = regex(json_config["regex"]);
+	}
+	catch(...)
+	{
+		throw Exception("Channel", "invalid regex");
+	}
 	
 	crit_idx = -1;
 	if(json_config["crit"].type()==nlohmann::json::value_t::string)
@@ -77,7 +102,7 @@ void Channel::ParseLog(const string log_str, map<string, string> &std_fields, ma
 	smatch matches;
 	
 	if(!regex_search(log_str, matches, log_regex))
-		throw Exception("StoreLog", "unable to match log message");
+		throw Exception("Channel", "unable to match log message");
 	
 	char buf[32];
 	struct tm now_t;
@@ -388,12 +413,31 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 	}
 	else if(action=="testlog")
 	{
-		unsigned int id = query->GetRootAttributeInt("id");
+		int id = query->GetRootAttributeInt("id", -1);
+		string config = query->GetRootAttribute("config", "");
 		string log = query->GetRootAttribute("log");
+		
+		if(id==-1 && config=="")
+			throw Exception("Channel","id and config cannot be both empty","INVALID_PARAMETER");
 		
 		map<string, string> std, custom;
 		
-		Channel channel = Channels::GetInstance()->Get(id);
+		Channel channel;
+		
+		try
+		{
+			if(id!=-1)
+				channel = Channels::GetInstance()->Get(id);
+			if(config!="")
+				channel = Channel(-1, "default", config);
+		}
+		catch(Exception &e)
+		{
+			response->SetAttribute("valid", "no");
+			response->SetAttribute("details", e.error);
+			return true;
+		}
+		
 		try
 		{
 			channel.ParseLog(log, std, custom);

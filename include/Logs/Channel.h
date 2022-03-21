@@ -53,6 +53,7 @@ class Channel
 	public:
 		Channel();
 		Channel(DB *db,unsigned int elog_channel_id);
+		Channel(unsigned int id, const std::string &name, const std::string &config);
 		
 		unsigned int GetID() const { return elog_channel_id; }
 		const std::string &GetName() const { return elog_channel_name; }
@@ -69,6 +70,7 @@ class Channel
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
+		void init(unsigned int id, const std::string &name, const std::string &config);
 		void get_log_part(const std::smatch &matches, const std::string &name, int idx, std::map<std::string, std::string> &val);
 		int get_log_idx(const nlohmann::json &j, const std::string &name);
 		static bool check_int_field(const nlohmann::json &j, const std::string &name);
