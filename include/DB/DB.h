@@ -88,6 +88,8 @@ public:
 	
 	void Disconnect();
 	
+	static int TO_DAYS(const std::string &t);
+	
 private:
 	void connect();
 };

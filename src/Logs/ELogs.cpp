@@ -46,6 +46,17 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		string filter_emitted_from = query->GetRootAttribute("filter_emitted_from","");
 		string filter_emitted_until = query->GetRootAttribute("filter_emitted_until","");
 		
+		// Default filter for emitted_from to current day for performance reasons
+		if(filter_emitted_from=="")
+		{
+			char buf[32];
+			struct tm now_t;
+			time_t now = time(0);
+			localtime_r(&now, &now_t);
+			strftime(buf, 32, "%Y-%m-%d 00:00:00", &now_t);
+			filter_emitted_from = string(buf);
+		}
+		
 		string filter_ip = query->GetRootAttribute("filter_ip","");
 		string filter_ip_bin;
 		

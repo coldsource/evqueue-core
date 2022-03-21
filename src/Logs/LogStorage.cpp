@@ -154,32 +154,21 @@ void LogStorage::store_log(unsigned int channel_id, map<string, string> &std_fie
 	string query = "INSERT INTO t_elog(elog_channel_id, elog_date, elog_crit, elog_machine, elog_domain, elog_ip, elog_uid, elog_status, elog_fields) VALUES(";
 	
 	vector<void *> vals;
+	string date, ip, uid, custom;
+	int crit, machine, domain, status;
+	
 	
 	query += "%i";
 	vals.push_back(&channel_id);
 	
-	string date;
 	add_query_field(FIELD_TYPE_STR, query, "date", std_fields, &date, vals);
-	
-	int crit;
 	add_query_field(FIELD_TYPE_CRIT, query, "crit", std_fields, &crit, vals);
-	
-	int machine;
 	add_query_field(FIELD_TYPE_PACK, query, "machine", std_fields, &machine, vals);
-	
-	int domain;
 	add_query_field(FIELD_TYPE_PACK, query, "domain", std_fields, &domain, vals);
-	
-	string ip;
 	add_query_field(FIELD_TYPE_IP, query, "ip", std_fields, &ip, vals);
-	
-	string uid;
 	add_query_field(FIELD_TYPE_STR, query, "uid", std_fields, &uid, vals);
-	
-	int status;
 	add_query_field(FIELD_TYPE_INT, query, "status", std_fields, &status, vals);
 	
-	string custom;
 	if(custom_fields.size()>0)
 	{
 		json j;
@@ -196,7 +185,24 @@ void LogStorage::store_log(unsigned int channel_id, map<string, string> &std_fie
 	query += ")";
 	
 	DB db;
-	db.QueryVsPrintf(query, vals);
+	try
+	{
+		db.QueryVsPrintf(query, vals);
+	}
+	catch(Exception &e)
+	{
+		if(e.codeno==1526) // No partition for data
+		{
+			// Automatically create partition to store new logs
+			db.QueryPrintf("SELECT TO_DAYS(%s)", &date);
+			db.FetchRow();
+			
+			int days = db.GetFieldInt(0)+1;
+			string part_name = "p"+date.substr(0, 4)+date.substr(5, 2)+date.substr(8, 2);
+			
+			db.QueryPrintf("ALTER TABLE t_elog ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+		}
+	}
 	
 	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
