@@ -56,6 +56,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["gc.logs.retention"] = "7";
 	entries["gc.workflowinstance.retention"] = "30";
 	entries["gc.uniqueaction.retention"] = "30";
+	entries["gc.elogs.retention"] = "90";
 	entries["logger.db.enable"] = "yes";
 	entries["logger.db.filter"] = "LOG_WARNING";
 	entries["logger.syslog.enable"] = "yes";
@@ -187,6 +188,7 @@ void ConfigurationEvQueue::Check(void)
 	check_int_entry("gc.logs.retention");
 	check_int_entry("gc.workflowinstance.retention");
 	check_int_entry("gc.uniqueaction.retention");
+	check_int_entry("gc.elogs.retention");
 	check_int_entry("network.connections.max");
 	check_int_entry("network.listen.backlog");
 	check_int_entry("network.rcv.timeout");
@@ -218,6 +220,9 @@ void ConfigurationEvQueue::Check(void)
 
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
 		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");
+	
+	if(GetInt("gc.elogs.retention")<2)
+		throw Exception("Configuration","gc.elogs.retention: cannot be less than 2");
 
 	if(GetInt("workflowinstance.savepoint.level")<0 || GetInt("workflowinstance.savepoint.level")>3)
 		throw Exception("Configuration","workflowinstance.savepoint.level: invalid value '"+entries["workflowinstance.savepoint.level"]+"'. Value must be between O and 3");

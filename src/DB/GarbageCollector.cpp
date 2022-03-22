@@ -35,15 +35,17 @@ GarbageCollector::GarbageCollector()
 	// Read configuration
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
-	enable = ConfigurationEvQueue::GetInstance()->GetBool("gc.enable");
-	delay = ConfigurationEvQueue::GetInstance()->GetInt("gc.delay");
-	interval = ConfigurationEvQueue::GetInstance()->GetInt("gc.interval");
-	limit = ConfigurationEvQueue::GetInstance()->GetInt("gc.limit");
-	workflowinstance_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.workflowinstance.retention");
-	logs_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.logs.retention");
-	logsapi_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.logsapi.retention");
-	logsnotifications_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.logsnotifications.retention");
-	uniqueaction_retention = ConfigurationEvQueue::GetInstance()->GetInt("gc.uniqueaction.retention");
+	enable = config->GetBool("gc.enable");
+	delay = config->GetInt("gc.delay");
+	interval = config->GetInt("gc.interval");
+	limit = config->GetInt("gc.limit");
+	workflowinstance_retention = config->GetInt("gc.workflowinstance.retention");
+	logs_retention = config->GetInt("gc.logs.retention");
+	logsapi_retention = config->GetInt("gc.logsapi.retention");
+	logsnotifications_retention = config->GetInt("gc.logsnotifications.retention");
+	uniqueaction_retention = config->GetInt("gc.uniqueaction.retention");
+	elogs_retention = config->GetInt("gc.elogs.retention");
+	dbname = config->Get("mysql.database");
 	
 	is_shutting_down = false;
 	
@@ -160,6 +162,7 @@ int GarbageCollector::purge(time_t now)
 	try
 	{
 		DB db;
+		DB db2(&db);
 		char buf[32];
 		int deleted_rows = 0;
 		
@@ -195,6 +198,13 @@ int GarbageCollector::purge(time_t now)
 		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&uniqueaction_t);
 		db.QueryPrintfC("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",buf,&limit);
 		deleted_rows += db.AffectedRows();
+		
+		db.QueryPrintf("SELECT PARTITION_NAME FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_elog' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 30 OFFSET %i", &dbname, &elogs_retention);
+		while(db.FetchRow())
+		{
+			db2.QueryPrintf("ALTER TABLE t_elog DROP PARTITION "+db.GetField(0));
+			deleted_rows++;
+		}
 		
 		return deleted_rows;
 	}

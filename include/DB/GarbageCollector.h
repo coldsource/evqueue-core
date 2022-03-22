@@ -35,6 +35,8 @@ class GarbageCollector
 		int logsapi_retention;
 		int logsnotifications_retention;
 		int uniqueaction_retention;
+		int elogs_retention;
+		std::string dbname;
 		
 		bool is_shutting_down;
 		
