@@ -59,7 +59,7 @@ class Channel
 		const std::string &GetName() const { return elog_channel_name; }
 		const std::string &GetConfig() const { return elog_channel_config; }
 		
-		void ParseLog(const std::string log_str, std::map<std::string, std::string> &std_fields, std::map<std::string, std::string> &custom_fields);
+		void ParseLog(const std::string log_str, std::map<std::string, std::string> &std_fields, std::map<std::string, std::string> &custom_fields) const;
 		
 		static bool CheckChannelName(const std::string &user_name);
 		static void Get(unsigned int id, QueryResponse *response);
@@ -71,7 +71,7 @@ class Channel
 	
 	private:
 		void init(unsigned int id, const std::string &name, const std::string &config);
-		void get_log_part(const std::smatch &matches, const std::string &name, int idx, std::map<std::string, std::string> &val);
+		void get_log_part(const std::smatch &matches, const std::string &name, int idx, std::map<std::string, std::string> &val) const;
 		int get_log_idx(const nlohmann::json &j, const std::string &name);
 		static bool check_int_field(const nlohmann::json &j, const std::string &name);
 		static int str_to_crit(const std::string &str);

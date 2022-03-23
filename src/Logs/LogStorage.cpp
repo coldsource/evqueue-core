@@ -43,12 +43,13 @@ using nlohmann::json;
 
 LogStorage *LogStorage::instance = 0;
 
-LogStorage::LogStorage()
+LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 {
 	DB db;
 	
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	max_queue_size = config->GetInt("elog.queue.size");
+	bulk_size = config->GetInt("elog.bulk.size");
 	
 	db.Query("SELECT elog_pack_id, elog_pack_string FROM t_elog_pack");
 	while(db.FetchRow())
@@ -79,6 +80,8 @@ void *LogStorage::ls_thread(LogStorage *ls)
 	
 	unique_lock<mutex> llock(ls->lock);
 	
+	vector<string> logs;
+	
 	while(true)
 	{
 		if(ls->logs.empty())
@@ -93,12 +96,17 @@ void *LogStorage::ls_thread(LogStorage *ls)
 			return 0;
 		}
 		
-		string log = ls->logs.front();
-		ls->logs.pop();
+		logs.clear();
+		
+		for(int i=0;i<ls->bulk_size && !ls->logs.empty();i++)
+		{
+			logs.push_back(ls->logs.front());
+			ls->logs.pop();
+		}
 		
 		llock.unlock();
 		
-		ls->log(log);
+		ls->log(logs);
 		
 		llock.lock();
 	}
@@ -119,70 +127,88 @@ void LogStorage::Log(const std::string &str)
 	logs_queued.notify_one();
 }
 
-void LogStorage::log(const std::string &str)
+void LogStorage::log(const vector<string> &logs)
 {
-	regex r("([a-zA-Z0-9_-]+)[ ]+");
-	
 	smatch matches;
 	
-	try
+	vector<unsigned int> channels;
+	vector<map<string, string>> stds, customs;
+	
+	for(int i=0;i<logs.size();i++)
 	{
-		if(!regex_search(str, matches, r))
-			throw Exception("LogStorage", "unable to get log message channel");
-		
-		if(matches.size()!=2)
-			throw Exception("LogStorage", "unable to get log message channel");
-		
-		string channel_name = matches[1];
-		string log_str = str.substr(matches[0].length());
-		
-		Channel channel = Channels::GetInstance()->Get(channel_name);
-		
-		map<string, string> std, custom;
-		channel.ParseLog(log_str, std, custom);
-		
-		store_log(channel.GetID(), std, custom);
+		try
+		{
+			if(!regex_search(logs[i], matches, channel_regex))
+				throw Exception("LogStorage", "unable to get log message channel");
+			
+			if(matches.size()!=2)
+				throw Exception("LogStorage", "unable to get log message channel");
+			
+			string channel_name = matches[1];
+			string log_str = logs[i].substr(matches[0].length());
+			
+			const Channel channel = Channels::GetInstance()->Get(channel_name);
+			
+			map<string, string> std, custom;
+			channel.ParseLog(log_str, std, custom);
+			
+			channels.push_back(channel.GetID());
+			stds.push_back(std);
+			customs.push_back(custom);
+		}
+		catch(Exception &e)
+		{
+			Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
+		}
 	}
-	catch(Exception &e)
-	{
-		Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
-	}
+	
+	store_log(channels, stds, customs);
 }
 
-void LogStorage::store_log(unsigned int channel_id, map<string, string> &std_fields, map<string, string> &custom_fields)
+void LogStorage::store_log(vector<unsigned int> channels_id, const vector<map<string, string>> &std_fields, const vector<map<string, string>> &custom_fields)
 {
-	string query = "INSERT INTO t_elog(elog_channel_id, elog_date, elog_crit, elog_machine, elog_domain, elog_ip, elog_uid, elog_status, elog_fields) VALUES(";
+	string query = "INSERT INTO t_elog(elog_channel_id, elog_date, elog_crit, elog_machine, elog_domain, elog_ip, elog_uid, elog_status, elog_fields) VALUES";
+	
+	int n = channels_id.size();
 	
 	vector<void *> vals;
-	string date, ip, uid, custom;
-	int crit, machine, domain, status;
+	string date[n], ip[n], uid[n], custom[n];
+	int channel_id[n], crit[n], machine[n], domain[n], status[n];
 	
-	
-	query += "%i";
-	vals.push_back(&channel_id);
-	
-	add_query_field(FIELD_TYPE_STR, query, "date", std_fields, &date, vals);
-	add_query_field(FIELD_TYPE_CRIT, query, "crit", std_fields, &crit, vals);
-	add_query_field(FIELD_TYPE_PACK, query, "machine", std_fields, &machine, vals);
-	add_query_field(FIELD_TYPE_PACK, query, "domain", std_fields, &domain, vals);
-	add_query_field(FIELD_TYPE_IP, query, "ip", std_fields, &ip, vals);
-	add_query_field(FIELD_TYPE_STR, query, "uid", std_fields, &uid, vals);
-	add_query_field(FIELD_TYPE_INT, query, "status", std_fields, &status, vals);
-	
-	if(custom_fields.size()>0)
+	for(int i=0;i<n;i++)
 	{
-		json j;
-		for(auto it=custom_fields.begin(); it!=custom_fields.end(); ++it)
-			j[it->first] = it->second;
+		if(i>0)
+			query += ",";
 		
-		custom = j.dump();
-		query += ", %s";
-		vals.push_back(&custom);
+		query += "(";
+		
+		query += "%i";
+		channel_id[i] = channels_id[i];
+		vals.push_back(&channel_id);
+		
+		add_query_field(FIELD_TYPE_STR, query, "date", std_fields[i], &date[i], vals);
+		add_query_field(FIELD_TYPE_CRIT, query, "crit", std_fields[i], &crit[i], vals);
+		add_query_field(FIELD_TYPE_PACK, query, "machine", std_fields[i], &machine[i], vals);
+		add_query_field(FIELD_TYPE_PACK, query, "domain", std_fields[i], &domain[i], vals);
+		add_query_field(FIELD_TYPE_IP, query, "ip", std_fields[i], &ip[i], vals);
+		add_query_field(FIELD_TYPE_STR, query, "uid", std_fields[i], &uid[i], vals);
+		add_query_field(FIELD_TYPE_INT, query, "status", std_fields[i], &status[i], vals);
+		
+		if(custom_fields.size()>0)
+		{
+			json j;
+			for(auto it=custom_fields[i].begin(); it!=custom_fields[i].end(); ++it)
+				j[it->first] = it->second;
+			
+			custom[i] = j.dump();
+			query += ", %s";
+			vals.push_back(&custom[i]);
+		}
+		else
+			query += ", NULL";
+		
+		query += ")";
 	}
-	else
-		query += ", NULL";
-	
-	query += ")";
 	
 	DB db;
 	try
@@ -191,6 +217,7 @@ void LogStorage::store_log(unsigned int channel_id, map<string, string> &std_fie
 	}
 	catch(Exception &e)
 	{
+		printf("Err %s\n", e.error.c_str());
 		if(e.codeno==1526) // No partition for data
 		{
 			// Automatically create partition to store new logs
@@ -198,7 +225,7 @@ void LogStorage::store_log(unsigned int channel_id, map<string, string> &std_fie
 			db.FetchRow();
 			
 			int days = db.GetFieldInt(0)+1;
-			string part_name = "p"+date.substr(0, 4)+date.substr(5, 2)+date.substr(8, 2);
+			string part_name = "p"+date[0].substr(0, 4)+date[0].substr(5, 2)+date[0].substr(8, 2);
 			
 			db.QueryPrintf("ALTER TABLE t_elog ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
 		}
@@ -207,7 +234,7 @@ void LogStorage::store_log(unsigned int channel_id, map<string, string> &std_fie
 	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
 
-void LogStorage::add_query_field(int type, string &query, const string &name, map<string, string> &fields, void *val, vector<void *> &vals)
+void LogStorage::add_query_field(int type, string &query, const string &name, const map<string, string> &fields, void *val, vector<void *> &vals)
 {
 	auto it = fields.find(name);
 	if(it==fields.end())

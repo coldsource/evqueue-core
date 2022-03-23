@@ -97,7 +97,7 @@ void Channel::init(unsigned int id, const std::string &name, const std::string &
 	}
 }
 
-void Channel::ParseLog(const string log_str, map<string, string> &std_fields, map<string, string> &custom_fields)
+void Channel::ParseLog(const string log_str, map<string, string> &std_fields, map<string, string> &custom_fields) const
 {
 	smatch matches;
 	
@@ -133,7 +133,7 @@ void Channel::ParseLog(const string log_str, map<string, string> &std_fields, ma
 		get_log_part(matches, it->first, it->second, custom_fields);
 }
 
-void Channel::get_log_part(const smatch &matches, const string &name, int idx, map<string, string> &val)
+void Channel::get_log_part(const smatch &matches, const string &name, int idx, map<string, string> &val) const
 {
 	if(idx<0)
 		return;

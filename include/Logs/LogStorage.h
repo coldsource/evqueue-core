@@ -25,6 +25,7 @@
 #include <vector>
 #include <queue>
 #include <mutex>
+#include <regex>
 #include <condition_variable>
 #include <thread>
 
@@ -37,6 +38,8 @@ class LogStorage
 	
 	std::map<std::string, unsigned int> pack_str_id;
 	
+	int bulk_size;
+	std::regex channel_regex;
 	std::queue<std::string> logs;
 	size_t max_queue_size;
 	
@@ -65,9 +68,9 @@ class LogStorage
 	private:
 		static void *ls_thread(LogStorage *ls);
 		
-		void log(const std::string &str);
-		void store_log(unsigned int channel_id, std::map<std::string, std::string> &std_fields, std::map<std::string, std::string> &custom_fields);
-		void add_query_field(int type, std::string &query, const std::string &name, std::map<std::string, std::string> &fields, void *val, std::vector<void *> &vals);
+		void log(const std::vector<std::string> &logs);
+		void store_log(std::vector<unsigned int> channels_id, const std::vector<std::map<std::string, std::string>> &std_fields, const std::vector<std::map<std::string, std::string>> &custom_fields);
+		void add_query_field(int type, std::string &query, const std::string &name, const std::map<std::string, std::string> &fields, void *val, std::vector<void *> &vals);
 };
 
 #endif
