@@ -19,6 +19,7 @@
 
 #include <Logs/ELogs.h>
 #include <Logs/LogStorage.h>
+#include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
@@ -187,6 +188,25 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			node.setAttribute("uid",db.GetField(6));
 			node.setAttribute("status",db.GetField(7));
 			node.setAttribute("custom_fields",db.GetField(8));
+		}
+		
+		return true;
+	}
+	else if(action=="statistics")
+	{
+		DB db;
+		
+		string dbname = ConfigurationEvQueue::GetInstance()->Get("mysql.database");
+		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_elog' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", &dbname);
+		
+		while(db.FetchRow())
+		{
+			DOMElement node = (DOMElement)response->AppendXML("<partition />");
+			node.setAttribute("name",db.GetField(0));
+			node.setAttribute("creation",db.GetField(1));
+			node.setAttribute("rows",db.GetField(2));
+			node.setAttribute("datasize",db.GetField(3));
+			node.setAttribute("indexsize",db.GetField(4));
 		}
 		
 		return true;
