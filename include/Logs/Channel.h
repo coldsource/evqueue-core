@@ -26,7 +26,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <Logs/Field.h>
+#include <Logs/Fields.h>
 
 class XMLQuery;
 class QueryResponse;
@@ -39,6 +39,7 @@ class Channel
 	unsigned int channel_id;
 	unsigned int channel_group_id;
 	std::string channel_name;
+	Fields fields;
 	std::string channel_config;
 	
 	nlohmann::json json_config;
@@ -53,12 +54,13 @@ class Channel
 	public:
 		Channel();
 		Channel(DB *db,unsigned int channel_id);
-		Channel(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config);
+		Channel(unsigned int id, unsigned int group_id, const std::string &name, const std::string &config);
 		
 		unsigned int GetID() const { return channel_id; }
 		const std::string &GetName() const { return channel_name; }
 		const std::string &GetConfig() const { return channel_config; }
 		const ChannelGroup GetGroup() const;
+		unsigned int GetGroupID() const { return channel_group_id; }
 		
 		void ParseLog(const std::string log_str, std::map<std::string, std::string> &group_fields, std::map<std::string, std::string> &fields) const;
 		
@@ -71,7 +73,7 @@ class Channel
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
-		void init(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config);
+		void init(unsigned int id, unsigned int group_id, const std::string &name, const std::string &config);
 		void get_log_part(const std::smatch &matches, const std::string &name, int idx, std::map<std::string, std::string> &val) const;
 		int get_log_idx(const nlohmann::json &j, const std::string &name);
 		static bool check_int_field(const nlohmann::json &j, const std::string &name);

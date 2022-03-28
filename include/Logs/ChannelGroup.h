@@ -45,7 +45,6 @@ class ChannelGroup
 		const std::string &GetName() const { return channel_group_name; }
 		
 		static bool CheckChannelGroupName(const std::string &channel_group_name);
-		static bool CheckFieldName(const std::string &field_name);
 		static void Get(unsigned int id, QueryResponse *response);
 		static unsigned int Create(const std::string &name, const std::string &fields_str);
 		static void Edit(unsigned int id, const std::string &name, const std::string &fields_str);

@@ -20,6 +20,7 @@
 #include <Logs/Fields.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
+#include <global.h>
 
 #include <set>
 
@@ -52,30 +53,45 @@ void Fields::Update(const json &j)
 	
 	set<unsigned int> fields_ids;
 	
-	// Rename existing fields
+	if(j.type()!=nlohmann::json::value_t::object)
+		throw Exception("Fields", "Incorrect fields configuration json");
+	
+	// Modify existing fields
 	for(auto it = j.begin(); it!=j.end(); ++it)
 	{
+		string field_name = it.key();
+		if(!CheckFieldName(field_name))
+			throw Exception("ChannelGroup","Invalid field name : "+it.key(),"INVALID_PARAMETER");
+		
 		auto field = it.value();
 		
-		if(!field.contains("name"))
-			throw Exception("Fields", "Field name is mandatory");
+		if(field.type()!=nlohmann::json::value_t::object)
+			throw Exception("Fields", "Incorrect fields configuration json");
 		
-		if(field["name"].type()!=nlohmann::json::value_t::string)
-			throw Exception("Fields", "Field name must be a string");
+		if(!field.contains("type"))
+			throw Exception("Fields", "Field type is mandatory", "INVALID_PARAMETER");
+		
+		if(field["type"].type()!=nlohmann::json::value_t::string)
+			throw Exception("Fields", "Field type must be a string", "INVALID_PARAMETER");
+		
+		string type_str = field["type"];
+		Field::en_type type = Field::StringToFieldType(type_str);
 		
 		if(!field.contains("id"))
 			continue;
 		
 		if(field["id"].type()!=nlohmann::json::value_t::number_unsigned)
-			throw Exception("Fields", "Field ID must be an integer");
+			throw Exception("Fields", "Field ID must be an integer", "INVALID_PARAMETER");
 		
 		unsigned int field_id = field["id"];
 		if(fields.find(field_id)==fields.end())
 			throw Exception("Fields", "Unknow field ID : "+to_string(field_id));
 		
-		string field_name = field["name"];
 		if(fields[field_id].GetName()!=field_name)
-			db.QueryPrintf("UPDATE t_field SET field_name=%s WHERE %c=%i", &field_name, &col_name, &field_id);
+			db.QueryPrintf("UPDATE t_field SET field_name=%s WHERE field_id=%i", &field_name, &field_id);
+		
+		if(fields[field_id].GetType()!=type)
+			db.QueryPrintf("UPDATE t_field SET field_type=%s WHERE field_id=%i", &type_str, &field_id);
 		
 		fields_ids.insert(field_id);
 	}
@@ -96,13 +112,7 @@ void Fields::Update(const json &j)
 		if(field.contains("id"))
 			continue;
 		
-		if(!field.contains("type"))
-			throw Exception("Fields", "Field type is mandatory");
-		
-		if(field["type"].type()!=nlohmann::json::value_t::string)
-			throw Exception("Fields", "Field type must be a string");
-		
-		string name = field["name"];
+		string name = it.key();
 		string type = field["type"];
 		Field::StringToFieldType(type);
 		
@@ -110,4 +120,22 @@ void Fields::Update(const json &j)
 	}
 	
 	db.CommitTransaction();
+}
+
+bool Fields::CheckFieldName(const string &field_name)
+{
+	int i,len;
+	
+	len = field_name.length();
+	if(len==0 || len>CHANNEL_FIELD_NAME_MAX_LEN)
+		return false;
+	
+	for(i=0;i<len;i++)
+		if(!isalnum(field_name[i]))
+			return false;
+	
+	if(field_name=="date" || field_name=="crit") // Reserved names
+		return false;
+	
+	return true;
 }

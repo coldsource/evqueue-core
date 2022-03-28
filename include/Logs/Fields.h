@@ -55,6 +55,8 @@ class Fields
 		const std::map<unsigned int, Field> &GetMap() const { return fields; }
 		
 		void Update(const nlohmann::json &j);
+		
+		static bool CheckFieldName(const std::string &field_name);
 };
 
 #endif

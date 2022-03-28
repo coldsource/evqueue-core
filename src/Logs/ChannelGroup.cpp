@@ -63,24 +63,6 @@ bool ChannelGroup::CheckChannelGroupName(const string &channel_group_name)
 	return true;
 }
 
-bool ChannelGroup::CheckFieldName(const string &field_name)
-{
-	int i,len;
-	
-	len = field_name.length();
-	if(len==0 || len>CHANNEL_FIELD_NAME_MAX_LEN)
-		return false;
-	
-	for(i=0;i<len;i++)
-		if(!isalnum(field_name[i]))
-			return false;
-	
-	if(field_name=="date" || field_name=="crit") // Reserved names
-		return false;
-	
-	return true;
-}
-
 void ChannelGroup::Get(unsigned int id, QueryResponse *response)
 {
 	const ChannelGroup channelgroup = ChannelGroups::GetInstance()->Get(id);
@@ -171,21 +153,6 @@ void ChannelGroup::create_edit_check(const std::string &name, const std::string 
 	catch(...)
 	{
 		throw Exception("ChannelGroup","Invalid configuration json","INVALID_PARAMETER");
-	}
-	
-	for(auto it = j.begin(); it!=j.end(); ++it)
-	{
-		if(!CheckFieldName(it.key()))
-			throw Exception("ChannelGroup","Invalid field name : "+it.key(),"INVALID_PARAMETER");
-		
-		try
-		{
-			Field::StringToFieldType(it.value());
-		}
-		catch(...)
-		{
-			throw Exception("ChannelGroup","Field type is invalid","INVALID_PARAMETER");
-		}
 	}
 }
 

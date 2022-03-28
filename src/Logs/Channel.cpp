@@ -37,11 +37,11 @@
 using namespace std;
 using nlohmann::json;
 
-Channel::Channel()
+Channel::Channel():fields(Fields::en_type::CHANNEL, -1)
 {
 }
 
-Channel::Channel(DB *db,unsigned int channel_id)
+Channel::Channel(DB *db,unsigned int channel_id):fields(Fields::en_type::CHANNEL, channel_id)
 {
 	db->QueryPrintf("SELECT channel_id, channel_group_id, channel_name,channel_config FROM t_channel WHERE channel_id=%i",&channel_id);
 	
@@ -56,15 +56,15 @@ Channel::Channel(DB *db,unsigned int channel_id)
 	init(id, group_id, name, config);
 }
 
-Channel::Channel(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config)
+Channel::Channel(unsigned int id, unsigned int group_id, const std::string &name, const std::string &config):fields(Fields::en_type::CHANNEL, id)
 {
-	init(id, channel_group_id, name, config);
+	init(id, group_id, name, config);
 }
 
-void Channel::init(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config)
+void Channel::init(unsigned int id, unsigned int group_id, const std::string &name, const std::string &config)
 {
 	this->channel_id = id;
-	this->channel_group_id = channel_group_id;
+	this->channel_group_id = group_id;
 	channel_name = name;
 	channel_config = config;
 	
@@ -92,13 +92,13 @@ void Channel::init(unsigned int id, unsigned int channel_group_id, const std::st
 	else
 		crit_idx = (int)json_config["crit"];
 	
-	auto group_fields_config = json_config["group_fields"];
-	for(auto it = group_fields_config.begin(); it!=group_fields_config.end(); ++it)
-		group_fields_idx[it.key()] = get_log_idx(group_fields_config, it.key());
+	auto group_matches = json_config["group_matches"];
+	for(auto it = group_matches.begin(); it!=group_matches.end(); ++it)
+		group_fields_idx[it.key()] = get_log_idx(group_matches, it.key());
 	
-	auto fields_config = json_config["fields"];
-	for(auto it = fields_config.begin(); it!=fields_config.end(); ++it)
-		fields_idx[it.key()] = get_log_idx(fields_config, it.key());
+	auto matches = json_config["matches"];
+	for(auto it = matches.begin(); it!=matches.end(); ++it)
+		fields_idx[it.key()] = get_log_idx(matches, it.key());
 }
 
 const ChannelGroup Channel::GetGroup() const
@@ -155,13 +155,8 @@ int Channel::get_log_idx(const json &j, const string &name)
 	if(!j.contains(name))
 		return -1;
 	
-	auto field_config = j[name];
-	if(!field_config.contains("match_group"))
-		return -1;
-	
-	auto e = field_config["match_group"];
-	if(e.type()==nlohmann::json::value_t::number_unsigned)
-		return e;
+	if(j[name].type()==nlohmann::json::value_t::number_unsigned)
+		return j[name];
 	
 	return -1;
 }
@@ -187,6 +182,7 @@ void Channel::Get(unsigned int id, QueryResponse *response)
 	
 	DOMElement node = (DOMElement)response->AppendXML("<channel />");
 	node.setAttribute("id",to_string(channel.GetID()));
+	node.setAttribute("group_id",to_string(channel.GetGroupID()));
 	node.setAttribute("name",channel.GetName());
 	node.setAttribute("config",channel.GetConfig());
 }
