@@ -26,16 +26,20 @@
 
 #include <nlohmann/json.hpp>
 
+#include <Logs/Field.h>
+
 class XMLQuery;
 class QueryResponse;
 class User;
 class DB;
+class ChannelGroup;
 
 class Channel
 {
-	unsigned int elog_channel_id;
-	std::string elog_channel_name;
-	std::string elog_channel_config;
+	unsigned int channel_id;
+	unsigned int channel_group_id;
+	std::string channel_name;
+	std::string channel_config;
 	
 	nlohmann::json json_config;
 	
@@ -43,40 +47,35 @@ class Channel
 	
 	int crit;
 	int crit_idx;
-	int machine_idx;
-	int domain_idx;
-	int ip_idx;
-	int uid_idx;
-	int status_idx;
-	std::map<std::string, int> custom_fields_idx;
+	
+	std::map<std::string, int> group_fields_idx, fields_idx;
 	
 	public:
 		Channel();
-		Channel(DB *db,unsigned int elog_channel_id);
-		Channel(unsigned int id, const std::string &name, const std::string &config);
+		Channel(DB *db,unsigned int channel_id);
+		Channel(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config);
 		
-		unsigned int GetID() const { return elog_channel_id; }
-		const std::string &GetName() const { return elog_channel_name; }
-		const std::string &GetConfig() const { return elog_channel_config; }
+		unsigned int GetID() const { return channel_id; }
+		const std::string &GetName() const { return channel_name; }
+		const std::string &GetConfig() const { return channel_config; }
+		const ChannelGroup GetGroup() const;
 		
-		void ParseLog(const std::string log_str, std::map<std::string, std::string> &std_fields, std::map<std::string, std::string> &custom_fields) const;
+		void ParseLog(const std::string log_str, std::map<std::string, std::string> &group_fields, std::map<std::string, std::string> &fields) const;
 		
 		static bool CheckChannelName(const std::string &user_name);
 		static void Get(unsigned int id, QueryResponse *response);
-		static unsigned int Create(const std::string &name, const std::string &config);
-		static void Edit(unsigned int id, const std::string &name, const std::string &config);
+		static unsigned int Create(const std::string &name, unsigned int group_id, const std::string &config);
+		static void Edit(unsigned int id, const std::string &name, unsigned int group_id, const std::string &config);
 		static void Delete(unsigned int id);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
-		void init(unsigned int id, const std::string &name, const std::string &config);
+		void init(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config);
 		void get_log_part(const std::smatch &matches, const std::string &name, int idx, std::map<std::string, std::string> &val) const;
 		int get_log_idx(const nlohmann::json &j, const std::string &name);
 		static bool check_int_field(const nlohmann::json &j, const std::string &name);
-		static int str_to_crit(const std::string &str);
-		static std::string crit_to_str(int i);
-		static void create_edit_check(const std::string &name, const std::string &config);
+		static void create_edit_check(const std::string &name, unsigned int group_id, const std::string &config);
 };
 
 #endif

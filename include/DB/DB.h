@@ -49,9 +49,14 @@ class DB
 	bool is_connected;
 	bool is_copy;
 	
+	std::string host;
+	std::string user;
+	std::string password;
+	std::string database;
+	
 public:
 	DB(DB *db);
-	DB(void);
+	DB(const std::string &name = "");
 	~DB(void);
 	
 	DB *Clone(void);

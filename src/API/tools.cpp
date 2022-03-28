@@ -37,6 +37,7 @@
 #include <User/User.h>
 #include <Tag/Tags.h>
 #include <Logs/Channels.h>
+#include <Logs/ChannelGroups.h>
 #include <Exception/Exception.h>
 
 #include <sys/types.h>
@@ -106,6 +107,13 @@ void tools_config_reload(const std::string &module,bool notify)
 	{
 		Channels *channels = Channels::GetInstance();
 		channels->Reload(notify);
+		module_is_valid = true;
+	}
+	
+	if(module=="all" || module=="channelgroups")
+	{
+		ChannelGroups *channelgroups = ChannelGroups::GetInstance();
+		channelgroups->Reload(notify);
 		module_is_valid = true;
 	}
 	

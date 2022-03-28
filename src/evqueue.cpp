@@ -55,6 +55,8 @@
 #include <Logs/ELogs.h>
 #include <Logs/Channel.h>
 #include <Logs/Channels.h>
+#include <Logs/ChannelGroup.h>
+#include <Logs/ChannelGroups.h>
 #include <Logs/LogStorage.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
@@ -522,6 +524,7 @@ int main(int argc,char **argv)
 		
 		// Load channels and logs storage
 		Channels *channels = new Channels();
+		ChannelGroups *channelgroups = new ChannelGroups();
 		LogStorage *log_storage = new LogStorage();
 		
 		// Initialize query handlers
@@ -550,6 +553,8 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("elogs",ELogs::HandleQuery);
 		qh->RegisterHandler("channel",Channel::HandleQuery);
 		qh->RegisterHandler("channels",Channels::HandleQuery);
+		qh->RegisterHandler("channel_group",ChannelGroup::HandleQuery);
+		qh->RegisterHandler("channel_groups",ChannelGroups::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
@@ -800,6 +805,7 @@ int main(int argc,char **argv)
 				delete users;
 				delete tags;
 				delete channels;
+				delete channelgroups;
 				delete log_storage;
 				delete active_connections;
 				delete random;

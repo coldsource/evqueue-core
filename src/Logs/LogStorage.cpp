@@ -45,13 +45,13 @@ LogStorage *LogStorage::instance = 0;
 
 LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 {
-	DB db;
+	DB db("elog");
 	
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	max_queue_size = config->GetInt("elog.queue.size");
 	bulk_size = config->GetInt("elog.bulk.size");
 	
-	db.Query("SELECT elog_pack_id, elog_pack_string FROM t_elog_pack");
+	db.Query("SELECT pack_id, pack_string FROM t_pack");
 	while(db.FetchRow())
 		pack_str_id[db.GetField(1)] = db.GetFieldInt(0);
 	
@@ -167,7 +167,7 @@ void LogStorage::log(const vector<string> &logs)
 
 void LogStorage::store_log(vector<unsigned int> channels_id, const vector<map<string, string>> &std_fields, const vector<map<string, string>> &custom_fields)
 {
-	string query = "INSERT INTO t_elog(elog_channel_id, elog_date, elog_crit, elog_machine, elog_domain, elog_ip, elog_uid, elog_status, elog_fields) VALUES";
+	string query = "INSERT INTO t_elog(channel_id, elog_date, elog_crit, elog_machine, elog_domain, elog_ip, elog_uid, elog_status, elog_fields) VALUES";
 	
 	int n = channels_id.size();
 	
@@ -380,8 +380,8 @@ unsigned int LogStorage::PackString(const string &str)
 	if(it!=pack_str_id.end())
 		return it->second;
 	
-	DB db;
-	db.QueryPrintf("REPLACE INTO t_elog_pack(elog_pack_string) VALUES(%s)", &str);
+	DB db("elog");
+	db.QueryPrintf("REPLACE INTO t_pack(pack_string) VALUES(%s)", &str);
 	
 	unsigned int id = db.InsertID();
 	pack_str_id[str] = id;

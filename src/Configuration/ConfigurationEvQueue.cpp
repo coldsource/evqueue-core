@@ -82,6 +82,10 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["ws.keepalive"] = "30";
 	entries["ws.workers"] = "8";
 	entries["ws.events.throttling"] = "yes";
+	entries["elog.mysql.database"] = "evqueue-elogs";
+	entries["elog.mysql.host"] = "localhost";
+	entries["elog.mysql.password"] = "";
+	entries["elog.mysql.user"] = "";
 	entries["elog.bind.ip"] = "*";
 	entries["elog.bind.port"] = "5002";
 	entries["elog.queue.size"] = "1000";

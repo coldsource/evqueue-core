@@ -35,6 +35,11 @@ using namespace std;
 
 DB::DB(DB *db)
 {
+	host = db->host;
+	user = db->user;
+	password = db->password;
+	database = db->database;
+	
 	// We share the same MySQL handle but is_connected is split. We must be connected before cloning or the connection will be made twice
 	db->connect();
 	
@@ -45,7 +50,7 @@ DB::DB(DB *db)
 	is_copy = true;
 }
 
-DB::DB(void)
+DB::DB(const string &name)
 {
 	// Initialisation de mysql
 	mysql = mysql_init(0);
@@ -55,6 +60,25 @@ DB::DB(void)
 	transaction_started = 0;
 	is_connected = false;
 	is_copy = false;
+	
+	// Read database configuration
+	Configuration *config = ConfigurationEvQueue::GetInstance();
+	if(name=="")
+	{
+		host = config->Get("mysql.host");
+		user = config->Get("mysql.user");
+		password = config->Get("mysql.password");
+		database = config->Get("mysql.database");
+	}
+	else if(name=="elog")
+	{
+		host = config->Get("elog.mysql.host");
+		user = config->Get("elog.mysql.user");
+		password = config->Get("elog.mysql.password");
+		database = config->Get("elog.mysql.database");
+	}
+	else
+		throw Exception("DB","Unknown database "+name);
 }
 
 DB::~DB(void)
@@ -255,7 +279,14 @@ void DB::QueryPrintf(const string &query,...)
 		{
 			switch(query[i+1])
 			{
-				case 's':
+				case 'c': // Column
+					arg_str = va_arg(ap,const string *);
+					if(arg_str)
+						escaped_len += arg_str->length();
+					i++;
+					break;
+				
+				case 's': // String
 					arg_str = va_arg(ap,const string *);
 					if(arg_str)
 						escaped_len += 2+2*arg_str->length(); // 2 Quotes + Escaped string
@@ -264,7 +295,7 @@ void DB::QueryPrintf(const string &query,...)
 					i++;
 					break;
 				
-				case 'i':
+				case 'i': // Integer
 					arg_int = va_arg(ap,const int *);
 					if(arg_int)
 						escaped_len += 16; // Integer
@@ -295,6 +326,16 @@ void DB::QueryPrintf(const string &query,...)
 		{
 			switch(query[i+1])
 			{
+				case 'c':
+					arg_str = va_arg(ap,const string *);
+					if(arg_str)
+					{
+						memcpy(escaped_query+j, arg_str->c_str(), arg_str->length());
+						j += arg_str->length();
+					}
+					i++;
+					break;
+				
 				case 's':
 					arg_str = va_arg(ap,const string *);
 					if(arg_str)
@@ -608,9 +649,7 @@ void DB::connect(void)
 	if(is_connected)
 		return; // Nothing to do
 	
-	Configuration *config = ConfigurationEvQueue::GetInstance();
-	
-	if(!mysql_real_connect(mysql,config->Get("mysql.host").c_str(),config->Get("mysql.user").c_str(),config->Get("mysql.password").c_str(),config->Get("mysql.database").c_str(),0,0,0))
+	if(!mysql_real_connect(mysql,host.c_str(),user.c_str(),password.c_str(),database.c_str(),0,0,0))
 		throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
 	
 	is_connected = true;

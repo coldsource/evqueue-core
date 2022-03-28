@@ -147,6 +147,12 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return CHANNEL_MODIFIED;
 	else if(type_str=="CHANNEL_REMOVED")
 		return CHANNEL_REMOVED;
+	else if(type_str=="CHANNELGROUP_CREATED")
+		return CHANNELGROUP_CREATED;
+	else if(type_str=="CHANNELGROUP_MODIFIED")
+		return CHANNELGROUP_MODIFIED;
+	else if(type_str=="CHANNELGROUP_REMOVED")
+		return CHANNELGROUP_REMOVED;
 	
 	return NONE;
 }

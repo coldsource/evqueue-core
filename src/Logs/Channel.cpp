@@ -19,6 +19,9 @@
 
 #include <Logs/Channel.h>
 #include <Logs/Channels.h>
+#include <Logs/ChannelGroup.h>
+#include <Logs/ChannelGroups.h>
+#include <Logs/Field.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
@@ -38,30 +41,36 @@ Channel::Channel()
 {
 }
 
-Channel::Channel(DB *db,unsigned int elog_channel_id)
+Channel::Channel(DB *db,unsigned int channel_id)
 {
-	db->QueryPrintf("SELECT elog_channel_id, elog_channel_name,elog_channel_config FROM t_elog_channel WHERE elog_channel_id=%i",&elog_channel_id);
+	db->QueryPrintf("SELECT channel_id, channel_group_id, channel_name,channel_config FROM t_channel WHERE channel_id=%i",&channel_id);
 	
 	if(!db->FetchRow())
 		throw Exception("Channel","Unknown Channel");
 	
-	init(db->GetFieldInt(0), db->GetField(1), db->GetField(2));
+	unsigned int id = db->GetFieldInt(0);
+	unsigned int group_id = db->GetFieldInt(1);
+	string name = db->GetField(2);
+	string config = db->GetField(3);
+	
+	init(id, group_id, name, config);
 }
 
-Channel::Channel(unsigned int id, const std::string &name, const std::string &config)
+Channel::Channel(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config)
 {
-	init(id, name, config);
+	init(id, channel_group_id, name, config);
 }
 
-void Channel::init(unsigned int id, const std::string &name, const std::string &config)
+void Channel::init(unsigned int id, unsigned int channel_group_id, const std::string &name, const std::string &config)
 {
-	this->elog_channel_id = id;
-	elog_channel_name = name;
-	elog_channel_config = config;
+	this->channel_id = id;
+	this->channel_group_id = channel_group_id;
+	channel_name = name;
+	channel_config = config;
 	
 	try
 	{
-		json_config = json::parse(elog_channel_config);
+		json_config = json::parse(channel_config);
 	}
 	catch(...)
 	{
@@ -79,25 +88,25 @@ void Channel::init(unsigned int id, const std::string &name, const std::string &
 	
 	crit_idx = -1;
 	if(json_config["crit"].type()==nlohmann::json::value_t::string)
-		crit = str_to_crit(json_config["crit"]);
+		crit = Field::PackCrit(json_config["crit"]);
 	else
 		crit_idx = (int)json_config["crit"];
 	
-	machine_idx = get_log_idx(json_config, "machine");
-	domain_idx =  get_log_idx(json_config, "domain");
-	ip_idx =  get_log_idx(json_config, "ip");
-	uid_idx =  get_log_idx(json_config, "uid");
-	status_idx =  get_log_idx(json_config, "status");
+	auto group_fields_config = json_config["group_fields"];
+	for(auto it = group_fields_config.begin(); it!=group_fields_config.end(); ++it)
+		group_fields_idx[it.key()] = get_log_idx(group_fields_config, it.key());
 	
-	if(json_config.contains("custom_fields"))
-	{
-		auto custom_fields = json_config["custom_fields"];
-		for(auto it = custom_fields.begin(); it!=custom_fields.end(); ++it)
-			custom_fields_idx[it.key()] =  get_log_idx(custom_fields, it.key());
-	}
+	auto fields_config = json_config["fields"];
+	for(auto it = fields_config.begin(); it!=fields_config.end(); ++it)
+		fields_idx[it.key()] = get_log_idx(fields_config, it.key());
 }
 
-void Channel::ParseLog(const string log_str, map<string, string> &std_fields, map<string, string> &custom_fields) const
+const ChannelGroup Channel::GetGroup() const
+{
+	return ChannelGroups::GetInstance()->Get(channel_group_id);
+}
+
+void Channel::ParseLog(const string log_str, map<string, string> &group_fields, map<string, string> &fields) const
 {
 	smatch matches;
 	
@@ -110,27 +119,24 @@ void Channel::ParseLog(const string log_str, map<string, string> &std_fields, ma
 	localtime_r(&now, &now_t);
 	strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &now_t);
 	
-	std_fields["date"] = buf;
+	group_fields["date"] = buf;
 	
 	if(crit_idx<0)
-		std_fields["crit"] = crit_to_str(crit);
+		group_fields["crit"] = Field::UnpackCrit(crit);
 	else
 	{
 		if(crit_idx>=matches.size())
-			throw Exception("StoreLog", "Unable to extract crit from log");
+			throw Exception("Channel", "Unable to extract crit from log");
 		
-		if(str_to_crit(matches[crit_idx])>0)
-			std_fields["crit"] = matches[crit_idx];
+		if(Field::PackCrit(matches[crit_idx])>0)
+			group_fields["crit"] = matches[crit_idx];
 	}
 	
-	get_log_part(matches, "machine", machine_idx, std_fields);
-	get_log_part(matches, "domain", domain_idx, std_fields);
-	get_log_part(matches, "ip", ip_idx, std_fields);
-	get_log_part(matches, "uid", uid_idx, std_fields);
-	get_log_part(matches, "status", status_idx, std_fields);
+	for(auto it = group_fields_idx.begin(); it!=group_fields_idx.end(); ++it)
+		get_log_part(matches, it->first, it->second, group_fields);
 	
-	for(auto it = custom_fields_idx.begin(); it!=custom_fields_idx.end(); ++it)
-		get_log_part(matches, it->first, it->second, custom_fields);
+	for(auto it = fields_idx.begin(); it!=fields_idx.end(); ++it)
+		get_log_part(matches, it->first, it->second, fields);
 }
 
 void Channel::get_log_part(const smatch &matches, const string &name, int idx, map<string, string> &val) const
@@ -149,7 +155,11 @@ int Channel::get_log_idx(const json &j, const string &name)
 	if(!j.contains(name))
 		return -1;
 	
-	auto e = j[name];
+	auto field_config = j[name];
+	if(!field_config.contains("match_group"))
+		return -1;
+	
+	auto e = field_config["match_group"];
 	if(e.type()==nlohmann::json::value_t::number_unsigned)
 		return e;
 	
@@ -173,7 +183,7 @@ bool Channel::CheckChannelName(const string &channel_name)
 
 void Channel::Get(unsigned int id, QueryResponse *response)
 {
-	Channel channel = Channels::GetInstance()->Get(id);
+	const Channel channel = Channels::GetInstance()->Get(id);
 	
 	DOMElement node = (DOMElement)response->AppendXML("<channel />");
 	node.setAttribute("id",to_string(channel.GetID()));
@@ -181,29 +191,31 @@ void Channel::Get(unsigned int id, QueryResponse *response)
 	node.setAttribute("config",channel.GetConfig());
 }
 
-unsigned int Channel::Create(const string &name, const string &config)
+unsigned int Channel::Create(const string &name, unsigned int group_id, const string &config)
 {
-	 create_edit_check(name,config);
+	 create_edit_check(name, group_id, config);
 	
-	DB db;
-	db.QueryPrintf("INSERT INTO t_elog_channel(elog_channel_name,elog_channel_config) VALUES(%s,%s)",
+	DB db("elog");
+	db.QueryPrintf("INSERT INTO t_channel(channel_name,channel_group_id, channel_config) VALUES(%s,%i,%s)",
 		&name,
+		&group_id,
 		&config
 	);
 	
 	return db.InsertID();
 }
 
-void Channel::Edit(unsigned int id, const std::string &name, const string &config)
+void Channel::Edit(unsigned int id, const std::string &name, unsigned int group_id, const string &config)
 {
-	create_edit_check(name,config);
+	create_edit_check(name, group_id, config);
 	
 	if(!Channels::GetInstance()->Exists(id))
 		throw Exception("Channel","Channel not found","UNKNOWN_CHANNEL");
 	
-	DB db;
-	db.QueryPrintf("UPDATE t_elog_channel SET elog_channel_name=%s, elog_channel_config=%s WHERE elog_channel_id=%i",
+	DB db("elog");
+	db.QueryPrintf("UPDATE t_channel SET channel_name=%s, channel_group_id=%i, channel_config=%s WHERE channel_id=%i",
 		&name,
+		&group_id,
 		&config,
 		&id
 	);
@@ -211,55 +223,14 @@ void Channel::Edit(unsigned int id, const std::string &name, const string &confi
 
 void Channel::Delete(unsigned int id)
 {
-	DB db;
+	DB db("elog");
 	
-	db.QueryPrintf("DELETE FROM t_elog_channel WHERE elog_channel_id=%i",&id);
-}
-
-int Channel::str_to_crit(const std::string &str)
-{
-	if(str=="LOG_EMERG")
-		return 0;
-	else if(str=="LOG_ALERT")
-		return 1;
-	else if(str=="LOG_CRIT")
-		return 2;
-	else if(str=="LOG_ERR")
-		return 3;
-	else if(str=="LOG_WARNING")
-		return 4;
-	else if(str=="LOG_NOTICE")
-		return 5;
-	else if(str=="LOG_INFO")
-		return 6;
-	else if(str=="LOG_DEBUG")
-		return 7;
-	return -1;
-}
-
-string Channel::crit_to_str(int i)
-{
-	switch(i)
-	{
-		case 0:
-			return "LOG_EMERG";
-		case 1:
-			return "LOG_ALERT";
-		case 2:
-			return "LOG_CRIT";
-		case 3:
-			return "LOG_ERR";
-		case 4:
-			return "LOG_WARNING";
-		case 5:
-			return "LOG_NOTICE";
-		case 6:
-			return "LOG_INFO";
-		case 7:
-			return "LOG_DEBUG";
-	}
+	db.StartTransaction();
 	
-	return "";
+	db.QueryPrintf("DELETE FROM t_channel WHERE channel_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_field WHERE channel_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel c WHERE c.channel_id=t_field.channel_id)");
+	
+	db.CommitTransaction();
 }
 
 bool Channel::check_int_field(const json &j, const string &name)
@@ -273,10 +244,12 @@ bool Channel::check_int_field(const json &j, const string &name)
 	return true;
 }
 
-void Channel::create_edit_check(const std::string &name, const std::string &config)
+void Channel::create_edit_check(const std::string &name, unsigned int group_id, const std::string &config)
 {
 	if(!CheckChannelName(name))
 		throw Exception("Channel","Invalid channel name","INVALID_PARAMETER");
+	
+	ChannelGroups::GetInstance()->Get(group_id);
 	
 	if(config=="")
 		throw Exception("Channel","Empty config","INVALID_PARAMETER");
@@ -313,25 +286,24 @@ void Channel::create_edit_check(const std::string &name, const std::string &conf
 		throw Exception("Channel","Missing crit attribute in config","INVALID_PARAMETER");
 	
 	if(j["crit"].type()==nlohmann::json::value_t::string)
-	{
-		if(str_to_crit(j["crit"])<0)
-			throw Exception("Channel","crit attribute is not a valid syslog level","INVALID_PARAMETER");
-	}
+		Field::PackCrit(j["crit"]);
 	else if(j["crit"].type()!=nlohmann::json::value_t::number_unsigned)
 		throw Exception("Channel","crit attribute must be an integer or a string","INVALID_PARAMETER");
 	
-	check_int_field(j, "machine");
-	check_int_field(j, "domain");
-	check_int_field(j, "ip");
-	check_int_field(j, "uid");
-	check_int_field(j, "status");
-	
-	if(j.contains("custom_fields"))
+	if(j.contains("group_fields"))
 	{
-		auto custom_fields = j["custom_fields"];
+		auto group_fields = j["group_fields"];
 		
-		for(auto it = custom_fields.begin(); it!=custom_fields.end(); ++it)
-			check_int_field(custom_fields, it.key());
+		for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
+			check_int_field(group_fields, it.key());
+	}
+	
+	if(j.contains("fields"))
+	{
+		auto fields = j["fields"];
+		
+		for(auto it = fields.begin(); it!=fields.end(); ++it)
+			check_int_field(fields, it.key());
 	}
 }
 
@@ -353,11 +325,12 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 	else if(action=="create" || action=="edit")
 	{
 		string name = query->GetRootAttribute("name");
+		unsigned int group_id = query->GetRootAttributeInt("group_id");
 		string config = query->GetRootAttribute("config");
 		
 		if(action=="create")
 		{
-			unsigned int id = Create(name, config);
+			unsigned int id = Create(name, group_id, config);
 			
 			LoggerAPI::LogAction(user,id,"Channel",query->GetQueryGroup(),action);
 			
@@ -369,7 +342,7 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		{
 			unsigned int id = query->GetRootAttributeInt("id");
 			
-			Edit(id,name, config);
+			Edit(id,name, group_id, config);
 			
 			Events::GetInstance()->Create(Events::en_types::CHANNEL_MODIFIED);
 			
@@ -414,6 +387,7 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 	else if(action=="testlog")
 	{
 		int id = query->GetRootAttributeInt("id", -1);
+		int group_id = query->GetRootAttributeInt("group_id", -1);
 		string config = query->GetRootAttribute("config", "");
 		string log = query->GetRootAttribute("log");
 		
@@ -429,7 +403,7 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 			if(id!=-1)
 				channel = Channels::GetInstance()->Get(id);
 			if(config!="")
-				channel = Channel(-1, "default", config);
+				channel = Channel(-1, group_id, "default", config);
 		}
 		catch(Exception &e)
 		{
