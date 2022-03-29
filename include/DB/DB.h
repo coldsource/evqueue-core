@@ -74,6 +74,7 @@ public:
 	void QueryVsPrintf(const std::string &query,const std::vector<void *> &args);
 	void EscapeString(const char *string, char *escaped_string);
 	int InsertID(void);
+	long long InsertIDLong(void);
 	
 	bool FetchRow(void);
 	void Seek(int offset);
@@ -88,6 +89,7 @@ public:
 	bool GetFieldIsNULL(int n);
 	std::string GetField(int n);
 	int GetFieldInt(int n);
+	long long GetFieldLong(int n);
 	double GetFieldDouble(int n);
 	unsigned long GetFieldLength(int n);
 	

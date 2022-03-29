@@ -39,10 +39,13 @@ Fields::Fields(en_type type, unsigned int id)
 	else
 		col_name = "channel_id";
 	
-	db.QueryPrintf("SELECT field_id FROM t_field WHERE %c=%i", &col_name, &id);
+	db.QueryPrintf("SELECT field_id, field_name FROM t_field WHERE %c=%i", &col_name, &id);
 	
 	while(db.FetchRow())
-		fields[db.GetFieldInt(0)] = Field(db.GetFieldInt(0));
+	{
+		id_fields[db.GetFieldInt(0)] = Field(db.GetFieldInt(0));
+		name_fields[db.GetField(1)] = Field(db.GetFieldInt(0));
+	}
 }
 
 void Fields::Update(const json &j)
@@ -84,20 +87,20 @@ void Fields::Update(const json &j)
 			throw Exception("Fields", "Field ID must be an integer", "INVALID_PARAMETER");
 		
 		unsigned int field_id = field["id"];
-		if(fields.find(field_id)==fields.end())
+		if(id_fields.find(field_id)==id_fields.end())
 			throw Exception("Fields", "Unknow field ID : "+to_string(field_id));
 		
-		if(fields[field_id].GetName()!=field_name)
+		if(id_fields[field_id].GetName()!=field_name)
 			db.QueryPrintf("UPDATE t_field SET field_name=%s WHERE field_id=%i", &field_name, &field_id);
 		
-		if(fields[field_id].GetType()!=type)
+		if(id_fields[field_id].GetType()!=type)
 			db.QueryPrintf("UPDATE t_field SET field_type=%s WHERE field_id=%i", &type_str, &field_id);
 		
 		fields_ids.insert(field_id);
 	}
 	
 	// Delete fields that are no longer in config
-	for(auto it = fields.begin(); it!=fields.end(); ++it)
+	for(auto it = id_fields.begin(); it!=id_fields.end(); ++it)
 	{
 		unsigned int field_id = it->first;
 		
@@ -120,6 +123,14 @@ void Fields::Update(const json &j)
 	}
 	
 	db.CommitTransaction();
+}
+
+const Field &Fields::GetField(const std::string &name) const
+{
+	if(name_fields.find(name)==name_fields.end())
+		throw Exception("Fields", "Unknown field name : "+name);
+	
+	return name_fields.find(name)->second;
 }
 
 bool Fields::CheckFieldName(const string &field_name)

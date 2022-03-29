@@ -19,6 +19,8 @@
 
 #include <Logs/ELogs.h>
 #include <Logs/LogStorage.h>
+#include <Logs/ChannelGroup.h>
+#include <Logs/ChannelGroups.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -36,10 +38,38 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	
 	if(action=="list")
 	{
-		LogStorage * ls = LogStorage::GetInstance();
+		LogStorage *ls = LogStorage::GetInstance();
 		
+		unsigned int group_id = query->GetRootAttributeInt("group_id");
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
+		
+		const ChannelGroup group = ChannelGroups::GetInstance()->Get(group_id);
+		
+		// Build base select
+		string query_select;
+		string query_from;
+		string query_where;
+		string query_order;
+		string query_limit;
+		vector<void *> values;
+		
+		auto fields = group.GetFields().GetIDMap();
+		query_select = "SELECT c.channel_name, l.log_crit, l.log_date";
+		
+		query_from = " FROM t_log l ";
+		query_from += " INNER JOIN t_channel c ON c.channel_id=l.channel_id ";
+		
+		for(auto it = fields.begin(); it!=fields.end(); ++it)
+		{
+			string id_str = to_string(it->first);
+			
+			query_select += ", v"+to_string(it->first)+".value AS "+it->second.GetName();
+			
+			query_from += " LEFT JOIN "+it->second.GetTableName()+" v"+id_str;
+			query_from += " ON l.log_id=v"+id_str+".log_id AND v"+id_str+".field_id="+id_str+" AND l.log_date=v"+id_str+".log_date ";
+		}
+		
 		
 		string filter_crit_str = query->GetRootAttribute("filter_crit","");
 		int filter_crit;
@@ -58,116 +88,38 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			filter_emitted_from = string(buf);
 		}
 		
-		string filter_ip = query->GetRootAttribute("filter_ip","");
-		string filter_ip_bin;
-		
 		string filter_channel = query->GetRootAttribute("filter_channel","");
 		
-		string filter_uid = query->GetRootAttribute("filter_uid","");
-		
-		string filter_status_str = query->GetRootAttribute("filter_status","");
-		int filter_status;
-		if(filter_status_str!="")
-		{
-			try
-			{
-				filter_status = stoi(filter_status_str);
-			}
-			catch(...)
-			{
-				throw Exception("ELogs","Attribute filter_status must be an integer","INVALID_PARAMETER");
-			}
-		}
-		
-		string filter_domain = query->GetRootAttribute("filter_domain","");
-		string filter_machine = query->GetRootAttribute("filter_machine","");
-		
-		DB db;
-		
-		string query_select;
-		string query_from;
-		string query_where;
-		string query_order;
-		string query_limit;
-		vector<void *> values;
-		
-		query_select =" \
-			SELECT \
-				ec.elog_channel_name, \
-				e.elog_date, \
-				e.elog_crit, \
-				epmachine.elog_pack_string AS elog_machine, \
-				epdomain.elog_pack_string AS elog_domain, \
-				e.elog_ip, \
-				e.elog_uid, \
-				e.elog_status, \
-				e.elog_fields ";
-	
-		query_from = " \
-			FROM t_elog e \
-			INNER JOIN t_elog_channel ec ON e.elog_channel_id=ec.elog_channel_id \
-			LEFT JOIN t_elog_pack epmachine ON e.elog_machine=epmachine.elog_pack_id \
-			LEFT JOIN t_elog_pack epdomain ON e.elog_domain=epdomain.elog_pack_id ";
+		DB db("elog");
 		
 		query_where = " WHERE true ";
 		
 		if(filter_crit_str!="")
 		{
-			filter_crit = ls->PackCrit(filter_crit_str);
-			query_where += " AND e.elog_crit = %i ";
+			filter_crit = Field::PackCrit(filter_crit_str);
+			query_where += " AND l.log_crit = %i ";
 			values.push_back(&filter_crit);
 		}
 		
 		if(filter_emitted_from!="")
 		{
-			query_where += " AND e.elog_date>=%s ";
+			query_where += " AND l.log_date>=%s ";
 			values.push_back(&filter_emitted_from);
 		}
 		
 		if(filter_emitted_until!="")
 		{
-			query_where += " AND e.elog_date<=%s ";
+			query_where += " AND l.log_date<=%s ";
 			values.push_back(&filter_emitted_until);
-		}
-		
-		if(filter_ip!="")
-		{
-			filter_ip_bin = ls->PackIP(filter_ip);
-			query_where += " AND e.elog_ip=%s ";
-			values.push_back(&filter_ip_bin);
 		}
 		
 		if(filter_channel!="")
 		{
-			query_where += " AND ec.elog_channel_name=%s ";
+			query_where += " AND c.channel_name=%s ";
 			values.push_back(&filter_channel);
 		}
 		
-		if(filter_uid!="")
-		{
-			query_where += " AND e.elog_uid=%s ";
-			values.push_back(&filter_uid);
-		}
-		
-		if(filter_status_str!="")
-		{
-			query_where += " AND e.elog_status=%i ";
-			values.push_back(&filter_status);
-		}
-		
-		if(filter_domain!="")
-		{
-			query_where += " AND epdomain.elog_pack_string=%s ";
-			values.push_back(&filter_domain);
-		}
-		
-		if(filter_machine!="")
-		{
-			query_where += " AND epmachine.elog_pack_string=%s ";
-			values.push_back(&filter_machine);
-		}
-		
-		query_order = " ORDER BY elog_date DESC,elog_id DESC ";
+		query_order = " ORDER BY l.log_date DESC,l.log_id DESC ";
 		
 		query_limit = " LIMIT %i,%i ";
 		values.push_back(&offset);
@@ -179,15 +131,12 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<log />");
 			node.setAttribute("channel",db.GetField(0));
-			node.setAttribute("date",db.GetField(1));
-			node.setAttribute("crit",ls->UnpackCrit(db.GetFieldInt(2)));
-			node.setAttribute("machine",db.GetField(3));
-			node.setAttribute("domain",db.GetField(4));
-			if(db.GetField(5)!="")
-				node.setAttribute("ip",ls->UnpackIP(db.GetField(5)));
-			node.setAttribute("uid",db.GetField(6));
-			node.setAttribute("status",db.GetField(7));
-			node.setAttribute("custom_fields",db.GetField(8));
+			node.setAttribute("crit",Field::UnpackCrit(db.GetFieldInt(1)));
+			node.setAttribute("date",db.GetField(2));
+			
+			int i = 3;
+			for(auto it = fields.begin(); it!=fields.end(); ++it)
+						node.setAttribute(it->second.GetName(), it->second.Unpack(db.GetField(i++)));
 		}
 		
 		return true;

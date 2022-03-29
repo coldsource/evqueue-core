@@ -70,7 +70,7 @@ void ChannelGroup::Get(unsigned int id, QueryResponse *response)
 	response->SetAttribute("id", to_string(channelgroup.GetID()));
 	response->SetAttribute("name", channelgroup.GetName());
 	
-	auto fields = channelgroup.fields.GetMap();
+	auto fields = channelgroup.fields.GetIDMap();
 	for(auto it = fields.begin(); it!=fields.end(); ++it)
 	{
 		DOMElement node = (DOMElement)response->AppendXML("<field />");

@@ -198,7 +198,16 @@ unsigned int Channel::Create(const string &name, unsigned int group_id, const st
 		&config
 	);
 	
-	return db.InsertID();
+	unsigned int id = db.InsertID();
+	
+	json j = json::parse(config);
+	if(j.contains("fields"))
+	{
+		Fields new_fields(Fields::en_type::CHANNEL, id);
+		new_fields.Update(j["fields"]);
+	}
+	
+	return id;
 }
 
 void Channel::Edit(unsigned int id, const std::string &name, unsigned int group_id, const string &config)
@@ -215,6 +224,13 @@ void Channel::Edit(unsigned int id, const std::string &name, unsigned int group_
 		&config,
 		&id
 	);
+	
+	json j = json::parse(config);
+	if(j.contains("fields"))
+	{
+		Fields new_fields(Fields::en_type::CHANNEL, id);
+		new_fields.Update(j["fields"]);
+	}
 }
 
 void Channel::Delete(unsigned int id)
@@ -286,20 +302,20 @@ void Channel::create_edit_check(const std::string &name, unsigned int group_id, 
 	else if(j["crit"].type()!=nlohmann::json::value_t::number_unsigned)
 		throw Exception("Channel","crit attribute must be an integer or a string","INVALID_PARAMETER");
 	
-	if(j.contains("group_fields"))
+	if(j.contains("group_matches"))
 	{
-		auto group_fields = j["group_fields"];
+		auto group_matches = j["group_matches"];
 		
-		for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
-			check_int_field(group_fields, it.key());
+		for(auto it = group_matches.begin(); it!=group_matches.end(); ++it)
+			check_int_field(group_matches, it.key());
 	}
 	
-	if(j.contains("fields"))
+	if(j.contains("matches"))
 	{
-		auto fields = j["fields"];
+		auto matches = j["matches"];
 		
-		for(auto it = fields.begin(); it!=fields.end(); ++it)
-			check_int_field(fields, it.key());
+		for(auto it = matches.begin(); it!=matches.end(); ++it)
+			check_int_field(matches, it.key());
 	}
 }
 

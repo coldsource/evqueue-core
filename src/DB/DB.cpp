@@ -267,6 +267,7 @@ void DB::QueryPrintf(const string &query,...)
 	int len,escaped_len;
 	const string *arg_str;
 	const int *arg_int;
+	const long long *arg_ll;
 	va_list ap;
 
 	va_start(ap,query);
@@ -299,6 +300,15 @@ void DB::QueryPrintf(const string &query,...)
 					arg_int = va_arg(ap,const int *);
 					if(arg_int)
 						escaped_len += 16; // Integer
+					else
+						escaped_len += 4; // NULL
+					i++;
+					break;
+				
+				case 'l': // Long long
+					arg_ll = va_arg(ap,const long long *);
+					if(arg_ll)
+						escaped_len += 32; // Long long
 					else
 						escaped_len += 4; // NULL
 					i++;
@@ -356,6 +366,18 @@ void DB::QueryPrintf(const string &query,...)
 					arg_int = va_arg(ap,const int *);
 					if(arg_int)
 						j += sprintf(escaped_query+j,"%d",*arg_int);
+					else
+					{
+						strcpy(escaped_query+j,"NULL");
+						j += 4;
+					}
+					i++;
+					break;
+				
+				case 'l':
+					arg_ll = va_arg(ap,const long long *);
+					if(arg_ll)
+						j += sprintf(escaped_query+j,"%lld",*arg_ll);
 					else
 					{
 						strcpy(escaped_query+j,"NULL");
@@ -505,6 +527,11 @@ int DB::InsertID(void)
 	return mysql_insert_id(mysql);
 }
 
+long long DB::InsertIDLong(void)
+{
+	return mysql_insert_id(mysql);
+}
+
 bool DB::FetchRow(void)
 {
 	if(res==0)
@@ -593,6 +620,24 @@ int DB::GetFieldInt(int n)
 	try
 	{
 		ival = stoi(v);
+	}
+	catch(...)
+	{
+		throw Exception("DB",v+" is not an integer value","SQL_ERROR",mysql_errno(mysql));
+	}
+	return ival;
+}
+
+long long DB::GetFieldLong(int n)
+{
+	string v = GetField(n);
+	if(v=="")
+		return 0;
+	
+	long long ival;
+	try
+	{
+		ival = stoll(v);
 	}
 	catch(...)
 	{

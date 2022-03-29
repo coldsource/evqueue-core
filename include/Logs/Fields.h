@@ -47,12 +47,16 @@ class Fields
 		
 		std::string col_name;
 		
-		std::map<unsigned int, Field> fields;
+		std::map<unsigned int, Field> id_fields;
+		std::map<std::string, Field> name_fields;
 		
 	public:
 		Fields(en_type type, unsigned int id);
 		
-		const std::map<unsigned int, Field> &GetMap() const { return fields; }
+		const std::map<unsigned int, Field> &GetIDMap() const { return id_fields; }
+		const std::map<std::string, Field> &GetNameMap() const { return name_fields; }
+		
+		const Field &GetField(const std::string &name) const;
 		
 		void Update(const nlohmann::json &j);
 		

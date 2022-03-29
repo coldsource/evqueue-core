@@ -21,6 +21,8 @@
 #define _FIELD_H_
 
 #include <string>
+#include <mutex>
+#include <map>
 
 class XMLQuery;
 class QueryResponse;
@@ -44,7 +46,7 @@ class Field
 		unsigned int id;
 		std::string name;
 		en_type type;
-	
+		
 	public:
 		Field();
 		Field(unsigned int id);
@@ -54,11 +56,22 @@ class Field
 		const std::string GetName() const { return name; }
 		en_type GetType() const { return type; }
 		
+		const std::string GetTableName() const;
+		
 		static en_type StringToFieldType(const std::string &str);
 		static std::string FieldTypeToString(en_type type);
 		
+		void *Pack(const std::string &str, int *val_int, std::string *val_str) const;
+		std::string Unpack(const std::string &val) const;
 		static int PackCrit(const std::string &str);
 		static std::string UnpackCrit(int i);
+		int PackInteger(const std::string &str) const;
+		std::string UnpackInteger(int i) const;
+		std::string PackIP(const std::string &ip) const;
+		std::string UnpackIP(const std::string &bin_ip) const;
+		unsigned int PackString(const std::string &str) const;
+		std::string UnpackString(int i) const;
+		
 };
 
 #endif

@@ -18,8 +18,11 @@
  */
 
 #include <Logs/Field.h>
+#include <Logs/LogStorage.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
+
+#include <arpa/inet.h>
 
 using namespace std;
 
@@ -81,6 +84,63 @@ string Field::FieldTypeToString(en_type type)
 	throw Exception("Field","Unknown field type");
 }
 
+void *Field::Pack(const string &str, int *val_int, string *val_str) const
+{
+	switch(type)
+	{
+		case Field::en_type::CHAR:
+			*val_str = str;
+			return val_str;
+		
+		case Field::en_type::TEXT:
+			*val_str = str;
+			return val_str;
+		
+		case Field::en_type::INT:
+			*val_int = PackInteger(str);
+			return val_int;
+		
+		case Field::en_type::IP:
+			*val_str = PackIP(str);
+			return val_str;
+		
+		case Field::en_type::PACK:
+			*val_int = PackString(str);
+			return val_int;
+		
+		case Field::en_type::NONE:
+			return 0;
+	}
+	
+	return 0; // Juste make compiler shuts
+}
+
+string Field::Unpack(const string &val) const
+{
+	switch(type)
+	{
+		case Field::en_type::CHAR:
+			return val;
+		
+		case Field::en_type::TEXT:
+			return val;
+		
+		case Field::en_type::INT:
+			return UnpackInteger(stoi(val));
+		
+		case Field::en_type::IP:
+			return UnpackIP(val);
+		
+		case Field::en_type::PACK:
+			return UnpackString(stoi(val));
+		
+		case Field::en_type::NONE:
+			return "";
+	}
+	
+	return ""; // Juste make compiler shuts
+}
+
 int Field::PackCrit(const string &str)
 {
 	if(str=="LOG_EMERG")
@@ -126,4 +186,93 @@ string Field::UnpackCrit(int i)
 	}
 	
 	throw Exception("Field", "Invalid integer criticality : "+to_string(i), "INVALID_PARAMETER");
+}
+
+int Field::PackInteger(const string &str) const
+{
+	try
+	{
+		return stoi(str);
+	}
+	catch(...)
+	{
+		throw Exception("Field", "Invalid integer : "+str);
+	}
+}
+
+string Field::UnpackInteger(int i) const
+{
+	return to_string(i);
+}
+
+string Field::PackIP(const string &ip) const
+{
+	char bin[16];
+	
+	if(inet_pton(AF_INET, ip.c_str(), bin))
+		return string(bin, 4);
+	
+	if(inet_pton(AF_INET6, ip.c_str(), bin))
+		return string(bin, 16);
+	
+	throw Exception("Field", "Invalid IP : "+ip);
+}
+
+string Field::UnpackIP(const string &bin_ip) const
+{
+	char buf[64];
+	
+	if(bin_ip.size()==4)
+	{
+		if(!inet_ntop(AF_INET, bin_ip.c_str(), buf, 64))
+			return "";
+		
+		return buf;
+	}
+	
+	if(bin_ip.size()==16)
+	{
+		if(!inet_ntop(AF_INET6, bin_ip.c_str(), buf, 64))
+			return "";
+		
+		return buf;
+	}
+	
+	throw Exception("Field", "Invalid binary IP length should be 4 ou 16");
+}
+
+unsigned int Field::PackString(const string &str) const
+{
+	return LogStorage::GetInstance()->PackString(str);
+}
+
+string Field::UnpackString(int i) const
+{
+	return LogStorage::GetInstance()->UnpackString(i);
+}
+
+const string Field::GetTableName() const
+{
+	switch(type)
+	{
+		case Field::en_type::CHAR:
+			return "t_value_char";
+		
+		case Field::en_type::TEXT:
+			return "t_value_text";
+		
+		case Field::en_type::INT:
+			return "t_value_int";
+		
+		case Field::en_type::IP:
+			return "t_value_ip";
+		
+		case Field::en_type::PACK:
+			return "t_value_pack";
+		
+		case Field::en_type::NONE:
+			return "";
+	}
+	
+	return ""; // Make compiler shuts
 }

@@ -61,6 +61,7 @@ class Channel
 		const std::string &GetConfig() const { return channel_config; }
 		const ChannelGroup GetGroup() const;
 		unsigned int GetGroupID() const { return channel_group_id; }
+		const Fields &GetFields() const { return fields; }
 		
 		void ParseLog(const std::string log_str, std::map<std::string, std::string> &group_fields, std::map<std::string, std::string> &fields) const;
 		

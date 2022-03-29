@@ -24,9 +24,8 @@
 #include <WS/Events.h>
 #include <Logs/Channels.h>
 #include <Logs/Channel.h>
+#include <Logs/ChannelGroup.h>
 #include <Configuration/ConfigurationEvQueue.h>
-
-#include <arpa/inet.h>
 
 #include <vector>
 
@@ -53,7 +52,10 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 	
 	db.Query("SELECT pack_id, pack_string FROM t_pack");
 	while(db.FetchRow())
+	{
 		pack_str_id[db.GetField(1)] = db.GetFieldInt(0);
+		pack_id_str[db.GetFieldInt(0)] = db.GetField(1);
+	}
 	
 	instance = this;
 	
@@ -131,8 +133,9 @@ void LogStorage::log(const vector<string> &logs)
 {
 	smatch matches;
 	
-	vector<unsigned int> channels;
-	vector<map<string, string>> stds, customs;
+	DB db("elog");
+	
+	db.StartTransaction();
 	
 	for(int i=0;i<logs.size();i++)
 	{
@@ -149,12 +152,10 @@ void LogStorage::log(const vector<string> &logs)
 			
 			const Channel channel = Channels::GetInstance()->Get(channel_name);
 			
-			map<string, string> std, custom;
-			channel.ParseLog(log_str, std, custom);
+			map<string, string> group_fields, channel_fields;
+			channel.ParseLog(log_str, group_fields, channel_fields);
 			
-			channels.push_back(channel.GetID());
-			stds.push_back(std);
-			customs.push_back(custom);
+			store_log(&db, channel, group_fields, channel_fields);
 		}
 		catch(Exception &e)
 		{
@@ -162,213 +163,70 @@ void LogStorage::log(const vector<string> &logs)
 		}
 	}
 	
-	store_log(channels, stds, customs);
+	db.CommitTransaction();
 }
 
-void LogStorage::store_log(vector<unsigned int> channels_id, const vector<map<string, string>> &std_fields, const vector<map<string, string>> &custom_fields)
+void LogStorage::store_log(DB *db, const Channel &channel, const map<string, string> &group_fields, const map<string, string> &channel_fields)
 {
-	string query = "INSERT INTO t_elog(channel_id, elog_date, elog_crit, elog_machine, elog_domain, elog_ip, elog_uid, elog_status, elog_fields) VALUES";
+	const ChannelGroup group = channel.GetGroup();
 	
-	int n = channels_id.size();
+	// Insert log line
+	unsigned int channel_id = channel.GetID();
+	const string date = group_fields.find("date")->second;
+	int crit = Field::PackCrit(group_fields.find("crit")->second);
 	
-	vector<void *> vals;
-	string date[n], ip[n], uid[n], custom[n];
-	int channel_id[n], crit[n], machine[n], domain[n], status[n];
-	
-	for(int i=0;i<n;i++)
-	{
-		if(i>0)
-			query += ",";
-		
-		query += "(";
-		
-		query += "%i";
-		channel_id[i] = channels_id[i];
-		vals.push_back(&channel_id);
-		
-		add_query_field(FIELD_TYPE_STR, query, "date", std_fields[i], &date[i], vals);
-		add_query_field(FIELD_TYPE_CRIT, query, "crit", std_fields[i], &crit[i], vals);
-		add_query_field(FIELD_TYPE_PACK, query, "machine", std_fields[i], &machine[i], vals);
-		add_query_field(FIELD_TYPE_PACK, query, "domain", std_fields[i], &domain[i], vals);
-		add_query_field(FIELD_TYPE_IP, query, "ip", std_fields[i], &ip[i], vals);
-		add_query_field(FIELD_TYPE_STR, query, "uid", std_fields[i], &uid[i], vals);
-		add_query_field(FIELD_TYPE_INT, query, "status", std_fields[i], &status[i], vals);
-		
-		if(custom_fields.size()>0)
-		{
-			json j;
-			for(auto it=custom_fields[i].begin(); it!=custom_fields[i].end(); ++it)
-				j[it->first] = it->second;
-			
-			custom[i] = j.dump();
-			query += ", %s";
-			vals.push_back(&custom[i]);
-		}
-		else
-			query += ", NULL";
-		
-		query += ")";
-	}
-	
-	DB db;
 	try
 	{
-		db.QueryVsPrintf(query, vals);
+		printf("insert\n");
+		db->QueryPrintf("INSERT INTO t_log(channel_id, log_date, log_crit) VALUES(%i, %s, %i)", &channel_id, &date, &crit);
+		printf("insert done\n");
 	}
 	catch(Exception &e)
 	{
-		printf("Err %s\n", e.error.c_str());
 		if(e.codeno==1526) // No partition for data
 		{
 			// Automatically create partition to store new logs
-			db.QueryPrintf("SELECT TO_DAYS(%s)", &date);
-			db.FetchRow();
+			db->QueryPrintf("SELECT TO_DAYS(%s)", &date);
+			db->FetchRow();
 			
-			int days = db.GetFieldInt(0)+1;
-			string part_name = "p"+date[0].substr(0, 4)+date[0].substr(5, 2)+date[0].substr(8, 2);
+			int days = db->GetFieldInt(0)+1;
+			string part_name = "p"+date.substr(0, 4)+date.substr(5, 2)+date.substr(8, 2);
 			
-			db.QueryPrintf("ALTER TABLE t_elog ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+			db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+			
+			db->QueryPrintf("INSERT INTO t_log(channel_id, log_date, log_crit) VALUES(%i, %s, %i)", &channel_id, &date, &crit);
 		}
 	}
+	
+	unsigned long long id = db->InsertIDLong();
+	
+	printf("log value\n");
+	for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
+	{
+		if(it->first=="date" || it->first=="crit")
+			continue;
+		
+		log_value(db, id, group.GetFields().GetField(it->first), date, it->second);
+	}
+	
+	for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
+		log_value(db, id, channel.GetFields().GetField(it->first), date, it->second);
+	printf("done\n");
 	
 	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
 
-void LogStorage::add_query_field(int type, string &query, const string &name, const map<string, string> &fields, void *val, vector<void *> &vals)
+void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field, const string &date, const string &value)
 {
-	auto it = fields.find(name);
-	if(it==fields.end())
-	{
-		query += ", NULL";
-		return;
-	}
+	unsigned int field_id = field.GetID();
 	
-	if(type==FIELD_TYPE_INT)
-	{
-		query += ", %i";
-		*(int*)val = PackInteger(it->second);
-	}
-	else if(type==FIELD_TYPE_STR)
-	{
-		query += ", %s";
-		*(string*)val = it->second;
-	}
-	else if(type==FIELD_TYPE_IP)
-	{
-		query += ", %s";
-		*(string*)val = PackIP(it->second);
-	}
-	else if(type==FIELD_TYPE_CRIT)
-	{
-		query += ", %i";
-		*(int*)val = PackCrit(it->second);
-	}
-	if(type==FIELD_TYPE_PACK)
-	{
-		query += ", %i";
-		*(int*)val = PackString(it->second);
-	}
+	const string table_name = field.GetTableName();
 	
-	vals.push_back(val);
-}
-
-int LogStorage::PackInteger(const string &str)
-{
-	try
-	{
-		return stoi(str);
-	}
-	catch(...)
-	{
-		throw Exception("LogStorage", "Invalid integer : "+str);
-	}
-}
-
-string LogStorage::UnpackInteger(int i)
-{
-	return to_string(i);
-}
-
-string LogStorage::PackIP(const string &ip)
-{
-	char bin[16];
+	int val_int;
+	string val_str;
+	void *packed_val = field.Pack(value, &val_int, &val_str);
 	
-	if(inet_pton(AF_INET, ip.c_str(), bin))
-		return string(bin, 4);
-	
-	if(inet_pton(AF_INET6, ip.c_str(), bin))
-		return string(bin, 16);
-	
-	throw Exception("LogStorage", "Invalid IP : "+ip);
-}
-
-string LogStorage::UnpackIP(const string &bin_ip)
-{
-	char buf[64];
-	
-	if(bin_ip.size()==4)
-	{
-		if(!inet_ntop(AF_INET, bin_ip.c_str(), buf, 64))
-			return "";
-		
-		return buf;
-	}
-	
-	if(bin_ip.size()==16)
-	{
-		if(!inet_ntop(AF_INET6, bin_ip.c_str(), buf, 64))
-			return "";
-		
-		return buf;
-	}
-	
-	throw Exception("LogStorage", "Invalid binary IP length should be 4 ou 16");
-}
-
-int LogStorage::PackCrit(const string &str)
-{
-	if(str=="LOG_EMERG")
-		return 0;
-	else if(str=="LOG_ALERT")
-		return 1;
-	else if(str=="LOG_CRIT")
-		return 2;
-	else if(str=="LOG_ERR")
-		return 3;
-	else if(str=="LOG_WARNING")
-		return 4;
-	else if(str=="LOG_NOTICE")
-		return 5;
-	else if(str=="LOG_INFO")
-		return 6;
-	else if(str=="LOG_DEBUG")
-		return 7;
-	return -1;
-}
-
-string LogStorage::UnpackCrit(int i)
-{
-	switch(i)
-	{
-		case 0:
-			return "LOG_EMERG";
-		case 1:
-			return "LOG_ALERT";
-		case 2:
-			return "LOG_CRIT";
-		case 3:
-			return "LOG_ERR";
-		case 4:
-			return "LOG_WARNING";
-		case 5:
-			return "LOG_NOTICE";
-		case 6:
-			return "LOG_INFO";
-		case 7:
-			return "LOG_DEBUG";
-	}
-	
-	return "";
+	db->QueryPrintf("INSERT INTO %c(log_id, field_id, log_date, value) VALUES(%l, %i, %s, %s)", &table_name, &log_id, &field_id, &date, packed_val);
 }
 
 unsigned int LogStorage::PackString(const string &str)
@@ -385,7 +243,19 @@ unsigned int LogStorage::PackString(const string &str)
 	
 	unsigned int id = db.InsertID();
 	pack_str_id[str] = id;
+	pack_id_str[id] = str;
 	
 	return id;
 }
 
+string LogStorage::UnpackString(int i)
+{
+	unique_lock<mutex> llock(lock);
+	
+	auto it = pack_id_str.find(i);
+	
+	if(it!=pack_id_str.end())
+		return it->second;
+	
+	return "";
+}

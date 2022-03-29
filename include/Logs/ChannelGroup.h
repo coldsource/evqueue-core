@@ -43,6 +43,7 @@ class ChannelGroup
 		
 		unsigned int GetID() const { return channel_group_id; }
 		const std::string &GetName() const { return channel_group_name; }
+		const Fields &GetFields() const { return fields; }
 		
 		static bool CheckChannelGroupName(const std::string &channel_group_name);
 		static void Get(unsigned int id, QueryResponse *response);

@@ -29,6 +29,10 @@
 #include <condition_variable>
 #include <thread>
 
+class DB;
+class Channel;
+class Field;
+
 class LogStorage
 {
 	std::mutex lock;
@@ -37,6 +41,7 @@ class LogStorage
 	std::thread ls_thread_handle;
 	
 	std::map<std::string, unsigned int> pack_str_id;
+	std::map<unsigned int, std::string> pack_id_str;
 	
 	int bulk_size;
 	std::regex channel_regex;
@@ -57,20 +62,15 @@ class LogStorage
 		
 		void Log(const std::string &str);
 		
-		int PackInteger(const std::string &str);
-		std::string UnpackInteger(int i);
-		std::string PackIP(const std::string &ip);
-		std::string UnpackIP(const std::string &bin_ip);
-		int PackCrit(const std::string &str);
-		std::string UnpackCrit(int i);
 		unsigned int PackString(const std::string &str);
+		std::string UnpackString(int i);
 	
 	private:
 		static void *ls_thread(LogStorage *ls);
 		
 		void log(const std::vector<std::string> &logs);
-		void store_log(std::vector<unsigned int> channels_id, const std::vector<std::map<std::string, std::string>> &std_fields, const std::vector<std::map<std::string, std::string>> &custom_fields);
-		void add_query_field(int type, std::string &query, const std::string &name, const std::map<std::string, std::string> &fields, void *val, std::vector<void *> &vals);
+		void store_log(DB *db, const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
+		void log_value(DB *db, unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
 };
 
 #endif
