@@ -36,8 +36,8 @@
 #include <User/Users.h>
 #include <User/User.h>
 #include <Tag/Tags.h>
-#include <Logs/Channels.h>
-#include <Logs/ChannelGroups.h>
+#include <ELogs/Channels.h>
+#include <ELogs/ChannelGroups.h>
 #include <Exception/Exception.h>
 
 #include <sys/types.h>
@@ -105,14 +105,14 @@ void tools_config_reload(const std::string &module,bool notify)
 	
 	if(module=="all" || module=="channels")
 	{
-		Channels *channels = Channels::GetInstance();
+		ELogs::Channels *channels = ELogs::Channels::GetInstance();
 		channels->Reload(notify);
 		module_is_valid = true;
 	}
 	
 	if(module=="all" || module=="channelgroups")
 	{
-		ChannelGroups *channelgroups = ChannelGroups::GetInstance();
+		ELogs::ChannelGroups *channelgroups = ELogs::ChannelGroups::GetInstance();
 		channelgroups->Reload(notify);
 		module_is_valid = true;
 	}

@@ -17,13 +17,13 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/ELogs.h>
-#include <Logs/ELog.h>
-#include <Logs/LogStorage.h>
-#include <Logs/ChannelGroup.h>
-#include <Logs/ChannelGroups.h>
-#include <Logs/Channel.h>
-#include <Logs/Channels.h>
+#include <ELogs/ELogs.h>
+#include <ELogs/ELog.h>
+#include <ELogs/LogStorage.h>
+#include <ELogs/ChannelGroup.h>
+#include <ELogs/ChannelGroups.h>
+#include <ELogs/Channel.h>
+#include <ELogs/Channels.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -34,6 +34,9 @@
 #include <vector>
 
 using namespace std;
+
+namespace ELogs
+{
 
 bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
@@ -196,4 +199,6 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	}
 	
 	return false;
+}
+
 }

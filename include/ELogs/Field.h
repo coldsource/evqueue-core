@@ -29,6 +29,9 @@ class QueryResponse;
 class User;
 class DB;
 
+namespace ELogs
+{
+
 class Field
 {
 	public:
@@ -74,5 +77,7 @@ class Field
 		std::string UnpackString(int i) const;
 		
 };
+
+}
 
 #endif

@@ -17,50 +17,39 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _FIELDS_H_
-#define _FIELDS_H_
+#ifndef _CHANNELGROUPS_H_
+#define _CHANNELGROUPS_H_
 
-#include <string>
+#include <API/APIObjectList.h>
+#include <ELogs/ChannelGroup.h>
+
 #include <map>
+#include <string>
 
-#include <Logs/Field.h>
-
-#include <nlohmann/json.hpp>
-
+class User;
 class XMLQuery;
 class QueryResponse;
-class User;
-class DB;
 
-class Fields
+namespace ELogs
 {
-	public:
-		enum en_type
-		{
-			GROUP,
-			CHANNEL
-		};
+
+class ChannelGroups:public APIObjectList<ChannelGroup>
+{
+	static ChannelGroups *instance;
 	
-	private:
-		unsigned int id;
-		en_type type;
-		
-		std::string col_name;
-		
-		std::map<unsigned int, Field> id_fields;
-		std::map<std::string, Field> name_fields;
-		
 	public:
-		Fields(en_type type, unsigned int id);
 		
-		const std::map<unsigned int, Field> &GetIDMap() const { return id_fields; }
-		const std::map<std::string, Field> &GetNameMap() const { return name_fields; }
+		ChannelGroups();
+		~ChannelGroups();
 		
-		const Field &GetField(const std::string &name) const;
+		static ChannelGroups *GetInstance() { return instance; }
 		
-		void Update(const nlohmann::json &j);
+		void Reload(bool notify = true);
 		
-		static bool CheckFieldName(const std::string &field_name);
+		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
+
+}
+
 
 #endif

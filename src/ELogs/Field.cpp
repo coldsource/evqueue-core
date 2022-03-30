@@ -17,14 +17,17 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/Field.h>
-#include <Logs/LogStorage.h>
+#include <ELogs/Field.h>
+#include <ELogs/LogStorage.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 
 #include <arpa/inet.h>
 
 using namespace std;
+
+namespace ELogs
+{
 
 Field::Field()
 {
@@ -301,4 +304,6 @@ const string Field::GetDBType() const
 	}
 	
 	return ""; // Make compiler shuts
+}
+
 }

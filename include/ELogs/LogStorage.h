@@ -30,6 +30,10 @@
 #include <thread>
 
 class DB;
+
+namespace ELogs
+{
+
 class Channel;
 class Field;
 
@@ -72,5 +76,7 @@ class LogStorage
 		void store_log(DB *db, const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
 		void log_value(DB *db, unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
 };
+
+}
 
 #endif

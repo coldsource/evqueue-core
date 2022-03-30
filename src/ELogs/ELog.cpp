@@ -17,13 +17,13 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/ELog.h>
-#include <Logs/LogStorage.h>
-#include <Logs/ChannelGroup.h>
-#include <Logs/ChannelGroups.h>
-#include <Logs/Channel.h>
-#include <Logs/Channels.h>
-#include <Logs/Fields.h>
+#include <ELogs/ELog.h>
+#include <ELogs/LogStorage.h>
+#include <ELogs/ChannelGroup.h>
+#include <ELogs/ChannelGroups.h>
+#include <ELogs/Channel.h>
+#include <ELogs/Channels.h>
+#include <ELogs/Fields.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -34,6 +34,9 @@
 #include <vector>
 
 using namespace std;
+
+namespace ELogs
+{
 
 bool ELog::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
@@ -127,4 +130,6 @@ void ELog::BuildSelectFromAppend(string &query_select, string &query_from, const
 		query_from += " LEFT JOIN "+it->second.GetTableName()+" v"+id_str;
 		query_from += " ON l.log_id=v"+id_str+".log_id AND v"+id_str+".field_id="+id_str+" AND l.log_date=v"+id_str+".log_date ";
 	}
+}
+
 }

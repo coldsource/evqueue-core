@@ -38,6 +38,7 @@ aux_source_directory(src/Exception srcException)
 aux_source_directory(src/Workflow srcWorkflow)
 aux_source_directory(src/XML srcXML)
 aux_source_directory(src/Logs srcLogs)
+aux_source_directory(src/ELogs srcELogs)
 aux_source_directory(src/API srcAPI)
 aux_source_directory(src/Logger srcLogger)
 aux_source_directory(src/Cluster srcCluster)
@@ -63,6 +64,7 @@ add_executable(evqueue
 	${srcWorkflow}
 	${srcXML}
 	${srcLogs}
+	${srcELogs}
 	${srcAPI}
 	${srcLogger}
 	${srcCluster}

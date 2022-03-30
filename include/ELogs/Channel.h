@@ -26,12 +26,16 @@
 
 #include <nlohmann/json.hpp>
 
-#include <Logs/Fields.h>
+#include <ELogs/Fields.h>
 
 class XMLQuery;
 class QueryResponse;
 class User;
 class DB;
+
+namespace ELogs
+{
+
 class ChannelGroup;
 
 class Channel
@@ -80,5 +84,7 @@ class Channel
 		static bool check_int_field(const nlohmann::json &j, const std::string &name);
 		static void create_edit_check(const std::string &name, unsigned int group_id, const std::string &config);
 };
+
+}
 
 #endif

@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/ChannelGroups.h>
-#include <Logs/LogStorage.h>
+#include <ELogs/Channels.h>
+#include <ELogs/LogStorage.h>
 #include <User/User.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -30,24 +30,27 @@
 #include <regex>
 #include <map>
 
-ChannelGroups *ChannelGroups::instance = 0;
+namespace ELogs
+{
+
+Channels *Channels::instance = 0;
 
 using namespace std;
 
-ChannelGroups::ChannelGroups():APIObjectList()
+Channels::Channels():APIObjectList()
 {
 	instance = this;
 	
 	Reload(false);
 }
 
-ChannelGroups::~ChannelGroups()
+Channels::~Channels()
 {
 }
 
-void ChannelGroups::Reload(bool notify)
+void Channels::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"Reloading channel groups definitions");
+	Logger::Log(LOG_NOTICE,"Reloading channels definitions");
 	
 	unique_lock<mutex> llock(lock);
 	
@@ -56,43 +59,45 @@ void ChannelGroups::Reload(bool notify)
 	// Update
 	DB db("elog");
 	DB db2(&db);
-	db.Query("SELECT channel_group_id, channel_group_name FROM t_channel_group");
+	db.Query("SELECT channel_id, channel_name FROM t_channel");
 	
 	while(db.FetchRow())
-		add(db.GetFieldInt(0),db.GetField(1),new ChannelGroup(&db2,db.GetFieldInt(0)));
+		add(db.GetFieldInt(0),db.GetField(1),new Channel(&db2,db.GetFieldInt(0)));
 	
 	llock.unlock();
 	
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->Notify("<control action='reload' module='channelgroups' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='channels' notify='no' />\n");
 	}
 }
 
-bool ChannelGroups::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
+bool Channels::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	ChannelGroups *channelgroups = ChannelGroups::GetInstance();
+	Channels *channels = Channels::GetInstance();
 	
 	string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
-		unique_lock<mutex> llock(channelgroups->lock);
+		unique_lock<mutex> llock(channels->lock);
 		
-		for(auto it = channelgroups->objects_name.begin(); it!=channelgroups->objects_name.end(); it++)
+		for(auto it = channels->objects_name.begin(); it!=channels->objects_name.end(); it++)
 		{
-			ChannelGroup it_channelgroup = *it->second;
-			DOMElement node = (DOMElement)response->AppendXML("<channelgroup />");
-			node.setAttribute("id",to_string(it_channelgroup.GetID()));
-			node.setAttribute("name",it_channelgroup.GetName());
+			Channel it_channel = *it->second;
+			DOMElement node = (DOMElement)response->AppendXML("<channel />");
+			node.setAttribute("id",to_string(it_channel.GetID()));
+			node.setAttribute("name",it_channel.GetName());
 		}
 		
 		return true;
 	}
 	
 	return false;
+}
+
 }

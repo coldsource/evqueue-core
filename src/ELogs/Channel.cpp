@@ -17,11 +17,11 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/Channel.h>
-#include <Logs/Channels.h>
-#include <Logs/ChannelGroup.h>
-#include <Logs/ChannelGroups.h>
-#include <Logs/Field.h>
+#include <ELogs/Channel.h>
+#include <ELogs/Channels.h>
+#include <ELogs/ChannelGroup.h>
+#include <ELogs/ChannelGroups.h>
+#include <ELogs/Field.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
@@ -36,6 +36,9 @@
 
 using namespace std;
 using nlohmann::json;
+
+namespace ELogs
+{
 
 Channel::Channel():fields(Fields::en_type::CHANNEL, -1)
 {
@@ -457,4 +460,6 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 	}
 	
 	return false;
+}
+
 }

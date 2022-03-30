@@ -17,34 +17,22 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _CHANNELS_H_
-#define _CHANNELS_H_
+#ifndef _ELOGS_H_
+#define _ELOGS_H_
 
-#include <API/APIObjectList.h>
-#include <Logs/Channel.h>
-
-#include <map>
-#include <string>
-
-class User;
 class XMLQuery;
 class QueryResponse;
+class User;
 
-class Channels:public APIObjectList<Channel>
+namespace ELogs
 {
-	static Channels *instance;
-	
+
+class ELogs
+{
 	public:
-		
-		Channels();
-		~Channels();
-		
-		static Channels *GetInstance() { return instance; }
-		
-		void Reload(bool notify = true);
-		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
 
+}
 
 #endif

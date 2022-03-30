@@ -17,7 +17,7 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/Fields.h>
+#include <ELogs/Fields.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <global.h>
@@ -26,6 +26,9 @@
 
 using namespace std;
 using nlohmann::json;
+
+namespace ELogs
+{
 
 Fields::Fields(en_type type, unsigned int id)
 {
@@ -149,4 +152,6 @@ bool Fields::CheckFieldName(const string &field_name)
 		return false;
 	
 	return true;
+}
+
 }

@@ -17,9 +17,9 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/ChannelGroup.h>
-#include <Logs/ChannelGroups.h>
-#include <Logs/Channels.h>
+#include <ELogs/ChannelGroup.h>
+#include <ELogs/ChannelGroups.h>
+#include <ELogs/Channels.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
@@ -36,6 +36,9 @@
 
 using namespace std;
 using nlohmann::json;
+
+namespace ELogs
+{
 
 ChannelGroup::ChannelGroup(DB *db,unsigned int channel_group_id):fields(Fields::en_type::GROUP, channel_group_id)
 {
@@ -223,4 +226,6 @@ bool ChannelGroup::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 	}
 	
 	return false;
+}
+
 }

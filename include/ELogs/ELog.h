@@ -17,34 +17,34 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _CHANNELGROUPS_H_
-#define _CHANNELGROUPS_H_
+#ifndef _ELOG_H_
+#define _ELOG_H_
 
-#include <API/APIObjectList.h>
-#include <Logs/ChannelGroup.h>
-
-#include <map>
-#include <string>
-
-class User;
 class XMLQuery;
 class QueryResponse;
+class User;
+class DOMElement;
+class DB;
 
-class ChannelGroups:public APIObjectList<ChannelGroup>
+#include <string>
+
+namespace ELogs
 {
-	static ChannelGroups *instance;
+
+class Fields;
+
+class ELog
+{
+	private:
+		static void query_fields(DB *db, unsigned long long id, const Fields &fields, DOMElement &node);
 	
 	public:
-		
-		ChannelGroups();
-		~ChannelGroups();
-		
-		static ChannelGroups *GetInstance() { return instance; }
-		
-		void Reload(bool notify = true);
-		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		
+		static void BuildSelectFrom(std::string &query_select, std::string &query_from, const Fields &fields);
+		static void BuildSelectFromAppend(std::string &query_select, std::string &query_from, const Fields &fields);
 };
 
+}
 
 #endif

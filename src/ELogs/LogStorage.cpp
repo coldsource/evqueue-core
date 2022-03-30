@@ -17,14 +17,14 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <Logs/LogStorage.h>
+#include <ELogs/LogStorage.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
 #include <WS/Events.h>
-#include <Logs/Channels.h>
-#include <Logs/Channel.h>
-#include <Logs/ChannelGroup.h>
+#include <ELogs/Channels.h>
+#include <ELogs/Channel.h>
+#include <ELogs/ChannelGroup.h>
 #include <Configuration/ConfigurationEvQueue.h>
 
 #include <vector>
@@ -39,6 +39,9 @@
 
 using namespace std;
 using nlohmann::json;
+
+namespace ELogs
+{
 
 LogStorage *LogStorage::instance = 0;
 
@@ -263,4 +266,6 @@ string LogStorage::UnpackString(int i)
 		return it->second;
 	
 	return "";
+}
+
 }

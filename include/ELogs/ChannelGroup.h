@@ -29,7 +29,10 @@ class QueryResponse;
 class User;
 class DB;
 
-#include <Logs/Fields.h>
+#include <ELogs/Fields.h>
+
+namespace ELogs
+{
 
 class ChannelGroup
 {
@@ -56,5 +59,7 @@ class ChannelGroup
 	private:
 		static void create_edit_check(const std::string &name, const std::string &fields);
 };
+
+}
 
 #endif

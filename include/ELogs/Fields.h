@@ -17,29 +17,55 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _ELOG_H_
-#define _ELOG_H_
+#ifndef _FIELDS_H_
+#define _FIELDS_H_
+
+#include <string>
+#include <map>
+
+#include <ELogs/Field.h>
+
+#include <nlohmann/json.hpp>
 
 class XMLQuery;
 class QueryResponse;
 class User;
-class Fields;
-class DOMElement;
 class DB;
 
-#include <string>
-
-class ELog
+namespace ELogs
 {
-	private:
-		static void query_fields(DB *db, unsigned long long id, const Fields &fields, DOMElement &node);
-	
+
+class Fields
+{
 	public:
-		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		enum en_type
+		{
+			GROUP,
+			CHANNEL
+		};
+	
+	private:
+		unsigned int id;
+		en_type type;
 		
-		static void BuildSelectFrom(std::string &query_select, std::string &query_from, const Fields &fields);
-		static void BuildSelectFromAppend(std::string &query_select, std::string &query_from, const Fields &fields);
+		std::string col_name;
+		
+		std::map<unsigned int, Field> id_fields;
+		std::map<std::string, Field> name_fields;
+		
+	public:
+		Fields(en_type type, unsigned int id);
+		
+		const std::map<unsigned int, Field> &GetIDMap() const { return id_fields; }
+		const std::map<std::string, Field> &GetNameMap() const { return name_fields; }
+		
+		const Field &GetField(const std::string &name) const;
+		
+		void Update(const nlohmann::json &j);
+		
+		static bool CheckFieldName(const std::string &field_name);
 };
 
+}
 
 #endif
