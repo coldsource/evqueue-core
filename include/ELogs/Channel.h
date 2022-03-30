@@ -67,7 +67,7 @@ class Channel
 		unsigned int GetGroupID() const { return channel_group_id; }
 		const Fields &GetFields() const { return fields; }
 		
-		void ParseLog(const std::string log_str, std::map<std::string, std::string> &group_fields, std::map<std::string, std::string> &fields) const;
+		void ParseLog(const std::string &log_str, std::map<std::string, std::string> &group_fields, std::map<std::string, std::string> &fields) const;
 		
 		static bool CheckChannelName(const std::string &user_name);
 		static void Get(unsigned int id, QueryResponse *response);

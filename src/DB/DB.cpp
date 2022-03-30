@@ -420,6 +420,7 @@ void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
 	int len,escaped_len;
 	const string *arg_str;
 	const int *arg_int;
+	const long long *arg_ll;
 	
 	int cur = 0;
 
@@ -444,6 +445,15 @@ void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
 					arg_int = (int *)args.at(cur++);
 					if(arg_int)
 						escaped_len += 16; // Integer
+					else
+						escaped_len += 4; // NULL
+					i++;
+					break;
+				
+				case 'l':
+					arg_int = (int *)args.at(cur++);
+					if(arg_int)
+						escaped_len += 32; // Integer
 					else
 						escaped_len += 4; // NULL
 					i++;
@@ -488,6 +498,18 @@ void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
 					arg_int = (int *)args.at(cur++);
 					if(arg_int)
 						j += sprintf(escaped_query+j,"%d",*arg_int);
+					else
+					{
+						strcpy(escaped_query+j,"NULL");
+						j += 4;
+					}
+					i++;
+					break;
+				
+				case 'l':
+					arg_ll = (long long *)args.at(cur++);
+					if(arg_ll)
+						j += sprintf(escaped_query+j,"%lld",*arg_ll);
 					else
 					{
 						strcpy(escaped_query+j,"NULL");

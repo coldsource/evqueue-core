@@ -109,7 +109,7 @@ const ChannelGroup Channel::GetGroup() const
 	return ChannelGroups::GetInstance()->Get(channel_group_id);
 }
 
-void Channel::ParseLog(const string log_str, map<string, string> &group_fields, map<string, string> &fields) const
+void Channel::ParseLog(const string &log_str, map<string, string> &group_fields, map<string, string> &fields) const
 {
 	smatch matches;
 	

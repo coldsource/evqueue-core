@@ -56,8 +56,22 @@ class LogStorage
 	
 	bool is_shutting_down = false;
 	
+	unsigned long long next_log_id;
+	
+	int *bulk_channel_id;
+	std::string *bulk_log_date;
+	int *bulk_log_crit;
+	unsigned long long *bulk_log_id;
+	int *bulk_field_id[6];
+	int *bulk_value_int[6];
+	std::string *bulk_value_str[6];
+	int bulk_idx[6];
+	std::string bulk_queries[6];
+	std::vector<void *> bulk_values[6];
+	
 	public:
 		LogStorage();
+		~LogStorage();
 		
 		static LogStorage *GetInstance() { return instance; }
 		
@@ -73,8 +87,8 @@ class LogStorage
 		static void *ls_thread(LogStorage *ls);
 		
 		void log(const std::vector<std::string> &logs);
-		void store_log(DB *db, const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
-		void log_value(DB *db, unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
+		void store_log(const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
+		void log_value(unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
 };
 
 }
