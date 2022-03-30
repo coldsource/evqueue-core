@@ -149,7 +149,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			i++;
 		}
 		
-		query_order = " ORDER BY l.log_date DESC,l.log_id DESC ";
+		query_order = " ORDER BY l.log_id DESC ";
 		
 		query_limit = " LIMIT %i,%i ";
 		values.push_back(&offset);
