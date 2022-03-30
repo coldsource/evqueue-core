@@ -18,9 +18,12 @@
  */
 
 #include <Logs/ELogs.h>
+#include <Logs/ELog.h>
 #include <Logs/LogStorage.h>
 #include <Logs/ChannelGroup.h>
 #include <Logs/ChannelGroups.h>
+#include <Logs/Channel.h>
+#include <Logs/Channels.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -38,13 +41,15 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	
 	if(action=="list")
 	{
-		LogStorage *ls = LogStorage::GetInstance();
+		int i;
 		
+		LogStorage *ls = LogStorage::GetInstance();
 		unsigned int group_id = query->GetRootAttributeInt("group_id");
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
 		
 		const ChannelGroup group = ChannelGroups::GetInstance()->Get(group_id);
+		Channel channel;
 		
 		// Build base select
 		string query_select;
@@ -54,22 +59,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		string query_limit;
 		vector<void *> values;
 		
-		auto fields = group.GetFields().GetIDMap();
-		query_select = "SELECT c.channel_name, l.log_crit, l.log_date";
-		
-		query_from = " FROM t_log l ";
-		query_from += " INNER JOIN t_channel c ON c.channel_id=l.channel_id ";
-		
-		for(auto it = fields.begin(); it!=fields.end(); ++it)
-		{
-			string id_str = to_string(it->first);
-			
-			query_select += ", v"+to_string(it->first)+".value AS "+it->second.GetName();
-			
-			query_from += " LEFT JOIN "+it->second.GetTableName()+" v"+id_str;
-			query_from += " ON l.log_id=v"+id_str+".log_id AND v"+id_str+".field_id="+id_str+" AND l.log_date=v"+id_str+".log_date ";
-		}
-		
+		ELog::BuildSelectFrom(query_select, query_from, group.GetFields());
 		
 		string filter_crit_str = query->GetRootAttribute("filter_crit","");
 		int filter_crit;
@@ -88,11 +78,10 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			filter_emitted_from = string(buf);
 		}
 		
-		string filter_channel = query->GetRootAttribute("filter_channel","");
-		
 		DB db("elog");
 		
-		query_where = " WHERE true ";
+		query_where = " WHERE c.channel_group_id=%i ";
+		values.push_back(&group_id);
 		
 		if(filter_crit_str!="")
 		{
@@ -113,10 +102,48 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			values.push_back(&filter_emitted_until);
 		}
 		
-		if(filter_channel!="")
+		unsigned int filter_channel = query->GetRootAttributeInt("filter_channel",0);
+		if(filter_channel!=0)
 		{
-			query_where += " AND c.channel_name=%s ";
+			query_where += " AND l.channel_id=%i ";
 			values.push_back(&filter_channel);
+			
+			channel = Channels::GetInstance()->Get(filter_channel);
+			ELog::BuildSelectFromAppend(query_select, query_from, channel.GetFields());
+		}
+		
+		auto group_fields = group.GetFields().GetIDMap();
+		string group_filters[group_fields.size()];
+		string group_filters_val_str[group_fields.size()];
+		int group_filters_val_int[group_fields.size()];
+		i = 0;
+		for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
+		{
+			group_filters[i] = query->GetRootAttribute("filter_group_"+it->second.GetName(),"");
+			if(group_filters[i]!="")
+			{
+				query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
+				values.push_back(it->second.Pack(group_filters[i], &group_filters_val_int[i], &group_filters_val_str[i]));
+			}
+			
+			i++;
+		}
+		
+		auto channel_fields = channel.GetFields().GetIDMap();
+		string channel_filters[channel_fields.size()];
+		string channel_filters_val_str[channel_fields.size()];
+		int channel_filters_val_int[channel_fields.size()];
+		i = 0;
+		for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
+		{
+			channel_filters[i] = query->GetRootAttribute("filter_channel_"+it->second.GetName(),"");
+			if(channel_filters[i]!="")
+			{
+				query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
+				values.push_back(it->second.Pack(channel_filters[i], &channel_filters_val_int[i], &channel_filters_val_str[i]));
+			}
+			
+			i++;
 		}
 		
 		query_order = " ORDER BY l.log_date DESC,l.log_id DESC ";
@@ -130,23 +157,30 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		while(db.FetchRow())
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<log />");
-			node.setAttribute("channel",db.GetField(0));
-			node.setAttribute("crit",Field::UnpackCrit(db.GetFieldInt(1)));
-			node.setAttribute("date",db.GetField(2));
+			node.setAttribute("id",db.GetField(0));
+			node.setAttribute("channel",db.GetField(1));
+			node.setAttribute("crit",Field::UnpackCrit(db.GetFieldInt(2)));
+			node.setAttribute("date",db.GetField(3));
 			
-			int i = 3;
-			for(auto it = fields.begin(); it!=fields.end(); ++it)
-						node.setAttribute(it->second.GetName(), it->second.Unpack(db.GetField(i++)));
+			int i = 4;
+			for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
+				node.setAttribute(it->second.GetName(), it->second.Unpack(db.GetField(i++)));
+			
+			if(filter_channel!=0)
+			{
+				for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
+				node.setAttribute("channel_"+it->second.GetName(), it->second.Unpack(db.GetField(i++)));
+			}
 		}
 		
 		return true;
 	}
 	else if(action=="statistics")
 	{
-		DB db;
+		DB db("elog");
 		
-		string dbname = ConfigurationEvQueue::GetInstance()->Get("mysql.database");
-		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_elog' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", &dbname);
+		string dbname = ConfigurationEvQueue::GetInstance()->Get("elog.mysql.database");
+		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", &dbname);
 		
 		while(db.FetchRow())
 		{

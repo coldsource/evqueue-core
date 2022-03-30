@@ -57,6 +57,7 @@ class Field
 		en_type GetType() const { return type; }
 		
 		const std::string GetTableName() const;
+		const std::string GetDBType() const;
 		
 		static en_type StringToFieldType(const std::string &str);
 		static std::string FieldTypeToString(en_type type);

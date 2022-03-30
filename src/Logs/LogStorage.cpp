@@ -134,11 +134,14 @@ void LogStorage::log(const vector<string> &logs)
 	smatch matches;
 	
 	DB db("elog");
+	db.SetAutoRollback(false);
 	
 	db.StartTransaction();
 	
 	for(int i=0;i<logs.size();i++)
 	{
+		string log_str;
+		
 		try
 		{
 			if(!regex_search(logs[i], matches, channel_regex))
@@ -148,7 +151,7 @@ void LogStorage::log(const vector<string> &logs)
 				throw Exception("LogStorage", "unable to get log message channel");
 			
 			string channel_name = matches[1];
-			string log_str = logs[i].substr(matches[0].length());
+			log_str = logs[i].substr(matches[0].length());
 			
 			const Channel channel = Channels::GetInstance()->Get(channel_name);
 			
@@ -159,7 +162,7 @@ void LogStorage::log(const vector<string> &logs)
 		}
 		catch(Exception &e)
 		{
-			Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
+			Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error+". Log is : "+log_str);
 		}
 	}
 	
@@ -177,9 +180,7 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 	
 	try
 	{
-		printf("insert\n");
 		db->QueryPrintf("INSERT INTO t_log(channel_id, log_date, log_crit) VALUES(%i, %s, %i)", &channel_id, &date, &crit);
-		printf("insert done\n");
 	}
 	catch(Exception &e)
 	{
@@ -193,6 +194,11 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 			string part_name = "p"+date.substr(0, 4)+date.substr(5, 2)+date.substr(8, 2);
 			
 			db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+			db->QueryPrintf("ALTER TABLE t_value_char ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+			db->QueryPrintf("ALTER TABLE t_value_text ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+			db->QueryPrintf("ALTER TABLE t_value_ip ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+			db->QueryPrintf("ALTER TABLE t_value_int ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+			db->QueryPrintf("ALTER TABLE t_value_pack ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
 			
 			db->QueryPrintf("INSERT INTO t_log(channel_id, log_date, log_crit) VALUES(%i, %s, %i)", &channel_id, &date, &crit);
 		}
@@ -200,7 +206,6 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 	
 	unsigned long long id = db->InsertIDLong();
 	
-	printf("log value\n");
 	for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
 	{
 		if(it->first=="date" || it->first=="crit")
@@ -211,7 +216,6 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 	
 	for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
 		log_value(db, id, channel.GetFields().GetField(it->first), date, it->second);
-	printf("done\n");
 	
 	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
@@ -221,12 +225,13 @@ void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field
 	unsigned int field_id = field.GetID();
 	
 	const string table_name = field.GetTableName();
+	const string dbtype = field.GetDBType();
 	
 	int val_int;
 	string val_str;
 	void *packed_val = field.Pack(value, &val_int, &val_str);
 	
-	db->QueryPrintf("INSERT INTO %c(log_id, field_id, log_date, value) VALUES(%l, %i, %s, %s)", &table_name, &log_id, &field_id, &date, packed_val);
+	db->QueryPrintf("INSERT INTO %c(log_id, field_id, log_date, value) VALUES(%l, %i, %s, "+dbtype+")", &table_name, &log_id, &field_id, &date, packed_val);
 }
 
 unsigned int LogStorage::PackString(const string &str)

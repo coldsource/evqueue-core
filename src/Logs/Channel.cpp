@@ -111,7 +111,7 @@ void Channel::ParseLog(const string log_str, map<string, string> &group_fields, 
 	smatch matches;
 	
 	if(!regex_search(log_str, matches, log_regex))
-		throw Exception("Channel", "unable to match log message");
+		throw Exception("Channel", "unable to match log message for channel «"+channel_name+"»");
 	
 	char buf[32];
 	struct tm now_t;
@@ -180,11 +180,19 @@ void Channel::Get(unsigned int id, QueryResponse *response)
 {
 	const Channel channel = Channels::GetInstance()->Get(id);
 	
-	DOMElement node = (DOMElement)response->AppendXML("<channel />");
-	node.setAttribute("id",to_string(channel.GetID()));
-	node.setAttribute("group_id",to_string(channel.GetGroupID()));
-	node.setAttribute("name",channel.GetName());
-	node.setAttribute("config",channel.GetConfig());
+	response->SetAttribute("id",to_string(channel.GetID()));
+	response->SetAttribute("group_id",to_string(channel.GetGroupID()));
+	response->SetAttribute("name",channel.GetName());
+	response->SetAttribute("config",channel.GetConfig());
+	
+	auto fields = channel.fields.GetIDMap();
+	for(auto it = fields.begin(); it!=fields.end(); ++it)
+	{
+		DOMElement node = (DOMElement)response->AppendXML("<field />");
+		node.setAttribute("id",to_string(it->second.GetID()));
+		node.setAttribute("name",it->second.GetName());
+		node.setAttribute("type",Field::FieldTypeToString(it->second.GetType()));
+	}
 }
 
 unsigned int Channel::Create(const string &name, unsigned int group_id, const string &config)

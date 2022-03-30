@@ -137,10 +137,13 @@ void DB::Query(const char *query)
 	
 	if(mysql_query(mysql,query)!=0)
 	{
-		if(transaction_started)
+		string error = mysql_error(mysql);
+		int code = mysql_errno(mysql);
+		
+		if(auto_rollback && transaction_started)
 			RollbackTransaction();
 		
-		throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
+		throw Exception("DB",error,"SQL_ERROR",code);
 	}
 
 	res=mysql_store_result(mysql);

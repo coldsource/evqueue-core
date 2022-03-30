@@ -45,6 +45,7 @@ class DB
 	unsigned long *row_field_length;
 	
 	bool transaction_started;
+	bool auto_rollback = true;
 	
 	bool is_connected;
 	bool is_copy;
@@ -85,6 +86,7 @@ public:
 	void StartTransaction();
 	void CommitTransaction();
 	void RollbackTransaction();
+	void SetAutoRollback(bool v) { auto_rollback = v; }
 	
 	bool GetFieldIsNULL(int n);
 	std::string GetField(int n);

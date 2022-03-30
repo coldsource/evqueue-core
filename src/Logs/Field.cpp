@@ -276,3 +276,29 @@ const string Field::GetTableName() const
 	
 	return ""; // Make compiler shuts
 }
+
+const string Field::GetDBType() const
+{
+	switch(type)
+	{
+		case Field::en_type::CHAR:
+			return "%s";
+		
+		case Field::en_type::TEXT:
+			return "%s";
+		
+		case Field::en_type::INT:
+			return "%i";
+		
+		case Field::en_type::IP:
+			return "%s";
+		
+		case Field::en_type::PACK:
+			return "%i";
+		
+		case Field::en_type::NONE:
+			return "";
+	}
+	
+	return ""; // Make compiler shuts
+}

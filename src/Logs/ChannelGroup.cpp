@@ -127,7 +127,7 @@ void ChannelGroup::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_channel_group WHERE chennel_group_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_channel_group WHERE channel_group_id=%i",&id);
 	db.QueryPrintf("DELETE FROM t_channel WHERE channel_group_id=%i", &id);
 	
 	db.QueryPrintf("DELETE FROM t_field WHERE channel_group_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel_group cg WHERE cg.channel_group_id=t_field.channel_group_id)");

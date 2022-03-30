@@ -53,6 +53,7 @@
 #include <Logs/LogsAPI.h>
 #include <Logs/LogsNotifications.h>
 #include <Logs/ELogs.h>
+#include <Logs/ELog.h>
 #include <Logs/Channel.h>
 #include <Logs/Channels.h>
 #include <Logs/ChannelGroup.h>
@@ -551,6 +552,7 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
 		qh->RegisterHandler("logsnotifications",LogsNotifications::HandleQuery);
 		qh->RegisterHandler("elogs",ELogs::HandleQuery);
+		qh->RegisterHandler("elog",ELog::HandleQuery);
 		qh->RegisterHandler("channel",Channel::HandleQuery);
 		qh->RegisterHandler("channels",Channels::HandleQuery);
 		qh->RegisterHandler("channel_group",ChannelGroup::HandleQuery);
