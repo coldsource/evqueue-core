@@ -66,32 +66,11 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 	
 	instance = this;
 	
-	bulk_log_id = new unsigned long long[bulk_size];
-	bulk_channel_id = new int[bulk_size];
-	bulk_log_date = new string[bulk_size];
-	bulk_log_crit = new int[bulk_size];
-	for(int i=0;i<6;i++)
-	{
-		bulk_field_id[i] = new int[bulk_size*32];
-		bulk_value_int[i] = new int[bulk_size*32];
-		bulk_value_str[i] = new string[bulk_size*32];
-	}
-	
 	ls_thread_handle = thread(LogStorage::ls_thread,this);
 }
 
 LogStorage::~LogStorage()
 {
-	delete[] bulk_log_id;
-	delete[] bulk_channel_id;
-	delete[] bulk_log_date;
-	delete[] bulk_log_crit;
-	for(int i=0;i<6;i++)
-	{
-		delete[] bulk_field_id[i];
-		delete[] bulk_value_int[i];
-		delete[] bulk_value_str[i];
-	}
 }
 
 void LogStorage::Shutdown(void)
@@ -167,18 +146,12 @@ void LogStorage::log(const vector<string> &logs)
 	
 	DB db("elog");
 	
-	bulk_queries[Field::en_type::NONE] = "INSERT INTO t_log(log_id, channel_id, log_date, log_crit) VALUES";
-	bulk_queries[Field::en_type::CHAR] = "INSERT INTO t_value_char(log_id, field_id, log_date, value) VALUES";
-	bulk_queries[Field::en_type::INT] = "INSERT INTO t_value_int(log_id, field_id, log_date, value) VALUES";
-	bulk_queries[Field::en_type::IP] = "INSERT INTO t_value_ip(log_id, field_id, log_date, value) VALUES";
-	bulk_queries[Field::en_type::PACK] = "INSERT INTO t_value_pack(log_id, field_id, log_date, value) VALUES";
-	bulk_queries[Field::en_type::TEXT] = "INSERT INTO t_value_text(log_id, field_id, log_date, value) VALUES";
-	
-	for(int i=0;i<6;i++)
-	{
-		bulk_idx[i] = 0;
-		bulk_values[i].clear();
-	}
+	db.BulkStart(Field::en_type::NONE, "t_log", "log_id, channel_id, log_date, log_crit", 4);
+	db.BulkStart(Field::en_type::CHAR, "t_value_char", "log_id, field_id, log_date, value", 4);
+	db.BulkStart(Field::en_type::INT, "t_value_int", "log_id, field_id, log_date, value", 4);
+	db.BulkStart(Field::en_type::IP, "t_value_ip", "log_id, field_id, log_date, value", 4);
+	db.BulkStart(Field::en_type::PACK, "t_value_pack", "log_id, field_id, log_date, value", 4);
+	db.BulkStart(Field::en_type::TEXT, "t_value_text", "log_id, field_id, log_date, value", 4);
 	
 	for(int i=0;i<logs.size();i++)
 	{
@@ -200,7 +173,7 @@ void LogStorage::log(const vector<string> &logs)
 			map<string, string> group_fields, channel_fields;
 			channel.ParseLog(log_str, group_fields, channel_fields);
 			
-			store_log(channel, group_fields, channel_fields);
+			store_log(&db, channel, group_fields, channel_fields);
 		}
 		catch(Exception &e)
 		{
@@ -212,48 +185,35 @@ void LogStorage::log(const vector<string> &logs)
 	
 	try
 	{
-		for(int i=0;i<6;i++)
-		{
-			if(bulk_idx[i]>0)
-				db.QueryVsPrintf(bulk_queries[i], bulk_values[i]);
-		}
+		db.BulkExec(Field::en_type::NONE);
+		db.BulkExec(Field::en_type::CHAR);
+		db.BulkExec(Field::en_type::INT);
+		db.BulkExec(Field::en_type::IP);
+		db.BulkExec(Field::en_type::PACK);
+		db.BulkExec(Field::en_type::TEXT);
 	}
 	catch(Exception &e)
 	{
 		Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
+		exit(0);
 	}
 	
 	db.CommitTransaction();
 }
 
-void LogStorage::store_log(const Channel &channel, const map<string, string> &group_fields, const map<string, string> &channel_fields)
+void LogStorage::store_log(DB *db, const Channel &channel, const map<string, string> &group_fields, const map<string, string> &channel_fields)
 {
 	const ChannelGroup group = channel.GetGroup();
+	unsigned long long log_id = next_log_id++;
+	string date = group_fields.find("date")->second;
 	
 	// Insert log line
-	unsigned int channel_id = channel.GetID();
-	const string date = group_fields.find("date")->second;
-	int crit = Field::PackCrit(group_fields.find("crit")->second);
-	
 	try
 	{
-		//db->QueryPrintf("INSERT INTO t_log(channel_id, log_date, log_crit) VALUES(%i, %s, %i)", &channel_id, &date, &crit);
-		int global_bulk_idx = bulk_idx[Field::en_type::NONE];
-		if(global_bulk_idx>0)
-			bulk_queries[Field::en_type::NONE] += ",";
-		
-		bulk_queries[Field::en_type::NONE] += "(%l, %i, %s, %i)";
-		bulk_log_id[global_bulk_idx] = next_log_id++;
-		bulk_values[Field::en_type::NONE].push_back(&bulk_log_id[global_bulk_idx]);
-		
-		bulk_channel_id[global_bulk_idx] = channel_id;
-		bulk_values[Field::en_type::NONE].push_back(&bulk_channel_id[global_bulk_idx]);
-		
-		bulk_log_date[global_bulk_idx] = date;
-		bulk_values[Field::en_type::NONE].push_back(&bulk_log_date[global_bulk_idx]);
-		
-		bulk_log_crit[global_bulk_idx] = crit;
-		bulk_values[Field::en_type::NONE].push_back(&bulk_log_crit[global_bulk_idx]);
+		db->BulkDataLong(Field::en_type::NONE, log_id);
+		db->BulkDataInt(Field::en_type::NONE, channel.GetID());
+		db->BulkDataString(Field::en_type::NONE, date);
+		db->BulkDataInt(Field::en_type::NONE, Field::PackCrit(group_fields.find("crit")->second));
 	}
 	catch(Exception &e)
 	{
@@ -284,43 +244,32 @@ void LogStorage::store_log(const Channel &channel, const map<string, string> &gr
 		if(it->first=="date" || it->first=="crit")
 			continue;
 		
-		log_value(0, group.GetFields().GetField(it->first), date, it->second);
+		log_value(db, log_id, group.GetFields().GetField(it->first), date, it->second);
 	}
 	
 	for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
-		log_value(0, channel.GetFields().GetField(it->first), date, it->second);
+		log_value(db, log_id, channel.GetFields().GetField(it->first), date, it->second);
 	
-	bulk_idx[Field::en_type::NONE]++;
 	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
 
-void LogStorage::log_value(unsigned long long log_id, const Field &field, const string &date, const string &value)
+void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field, const string &date, const string &value)
 {
 	auto type = field.GetType();
 	
-	int global_bulk_idx = bulk_idx[Field::en_type::NONE];
-	int local_bulk_idx = bulk_idx[type];
+	int pack_i;
+	string pack_str;
+	field.Pack(value, &pack_i, &pack_str);
 	
-	void *packed_val = field.Pack(value, &bulk_value_int[type][local_bulk_idx], &bulk_value_str[type][local_bulk_idx]);
+	db->BulkDataLong(type, log_id);
+	db->BulkDataInt(type, field.GetID());
+	db->BulkDataString(type, date);
+	if(field.GetDBType()=="%i")
+		db->BulkDataInt(type, pack_i);
+	else if(field.GetDBType()=="%s")
+		db->BulkDataString(type, pack_str);
 	
 	//db->QueryPrintf("INSERT INTO %c(log_id, field_id, log_date, value) VALUES(%l, %i, %s, "+dbtype+")", &table_name, &log_id, &field_id, &date, packed_val);
-	if(bulk_idx[type]>0)
-		bulk_queries[type] += ",";
-	
-	
-	const string dbtype = field.GetDBType();
-	bulk_queries[type] += "(%l, %i, %s, "+dbtype+")";
-	
-	bulk_values[type].push_back(&bulk_log_id[global_bulk_idx]);
-	
-	bulk_field_id[type][local_bulk_idx] = field.GetID();
-	bulk_values[type].push_back(&bulk_field_id[type][local_bulk_idx]);
-	
-	bulk_values[type].push_back(&bulk_log_date[global_bulk_idx]);
-	
-	bulk_values[type].push_back(packed_val);
-	
-	bulk_idx[type]++;
 }
 
 unsigned int LogStorage::PackString(const string &str)

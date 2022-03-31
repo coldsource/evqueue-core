@@ -92,11 +92,11 @@ void *Field::Pack(const string &str, int *val_int, string *val_str) const
 	switch(type)
 	{
 		case Field::en_type::CHAR:
-			*val_str = str;
+			*val_str = str.substr(0, 128);
 			return val_str;
 		
 		case Field::en_type::TEXT:
-			*val_str = str;
+			*val_str = str.substr(0, 65535);
 			return val_str;
 		
 		case Field::en_type::INT:

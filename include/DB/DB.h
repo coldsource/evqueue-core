@@ -36,9 +36,36 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 class DB
 {
+	struct st_bulk_value
+	{
+		enum en_type
+		{
+			N,
+			INT,
+			LONG,
+			STRING
+		};
+		
+		en_type type;
+		int val_int;
+		long long val_ll;
+		std::string val_str;
+	};
+	
+	struct st_bulk_query
+	{
+		std::string table;
+		std::string columns;
+		int ncolumns;
+		std::vector<st_bulk_value> values;
+	};
+	
+	std::map<int, st_bulk_query> bulk_queries;
+	
 	MYSQL *mysql;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
@@ -73,9 +100,16 @@ public:
 	void QueryPrintfC(const char *query,...);
 	void QueryPrintf(const std::string &query,...);
 	void QueryVsPrintf(const std::string &query,const std::vector<void *> &args);
-	void EscapeString(const char *string, char *escaped_string);
+	std::string EscapeString(const std::string &str);
 	int InsertID(void);
 	long long InsertIDLong(void);
+	
+	void BulkStart(int bulk_id, const std::string &table, const std::string &columns, int ncolumns);
+	void BulkDataNULL(int bulk_id);
+	void BulkDataInt(int bulk_id, int i);
+	void BulkDataLong(int bulk_id, long long ll);
+	void BulkDataString(int bulk_id, const std::string &s);
+	void BulkExec(int bulk_id);
 	
 	bool FetchRow(void);
 	void Seek(int offset);

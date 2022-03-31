@@ -542,9 +542,11 @@ void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
 	delete[] escaped_query;
 }
 
-void DB::EscapeString(const char *string, char *escaped_string)
+string DB::EscapeString(const string &str)
 {
-	mysql_real_escape_string(mysql, escaped_string, string, strlen(string));
+	char buf[2*str.size()+1];
+	long unsigned int size = mysql_real_escape_string(mysql, buf, str.c_str(), str.size());
+	return string(buf, size);
 }
 
 int DB::InsertID(void)
@@ -555,6 +557,82 @@ int DB::InsertID(void)
 long long DB::InsertIDLong(void)
 {
 	return mysql_insert_id(mysql);
+}
+
+void DB::BulkStart(int bulk_id, const std::string &table, const std::string &columns, int ncolumns)
+{
+	bulk_queries[bulk_id] = {table, columns, ncolumns};
+}
+
+void DB::BulkDataNULL(int bulk_id)
+{
+	st_bulk_value v;
+	v.type = st_bulk_value::en_type::N;
+	bulk_queries[bulk_id].values.push_back(v);
+}
+
+void DB::BulkDataInt(int bulk_id, int i)
+{
+	st_bulk_value v;
+	v.type = st_bulk_value::en_type::INT;
+	v.val_int = i;
+	bulk_queries[bulk_id].values.push_back(v);
+}
+
+void DB::BulkDataLong(int bulk_id, long long ll)
+{
+	st_bulk_value v;
+	v.type = st_bulk_value::en_type::LONG;
+	v.val_ll = ll;
+	bulk_queries[bulk_id].values.push_back(v);
+}
+
+void DB::BulkDataString(int bulk_id, const std::string &s)
+{
+	st_bulk_value v;
+	v.type = st_bulk_value::en_type::STRING;
+	v.val_str = s;
+	bulk_queries[bulk_id].values.push_back(v);
+}
+
+void DB::BulkExec(int bulk_id)
+{
+	const st_bulk_query &bulk_query = bulk_queries[bulk_id];
+	const st_bulk_value *values = bulk_query.values.data();
+	
+	string query = "INSERT INTO "+bulk_query.table+"("+bulk_query.columns+") VALUES";
+	int nrows = bulk_query.values.size()/bulk_query.ncolumns;
+	int n = 0;
+	for(int i=0;i<nrows;i++)
+	{
+		if(i>0)
+			query += ",";
+		
+		query += "(";
+		for(int j=0;j<bulk_query.ncolumns;j++)
+		{
+			if(j>0)
+				query += ",";
+			
+			if(values[n].type==st_bulk_value::en_type::N)
+				query += "NULL";
+			else if(values[n].type==st_bulk_value::en_type::INT)
+				query += to_string(values[n].val_int);
+			else if(values[n].type==st_bulk_value::en_type::LONG)
+				query += to_string(values[n].val_ll);
+			else if(values[n].type==st_bulk_value::en_type::STRING)
+				query += "'"+EscapeString(values[n].val_str)+"'";
+			
+			n++;
+		}
+		query += ")";
+	}
+	
+	bulk_queries.erase(bulk_id);
+	if(nrows==0)
+		return;
+	
+	Query(query.c_str());
 }
 
 bool DB::FetchRow(void)
