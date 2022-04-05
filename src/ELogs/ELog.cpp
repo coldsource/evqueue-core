@@ -104,7 +104,7 @@ void ELog::query_fields(DB *db, unsigned long long id, const Fields &fields, DOM
 	int i = 4;
 	auto fields_map = fields.GetIDMap();
 	for(auto it = fields_map.begin(); it!=fields_map.end(); ++it)
-				node.setAttribute(it->second.GetName(), it->second.Unpack(db->GetField(i++)));
+		node.setAttribute(it->second.GetName(), it->second.Unpack(db->GetField(i++)));
 }
 
 void ELog::BuildSelectFrom(string &query_select, string &query_from, const Fields &fields)

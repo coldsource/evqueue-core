@@ -199,10 +199,16 @@ int GarbageCollector::purge(time_t now)
 		db.QueryPrintfC("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",buf,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		db.QueryPrintf("SELECT PARTITION_NAME FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_elog' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 30 OFFSET %i", &dbname, &elogs_retention);
+		db.QueryPrintf("SELECT PARTITION_NAME FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 30 OFFSET %i", &dbname, &elogs_retention);
 		while(db.FetchRow())
 		{
 			db2.QueryPrintf("ALTER TABLE t_elog DROP PARTITION "+db.GetField(0));
+			db2.QueryPrintf("ALTER TABLE t_value_char DROP PARTITION "+db.GetField(0));
+			db2.QueryPrintf("ALTER TABLE t_value_text DROP PARTITION "+db.GetField(0));
+			db2.QueryPrintf("ALTER TABLE t_value_itext DROP PARTITION "+db.GetField(0));
+			db2.QueryPrintf("ALTER TABLE t_value_ip DROP PARTITION "+db.GetField(0));
+			db2.QueryPrintf("ALTER TABLE t_value_pack DROP PARTITION "+db.GetField(0));
+			db2.QueryPrintf("ALTER TABLE t_int DROP PARTITION "+db.GetField(0));
 			deleted_rows++;
 		}
 		

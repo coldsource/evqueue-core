@@ -779,7 +779,7 @@ void DB::Disconnect()
 // Function similar to MySQL TO_DAYS (number of days since year 0)
 int DB::TO_DAYS(const string &t)
 {
-	struct tm end_t;
+	struct tm end_t = { 0 };
 	char *ptr = strptime(t.c_str(), "%Y-%m-%d %H:%M:%S" , &end_t);
 	if(!ptr)
 		return -1;

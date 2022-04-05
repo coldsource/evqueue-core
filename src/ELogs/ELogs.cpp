@@ -30,6 +30,7 @@
 #include <Logger/Logger.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
+#include <Crypto/Sha1String.h>
 
 #include <vector>
 
@@ -125,8 +126,17 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			group_filters[i] = query->GetRootAttribute("filter_group_"+it->second.GetName(),"");
 			if(group_filters[i]!="")
 			{
-				query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
-				values.push_back(it->second.Pack(group_filters[i], &group_filters_val_int[i], &group_filters_val_str[i]));
+				if(it->second.GetType()==Field::en_type::ITEXT)
+				{
+					group_filters[i] = Sha1String(group_filters[i]).GetBinary();
+					query_where += " AND v"+to_string(it->first)+".value_sha1 = "+it->second.GetDBType()+" ";
+					values.push_back(it->second.Pack(group_filters[i], &group_filters_val_int[i], &group_filters_val_str[i]));
+				}
+				else
+				{
+					query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
+					values.push_back(it->second.Pack(group_filters[i], &group_filters_val_int[i], &group_filters_val_str[i]));
+				}
 			}
 			
 			i++;
@@ -142,8 +152,17 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			channel_filters[i] = query->GetRootAttribute("filter_channel_"+it->second.GetName(),"");
 			if(channel_filters[i]!="")
 			{
-				query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
-				values.push_back(it->second.Pack(channel_filters[i], &channel_filters_val_int[i], &channel_filters_val_str[i]));
+				if(it->second.GetType()==Field::en_type::ITEXT)
+				{
+					channel_filters[i] = Sha1String(channel_filters[i]).GetBinary();
+					query_where += " AND v"+to_string(it->first)+".value_sha1 = "+it->second.GetDBType()+" ";
+					values.push_back(it->second.Pack(channel_filters[i], &channel_filters_val_int[i], &channel_filters_val_str[i]));
+				}
+				else
+				{
+					query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
+					values.push_back(it->second.Pack(channel_filters[i], &channel_filters_val_int[i], &channel_filters_val_str[i]));
+				}
 			}
 			
 			i++;

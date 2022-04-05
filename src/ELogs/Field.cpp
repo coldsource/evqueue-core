@@ -67,6 +67,8 @@ Field::en_type Field::StringToFieldType(const string &str)
 		return PACK;
 	else if(str=="TEXT")
 		return TEXT;
+	else if(str=="ITEXT")
+		return ITEXT;
 	
 	throw Exception("Field","Unknown field type : "+str);
 }
@@ -83,6 +85,8 @@ string Field::FieldTypeToString(en_type type)
 		return "PACK";
 	else if(type==TEXT)
 		return "TEXT";
+	else if(type==ITEXT)
+		return "ITEXT";
 	
 	throw Exception("Field","Unknown field type");
 }
@@ -92,11 +96,15 @@ void *Field::Pack(const string &str, int *val_int, string *val_str) const
 	switch(type)
 	{
 		case Field::en_type::CHAR:
-			*val_str = str.substr(0, 128);
+			*val_str = str;
 			return val_str;
 		
 		case Field::en_type::TEXT:
-			*val_str = str.substr(0, 65535);
+			*val_str = str;
+			return val_str;
+		
+		case Field::en_type::ITEXT:
+			*val_str = str;
 			return val_str;
 		
 		case Field::en_type::INT:
@@ -120,12 +128,18 @@ void *Field::Pack(const string &str, int *val_int, string *val_str) const
 
 string Field::Unpack(const string &val) const
 {
+	if(val=="")
+		return "";
+	
 	switch(type)
 	{
 		case Field::en_type::CHAR:
 			return val;
 		
 		case Field::en_type::TEXT:
+			return val;
+		
+		case Field::en_type::ITEXT:
 			return val;
 		
 		case Field::en_type::INT:
@@ -262,7 +276,10 @@ const string Field::GetTableName() const
 			return "t_value_char";
 		
 		case Field::en_type::TEXT:
-			return "t_value_text";
+			return "t_value_itext";
+		
+		case Field::en_type::ITEXT:
+			return "t_value_itext";
 		
 		case Field::en_type::INT:
 			return "t_value_int";
@@ -288,6 +305,9 @@ const string Field::GetDBType() const
 			return "%s";
 		
 		case Field::en_type::TEXT:
+			return "%s";
+		
+		case Field::en_type::ITEXT:
 			return "%s";
 		
 		case Field::en_type::INT:

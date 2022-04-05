@@ -42,7 +42,8 @@ class Field
 			INT,
 			IP,
 			PACK,
-			TEXT
+			TEXT,
+			ITEXT
 		};
 	
 	private:

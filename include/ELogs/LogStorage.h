@@ -57,6 +57,7 @@ class LogStorage
 	bool is_shutting_down = false;
 	
 	unsigned long long next_log_id;
+	unsigned int last_partition_days;
 	
 	public:
 		LogStorage();
@@ -78,6 +79,7 @@ class LogStorage
 		void log(const std::vector<std::string> &logs);
 		void store_log(DB *db, const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
 		void log_value(DB *db, unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
+		void create_partition(DB *db, const std::string &date);
 };
 
 }

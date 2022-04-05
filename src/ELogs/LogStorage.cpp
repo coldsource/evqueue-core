@@ -26,6 +26,7 @@
 #include <ELogs/Channel.h>
 #include <ELogs/ChannelGroup.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <Crypto/Sha1String.h>
 
 #include <vector>
 
@@ -63,6 +64,11 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 	db.Query("SELECT MAX(log_id) FROM t_log");
 	db.FetchRow();
 	next_log_id = db.GetFieldLong(0) + 1;
+	
+	string dbname = config->Get("elog.mysql.database");
+	db.QueryPrintf("SELECT PARTITION_DESCRIPTION FROM information_schema.partitions WHERE TABLE_SCHEMA='evqueue-elogs' AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 1", &dbname);
+	if(db.FetchRow())
+		last_partition_days = db.GetFieldInt(0);
 	
 	instance = this;
 	
@@ -152,6 +158,7 @@ void LogStorage::log(const vector<string> &logs)
 	db.BulkStart(Field::en_type::IP, "t_value_ip", "log_id, field_id, log_date, value", 4);
 	db.BulkStart(Field::en_type::PACK, "t_value_pack", "log_id, field_id, log_date, value", 4);
 	db.BulkStart(Field::en_type::TEXT, "t_value_text", "log_id, field_id, log_date, value", 4);
+	db.BulkStart(Field::en_type::ITEXT, "t_value_itext", "log_id, field_id, log_date, value, value_sha1", 5);
 	
 	for(int i=0;i<logs.size();i++)
 	{
@@ -191,14 +198,16 @@ void LogStorage::log(const vector<string> &logs)
 		db.BulkExec(Field::en_type::IP);
 		db.BulkExec(Field::en_type::PACK);
 		db.BulkExec(Field::en_type::TEXT);
+		db.BulkExec(Field::en_type::ITEXT);
 	}
 	catch(Exception &e)
 	{
 		Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
-		exit(0);
 	}
 	
 	db.CommitTransaction();
+	
+	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
 
 void LogStorage::store_log(DB *db, const Channel &channel, const map<string, string> &group_fields, const map<string, string> &channel_fields)
@@ -207,37 +216,16 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 	unsigned long long log_id = next_log_id++;
 	string date = group_fields.find("date")->second;
 	
-	// Insert log line
-	try
-	{
-		db->BulkDataLong(Field::en_type::NONE, log_id);
-		db->BulkDataInt(Field::en_type::NONE, channel.GetID());
-		db->BulkDataString(Field::en_type::NONE, date);
-		db->BulkDataInt(Field::en_type::NONE, Field::PackCrit(group_fields.find("crit")->second));
-	}
-	catch(Exception &e)
-	{
-		/*if(e.codeno==1526) // No partition for data
-		{
-			// Automatically create partition to store new logs
-			db->QueryPrintf("SELECT TO_DAYS(%s)", &date);
-			db->FetchRow();
-			
-			int days = db->GetFieldInt(0)+1;
-			string part_name = "p"+date.substr(0, 4)+date.substr(5, 2)+date.substr(8, 2);
-			
-			db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-			db->QueryPrintf("ALTER TABLE t_value_char ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-			db->QueryPrintf("ALTER TABLE t_value_text ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-			db->QueryPrintf("ALTER TABLE t_value_ip ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-			db->QueryPrintf("ALTER TABLE t_value_int ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-			db->QueryPrintf("ALTER TABLE t_value_pack ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-			
-			db->QueryPrintf("INSERT INTO t_log(channel_id, log_date, log_crit) VALUES(%i, %s, %i)", &channel_id, &date, &crit);
-		}*/
-	}
+	// Check if partition exists for the log line
+	if(DB::TO_DAYS(date)>=last_partition_days)
+		create_partition(db, date);
 	
-	//unsigned long long id = db->InsertIDLong();
+	// Insert log line
+	db->BulkDataLong(Field::en_type::NONE, log_id);
+	db->BulkDataInt(Field::en_type::NONE, channel.GetID());
+	db->BulkDataString(Field::en_type::NONE, date);
+	db->BulkDataInt(Field::en_type::NONE, Field::PackCrit(group_fields.find("crit")->second));
+	
 	
 	for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
 	{
@@ -249,8 +237,6 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 	
 	for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
 		log_value(db, log_id, channel.GetFields().GetField(it->first), date, it->second);
-	
-	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
 }
 
 void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field, const string &date, const string &value)
@@ -264,7 +250,16 @@ void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field
 	db->BulkDataLong(type, log_id);
 	db->BulkDataInt(type, field.GetID());
 	db->BulkDataString(type, date);
-	if(field.GetDBType()=="%i")
+	if(field.GetType()==Field::en_type::ITEXT)
+	{
+		db->BulkDataString(type, pack_str.substr(0, 65535));
+		db->BulkDataString(type, Sha1String(pack_str).GetBinary());
+	}
+	else if(field.GetType()==Field::en_type::TEXT)
+		db->BulkDataString(type, pack_str.substr(0, 65535));
+	else if(field.GetType()==Field::en_type::CHAR)
+		db->BulkDataString(type, pack_str.substr(0, 128));
+	else if(field.GetDBType()=="%i")
 		db->BulkDataInt(type, pack_i);
 	else if(field.GetDBType()=="%s")
 		db->BulkDataString(type, pack_str);
@@ -301,6 +296,25 @@ string LogStorage::UnpackString(int i)
 		return it->second;
 	
 	return "";
+}
+
+void LogStorage::create_partition(DB *db, const string &date)
+{
+	string part_name = "p"+date.substr(0, 4)+date.substr(5, 2)+date.substr(8, 2);
+	unsigned int days = DB::TO_DAYS(date) + 1;
+	
+	if(days<=last_partition_days)
+		return; // Nothing to do
+	
+	db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	db->QueryPrintf("ALTER TABLE t_value_char ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	db->QueryPrintf("ALTER TABLE t_value_text ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	db->QueryPrintf("ALTER TABLE t_value_itext ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	db->QueryPrintf("ALTER TABLE t_value_ip ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	db->QueryPrintf("ALTER TABLE t_value_int ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	db->QueryPrintf("ALTER TABLE t_value_pack ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	
+	last_partition_days = days;
 }
 
 }
