@@ -66,7 +66,7 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 	next_log_id = db.GetFieldLong(0) + 1;
 	
 	string dbname = config->Get("elog.mysql.database");
-	db.QueryPrintf("SELECT PARTITION_DESCRIPTION FROM information_schema.partitions WHERE TABLE_SCHEMA='evqueue-elogs' AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 1", &dbname);
+	db.QueryPrintf("SELECT PARTITION_DESCRIPTION FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 1", &dbname);
 	if(db.FetchRow())
 		last_partition_days = db.GetFieldInt(0);
 	
