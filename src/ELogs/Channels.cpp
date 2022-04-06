@@ -18,6 +18,7 @@
  */
 
 #include <ELogs/Channels.h>
+#include <ELogs/ChannelGroup.h>
 #include <ELogs/LogStorage.h>
 #include <User/User.h>
 #include <Exception/Exception.h>
@@ -92,6 +93,7 @@ bool Channels::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			DOMElement node = (DOMElement)response->AppendXML("<channel />");
 			node.setAttribute("id",to_string(it_channel.GetID()));
 			node.setAttribute("name",it_channel.GetName());
+			node.setAttribute("group", it_channel.GetGroup().GetName());
 		}
 		
 		return true;
