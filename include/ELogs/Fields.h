@@ -60,6 +60,7 @@ class Fields
 		const std::map<std::string, Field> &GetNameMap() const { return name_fields; }
 		
 		const Field &GetField(const std::string &name) const;
+		int GetNumber() const { return id_fields.size(); }
 		
 		void Update(const nlohmann::json &j);
 		

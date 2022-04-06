@@ -24,11 +24,18 @@ class XMLQuery;
 class QueryResponse;
 class User;
 
+#include <vector>
+#include <string>
+
 namespace ELogs
 {
 
+class Fields;
+
 class ELogs
 {
+	static void add_auto_filters(XMLQuery *query, const Fields &fields, const std::string &prefix, std::string &query_where, std::vector<void *> &values, int *val_int, std::string *val_str);
+	
 	public:
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };

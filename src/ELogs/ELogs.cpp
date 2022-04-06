@@ -24,6 +24,7 @@
 #include <ELogs/ChannelGroups.h>
 #include <ELogs/Channel.h>
 #include <ELogs/Channels.h>
+#include <ELogs/Fields.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -45,9 +46,6 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	
 	if(action=="list")
 	{
-		int i;
-		
-		LogStorage *ls = LogStorage::GetInstance();
 		unsigned int group_id = query->GetRootAttributeInt("group_id");
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
@@ -117,56 +115,14 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		}
 		
 		auto group_fields = group.GetFields().GetIDMap();
-		string group_filters[group_fields.size()];
 		string group_filters_val_str[group_fields.size()];
 		int group_filters_val_int[group_fields.size()];
-		i = 0;
-		for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
-		{
-			group_filters[i] = query->GetRootAttribute("filter_group_"+it->second.GetName(),"");
-			if(group_filters[i]!="")
-			{
-				if(it->second.GetType()==Field::en_type::ITEXT)
-				{
-					group_filters[i] = Sha1String(group_filters[i]).GetBinary();
-					query_where += " AND v"+to_string(it->first)+".value_sha1 = "+it->second.GetDBType()+" ";
-					values.push_back(it->second.Pack(group_filters[i], &group_filters_val_int[i], &group_filters_val_str[i]));
-				}
-				else
-				{
-					query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
-					values.push_back(it->second.Pack(group_filters[i], &group_filters_val_int[i], &group_filters_val_str[i]));
-				}
-			}
-			
-			i++;
-		}
+		add_auto_filters(query, group.GetFields(), "filter_group_", query_where,values,group_filters_val_int, group_filters_val_str);
 		
 		auto channel_fields = channel.GetFields().GetIDMap();
-		string channel_filters[channel_fields.size()];
 		string channel_filters_val_str[channel_fields.size()];
 		int channel_filters_val_int[channel_fields.size()];
-		i = 0;
-		for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
-		{
-			channel_filters[i] = query->GetRootAttribute("filter_channel_"+it->second.GetName(),"");
-			if(channel_filters[i]!="")
-			{
-				if(it->second.GetType()==Field::en_type::ITEXT)
-				{
-					channel_filters[i] = Sha1String(channel_filters[i]).GetBinary();
-					query_where += " AND v"+to_string(it->first)+".value_sha1 = "+it->second.GetDBType()+" ";
-					values.push_back(it->second.Pack(channel_filters[i], &channel_filters_val_int[i], &channel_filters_val_str[i]));
-				}
-				else
-				{
-					query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
-					values.push_back(it->second.Pack(channel_filters[i], &channel_filters_val_int[i], &channel_filters_val_str[i]));
-				}
-			}
-			
-			i++;
-		}
+		add_auto_filters(query, channel.GetFields(), "filter_channel_", query_where,values,channel_filters_val_int, channel_filters_val_str);
 		
 		query_order = " ORDER BY l.log_id DESC ";
 		
@@ -218,6 +174,33 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	}
 	
 	return false;
+}
+
+void ELogs::add_auto_filters(XMLQuery *query, const Fields &fields, const string &prefix, string &query_where, vector<void *> &values, int *val_int, string *val_str)
+{
+	int i = 0;
+	auto fields_map = fields.GetIDMap();
+	
+	for(auto it = fields_map.begin(); it!=fields_map.end(); ++it)
+	{
+		string filter = query->GetRootAttribute(prefix+it->second.GetName(),"");
+		if(filter!="")
+		{
+			if(it->second.GetType()==Field::en_type::ITEXT)
+			{
+				filter = Sha1String(filter).GetBinary();
+				query_where += " AND v"+to_string(it->first)+".value_sha1 = "+it->second.GetDBType()+" ";
+				values.push_back(it->second.Pack(filter, &val_int[i], &val_str[i]));
+			}
+			else
+			{
+				query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
+				values.push_back(it->second.Pack(filter, &val_int[i], &val_str[i]));
+			}
+		}
+		
+		i++;
+	}
 }
 
 }
