@@ -87,13 +87,20 @@ bool Channels::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 	{
 		unique_lock<mutex> llock(channels->lock);
 		
+		int group_id = query->GetRootAttributeInt("group_id", 0);
+		
 		for(auto it = channels->objects_name.begin(); it!=channels->objects_name.end(); it++)
 		{
 			Channel it_channel = *it->second;
+			
+			if(group_id!=0 && it_channel.GetGroup().GetID()!=group_id)
+				continue;
+			
 			DOMElement node = (DOMElement)response->AppendXML("<channel />");
 			node.setAttribute("id",to_string(it_channel.GetID()));
 			node.setAttribute("name",it_channel.GetName());
 			node.setAttribute("group", it_channel.GetGroup().GetName());
+			node.setAttribute("group_id", to_string(it_channel.GetGroup().GetID()));
 		}
 		
 		return true;
