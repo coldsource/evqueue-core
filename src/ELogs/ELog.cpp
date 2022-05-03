@@ -93,7 +93,8 @@ void ELog::query_fields(DB *db, unsigned long long id, const Fields &fields, DOM
 	string query_from;
 	string query_where;
 	
-	BuildSelectFrom(query_select, query_from, fields);
+	BuildSelectFrom(query_select, query_from);
+	BuildSelectFromAppend(query_select, query_from, fields);
 	
 	query_where = " WHERE l.log_id=%l ";
 	
@@ -107,14 +108,12 @@ void ELog::query_fields(DB *db, unsigned long long id, const Fields &fields, DOM
 		node.setAttribute(it->second.GetName(), it->second.Unpack(db->GetField(i++)));
 }
 
-void ELog::BuildSelectFrom(string &query_select, string &query_from, const Fields &fields)
+void ELog::BuildSelectFrom(string &query_select, string &query_from)
 {
 	query_select = "SELECT l.log_id, c.channel_name, l.log_crit, l.log_date";
 	
 	query_from = " FROM t_log l ";
 	query_from += " INNER JOIN t_channel c ON c.channel_id=l.channel_id ";
-	
-	BuildSelectFromAppend(query_select, query_from, fields);
 }
 
 void ELog::BuildSelectFromAppend(string &query_select, string &query_from, const Fields &fields)

@@ -40,6 +40,10 @@ using nlohmann::json;
 namespace ELogs
 {
 
+ChannelGroup::ChannelGroup():fields(Fields::en_type::GROUP, -1)
+{
+}
+
 ChannelGroup::ChannelGroup(DB *db,unsigned int channel_group_id):fields(Fields::en_type::GROUP, channel_group_id)
 {
 	db->QueryPrintf("SELECT channel_group_id, channel_group_name FROM t_channel_group WHERE channel_group_id=%i",&channel_group_id);

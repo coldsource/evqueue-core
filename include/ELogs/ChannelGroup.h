@@ -42,6 +42,7 @@ class ChannelGroup
 		Fields fields;
 	
 	public:
+		ChannelGroup();
 		ChannelGroup(DB *db,unsigned int channel_group_id);
 		
 		unsigned int GetID() const { return channel_group_id; }

@@ -46,11 +46,10 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	
 	if(action=="list")
 	{
-		unsigned int group_id = query->GetRootAttributeInt("group_id");
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
 		
-		const ChannelGroup group = ChannelGroups::GetInstance()->Get(group_id);
+		ChannelGroup group;
 		Channel channel;
 		
 		// Build base select
@@ -61,8 +60,9 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		string query_limit;
 		vector<void *> values;
 		
-		ELog::BuildSelectFrom(query_select, query_from, group.GetFields());
+		ELog::BuildSelectFrom(query_select, query_from);
 		
+		// Base filters (always present)
 		string filter_crit_str = query->GetRootAttribute("filter_crit","");
 		int filter_crit;
 		
@@ -82,8 +82,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		
 		DB db("elog");
 		
-		query_where = " WHERE c.channel_group_id=%i ";
-		values.push_back(&group_id);
+		query_where = " WHERE true ";
 		
 		if(filter_crit_str!="")
 		{
@@ -102,6 +101,16 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		{
 			query_where += " AND l.log_date<=%s ";
 			values.push_back(&filter_emitted_until);
+		}
+		
+		unsigned int filter_group = query->GetRootAttributeInt("filter_group", 0);
+		if(filter_group!=0)
+		{
+			query_where += " AND c.channel_group_id=%i ";
+			values.push_back(&filter_group);
+			
+			group = ChannelGroups::GetInstance()->Get(filter_group);
+			ELog::BuildSelectFromAppend(query_select, query_from, group.GetFields());
 		}
 		
 		unsigned int filter_channel = query->GetRootAttributeInt("filter_channel",0);

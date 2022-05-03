@@ -41,7 +41,7 @@ class ELog
 	public:
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 		
-		static void BuildSelectFrom(std::string &query_select, std::string &query_from, const Fields &fields);
+		static void BuildSelectFrom(std::string &query_select, std::string &query_from);
 		static void BuildSelectFromAppend(std::string &query_select, std::string &query_from, const Fields &fields);
 };
 
