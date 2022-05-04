@@ -52,7 +52,6 @@
 #include <Logs/Logs.h>
 #include <Logs/LogsAPI.h>
 #include <Logs/LogsNotifications.h>
-#include <ELogs/LogStorage.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
 #include <Workflow/Workflow.h>
@@ -101,6 +100,7 @@
 #include <WS/WSServer.h>
 #include <Process/tools_proc.h>
 #include <Process/Forker.h>
+#include <IO/NetworkConnections.h>
 
 #include <xercesc/util/PlatformUtils.hpp>
 
@@ -517,11 +517,11 @@ int main(int argc,char **argv)
 		// Load tags
 		Tags *tags = new Tags();
 		
-		// Load channels and logs storage
-		ELogs::LogStorage *log_storage = new ELogs::LogStorage();
+		// Initialize general module structures
+		QueryHandlers *qh = QueryHandlers::GetInstance();
+		NetworkConnections nc;
 		
 		// Initialize query handlers
-		QueryHandlers *qh = QueryHandlers::GetInstance();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
 		qh->RegisterHandler("instance",WorkflowInstanceAPI::HandleQuery);
@@ -570,170 +570,40 @@ int main(int argc,char **argv)
 		struct sockaddr_in local_addr,remote_addr;
 		socklen_t remote_addr_len;
 		
-		// Create TCP socket
-		if(config.Get("network.bind.ip").length()>0)
-		{
-			int optval;
+		// Create TCP and UNIX sockets
+		NetworkConnections::t_stream_handler api_handler = [](int s) {
+			if(ActiveConnections::GetInstance()->GetAPINumber()>=ConfigurationEvQueue::GetInstance()->GetInt("network.connections.max"))
+			{
+				close(s);
+				
+				Logger::Log(LOG_WARNING,"Max API connections reached, dropping connection");
+			}
 			
-			// Create listen socket
-			listen_socket=socket(PF_INET,SOCK_STREAM | SOCK_CLOEXEC,0);
-			
-			// Configure socket
-			optval=1;
-			setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(int));
-			
-			// Bind socket
-			memset(&local_addr,0,sizeof(struct sockaddr_in));
-			local_addr.sin_family=AF_INET;
-			if(config.Get("network.bind.ip")=="*")
-				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-			else
-				local_addr.sin_addr.s_addr=inet_addr(config.Get("network.bind.ip").c_str());
-			local_addr.sin_port = htons(config.GetInt("network.bind.port"));
-			re=bind(listen_socket,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
-			if(re==-1)
-				throw Exception("core","Unable to bind API listen socket");
-			
-			// Listen on socket
-			re=listen(listen_socket,config.GetInt("network.listen.backlog"));
-			if(re==-1)
-				throw Exception("core","Unable to listen on API socket");
-			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (tcp socket)",config.GetInt("network.listen.backlog"));
-			
-			Logger::Log(LOG_NOTICE,"API accepting connections on port %d",config.GetInt("network.bind.port"));
-		}
+			ActiveConnections::GetInstance()->StartAPIConnection(s);
+		};
 		
-		if(config.Get("network.bind.path").length()>0)
-		{
-			// Create UNIX socket
-			listen_socket_unix=socket(AF_UNIX,SOCK_STREAM | SOCK_CLOEXEC,0);
-			
-			// Bind socket
-			local_addr_unix.sun_family=AF_UNIX;
-			strcpy(local_addr_unix.sun_path,config.Get("network.bind.path").c_str());
-			unlink(local_addr_unix.sun_path);
-			re=bind(listen_socket_unix,(struct sockaddr *)&local_addr_unix,sizeof(struct sockaddr_un));
-			if(re==-1)
-				throw Exception("core","Unable to bind API unix listen socket");
-			
-			// Listen on socket
-			chmod(config.Get("network.bind.path").c_str(),0777);
-			re=listen(listen_socket_unix,config.GetInt("network.listen.backlog"));
-			if(re==-1)
-				throw Exception("core","Unable to listen on API unix socket");
-			Logger::Log(LOG_NOTICE,"API listen backlog set to %d (unix socket)",config.GetInt("network.listen.backlog"));
-			
-			Logger::Log(LOG_NOTICE,"API accepting connections on unix socket %s",config.Get("network.bind.path").c_str());
-		}
+		nc.RegisterTCP("API (tcp)", config.Get("network.bind.ip"), config.GetInt("network.bind.port"), config.GetInt("network.listen.backlog"), api_handler);
+		nc.RegisterUNIX("API (unix)", config.Get("network.bind.path"), config.GetInt("network.listen.backlog"), api_handler);
 		
-		if(config.Get("ws.bind.ip").length()>0)
-		{
-			int optval;
+		// Create Websocket TCP socket
+		nc.RegisterTCP("WebSocket (tcp)", config.Get("ws.bind.ip"), config.GetInt("ws.bind.port"), config.GetInt("ws.listen.backlog"), [](int s) {
+			if(ActiveConnections::GetInstance()->GetWSNumber()>=ConfigurationEvQueue::GetInstance()->GetInt("ws.connections.max"))
+			{
+				close(s);
+				
+				Logger::Log(LOG_WARNING,"Max WebSocket connections reached, dropping connection");
+			}
 			
-			// Create listen socket
-			listen_socket_ws=socket(PF_INET,SOCK_STREAM | SOCK_CLOEXEC,0);
-			
-			// Configure socket
-			optval=1;
-			setsockopt(listen_socket_ws,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(int));
-			
-			// Bind socket
-			memset(&local_addr,0,sizeof(struct sockaddr_in));
-			local_addr.sin_family=AF_INET;
-			if(config.Get("ws.bind.ip")=="*")
-				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-			else
-				local_addr.sin_addr.s_addr=inet_addr(config.Get("ws.bind.ip").c_str());
-			local_addr.sin_port = htons(config.GetInt("ws.bind.port"));
-			re=bind(listen_socket_ws,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
-			if(re==-1)
-				throw Exception("core","Unable to bind WS listen socket");
-			
-			// Listen on socket
-			re=listen(listen_socket_ws,config.GetInt("ws.listen.backlog"));
-			if(re==-1)
-				throw Exception("core","Unable to listen on WS socket");
-			Logger::Log(LOG_NOTICE,"WS listen backlog set to %d (tcp socket)",config.GetInt("ws.listen.backlog"));
-			
-			Logger::Log(LOG_NOTICE,"WS accepting connections on port %d",config.GetInt("ws.bind.port"));
-		}
-		
-		if(config.Get("elog.bind.ip").length()>0)
-		{
-			int optval;
-			
-			// Create listen socket
-			listen_socket_elog=socket(PF_INET,SOCK_DGRAM | SOCK_CLOEXEC,0);
-			
-			// Configure socket
-			optval=1;
-			setsockopt(listen_socket_elog,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(int));
-			
-			// Bind socket
-			memset(&local_addr,0,sizeof(struct sockaddr_in));
-			local_addr.sin_family=AF_INET;
-			if(config.Get("elog.bind.ip")=="*")
-				local_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-			else
-				local_addr.sin_addr.s_addr=inet_addr(config.Get("elog.bind.ip").c_str());
-			local_addr.sin_port = htons(config.GetInt("elog.bind.port"));
-			re=bind(listen_socket_elog,(struct sockaddr *)&local_addr,sizeof(struct sockaddr_in));
-			if(re==-1)
-				throw Exception("core","Unable to bind WS listen socket");
-			
-			Logger::Log(LOG_NOTICE,"Elog waiting UDP messages on port %d",config.GetInt("elog.bind.port"));
-		}
-		
-		if(listen_socket==-1 && listen_socket_unix==-1)
-			throw Exception("core","You have to specify at least one listen socket");
-		
-		unsigned int max_conn_api = config.GetInt("network.connections.max");
-		unsigned int max_conn_ws = config.GetInt("ws.connections.max");
+			ActiveConnections::GetInstance()->StartWSConnection(s);
+		});
 		
 		WSServer *ws = new WSServer();
 		
 		// Loop for incoming connections
-		char elog_buf[ELOG_MAXSIZE];
-		size_t elog_len;
-		int cnx_type;
-		int len,*sp;
-		fd_set rfds;
 		while(1)
 		{
-			FD_ZERO(&rfds);
-			int fdmax = -1;
-			
-			if(listen_socket>=0)
+			if(!nc.select())
 			{
-				FD_SET(listen_socket,&rfds);
-				fdmax = MAX(fdmax,listen_socket);
-			}
-			
-			if(listen_socket_unix>=0)
-			{
-				FD_SET(listen_socket_unix,&rfds);
-				fdmax = MAX(fdmax,listen_socket_unix);
-			}
-			
-			if(listen_socket_ws>=0)
-			{
-				FD_SET(listen_socket_ws,&rfds);
-				fdmax = MAX(fdmax,listen_socket_ws);
-			}
-			
-			if(listen_socket_elog>=0)
-			{
-				FD_SET(listen_socket_elog,&rfds);
-				fdmax = MAX(fdmax,listen_socket_elog);
-			}
-			
-			re = select(fdmax+1,&rfds,0,0,0);
-			
-			if(re<0)
-			{
-				if(errno==EINTR)
-					continue; // Interrupted by signal, continue
-				
 				// Shutdown requested
 				Logger::Log(LOG_NOTICE,"Shutting down...");
 				
@@ -769,10 +639,6 @@ int main(int argc,char **argv)
 				gc->Shutdown();
 				gc->WaitForShutdown();
 				
-				// Request shutdown on LogStorage and wait
-				log_storage->Shutdown();
-				log_storage->WaitForShutdown();
-				
 				// All threads have exited, we can cleanly exit
 				delete stats;
 				delete git;
@@ -793,7 +659,6 @@ int main(int argc,char **argv)
 				delete cluster;
 				delete users;
 				delete tags;
-				delete log_storage;
 				delete active_connections;
 				delete random;
 				delete logger_api;
@@ -817,74 +682,6 @@ int main(int argc,char **argv)
 #endif
 				
 				return 0;
-			}
-			
-			if(listen_socket_unix>=0 && FD_ISSET(listen_socket_unix,&rfds))
-			{
-				// Got data on UNIX socket
-				remote_addr_len_unix=sizeof(struct sockaddr);
-				s = accept4(listen_socket_unix,(struct sockaddr *)&remote_addr_unix,&remote_addr_len_unix,SOCK_CLOEXEC);
-				cnx_type = CNX_TYPE_API;
-			}
-			else if(FD_ISSET(listen_socket,&rfds))
-			{
-				// Got data on TCP socket
-				remote_addr_len=sizeof(struct sockaddr);
-				s = accept4(listen_socket,(struct sockaddr *)&remote_addr,&remote_addr_len,SOCK_CLOEXEC);
-				cnx_type = CNX_TYPE_API;
-			}
-			else if(listen_socket_ws>0 && FD_ISSET(listen_socket_ws,&rfds))
-			{
-				// Got data on TCP socket
-				remote_addr_len=sizeof(struct sockaddr);
-				s = accept4(listen_socket_ws,(struct sockaddr *)&remote_addr,&remote_addr_len,SOCK_CLOEXEC);
-				cnx_type = CNX_TYPE_WS;
-			}
-			else if(listen_socket_elog>=0 && FD_ISSET(listen_socket_elog,&rfds))
-			{
-				remote_addr_len=sizeof(struct sockaddr);
-				elog_len = recvfrom(listen_socket_elog, elog_buf, ELOG_MAXSIZE, 0, (struct sockaddr *) &remote_addr, &remote_addr_len);
-				cnx_type = CNX_TYPE_ELOG;
-			}
-			
-			if(cnx_type!=CNX_TYPE_ELOG && s<0)
-				continue; // We were interrupted or sockets were closed due to shutdown request, loop as select will also return an error
-			
-			// Check for max connections
-			if(cnx_type==CNX_TYPE_API && active_connections->GetAPINumber()==max_conn_api)
-			{
-				close(s);
-				
-				Logger::Log(LOG_WARNING,"Max API connections reached, dropping connection");
-				
-				continue;
-			}
-			
-			if(cnx_type==CNX_TYPE_WS && active_connections->GetWSNumber()==max_conn_ws)
-			{
-				close(s);
-				
-				Logger::Log(LOG_WARNING,"Max WS connections reached, dropping connection");
-				
-				continue;
-			}
-			
-			if(cnx_type==CNX_TYPE_API)
-			{
-				// Start thread
-				active_connections->StartAPIConnection(s);
-			}
-			
-			if(cnx_type==CNX_TYPE_WS)
-			{
-				// Transfer the socket to LWS
-				active_connections->StartWSConnection(s);
-			}
-			
-			if(cnx_type==CNX_TYPE_ELOG)
-			{
-				// Store log message
-				log_storage->Log(string(elog_buf, elog_len));
 			}
 		}
 	}

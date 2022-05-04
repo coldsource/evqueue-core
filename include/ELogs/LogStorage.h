@@ -20,6 +20,8 @@
 #ifndef _LOGSTORAGE_H_
 #define _LOGSTORAGE_H_
 
+#include <API/APIAutoInit.h>
+
 #include <string>
 #include <map>
 #include <vector>
@@ -37,7 +39,7 @@ namespace ELogs
 class Channel;
 class Field;
 
-class LogStorage
+class LogStorage: public APIAutoInit
 {
 	std::mutex lock;
 	std::condition_variable logs_queued;
@@ -61,7 +63,7 @@ class LogStorage
 	
 	public:
 		LogStorage();
-		~LogStorage();
+		virtual ~LogStorage();
 		
 		static LogStorage *GetInstance() { return instance; }
 		

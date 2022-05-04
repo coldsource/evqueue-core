@@ -90,6 +90,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["elog.bind.port"] = "5002";
 	entries["elog.queue.size"] = "1000";
 	entries["elog.bulk.size"] = "500";
+	entries["elog.log.maxsize"] = "4K";
 	entries["notifications.tasks.directory"] = "/tmp";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["notifications.tasks.concurrency"] = "16";
@@ -223,6 +224,7 @@ void ConfigurationEvQueue::Check(void)
 	check_size_entry("datastore.dom.maxsize");
 	check_size_entry("datastore.db.maxsize");
 	check_size_entry("notifications.logs.maxsize");
+	check_size_entry("elog.log.maxsize");
 
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
 		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");

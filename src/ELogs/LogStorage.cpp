@@ -27,6 +27,9 @@
 #include <ELogs/ChannelGroup.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Crypto/Sha1String.h>
+#include <API/QueryHandlers.h>
+#include <IO/NetworkConnections.h>
+#include <Configuration/ConfigurationEvQueue.h>
 
 #include <vector>
 
@@ -45,6 +48,18 @@ namespace ELogs
 {
 
 LogStorage *LogStorage::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	// Create UDP socket
+	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	NetworkConnections *nc = NetworkConnections::GetInstance();
+	
+	nc->RegisterUDP("ELogs (udp)", config->Get("elog.bind.ip"), config->GetInt("elog.bind.port"), config->GetSize("elog.log.maxsize"), [](char *buf, size_t len) {
+		LogStorage::GetInstance()->Log(string(buf, len));
+	});
+	
+	return (APIAutoInit *)new LogStorage();
+});
 
 LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 {
@@ -77,6 +92,8 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 
 LogStorage::~LogStorage()
 {
+	Shutdown();
+	WaitForShutdown();
 }
 
 void LogStorage::Shutdown(void)

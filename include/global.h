@@ -33,7 +33,6 @@
 #define CHANNEL_GROUP_NAME_MAX_LEN      32
 #define CHANNEL_FIELD_NAME_MAX_LEN      32
 #define ALERT_NAME_MAX_LEN              64
-#define ELOG_MAXSIZE                    4096
 
 #include <unistd.h>
 
