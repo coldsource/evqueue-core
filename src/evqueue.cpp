@@ -847,7 +847,7 @@ int main(int argc,char **argv)
 				cnx_type = CNX_TYPE_ELOG;
 			}
 			
-			if(cnx_type!=CNX_TYPE_ELOG && cnx_type== s<0)
+			if(cnx_type!=CNX_TYPE_ELOG && s<0)
 				continue; // We were interrupted or sockets were closed due to shutdown request, loop as select will also return an error
 			
 			// Check for max connections
