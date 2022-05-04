@@ -59,7 +59,8 @@ class Fields
 		const std::map<unsigned int, Field> &GetIDMap() const { return id_fields; }
 		const std::map<std::string, Field> &GetNameMap() const { return name_fields; }
 		
-		const Field &GetField(const std::string &name) const;
+		const Field &Get(const std::string &name) const;
+		bool Exists(const std::string &name) const;
 		int GetNumber() const { return id_fields.size(); }
 		
 		void Update(const nlohmann::json &j);

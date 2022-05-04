@@ -30,6 +30,7 @@
 #include <Logger/Logger.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
+#include <API/QueryHandlers.h>
 
 #include <vector>
 
@@ -37,6 +38,11 @@ using namespace std;
 
 namespace ELogs
 {
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("elog", ELog::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 bool ELog::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {

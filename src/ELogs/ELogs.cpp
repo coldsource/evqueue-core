@@ -32,6 +32,7 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Crypto/Sha1String.h>
+#include <API/QueryHandlers.h>
 
 #include <vector>
 
@@ -39,6 +40,11 @@ using namespace std;
 
 namespace ELogs
 {
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("elogs", ELogs::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {

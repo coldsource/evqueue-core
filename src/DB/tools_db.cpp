@@ -280,7 +280,7 @@ void tools_upgrade_v32_v33(void)
 	
 	DB db;
 	
-	db.Query("ALTER TABLE `t_log_api` CHANGE `log_api_object_type` `log_api_object_type` ENUM('Workflow','WorkflowSchedule','RetrySchedule','User','Tag','Queue', 'Channel', 'ChannelGroup') CHARACTER SET ascii COLLATE ascii_bin NOT NULL");
+	db.Query("ALTER TABLE `t_log_api` CHANGE `log_api_object_type` `log_api_object_type` ENUM('Workflow','WorkflowSchedule','RetrySchedule','User','Tag','Queue', 'Channel', 'ChannelGroup', 'Alert') CHARACTER SET ascii COLLATE ascii_bin NOT NULL");
 	
 	db.Query("ALTER TABLE `t_notification_type` ADD `notification_type_scope` ENUM('WORKFLOW', 'ELOGS') CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'WORKFLOW' AFTER `notification_type_id`");
 	

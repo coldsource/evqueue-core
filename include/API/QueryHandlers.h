@@ -22,12 +22,16 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 class XMLQuery;
 class QueryResponse;
 class User;
+class APIAutoInit;
+class QueryHandlers;
 
 typedef bool (*t_query_handler)(const User &user, XMLQuery *query, QueryResponse *response);
+typedef APIAutoInit * (*t_query_handler_init)(QueryHandlers *qh);
 
 class QueryHandlers
 {
@@ -35,10 +39,17 @@ class QueryHandlers
 	
 	std::map<std::string,t_query_handler> handlers;
 	
+	std::vector<APIAutoInit *> auto_init_ptr;
+	std::vector<t_query_handler_init> auto_init;
+	
 	public:
 		QueryHandlers();
+		~QueryHandlers();
 		
-		static QueryHandlers *GetInstance() { return QueryHandlers::instance; }
+		static QueryHandlers *GetInstance();
+		
+		bool RegisterInit(t_query_handler_init init);
+		void AutoInit();
 		
 		void RegisterHandler(const std::string &type, t_query_handler handler);
 		bool HandleQuery(const User &user, const std::string &type, XMLQuery *query, QueryResponse *response);

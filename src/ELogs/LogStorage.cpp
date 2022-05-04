@@ -232,11 +232,11 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 		if(it->first=="date" || it->first=="crit")
 			continue;
 		
-		log_value(db, log_id, group.GetFields().GetField(it->first), date, it->second);
+		log_value(db, log_id, group.GetFields().Get(it->first), date, it->second);
 	}
 	
 	for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
-		log_value(db, log_id, channel.GetFields().GetField(it->first), date, it->second);
+		log_value(db, log_id, channel.GetFields().Get(it->first), date, it->second);
 }
 
 void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field, const string &date, const string &value)

@@ -30,6 +30,7 @@
 #include <API/QueryResponse.h>
 #include <User/User.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 #include <global.h>
 
 #include <time.h>
@@ -39,6 +40,11 @@ using nlohmann::json;
 
 namespace ELogs
 {
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("channel", Channel::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 Channel::Channel():fields(Fields::en_type::CHANNEL, -1)
 {
@@ -359,7 +365,7 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 			
 			Events::GetInstance()->Create(Events::en_types::CHANNEL_CREATED);
 			
-			response->GetDOM()->getDocumentElement().setAttribute("queue-id",to_string(id));
+			response->GetDOM()->getDocumentElement().setAttribute("channel-id",to_string(id));
 		}
 		else
 		{

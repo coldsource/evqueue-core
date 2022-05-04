@@ -21,6 +21,7 @@
 #define _CHANNELGROUPS_H_
 
 #include <API/APIObjectList.h>
+#include <API/APIAutoInit.h>
 #include <ELogs/ChannelGroup.h>
 
 #include <map>
@@ -33,14 +34,14 @@ class QueryResponse;
 namespace ELogs
 {
 
-class ChannelGroups:public APIObjectList<ChannelGroup>
+class ChannelGroups:public APIObjectList<ChannelGroup>, public APIAutoInit
 {
 	static ChannelGroups *instance;
 	
 	public:
 		
 		ChannelGroups();
-		~ChannelGroups();
+		virtual ~ChannelGroups();
 		
 		static ChannelGroups *GetInstance() { return instance; }
 		

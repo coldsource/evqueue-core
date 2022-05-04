@@ -153,6 +153,12 @@ Events::en_types Events::get_type(const std::string &type_str)
 		return CHANNELGROUP_MODIFIED;
 	else if(type_str=="CHANNELGROUP_REMOVED")
 		return CHANNELGROUP_REMOVED;
+	else if(type_str=="ALERT_CREATED")
+		return ALERT_CREATED;
+	else if(type_str=="ALERT_MODIFIED")
+		return ALERT_MODIFIED;
+	else if(type_str=="ALERT_REMOVED")
+		return ALERT_REMOVED;
 	
 	return NONE;
 }

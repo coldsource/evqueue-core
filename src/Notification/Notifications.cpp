@@ -19,6 +19,7 @@
 
 #include <Notification/Notifications.h>
 #include <Notification/Notification.h>
+#include <Notification/NotificationType.h>
 #include <DB/DB.h>
 #include <Exception/Exception.h>
 #include <Logger/Logger.h>
@@ -168,12 +169,18 @@ bool Notifications::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 	{
 		unique_lock<mutex> llock(notifications->lock);
 		
+		const string scope = query->GetRootAttribute("scope", "*");
+		
 		for(auto it = notifications->objects_id.begin(); it!=notifications->objects_id.end(); it++)
 		{
+			if(scope!="*" && it->second->GetType().GetScope()!=scope)
+				continue;
+			
 			DOMElement node = (DOMElement)response->AppendXML("<notification />");
 			node.setAttribute("id",to_string(it->second->GetID()));
 			node.setAttribute("type_id",std::to_string(it->second->GetTypeID()));
 			node.setAttribute("name",it->second->GetName());
+			node.setAttribute("scope",it->second->GetType().GetScope());
 		}
 		
 		return true;

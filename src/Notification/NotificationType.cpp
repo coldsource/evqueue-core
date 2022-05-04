@@ -39,16 +39,17 @@ using namespace std;
 
 NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 {
-	db->QueryPrintf("SELECT notification_type_id,notification_type_name,notification_type_description,notification_type_manifest,notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&notification_type_id);
+	db->QueryPrintf("SELECT notification_type_id,notification_type_scope,notification_type_name,notification_type_description,notification_type_manifest,notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&notification_type_id);
 	
 	if(!db->FetchRow())
 		throw Exception("NotificationType","Unknown notification type");
 	
 	id = db->GetFieldInt(0);
-	name = db->GetField(1);
-	description = db->GetField(2);
-	manifest = db->GetField(3);
-	configuration = db->GetField(4);
+	scope = db->GetField(1);
+	name = db->GetField(2);
+	description = db->GetField(3);
+	manifest = db->GetField(4);
+	configuration = db->GetField(5);
 }
 
 void NotificationType::PutFile(const string &filename,const string &data,bool base64_encoded)
@@ -81,6 +82,7 @@ void NotificationType::Get(unsigned int id, QueryResponse *response)
 	NotificationType type = NotificationTypes::GetInstance()->Get(id);
 	
 	DOMElement node = (DOMElement)response->AppendXML("<notification_type />");
+	node.setAttribute("scope",type.GetScope());
 	node.setAttribute("name",type.GetName());
 	node.setAttribute("description",type.GetDescription());
 	response->AppendXML(type.GetManifest());
@@ -94,6 +96,12 @@ unsigned int NotificationType::Register(const string &zip_data)
 	
 	// Load manifest file
 	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(manifest));
+	
+	// Read scope
+	string scope = "WORKFLOW";
+	unique_ptr<DOMXPathResult> res_scope(xmldoc->evaluate("/plugin/scope",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+	if(res_scope->isNode())
+		scope = res_scope->getNodeValue().getTextContent();
 	
 	// Read name
 	unique_ptr<DOMXPathResult> res_name(xmldoc->evaluate("/plugin/name",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
@@ -124,11 +132,18 @@ unsigned int NotificationType::Register(const string &zip_data)
 	
 	DB db;
 	db.QueryPrintf(
-		"INSERT INTO t_notification_type(notification_type_name,notification_type_description,notification_type_manifest,notification_type_binary_content) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE notification_type_description=VALUES(notification_type_description),notification_type_manifest=VALUES(notification_type_manifest),notification_type_binary_content=VALUES(notification_type_binary_content)",
+		"INSERT INTO t_notification_type(notification_type_scope,notification_type_name,notification_type_description,notification_type_manifest,notification_type_binary_content) \
+		VALUES(%s,%s,%s,%s,%s) \
+		ON DUPLICATE KEY UPDATE \
+			notification_type_description=VALUES(notification_type_description), \
+			notification_type_manifest=VALUES(notification_type_manifest), \
+			notification_type_binary_content=VALUES(notification_type_binary_content \
+		)",
+		&scope,
 		&name,
 		&description,
 		&manifest,
-		binary_data
+		&binary_data
 		);
 	
 	return db.InsertID();

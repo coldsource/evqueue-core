@@ -30,6 +30,7 @@ class User;
 class NotificationType
 {
 	unsigned int id;
+	std::string scope;
 	std::string name;
 	std::string description;
 	std::string manifest;
@@ -40,11 +41,12 @@ class NotificationType
 		NotificationType(DB *db,unsigned int notification_type_id);
 		
 		unsigned int GetID() { return id; }
-		const std::string &GetName() { return name; }
-		const std::string &GetDescription() { return description; }
-		const std::string &GetManifest() { return manifest; }
-		const std::string &GetConfiguration() { return configuration; }
-		const std::string &GetBinary() { return name; }
+		const std::string &GetScope() const { return scope; }
+		const std::string &GetName() const  { return name; }
+		const std::string &GetDescription() const  { return description; }
+		const std::string &GetManifest() const  { return manifest; }
+		const std::string &GetConfiguration() const  { return configuration; }
+		const std::string &GetBinary() const  { return name; }
 		
 		static void PutFile(const std::string &filename,const std::string &data,bool base64_encoded=true);
 		static void GetFile(const std::string &filename,std::string &data);

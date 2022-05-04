@@ -27,12 +27,18 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
+#include <API/QueryHandlers.h>
 
 #include <regex>
 #include <map>
 
 namespace ELogs
 {
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("channels", Channels::HandleQuery);
+	return (APIAutoInit *)new Channels();
+});
 
 Channels *Channels::instance = 0;
 

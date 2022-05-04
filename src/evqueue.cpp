@@ -52,12 +52,6 @@
 #include <Logs/Logs.h>
 #include <Logs/LogsAPI.h>
 #include <Logs/LogsNotifications.h>
-#include <ELogs/ELogs.h>
-#include <ELogs/ELog.h>
-#include <ELogs/Channel.h>
-#include <ELogs/Channels.h>
-#include <ELogs/ChannelGroup.h>
-#include <ELogs/ChannelGroups.h>
 #include <ELogs/LogStorage.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
@@ -524,12 +518,10 @@ int main(int argc,char **argv)
 		Tags *tags = new Tags();
 		
 		// Load channels and logs storage
-		ELogs::Channels *channels = new ELogs::Channels();
-		ELogs::ChannelGroups *channelgroups = new ELogs::ChannelGroups();
 		ELogs::LogStorage *log_storage = new ELogs::LogStorage();
 		
 		// Initialize query handlers
-		QueryHandlers *qh = new QueryHandlers();
+		QueryHandlers *qh = QueryHandlers::GetInstance();
 		qh->RegisterHandler("workflow",Workflow::HandleQuery);
 		qh->RegisterHandler("workflows",Workflows::HandleQuery);
 		qh->RegisterHandler("instance",WorkflowInstanceAPI::HandleQuery);
@@ -551,12 +543,6 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("logs",Logs::HandleQuery);
 		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
 		qh->RegisterHandler("logsnotifications",LogsNotifications::HandleQuery);
-		qh->RegisterHandler("elogs",ELogs::ELogs::HandleQuery);
-		qh->RegisterHandler("elog",ELogs::ELog::HandleQuery);
-		qh->RegisterHandler("channel",ELogs::Channel::HandleQuery);
-		qh->RegisterHandler("channels",ELogs::Channels::HandleQuery);
-		qh->RegisterHandler("channel_group",ELogs::ChannelGroup::HandleQuery);
-		qh->RegisterHandler("channel_groups",ELogs::ChannelGroups::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
@@ -566,6 +552,7 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("datastore",Datastore::HandleQuery);
 		qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
 		qh->RegisterHandler("xpath",XPathAPI::HandleQuery);
+		qh->AutoInit();
 		
 		// Create active connections set
 		ActiveConnections *active_connections = new ActiveConnections();
@@ -806,8 +793,6 @@ int main(int argc,char **argv)
 				delete cluster;
 				delete users;
 				delete tags;
-				delete channels;
-				delete channelgroups;
 				delete log_storage;
 				delete active_connections;
 				delete random;

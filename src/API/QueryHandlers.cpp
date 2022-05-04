@@ -18,6 +18,7 @@
  */
 
 #include <API/QueryHandlers.h>
+#include <API/APIAutoInit.h>
 #include <Logger/Logger.h>
 
 QueryHandlers *QueryHandlers::instance=0;
@@ -27,10 +28,40 @@ QueryHandlers::QueryHandlers(void)
 	instance = this;
 }
 
+QueryHandlers::~QueryHandlers(void)
+{
+	for(int i=0;i<auto_init_ptr.size();i++)
+		delete auto_init_ptr[i];
+}
+
+QueryHandlers *QueryHandlers::GetInstance()
+{
+	if(!instance)
+		new QueryHandlers();
+	
+	return instance;
+}
+
 void QueryHandlers::RegisterHandler(const std::string &type, t_query_handler handler)
 {
 	// No mutexes are used, RegisterHandler must be called within one thread only
 	handlers[type] = handler;
+}
+
+bool QueryHandlers::RegisterInit(t_query_handler_init init)
+{
+	auto_init.push_back(init);
+	return true;
+}
+
+void QueryHandlers::AutoInit()
+{
+	for(int i=0;i<auto_init.size();i++)
+	{
+		APIAutoInit *p = (auto_init[i])(this);
+		if(p)
+			auto_init_ptr.push_back(p);
+	}
 }
 
 bool QueryHandlers::HandleQuery(const User &user, const std::string &type, XMLQuery *query, QueryResponse *response)

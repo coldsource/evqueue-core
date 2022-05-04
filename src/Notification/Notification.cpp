@@ -80,6 +80,11 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	plugin_configuration = notification_type.GetConfiguration();
 }
 
+const NotificationType Notification::GetType() const
+{
+	return NotificationTypes::GetInstance()->Get(type_id);
+}
+
 pid_t Notification::Call(WorkflowInstance *workflow_instance)
 {
 	try

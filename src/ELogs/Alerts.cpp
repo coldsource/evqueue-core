@@ -17,8 +17,8 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#include <ELogs/ChannelGroups.h>
-#include <ELogs/LogStorage.h>
+#include <ELogs/Alerts.h>
+#include <API/QueryHandlers.h>
 #include <User/User.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
@@ -26,37 +26,36 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
-#include <API/QueryHandlers.h>
 
 #include <regex>
 #include <map>
 
-using namespace std;
-
 namespace ELogs
 {
 
+Alerts *Alerts::instance = 0;
+
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
-	qh->RegisterHandler("channel_groups", ChannelGroups::HandleQuery);
-	return (APIAutoInit *)new ChannelGroups();
+	qh->RegisterHandler("alerts", Alerts::HandleQuery);
+	return (APIAutoInit *)new Alerts();
 });
 
-ChannelGroups *ChannelGroups::instance = 0;
+using namespace std;
 
-ChannelGroups::ChannelGroups():APIObjectList()
+Alerts::Alerts():APIObjectList()
 {
 	instance = this;
 	
 	Reload(false);
 }
 
-ChannelGroups::~ChannelGroups()
+Alerts::~Alerts()
 {
 }
 
-void ChannelGroups::Reload(bool notify)
+void Alerts::Reload(bool notify)
 {
-	Logger::Log(LOG_NOTICE,"Reloading channel groups definitions");
+	Logger::Log(LOG_NOTICE,"Reloading alerts definitions");
 	
 	unique_lock<mutex> llock(lock);
 	
@@ -65,39 +64,44 @@ void ChannelGroups::Reload(bool notify)
 	// Update
 	DB db("elog");
 	DB db2(&db);
-	db.Query("SELECT channel_group_id, channel_group_name FROM t_channel_group");
+	db.Query("SELECT alert_id, alert_name FROM t_alert");
 	
 	while(db.FetchRow())
-		add(db.GetFieldInt(0),db.GetField(1),new ChannelGroup(&db2,db.GetFieldInt(0)));
+		add(db.GetFieldInt(0),db.GetField(1),new Alert(&db2,db.GetFieldInt(0)));
 	
 	llock.unlock();
 	
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->Notify("<control action='reload' module='channelgroups' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='channels' notify='no' />\n");
 	}
 }
 
-bool ChannelGroups::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
+bool Alerts::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
-	ChannelGroups *channelgroups = ChannelGroups::GetInstance();
+	Alerts *alerts = Alerts::GetInstance();
 	
 	string action = query->GetRootAttribute("action");
 	
 	if(action=="list")
 	{
-		unique_lock<mutex> llock(channelgroups->lock);
+		unique_lock<mutex> llock(alerts->lock);
 		
-		for(auto it = channelgroups->objects_name.begin(); it!=channelgroups->objects_name.end(); it++)
+		for(auto it = alerts->objects_name.begin(); it!=alerts->objects_name.end(); it++)
 		{
-			ChannelGroup it_channelgroup = *it->second;
-			DOMElement node = (DOMElement)response->AppendXML("<channelgroup />");
-			node.setAttribute("id",to_string(it_channelgroup.GetID()));
-			node.setAttribute("name",it_channelgroup.GetName());
+			Alert alert = *it->second;
+			
+			DOMElement node = (DOMElement)response->AppendXML("<alert />");
+			node.setAttribute("id",to_string(alert.GetID()));
+			node.setAttribute("name",alert.GetName());
+			node.setAttribute("description",alert.GetDescription());
+			node.setAttribute("occurrences", to_string(alert.GetOccurrences()));
+			node.setAttribute("period", to_string(alert.GetPeriod()));
+			node.setAttribute("groupby",alert.GetGroupby());
 		}
 		
 		return true;

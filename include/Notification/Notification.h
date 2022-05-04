@@ -29,6 +29,7 @@ class WorkflowInstance;
 class XMLQuery;
 class QueryResponse;
 class User;
+class NotificationType;
 
 class Notification
 {
@@ -49,6 +50,7 @@ class Notification
 		
 		unsigned int &GetID() { return id; }
 		unsigned int &GetTypeID() { return type_id; }
+		const NotificationType GetType() const;
 		const std::string &GetName() { return notification_name; }
 		int GetSubscribeAll() { return notification_subscribe_all; }
 		const std::string &GetBinary() { return notification_binary; }

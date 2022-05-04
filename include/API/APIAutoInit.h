@@ -17,39 +17,13 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _CHANNELS_H_
-#define _CHANNELS_H_
+#ifndef _APIAUTOINIT_H_
+#define _APIAUTOINIT_H_
 
-#include <API/APIObjectList.h>
-#include <API/APIAutoInit.h>
-#include <ELogs/Channel.h>
-
-#include <map>
-#include <string>
-
-class User;
-class XMLQuery;
-class QueryResponse;
-
-namespace ELogs
+class APIAutoInit
 {
-
-class Channels:public APIObjectList<Channel>, public APIAutoInit
-{
-	static Channels *instance;
-	
 	public:
-		
-		Channels();
-		virtual ~Channels();
-		
-		static Channels *GetInstance() { return instance; }
-		
-		void Reload(bool notify = true);
-		
-		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		virtual ~APIAutoInit() {}
 };
-
-}
 
 #endif

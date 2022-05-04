@@ -17,12 +17,12 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _CHANNELS_H_
-#define _CHANNELS_H_
+#ifndef _ALERTS_H_
+#define _ALERTS_H_
 
 #include <API/APIObjectList.h>
 #include <API/APIAutoInit.h>
-#include <ELogs/Channel.h>
+#include <ELogs/Alert.h>
 
 #include <map>
 #include <string>
@@ -34,16 +34,16 @@ class QueryResponse;
 namespace ELogs
 {
 
-class Channels:public APIObjectList<Channel>, public APIAutoInit
+class Alerts:public APIObjectList<Alert>, public APIAutoInit
 {
-	static Channels *instance;
+	static Alerts *instance;
 	
 	public:
 		
-		Channels();
-		virtual ~Channels();
+		Alerts();
+		virtual ~Alerts();
 		
-		static Channels *GetInstance() { return instance; }
+		static Alerts *GetInstance() { return instance; }
 		
 		void Reload(bool notify = true);
 		

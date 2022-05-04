@@ -128,7 +128,16 @@ void Fields::Update(const json &j)
 	db.CommitTransaction();
 }
 
-const Field &Fields::GetField(const std::string &name) const
+bool Fields::Exists(const std::string &name) const
+{
+	if(name_fields.find(name)==name_fields.end())
+		return false;
+	
+	return true;
+}
+
+
+const Field &Fields::Get(const std::string &name) const
 {
 	if(name_fields.find(name)==name_fields.end())
 		throw Exception("Fields", "Unknown field name : "+name);
