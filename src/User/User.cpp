@@ -336,7 +336,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 			
 			LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::USER_CREATED, id);
+			Events::GetInstance()->Create("USER_CREATED", id);
 		}
 		else
 		{
@@ -349,7 +349,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 			
 			LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::USER_MODIFIED, id);
+			Events::GetInstance()->Create("USER_MODIFIED", id);
 		}
 		
 		Users::GetInstance()->Reload();
@@ -371,7 +371,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::USER_MODIFIED, id);
+		Events::GetInstance()->Create("USER_MODIFIED", id);
 		
 		return true;
 	}
@@ -389,7 +389,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::USER_MODIFIED, id);
+		Events::GetInstance()->Create("USER_MODIFIED", id);
 		
 		return true;
 	}
@@ -406,7 +406,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::USER_REMOVED, id);
+		Events::GetInstance()->Create("USER_REMOVED", id);
 		
 		return true;
 	}
@@ -423,7 +423,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::USER_MODIFIED, id);
+		Events::GetInstance()->Create("USER_MODIFIED", id);
 		
 		return true;
 	}
@@ -438,7 +438,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::USER_MODIFIED, id);
+		Events::GetInstance()->Create("USER_MODIFIED", id);
 		
 		return true;
 	}
@@ -460,7 +460,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::USER_MODIFIED, id);
+		Events::GetInstance()->Create("USER_MODIFIED", id);
 		
 		return true;
 	}
@@ -478,7 +478,7 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::USER_MODIFIED, id);
+		Events::GetInstance()->Create("USER_MODIFIED", id);
 		
 		return true;
 	}

@@ -43,5 +43,5 @@ void LoggerNotifications::Log(pid_t pid, const string &log)
 		&log
 		);
 	
-	Events::GetInstance()->Create(Events::en_types::LOG_NOTIFICATION);
+	Events::GetInstance()->Create("LOG_NOTIFICATION");
 }

@@ -143,7 +143,7 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 			
 			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_CREATED);
+			Events::GetInstance()->Create("RETRYSCHEDULE_CREATED");
 			
 			response->GetDOM()->getDocumentElement().setAttribute("retry-schedule-id",to_string(id));
 		}
@@ -153,7 +153,7 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 			
 			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_MODIFIED);
+			Events::GetInstance()->Create("RETRYSCHEDULE_MODIFIED");
 			
 			Edit(id,name, content);
 		}
@@ -170,7 +170,7 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 		
 		LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_REMOVED);
+		Events::GetInstance()->Create("RETRYSCHEDULE_REMOVED");
 		
 		RetrySchedules::GetInstance()->Reload();
 		

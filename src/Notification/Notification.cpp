@@ -268,7 +268,7 @@ bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 			
 			Create(type_id, name, subscribe_all, parameters);
 			
-			Events::GetInstance()->Create(Events::en_types::NOTIFICATION_CREATED);
+			Events::GetInstance()->Create("NOTIFICATION_CREATED");
 		}
 		else
 		{
@@ -277,7 +277,7 @@ bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 			
 			Edit(id, type_id, name, subscribe_all, parameters);
 			
-			Events::GetInstance()->Create(Events::en_types::NOTIFICATION_MODIFIED);
+			Events::GetInstance()->Create("NOTIFICATION_MODIFIED");
 		}
 		
 		Notifications::GetInstance()->Reload();
@@ -295,7 +295,7 @@ bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_REMOVED);
+		Events::GetInstance()->Create("NOTIFICATION_REMOVED");
 		
 		return true;
 	}

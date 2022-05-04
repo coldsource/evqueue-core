@@ -69,7 +69,7 @@ unsigned int Tag::Create(const string &label)
 	
 	Tags::GetInstance()->Reload();
 		
-	Events::GetInstance()->Create(Events::en_types::TAG_CREATED);
+	Events::GetInstance()->Create("TAG_CREATED");
 	
 	return db.InsertID();
 }
@@ -139,7 +139,7 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Tags::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::TAG_MODIFIED);
+		Events::GetInstance()->Create("TAG_MODIFIED");
 		
 		return true;
 	}
@@ -153,7 +153,7 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Tags::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::TAG_REMOVED);
+		Events::GetInstance()->Create("TAG_REMOVED");
 		
 		return true;
 	}

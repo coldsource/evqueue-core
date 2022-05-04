@@ -326,7 +326,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_CREATED,id);
+			Events::GetInstance()->Create("WORKFLOWSCHEDULE_CREATED",id);
 			
 			response->GetDOM()->getDocumentElement().setAttribute("schedule-id",to_string(id));
 		}
@@ -336,7 +336,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 			
 			Edit(id, workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
 			
-			Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
+			Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		}
@@ -353,7 +353,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_REMOVED,id);
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_REMOVED",id);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		
@@ -367,7 +367,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		
@@ -381,7 +381,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		

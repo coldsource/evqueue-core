@@ -80,7 +80,7 @@ void WorkflowInstanceAPI::Tag(unsigned int id, unsigned int tag_id)
 	
 	db.QueryPrintf("INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",&id,&tag_id);
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_TAGGED,id);
+	Events::GetInstance()->Create("INSTANCE_TAGGED",id);
 }
 
 void WorkflowInstanceAPI::Untag(unsigned int id, unsigned int tag_id)
@@ -315,7 +315,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			
 			Delete(workflow_instance_id);
 			
-			Events::GetInstance()->Create(Events::en_types::INSTANCE_REMOVED,workflow_instance_id);
+			Events::GetInstance()->Create("INSTANCE_REMOVED",workflow_instance_id);
 			
 			return true;
 		}
@@ -339,7 +339,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			
 			Untag(workflow_instance_id,tag_id);
 			
-			Events::GetInstance()->Create(Events::en_types::INSTANCE_UNTAGGED,workflow_instance_id);
+			Events::GetInstance()->Create("INSTANCE_UNTAGGED",workflow_instance_id);
 			
 			return true;
 		}

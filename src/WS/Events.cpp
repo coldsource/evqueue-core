@@ -31,6 +31,57 @@ Events::Events()
 	throttling = ConfigurationEvQueue::GetInstance()->GetBool("ws.events.throttling");
 	this->ws_context = 0;
 	instance = this;
+	
+	RegisterEvents({
+		"INSTANCE_STARTED",
+		"INSTANCE_TERMINATED",
+		"INSTANCE_REMOVED",
+		"INSTANCE_TAGGED",
+		"INSTANCE_UNTAGGED",
+		"TASK_ENQUEUE",
+		"TASK_EXECUTE",
+		"TASK_TERMINATE",
+		"TASK_PROGRESS",
+		"QUEUE_ENQUEUE",
+		"QUEUE_DEQUEUE",
+		"QUEUE_EXECUTE",
+		"QUEUE_TERMINATE",
+		"QUEUE_CREATED",
+		"QUEUE_MODIFIED",
+		"QUEUE_REMOVED",
+		"TAG_CREATED",
+		"TAG_MODIFIED",
+		"TAG_REMOVED",
+		"WORKFLOW_CREATED",
+		"WORKFLOW_MODIFIED",
+		"WORKFLOW_REMOVED",
+		"WORKFLOW_SUBSCRIBED",
+		"WORKFLOW_UNSUBSCRIBED",
+		"GIT_PULLED",
+		"GIT_SAVED",
+		"GIT_LOADED",
+		"GIT_REMOVED",
+		"LOG_ENGINE",
+		"LOG_NOTIFICATION",
+		"LOG_API",
+		"LOG_ELOG",
+		"RETRYSCHEDULE_CREATED",
+		"RETRYSCHEDULE_MODIFIED",
+		"RETRYSCHEDULE_REMOVED",
+		"WORKFLOWSCHEDULE_CREATED",
+		"WORKFLOWSCHEDULE_MODIFIED",
+		"WORKFLOWSCHEDULE_REMOVED",
+		"WORKFLOWSCHEDULE_STARTED",
+		"WORKFLOWSCHEDULE_STOPPED",
+		"NOTIFICATION_TYPE_CREATED",
+		"NOTIFICATION_TYPE_REMOVED",
+		"NOTIFICATION_CREATED",
+		"NOTIFICATION_MODIFIED",
+		"NOTIFICATION_REMOVED",
+		"USER_CREATED",
+		"USER_MODIFIED",
+		"USER_REMOVED"
+	});
 }
 
 Events::~Events()
@@ -43,124 +94,23 @@ void Events::SetContext(struct lws_context *ws_context)
 	this->ws_context = ws_context;
 }
 
+void Events::RegisterEvent(const std::string name)
+{
+	events_map[name] = events_map_id++;
+}
+
+void Events::RegisterEvents(const std::vector<std::string> &names)
+{
+	for(int i=0;i<names.size();i++)
+		RegisterEvent(names[i]);
+}
+
 Events::en_types Events::get_type(const std::string &type_str)
 {
-	if(type_str=="INSTANCE_STARTED")
-		return INSTANCE_STARTED;
-	else if(type_str=="INSTANCE_TERMINATED")
-		return INSTANCE_TERMINATED;
-	else if(type_str=="INSTANCE_REMOVED")
-		return INSTANCE_REMOVED;
-	else if(type_str=="INSTANCE_TAGGED")
-		return INSTANCE_TAGGED;
-	else if(type_str=="INSTANCE_UNTAGGED")
-		return INSTANCE_UNTAGGED;
-	else if(type_str=="TASK_ENQUEUE")
-		return TASK_ENQUEUE;
-	else if(type_str=="TASK_EXECUTE")
-		return TASK_EXECUTE;
-	else if(type_str=="TASK_TERMINATE")
-		return TASK_TERMINATE;
-	else if(type_str=="TASK_PROGRESS")
-		return TASK_PROGRESS;
-	else if(type_str=="QUEUE_ENQUEUE")
-		return QUEUE_ENQUEUE;
-	else if(type_str=="QUEUE_DEQUEUE")
-		return QUEUE_DEQUEUE;
-	else if(type_str=="QUEUE_EXECUTE")
-		return QUEUE_EXECUTE;
-	else if(type_str=="QUEUE_TERMINATE")
-		return QUEUE_TERMINATE;
-	else if(type_str=="QUEUE_CREATED")
-		return QUEUE_CREATED;
-	else if(type_str=="QUEUE_MODIFIED")
-		return QUEUE_MODIFIED;
-	else if(type_str=="QUEUE_REMOVED")
-		return QUEUE_REMOVED;
-	else if(type_str=="TAG_CREATED")
-		return TAG_CREATED;
-	else if(type_str=="TAG_MODIFIED")
-		return TAG_MODIFIED;
-	else if(type_str=="TAG_REMOVED")
-		return TAG_REMOVED;
-	else if(type_str=="WORKFLOW_CREATED")
-		return WORKFLOW_CREATED;
-	else if(type_str=="WORKFLOW_MODIFIED")
-		return WORKFLOW_MODIFIED;
-	else if(type_str=="WORKFLOW_REMOVED")
-		return WORKFLOW_REMOVED;
-	else if(type_str=="WORKFLOW_SUBSCRIBED")
-		return WORKFLOW_SUBSCRIBED;
-	else if(type_str=="WORKFLOW_UNSUBSCRIBED")
-		return WORKFLOW_UNSUBSCRIBED;
-	else if(type_str=="GIT_PULLED")
-		return GIT_PULLED;
-	else if(type_str=="GIT_LOADED")
-		return GIT_LOADED;
-	else if(type_str=="GIT_SAVED")
-		return GIT_SAVED;
-	else if(type_str=="GIT_REMOVED")
-		return GIT_REMOVED;
-	else if(type_str=="LOG_ENGINE")
-		return LOG_ENGINE;
-	else if(type_str=="LOG_NOTIFICATION")
-		return LOG_NOTIFICATION;
-	else if(type_str=="LOG_API")
-		return LOG_API;
-	else if(type_str=="LOG_ELOG")
-		return LOG_ELOG;
-	else if(type_str=="RETRYSCHEDULE_CREATED")
-		return RETRYSCHEDULE_CREATED;
-	else if(type_str=="RETRYSCHEDULE_MODIFIED")
-		return RETRYSCHEDULE_MODIFIED;
-	else if(type_str=="RETRYSCHEDULE_REMOVED")
-		return RETRYSCHEDULE_REMOVED;
-	else if(type_str=="WORKFLOWSCHEDULE_CREATED")
-		return WORKFLOWSCHEDULE_CREATED;
-	else if(type_str=="WORKFLOWSCHEDULE_MODIFIED")
-		return WORKFLOWSCHEDULE_MODIFIED;
-	else if(type_str=="WORKFLOWSCHEDULE_REMOVED")
-		return WORKFLOWSCHEDULE_REMOVED;
-	else if(type_str=="WORKFLOWSCHEDULE_STARTED")
-		return WORKFLOWSCHEDULE_STARTED;
-	else if(type_str=="WORKFLOWSCHEDULE_STOPPED")
-		return WORKFLOWSCHEDULE_STOPPED;
-	else if(type_str=="NOTIFICATION_TYPE_CREATED")
-		return NOTIFICATION_TYPE_CREATED;
-	else if(type_str=="NOTIFICATION_TYPE_REMOVED")
-		return NOTIFICATION_TYPE_REMOVED;
-	else if(type_str=="NOTIFICATION_CREATED")
-		return NOTIFICATION_CREATED;
-	else if(type_str=="NOTIFICATION_REMOVED")
-		return NOTIFICATION_REMOVED;
-	else if(type_str=="NOTIFICATION_MODIFIED")
-		return NOTIFICATION_MODIFIED;
-	else if(type_str=="USER_CREATED")
-		return USER_CREATED;
-	else if(type_str=="USER_MODIFIED")
-		return USER_MODIFIED;
-	else if(type_str=="USER_REMOVED")
-		return USER_REMOVED;
-	else if(type_str=="CHANNEL_CREATED")
-		return CHANNEL_CREATED;
-	else if(type_str=="CHANNEL_MODIFIED")
-		return CHANNEL_MODIFIED;
-	else if(type_str=="CHANNEL_REMOVED")
-		return CHANNEL_REMOVED;
-	else if(type_str=="CHANNELGROUP_CREATED")
-		return CHANNELGROUP_CREATED;
-	else if(type_str=="CHANNELGROUP_MODIFIED")
-		return CHANNELGROUP_MODIFIED;
-	else if(type_str=="CHANNELGROUP_REMOVED")
-		return CHANNELGROUP_REMOVED;
-	else if(type_str=="ALERT_CREATED")
-		return ALERT_CREATED;
-	else if(type_str=="ALERT_MODIFIED")
-		return ALERT_MODIFIED;
-	else if(type_str=="ALERT_REMOVED")
-		return ALERT_REMOVED;
-	
-	return NONE;
+	auto it = events_map.find(type_str);
+	if(it!=events_map.end())
+		return it->second;
+	return 0;
 }
 
 void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int object_filter, int external_id, const string &api_cmd)
@@ -239,16 +189,12 @@ void Events::insert_event(struct lws *wsi, const st_event &event)
 
 void Events::Create(const string &type_str, unsigned int object_id)
 {
-	en_types type = get_type(type_str);
-	Create(type, object_id);
-}
-
-void Events::Create(en_types type, unsigned int object_id)
-{
 	if(!this->ws_context)
 		return; // Prevent events from being creating before server is ready
 	
 	unique_lock<mutex> llock(lock);
+	
+	en_types type = get_type(type_str);
 	
 	// Find which client has subscribed to this event
 	auto it = subscriptions.find(type);

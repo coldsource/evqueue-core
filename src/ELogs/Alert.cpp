@@ -43,6 +43,7 @@ namespace ELogs
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("alert", Alert::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"ALERT_CREATED", "ALERT_MODIFIED", "ALERT_REMOVED"});
 	return (APIAutoInit *)0;
 });
 
@@ -330,7 +331,7 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		string filters = query->GetRootAttribute("filters");
 		string notifications = query->GetRootAttribute("notifications");
 		
-		Events::en_types ev;
+		string ev;
 		
 		if(action=="create")
 		{
@@ -338,7 +339,7 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			
 			LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
 			
-			ev = Events::en_types::ALERT_CREATED;
+			ev = "ALERT_CREATED";
 			
 			response->GetDOM()->getDocumentElement().setAttribute("alert-id",to_string(id));
 		}
@@ -348,7 +349,7 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			
 			Edit(id,name, description, occurrences, period, groupby, filters, notifications);
 			
-			ev = Events::en_types::ALERT_MODIFIED;
+			ev = "ALERT_MODIFIED";
 			
 			LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
 		}
@@ -369,7 +370,7 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		
 		LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::ALERT_REMOVED, id);
+		Events::GetInstance()->Create("ALERT_REMOVED", id);
 		
 		return true;
 	}

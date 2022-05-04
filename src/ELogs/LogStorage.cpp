@@ -207,7 +207,7 @@ void LogStorage::log(const vector<string> &logs)
 	
 	db.CommitTransaction();
 	
-	Events::GetInstance()->Create(Events::en_types::LOG_ELOG);
+	Events::GetInstance()->Create("LOG_ELOG");
 }
 
 void LogStorage::store_log(DB *db, const Channel &channel, const map<string, string> &group_fields, const map<string, string> &channel_fields)

@@ -52,5 +52,5 @@ void LoggerAPI::LogAction(const User &user, unsigned int object_id, const string
 		&action
 		);
 	
-	Events::GetInstance()->Create(Events::en_types::LOG_API);
+	Events::GetInstance()->Create("LOG_API");
 }

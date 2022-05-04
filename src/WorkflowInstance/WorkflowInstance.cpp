@@ -284,7 +284,7 @@ WorkflowInstance::~WorkflowInstance()
 	else
 		Logger::Log(LOG_NOTICE,"[WID %d] Suspended during shutdown",workflow_instance_id);
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_TERMINATED,workflow_instance_id);
+	Events::GetInstance()->Create("INSTANCE_TERMINATED",workflow_instance_id);
 }
 
 void WorkflowInstance::SendStatus(QueryResponse *response, bool full_status)

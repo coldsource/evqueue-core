@@ -230,7 +230,7 @@ bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_TYPE_CREATED);
+		Events::GetInstance()->Create("NOTIFICATION_TYPE_CREATED");
 		
 		return true;
 	}
@@ -245,7 +245,7 @@ bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_TYPE_REMOVED);
+		Events::GetInstance()->Create("NOTIFICATION_TYPE_REMOVED");
 		
 		return true;
 	}

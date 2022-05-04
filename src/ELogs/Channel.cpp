@@ -43,6 +43,7 @@ namespace ELogs
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("channel", Channel::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"CHANNEL_CREATED","CHANNEL_MODIFIED","CHANNEL_REMOVED"});
 	return (APIAutoInit *)0;
 });
 
@@ -363,7 +364,7 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 			
 			LoggerAPI::LogAction(user,id,"Channel",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::CHANNEL_CREATED);
+			Events::GetInstance()->Create("CHANNEL_CREATED");
 			
 			response->GetDOM()->getDocumentElement().setAttribute("channel-id",to_string(id));
 		}
@@ -373,7 +374,7 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 			
 			Edit(id,name, group_id, config);
 			
-			Events::GetInstance()->Create(Events::en_types::CHANNEL_MODIFIED);
+			Events::GetInstance()->Create("CHANNEL_MODIFIED");
 			
 			LoggerAPI::LogAction(user,id,"Channel",query->GetQueryGroup(),action);
 		}
@@ -392,7 +393,7 @@ bool Channel::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		
 		LoggerAPI::LogAction(user,id,"Channel",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::CHANNEL_REMOVED, id);
+		Events::GetInstance()->Create("CHANNEL_REMOVED", id);
 		
 		return true;
 	}

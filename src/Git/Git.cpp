@@ -198,7 +198,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 	{
 		Git::GetInstance()->repo->Pull();
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_PULLED);
+		Events::GetInstance()->Create("GIT_PULLED");
 		
 		return true;
 	}
@@ -210,7 +210,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Git::GetInstance()->SaveWorkflow(name,commit_log,force);
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_SAVED);
+		Events::GetInstance()->Create("GIT_SAVED");
 		
 		return true;
 	}
@@ -220,7 +220,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Git::GetInstance()->LoadWorkflow(name);
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_LOADED);
+		Events::GetInstance()->Create("GIT_LOADED");
 		
 		return true;
 	}
@@ -239,7 +239,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Git::GetInstance()->RemoveWorkflow(name,commit_log);
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_REMOVED);
+		Events::GetInstance()->Create("GIT_REMOVED");
 		
 		return true;
 	}

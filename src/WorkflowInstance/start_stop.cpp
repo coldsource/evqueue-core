@@ -53,7 +53,7 @@ void WorkflowInstance::Start(bool *workflow_terminated)
 
 	record_savepoint();
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_STARTED,workflow_instance_id);
+	Events::GetInstance()->Create("INSTANCE_STARTED",workflow_instance_id);
 }
 
 void WorkflowInstance::Resume(bool *workflow_terminated)
@@ -111,7 +111,7 @@ void WorkflowInstance::Resume(bool *workflow_terminated)
 	if(tasks_index>0)
 		record_savepoint(); // XML has been modified (tasks status update from DB)
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_STARTED,workflow_instance_id);
+	Events::GetInstance()->Create("INSTANCE_STARTED",workflow_instance_id);
 }
 
 void WorkflowInstance::DebugResume(bool *workflow_terminated)
@@ -170,7 +170,7 @@ void WorkflowInstance::DebugResume(bool *workflow_terminated)
 	if(tasks_index>0)
 		record_savepoint(); // XML has been modified (tasks status update from DB)
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_STARTED,workflow_instance_id);
+	Events::GetInstance()->Create("INSTANCE_STARTED",workflow_instance_id);
 }
 
 void WorkflowInstance::Migrate(bool *workflow_terminated)

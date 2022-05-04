@@ -305,7 +305,7 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			
 			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::QUEUE_CREATED);
+			Events::GetInstance()->Create("QUEUE_CREATED");
 			
 			response->GetDOM()->getDocumentElement().setAttribute("queue-id",to_string(id));
 		}
@@ -315,7 +315,7 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			
 			Edit(id,name, iconcurrency, scheduler, dynamic);
 			
-			Events::GetInstance()->Create(Events::en_types::QUEUE_MODIFIED);
+			Events::GetInstance()->Create("QUEUE_MODIFIED");
 			
 			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 		}
@@ -332,7 +332,7 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		
 		LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::QUEUE_REMOVED);
+		Events::GetInstance()->Create("QUEUE_REMOVED");
 		
 		QueuePool::GetInstance()->Reload();
 		
