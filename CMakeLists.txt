@@ -50,6 +50,7 @@ aux_source_directory(src/Queue srcQueue)
 aux_source_directory(src/Git srcGit)
 aux_source_directory(src/WS srcWS)
 aux_source_directory(src/Zip srcZip)
+aux_source_directory(src/Thread srcThread)
 
 add_executable(evqueue
 	${srcWorkflowInstance}
@@ -76,6 +77,7 @@ add_executable(evqueue
 	${srcGit}
 	${srcWS}
 	${srcZip}
+	${srcThread}
 	
 	src/evqueue.cpp
 	)

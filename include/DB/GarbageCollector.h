@@ -20,11 +20,13 @@
 #ifndef _GARBAGECOLLECTOR_H_
 #define _GARBAGECOLLECTOR_H_
 
+#include <Thread/WaiterThread.h>
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
-class GarbageCollector
+class GarbageCollector: public WaiterThread
 {
 	private:
 		bool enable;
@@ -39,17 +41,12 @@ class GarbageCollector
 		int elogs_retention;
 		std::string dbname;
 		
-		bool is_shutting_down;
-		
 		std::thread gc_thread_handle;
-		std::mutex lock;
-		std::condition_variable shutdown_requested;
 		
 	public:
 		GarbageCollector();
 		~GarbageCollector();
 		
-		void Shutdown(void);
 		void WaitForShutdown(void);
 	
 	private:

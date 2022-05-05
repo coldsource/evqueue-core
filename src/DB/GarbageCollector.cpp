@@ -47,8 +47,6 @@ GarbageCollector::GarbageCollector()
 	elogs_retention = config->GetInt("gc.elogs.retention");
 	dbname = config->Get("mysql.database");
 	
-	is_shutting_down = false;
-	
 	if(enable)
 	{
 		// Create our thread
@@ -60,15 +58,6 @@ GarbageCollector::~GarbageCollector()
 {
 	Shutdown();
 	WaitForShutdown();
-}
-
-void GarbageCollector::Shutdown(void)
-{
-	unique_lock<mutex> llock(lock);
-	
-	is_shutting_down = true;
-	
-	shutdown_requested.notify_one();
 }
 
 void GarbageCollector::WaitForShutdown(void)
@@ -87,15 +76,7 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 	
 	while(true)
 	{
-		unique_lock<mutex> llock(gc->lock);
-		
-		cv_status ret;
-		if(!gc->is_shutting_down)
-			ret = gc->shutdown_requested.wait_for(llock, chrono::seconds(gc->interval));
-		
-		llock.unlock();
-		
-		if(gc->is_shutting_down)
+		if(!gc->wait(/*gc->interval*/ 1))
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 			
@@ -103,9 +84,6 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 			
 			return 0;
 		}
-		
-		if(ret!=cv_status::timeout)
-			continue; // Suprious interrupt, continue
 		
 		UniqueAction uaction("gc",gc->interval);
 		if(!uaction.IsElected())
@@ -123,16 +101,9 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 			{
 				Logger::Log(LOG_NOTICE,"GarbageCollector: Removed %d expired entries",deleted_rows);
 				
-				unique_lock<mutex> llock(gc->lock);
-				
-				if(!gc->is_shutting_down)
-					gc->shutdown_requested.wait_for(llock, chrono::seconds(gc->delay));
-				
-				llock.unlock();
-	
-				if(gc->is_shutting_down)
+				if(!gc->wait(gc->delay))
 				{
-					Logger::Log(LOG_INFO,"Shutdown in progress exiting Garbage Collector");
+					Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 					
 					DB::StopThread();
 					
