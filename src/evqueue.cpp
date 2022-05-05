@@ -396,7 +396,7 @@ int main(int argc,char **argv)
 		SequenceGenerator *seq = new SequenceGenerator();
 		
 		// Instanciate random numbers generator
-		Random *random = new Random();
+		Random random;
 		
 		// Git repository
 		Git *git = new Git();
@@ -606,7 +606,6 @@ int main(int argc,char **argv)
 				delete qh;
 				delete cluster;
 				delete active_connections;
-				delete random;
 				delete logger_api;
 				delete logger_notifications;
 				delete events;
