@@ -56,11 +56,19 @@ GarbageCollector::GarbageCollector()
 	}
 }
 
+GarbageCollector::~GarbageCollector()
+{
+	Shutdown();
+	WaitForShutdown();
+}
+
 void GarbageCollector::Shutdown(void)
 {
 	unique_lock<mutex> llock(lock);
 	
 	is_shutting_down = true;
+	
+	shutdown_requested.notify_one();
 }
 
 void GarbageCollector::WaitForShutdown(void)
@@ -79,24 +87,25 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 	
 	while(true)
 	{
-		for(int iinterval=0;iinterval<gc->interval;iinterval++)
+		unique_lock<mutex> llock(gc->lock);
+		
+		cv_status ret;
+		if(!gc->is_shutting_down)
+			ret = gc->shutdown_requested.wait_for(llock, chrono::seconds(gc->interval));
+		
+		llock.unlock();
+		
+		if(gc->is_shutting_down)
 		{
-			// Wait for GC interval seconds by steps of 1 second to allow shutdown detection
-			unique_lock<mutex> llock(gc->lock);
+			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 			
-			if(gc->is_shutting_down)
-			{
-				Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
-				
-				DB::StopThread();
-				
-				return 0;
-			}
+			DB::StopThread();
 			
-			llock.unlock();
-			
-			sleep(1);
+			return 0;
 		}
+		
+		if(ret!=cv_status::timeout)
+			continue; // Suprious interrupt, continue
 		
 		UniqueAction uaction("gc",gc->interval);
 		if(!uaction.IsElected())
@@ -114,19 +123,20 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 			{
 				Logger::Log(LOG_NOTICE,"GarbageCollector: Removed %d expired entries",deleted_rows);
 				
-				for(int idelay=0;idelay<gc->delay;idelay++)
+				unique_lock<mutex> llock(gc->lock);
+				
+				if(!gc->is_shutting_down)
+					gc->shutdown_requested.wait_for(llock, chrono::seconds(gc->delay));
+				
+				llock.unlock();
+	
+				if(gc->is_shutting_down)
 				{
-					unique_lock<mutex> llock(gc->lock);
-		
-					if(gc->is_shutting_down)
-					{
-						Logger::Log(LOG_INFO,"Shutdown in progress exiting Garbage Collector");
-						return 0;
-					}
+					Logger::Log(LOG_INFO,"Shutdown in progress exiting Garbage Collector");
 					
-					llock.unlock();
+					DB::StopThread();
 					
-					sleep(1);
+					return 0;
 				}
 			}
 		} while(deleted_rows>0);

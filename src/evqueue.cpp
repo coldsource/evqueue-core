@@ -626,10 +626,6 @@ int main(int argc,char **argv)
 				// Save current state in database
 				workflow_instances->RecordSavepoint();
 				
-				// Request shutdown on GarbageCollector and wait
-				gc->Shutdown();
-				gc->WaitForShutdown();
-				
 				// All threads have exited, we can cleanly exit
 				delete stats;
 				delete git;

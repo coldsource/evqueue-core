@@ -22,6 +22,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 class GarbageCollector
 {
@@ -42,9 +43,11 @@ class GarbageCollector
 		
 		std::thread gc_thread_handle;
 		std::mutex lock;
+		std::condition_variable shutdown_requested;
 		
 	public:
 		GarbageCollector();
+		~GarbageCollector();
 		
 		void Shutdown(void);
 		void WaitForShutdown(void);
