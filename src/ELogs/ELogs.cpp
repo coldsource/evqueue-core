@@ -46,6 +46,154 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 	return (APIAutoInit *)0;
 });
 
+string ELogs::get_filter(const map<string, string> &filters, const string &name, const string &default_val)
+{
+	auto it = filters.find(name);
+	if(it==filters.end())
+		return default_val;
+	
+	return it->second;
+}
+
+int ELogs::get_filter(const map<string, string> &filters, const string &name,int default_val)
+{
+	auto it = filters.find(name);
+	if(it==filters.end())
+		return default_val;
+	
+	try
+	{
+		return std::stoi(it->second);
+	}
+	catch(...)
+	{
+		throw Exception("ELogs","Filter '"+name+"' has invalid integer value","INVALID_INTEGER");
+	}
+}
+
+vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsigned int limit, unsigned int offset)
+{
+	ChannelGroup group;
+	Channel channel;
+	
+	// Build base select
+	string query_select;
+	string query_from;
+	string query_where;
+	string query_order;
+	string query_limit;
+	vector<void *> values;
+	
+	ELog::BuildSelectFrom(query_select, query_from);
+	
+	// Base filters (always present)
+	string filter_crit_str = get_filter(filters, "filter_crit", "");
+	int filter_crit;
+	
+	string filter_emitted_from = get_filter(filters, "filter_emitted_from", "");
+	string filter_emitted_until = get_filter(filters, "filter_emitted_until", "");
+	
+	// Default filter for emitted_from to current day for performance reasons
+	if(filter_emitted_from=="")
+	{
+		char buf[32];
+		struct tm now_t;
+		time_t now = time(0);
+		localtime_r(&now, &now_t);
+		strftime(buf, 32, "%Y-%m-%d 00:00:00", &now_t);
+		filter_emitted_from = string(buf);
+	}
+	
+	DB db("elog");
+	
+	query_where = " WHERE true ";
+	
+	if(filter_crit_str!="")
+	{
+		filter_crit = Field::PackCrit(filter_crit_str);
+		query_where += " AND l.log_crit = %i ";
+		values.push_back(&filter_crit);
+	}
+	
+	if(filter_emitted_from!="")
+	{
+		query_where += " AND l.log_date>=%s ";
+		values.push_back(&filter_emitted_from);
+	}
+	
+	if(filter_emitted_until!="")
+	{
+		query_where += " AND l.log_date<=%s ";
+		values.push_back(&filter_emitted_until);
+	}
+	
+	unsigned int filter_group = get_filter(filters, "filter_group", 0);
+	if(filter_group!=0)
+	{
+		query_where += " AND c.channel_group_id=%i ";
+		values.push_back(&filter_group);
+		
+		group = ChannelGroups::GetInstance()->Get(filter_group);
+		ELog::BuildSelectFromAppend(query_select, query_from, group.GetFields());
+	}
+	
+	unsigned int filter_channel = get_filter(filters, "filter_channel",0);
+	if(filter_channel!=0)
+	{
+		query_where += " AND l.channel_id=%i ";
+		values.push_back(&filter_channel);
+		
+		channel = Channels::GetInstance()->Get(filter_channel);
+		ELog::BuildSelectFromAppend(query_select, query_from, channel.GetFields());
+	}
+	
+	auto group_fields = group.GetFields().GetIDMap();
+	string group_filters_val_str[group_fields.size()];
+	int group_filters_val_int[group_fields.size()];
+	add_auto_filters(filters, group.GetFields(), "filter_group_", query_where,values,group_filters_val_int, group_filters_val_str);
+	
+	auto channel_fields = channel.GetFields().GetIDMap();
+	string channel_filters_val_str[channel_fields.size()];
+	int channel_filters_val_int[channel_fields.size()];
+	add_auto_filters(filters, channel.GetFields(), "filter_channel_", query_where,values,channel_filters_val_int, channel_filters_val_str);
+	
+	query_order = " ORDER BY l.log_id DESC ";
+	
+	query_limit = " LIMIT %i,%i ";
+	values.push_back(&offset);
+	values.push_back(&limit);
+	
+	db.QueryVsPrintf(query_select+query_from+query_where+query_order+query_limit, values);
+	
+	vector<map<string, string>> results;
+	
+	while(db.FetchRow())
+	{
+		map<string, string> result;
+		result["id"] = db.GetField(0);
+		result["channel"] = db.GetField(1);
+		result["crit"] = Field::UnpackCrit(db.GetFieldInt(2));
+		result["date"] = db.GetField(3);
+		
+		int i = 4;
+		if(filter_group!=0)
+		{
+			for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
+				result[it->second.GetName()] = it->second.Unpack(db.GetField(i++));
+		}
+		
+		if(filter_channel!=0)
+		{
+			for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
+				result["channel_"+it->second.GetName()] = it->second.Unpack(db.GetField(i++));
+		}
+		
+		results.push_back(result);
+	}
+	
+	return results;
+}
+
 bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	string action = query->GetRootAttribute("action");
@@ -55,115 +203,13 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
 		
-		ChannelGroup group;
-		Channel channel;
+		auto res = QueryLogs(query->GetRootAttributes(), limit, offset);
 		
-		// Build base select
-		string query_select;
-		string query_from;
-		string query_where;
-		string query_order;
-		string query_limit;
-		vector<void *> values;
-		
-		ELog::BuildSelectFrom(query_select, query_from);
-		
-		// Base filters (always present)
-		string filter_crit_str = query->GetRootAttribute("filter_crit","");
-		int filter_crit;
-		
-		string filter_emitted_from = query->GetRootAttribute("filter_emitted_from","");
-		string filter_emitted_until = query->GetRootAttribute("filter_emitted_until","");
-		
-		// Default filter for emitted_from to current day for performance reasons
-		if(filter_emitted_from=="")
-		{
-			char buf[32];
-			struct tm now_t;
-			time_t now = time(0);
-			localtime_r(&now, &now_t);
-			strftime(buf, 32, "%Y-%m-%d 00:00:00", &now_t);
-			filter_emitted_from = string(buf);
-		}
-		
-		DB db("elog");
-		
-		query_where = " WHERE true ";
-		
-		if(filter_crit_str!="")
-		{
-			filter_crit = Field::PackCrit(filter_crit_str);
-			query_where += " AND l.log_crit = %i ";
-			values.push_back(&filter_crit);
-		}
-		
-		if(filter_emitted_from!="")
-		{
-			query_where += " AND l.log_date>=%s ";
-			values.push_back(&filter_emitted_from);
-		}
-		
-		if(filter_emitted_until!="")
-		{
-			query_where += " AND l.log_date<=%s ";
-			values.push_back(&filter_emitted_until);
-		}
-		
-		unsigned int filter_group = query->GetRootAttributeInt("filter_group", 0);
-		if(filter_group!=0)
-		{
-			query_where += " AND c.channel_group_id=%i ";
-			values.push_back(&filter_group);
-			
-			group = ChannelGroups::GetInstance()->Get(filter_group);
-			ELog::BuildSelectFromAppend(query_select, query_from, group.GetFields());
-		}
-		
-		unsigned int filter_channel = query->GetRootAttributeInt("filter_channel",0);
-		if(filter_channel!=0)
-		{
-			query_where += " AND l.channel_id=%i ";
-			values.push_back(&filter_channel);
-			
-			channel = Channels::GetInstance()->Get(filter_channel);
-			ELog::BuildSelectFromAppend(query_select, query_from, channel.GetFields());
-		}
-		
-		auto group_fields = group.GetFields().GetIDMap();
-		string group_filters_val_str[group_fields.size()];
-		int group_filters_val_int[group_fields.size()];
-		add_auto_filters(query, group.GetFields(), "filter_group_", query_where,values,group_filters_val_int, group_filters_val_str);
-		
-		auto channel_fields = channel.GetFields().GetIDMap();
-		string channel_filters_val_str[channel_fields.size()];
-		int channel_filters_val_int[channel_fields.size()];
-		add_auto_filters(query, channel.GetFields(), "filter_channel_", query_where,values,channel_filters_val_int, channel_filters_val_str);
-		
-		query_order = " ORDER BY l.log_id DESC ";
-		
-		query_limit = " LIMIT %i,%i ";
-		values.push_back(&offset);
-		values.push_back(&limit);
-		
-		db.QueryVsPrintf(query_select+query_from+query_where+query_order+query_limit, values);
-		
-		while(db.FetchRow())
+		for(int i=0;i<res.size();i++)
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<log />");
-			node.setAttribute("id",db.GetField(0));
-			node.setAttribute("channel",db.GetField(1));
-			node.setAttribute("crit",Field::UnpackCrit(db.GetFieldInt(2)));
-			node.setAttribute("date",db.GetField(3));
-			
-			int i = 4;
-			for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
-				node.setAttribute(it->second.GetName(), it->second.Unpack(db.GetField(i++)));
-			
-			if(filter_channel!=0)
-			{
-				for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
-				node.setAttribute("channel_"+it->second.GetName(), it->second.Unpack(db.GetField(i++)));
-			}
+			for(auto it = res[i].begin(); it!=res[i].end(); ++it)
+				node.setAttribute(it->first, it->second);
 		}
 		
 		return true;
@@ -191,14 +237,14 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	return false;
 }
 
-void ELogs::add_auto_filters(XMLQuery *query, const Fields &fields, const string &prefix, string &query_where, vector<void *> &values, int *val_int, string *val_str)
+void ELogs::add_auto_filters(const map<string, string> filters, const Fields &fields, const string &prefix, string &query_where, vector<void *> &values, int *val_int, string *val_str)
 {
 	int i = 0;
 	auto fields_map = fields.GetIDMap();
 	
 	for(auto it = fields_map.begin(); it!=fields_map.end(); ++it)
 	{
-		string filter = query->GetRootAttribute(prefix+it->second.GetName(),"");
+		string filter = get_filter(filters, prefix+it->second.GetName(),"");
 		if(filter!="")
 		{
 			if(it->second.GetType()==Field::en_type::ITEXT)
