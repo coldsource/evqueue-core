@@ -49,9 +49,6 @@
 #include <Logger/Logger.h>
 #include <Logger/LoggerAPI.h>
 #include <Logger/LoggerNotifications.h>
-#include <Logs/Logs.h>
-#include <Logs/LogsAPI.h>
-#include <Logs/LogsNotifications.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
 #include <Workflow/Workflow.h>
@@ -95,10 +92,6 @@
 #include <IO/NetworkConnections.h>
 
 #include <xercesc/util/PlatformUtils.hpp>
-
-#define CNX_TYPE_API    1
-#define CNX_TYPE_WS     2
-#define CNX_TYPE_ELOG   3
 
 time_t evqueue_start_time = 0;
 
@@ -507,9 +500,6 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
 		qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
 		qh->RegisterHandler("workflow_schedules",WorkflowSchedules::HandleQuery);
-		qh->RegisterHandler("logs",Logs::HandleQuery);
-		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
-		qh->RegisterHandler("logsnotifications",LogsNotifications::HandleQuery);
 		qh->RegisterHandler("control",tools_handle_query);
 		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);

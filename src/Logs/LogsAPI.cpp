@@ -22,6 +22,11 @@
 #include <DB/DB.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
+#include <User/Users.h>
+#include <User/User.h>
+#include <Queue/QueuePool.h>
+#include <API/QueryHandlers.h>
+#include <WS/Events.h>
 #include <Workflow/Workflows.h>
 #include <Workflow/Workflow.h>
 #include <Schedule/WorkflowSchedules.h>
@@ -30,9 +35,12 @@
 #include <Schedule/RetrySchedule.h>
 #include <Tag/Tags.h>
 #include <Tag/Tag.h>
-#include <User/Users.h>
-#include <User/User.h>
-#include <Queue/QueuePool.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("logsapi", LogsAPI::HandleQuery);
+	Events::GetInstance()->RegisterEvent("LOG_API");
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

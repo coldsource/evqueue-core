@@ -23,8 +23,16 @@
 #include <Logger/Logger.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
+#include <API/QueryHandlers.h>
+#include <WS/Events.h>
 
 using namespace std;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("logs", Logs::HandleQuery);
+	Events::GetInstance()->RegisterEvent("LOG_ENGINE");
+	return (APIAutoInit *)0;
+});
 
 bool Logs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {

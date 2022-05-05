@@ -58,6 +58,8 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 		LogStorage::GetInstance()->Log(string(buf, len));
 	});
 	
+	Events::GetInstance()->RegisterEvent("LOG_ELOG");
+	
 	return (APIAutoInit *)new LogStorage();
 });
 
