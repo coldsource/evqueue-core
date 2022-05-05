@@ -27,7 +27,14 @@
 #include <API/QueryResponse.h>
 #include <DB/DB.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 #include <global.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("tag", Tag::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"TAG_CREATED","TAG_MODIFIED","TAG_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

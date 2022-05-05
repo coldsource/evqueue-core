@@ -28,10 +28,18 @@
 #include <global.h>
 #include <WS/Events.h>
 #include <Logger/LoggerAPI.h>
+#include <API/QueryHandlers.h>
+
+User User::anonymous;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("user", User::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"USER_CREATED","USER_MODIFIED","USER_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
-User User::anonymous;
 
 User::User()
 {

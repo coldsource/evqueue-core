@@ -25,8 +25,16 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
+#include <API/QueryHandlers.h>
 
 Users *Users::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("users", Users::HandleQuery);
+	APIAutoInit * users = new Users();
+	User::InitAnonymous();
+	return users;
+});
 
 using namespace std;
 

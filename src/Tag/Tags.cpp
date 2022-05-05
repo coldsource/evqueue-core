@@ -26,8 +26,14 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
+#include <API/QueryHandlers.h>
 
 Tags *Tags::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("tags", Tags::HandleQuery);
+	return (APIAutoInit *)new Tags();
+});
 
 using namespace std;
 

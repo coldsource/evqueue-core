@@ -78,10 +78,6 @@
 #include <Notification/NotificationTypes.h>
 #include <Notification/Notification.h>
 #include <Notification/Notifications.h>
-#include <User/User.h>
-#include <User/Users.h>
-#include <Tag/Tag.h>
-#include <Tag/Tags.h>
 #include <Crypto/Random.h>
 #include <Process/DataPiper.h>
 #include <WorkflowInstance/Datastore.h>
@@ -504,13 +500,6 @@ int main(int argc,char **argv)
 		// Start garbage GarbageCollector
 		GarbageCollector *gc = new GarbageCollector();
 		
-		// Load users
-		Users *users = new Users();
-		User::InitAnonymous();
-		
-		// Load tags
-		Tags *tags = new Tags();
-		
 		// Initialize general module structures
 		QueryHandlers *qh = QueryHandlers::GetInstance();
 		NetworkConnections nc;
@@ -530,10 +519,6 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("notification_types",NotificationTypes::HandleQuery);
 		qh->RegisterHandler("notification",Notification::HandleQuery);
 		qh->RegisterHandler("notifications",Notifications::HandleQuery);
-		qh->RegisterHandler("user",User::HandleQuery);
-		qh->RegisterHandler("users",Users::HandleQuery);
-		qh->RegisterHandler("tag",Tag::HandleQuery);
-		qh->RegisterHandler("tags",Tags::HandleQuery);
 		qh->RegisterHandler("logs",Logs::HandleQuery);
 		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
 		qh->RegisterHandler("logsnotifications",LogsNotifications::HandleQuery);
@@ -644,8 +629,6 @@ int main(int argc,char **argv)
 				delete seq;
 				delete qh;
 				delete cluster;
-				delete users;
-				delete tags;
 				delete active_connections;
 				delete random;
 				delete logger_api;

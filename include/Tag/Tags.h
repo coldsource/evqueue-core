@@ -21,13 +21,14 @@
 #define _TAGS_H_
 
 #include <API/APIObjectList.h>
+#include <API/APIAutoInit.h>
 
 class User;
 class Tag;
 class XMLQuery;
 class QueryResponse;
 
-class Tags:public APIObjectList<Tag>
+class Tags:public APIObjectList<Tag>, public APIAutoInit
 {
 	static Tags *instance;
 	
