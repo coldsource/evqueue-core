@@ -119,7 +119,7 @@ unsigned int Alert::Create(const string &name, const string &description, unsign
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters) VALUES(%s, %i, %i, %s, %s)",
+	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters) VALUES(%s, %s, %i, %i, %s, %s)",
 		&name,
 		&description,
 		&occurrences,
