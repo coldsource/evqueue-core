@@ -108,10 +108,6 @@
 #define CNX_TYPE_WS     2
 #define CNX_TYPE_ELOG   3
 
-int listen_socket = -1;
-int listen_socket_unix = -1;
-int listen_socket_ws = -1;
-int listen_socket_elog = -1;
 time_t evqueue_start_time = 0;
 
 void signal_callback_handler(int signum)
@@ -119,14 +115,12 @@ void signal_callback_handler(int signum)
 	if(signum==SIGINT || signum==SIGTERM)
 	{
 		// Shutdown requested
-		// Close main listen socket, this will release accept() loop
-		if(listen_socket!=-1)
-			close(listen_socket);
+		Logger::Log(LOG_NOTICE,"Shutting down...");
 		
-		if(listen_socket_unix!=-1)
-			close(listen_socket_unix);
-		
-		if(listen_socket==-1 && listen_socket_unix==-1 && listen_socket_unix==-1)
+		// Shutdown requested, close all listening sockets to release main loop
+		if(NetworkConnections::GetInstance())
+			NetworkConnections::GetInstance()->Shutdown();
+		else
 			exit(-1); // Server not yet started, just exit
 	}
 	else if(signum==SIGHUP)
@@ -604,9 +598,6 @@ int main(int argc,char **argv)
 		{
 			if(!nc.select())
 			{
-				// Shutdown requested
-				Logger::Log(LOG_NOTICE,"Shutting down...");
-				
 				// Request shutdown on ProcessManager and wait
 				pm->Shutdown();
 				pm->WaitForShutdown();

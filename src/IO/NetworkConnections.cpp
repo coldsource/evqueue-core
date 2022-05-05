@@ -150,6 +150,8 @@ bool NetworkConnections::select()
 	{
 		if(errno==EINTR)
 			return true; // Interrupted by signal, continue
+		
+		return false;
 	}
 	
 	for(int i=0;i<connections.size();i++)
@@ -176,4 +178,13 @@ bool NetworkConnections::select()
 	}
 	
 	return true;
+}
+
+void NetworkConnections::Shutdown()
+{
+	Logger::Log(LOG_NOTICE,"Shutdown requested, closing listening sockets");
+	
+	// Shutdown requested, close listening sockets
+	for(int i=0;i<connections.size();i++)
+		close(connections[i].socket);
 }

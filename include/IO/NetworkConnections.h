@@ -61,6 +61,8 @@ class NetworkConnections
 		void RegisterUDP(const std::string &name, const std::string &bind_ip, int port, int maxlen, t_dgram_handler cbk);
 		
 		bool select();
+		
+		void Shutdown();
 };
 
 #endif
