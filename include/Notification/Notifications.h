@@ -21,6 +21,7 @@
 #define _NOTIFICATIONS_H_
 
 #include <API/APIObjectList.h>
+#include <API/APIAutoInit.h>
 
 #include <map>
 #include <string>
@@ -31,7 +32,7 @@ class XMLQuery;
 class QueryResponse;
 class User;
 
-class Notifications:public APIObjectList<Notification>
+class Notifications:public APIObjectList<Notification>, public APIAutoInit
 {
 	private:
 		struct st_notification_instance

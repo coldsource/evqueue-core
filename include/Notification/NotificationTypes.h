@@ -21,6 +21,7 @@
 #define _NOTIFICATIONTYPES_H_
 
 #include <API/APIObjectList.h>
+#include <API/APIAutoInit.h>
 
 #include <map>
 #include <string>
@@ -30,7 +31,7 @@ class XMLQuery;
 class QueryResponse;
 class User;
 
-class NotificationTypes:public APIObjectList<NotificationType>
+class NotificationTypes:public APIObjectList<NotificationType>, public APIAutoInit
 {
 	private:
 		static NotificationTypes *instance;

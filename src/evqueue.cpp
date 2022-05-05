@@ -74,10 +74,6 @@
 #include <Schedule/RetrySchedules.h>
 #include <DB/GarbageCollector.h>
 #include <DB/SequenceGenerator.h>
-#include <Notification/NotificationType.h>
-#include <Notification/NotificationTypes.h>
-#include <Notification/Notification.h>
-#include <Notification/Notifications.h>
 #include <Crypto/Random.h>
 #include <Process/DataPiper.h>
 #include <WorkflowInstance/Datastore.h>
@@ -431,10 +427,6 @@ int main(int argc,char **argv)
 		// Instanciate workflows list
 		Workflows *workflows = new Workflows();
 		
-		// Instanciate notifications map
-		NotificationTypes *notification_types = new NotificationTypes();
-		Notifications *notifications = new Notifications();
-		
 		// Instanciate retry schedules list
 		RetrySchedules *retry_schedules = new RetrySchedules();
 		
@@ -515,10 +507,6 @@ int main(int argc,char **argv)
 		qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
 		qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
 		qh->RegisterHandler("workflow_schedules",WorkflowSchedules::HandleQuery);
-		qh->RegisterHandler("notification_type",NotificationType::HandleQuery);
-		qh->RegisterHandler("notification_types",NotificationTypes::HandleQuery);
-		qh->RegisterHandler("notification",Notification::HandleQuery);
-		qh->RegisterHandler("notifications",Notifications::HandleQuery);
 		qh->RegisterHandler("logs",Logs::HandleQuery);
 		qh->RegisterHandler("logsapi",LogsAPI::HandleQuery);
 		qh->RegisterHandler("logsnotifications",LogsNotifications::HandleQuery);
@@ -620,8 +608,6 @@ int main(int argc,char **argv)
 				delete pool;
 				delete workflow_instances;
 				delete workflows;
-				delete notifications;
-				delete notification_types;
 				delete retry_schedules;
 				delete pm;
 				delete dp;

@@ -32,8 +32,15 @@
 #include <Zip/Zip.h>
 #include <DOM/DOMDocument.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <memory>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("notification_type", NotificationType::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"NOTIFICATION_TYPE_CREATED","NOTIFICATION_TYPE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

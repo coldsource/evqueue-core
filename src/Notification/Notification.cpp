@@ -37,6 +37,7 @@
 #include <global.h>
 #include <Workflow/Workflow.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -48,6 +49,12 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <fcntl.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("notification", Notification::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"NOTIFICATION_CREATED","NOTIFICATION_MODIFIED","NOTIFICATION_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

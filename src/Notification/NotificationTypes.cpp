@@ -27,10 +27,16 @@
 #include <Cluster/Cluster.h>
 #include <User/User.h>
 #include <Crypto/sha1.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 
 NotificationTypes *NotificationTypes::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("notification_types", NotificationTypes::HandleQuery);
+	return (APIAutoInit *)new NotificationTypes();
+});
 
 using namespace std;
 

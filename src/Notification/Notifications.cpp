@@ -30,10 +30,16 @@
 #include <Cluster/Cluster.h>
 #include <User/User.h>
 #include <Logger/LoggerNotifications.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 
 Notifications *Notifications::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("notifications", Notifications::HandleQuery);
+	return (APIAutoInit *)new Notifications();
+});
 
 using namespace std;
 
