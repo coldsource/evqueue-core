@@ -27,6 +27,7 @@
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Logger/Logger.h>
 #include <Exception/Exception.h>
+#include <API/QueryHandlers.h>
 
 #include <sys/prctl.h>
 #include <signal.h>
@@ -78,6 +79,10 @@ pid_t Forker::Start()
 		setproctitle("evq_forker");
 		
 		signal(SIGCHLD,signal_callback_handler); // Reap children
+		
+		// Clean early instanciation of QueryHandlers
+		if(QueryHandlers::GetInstance())
+			delete QueryHandlers::GetInstance();
 		
 		while(true)
 		{

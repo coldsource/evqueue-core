@@ -319,10 +319,6 @@ int main(int argc,char **argv)
 		DB::InitLibrary();
 		DB::StartThread();
 		
-#ifdef USELIBGIT2
-		git_libgit2_init();
-#endif
-		
 		// Create logger and events as soon as possible
 		Logger *logger = new Logger();
 		Events *events = new Events();
@@ -339,9 +335,6 @@ int main(int argc,char **argv)
 			Logger::Log(LOG_ERR,"Unknown locale : %s",config.Get("core.locale").c_str());
 			throw Exception("core","Unable to set locale");
 		}
-		
-		// Init Xerces after locale
-		xercesc::XMLPlatformUtils::Initialize();
 		
 		// Sanity checks on configuration values and access rights
 		config.Check();
@@ -388,6 +381,9 @@ int main(int argc,char **argv)
 		// Init forker (close pipes) after eventual fork made by daemon()
 		forker.Init();
 		
+		// Init Xerces after locale and forker
+		xercesc::XMLPlatformUtils::Initialize();
+		
 		// Write pid after daemonization
 		fprintf(pidfile,"%d\n",getpid());
 		fclose(pidfile);
@@ -397,6 +393,10 @@ int main(int argc,char **argv)
 		
 		// Instanciate random numbers generator
 		Random random;
+		
+#ifdef USELIBGIT2
+		git_libgit2_init();
+#endif
 		
 		// Git repository
 		Git *git = new Git();
