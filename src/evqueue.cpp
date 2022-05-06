@@ -375,6 +375,8 @@ int main(int argc,char **argv)
 				delete scheduler;
 				delete retrier;
 				delete ws;
+				
+				// Close all active connections
 				delete active_connections;
 				
 				// Save current state in database
