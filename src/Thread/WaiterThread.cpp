@@ -17,15 +17,37 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _APIAUTOINIT_H_
-#define _APIAUTOINIT_H_
+#include <Thread/WaiterThread.h>
 
-class APIAutoInit
+using namespace std;
+
+bool WaiterThread::wait(int seconds)
 {
-	public:
-		virtual ~APIAutoInit() {}
+	while(true)
+	{
+		unique_lock<mutex> llock(wait_lock);
+			
+		cv_status ret;
+		if(!is_shutting_down)
+			ret = shutdown_requested.wait_for(llock, chrono::seconds(seconds));
 		
-		virtual void APIReady() {};
-};
+		llock.unlock();
+		
+		if(is_shutting_down)
+			return false;
+		
+		if(ret==cv_status::timeout)
+			return true;
+		
+		// Suprious interrupt, continue waiting
+	}
+}
 
-#endif
+void WaiterThread::Shutdown(void)
+{
+	unique_lock<mutex> llock(wait_lock);
+	
+	is_shutting_down = true;
+	
+	shutdown_requested.notify_one();
+}

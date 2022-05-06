@@ -23,9 +23,12 @@
 #include <API/APIObjectList.h>
 #include <API/APIAutoInit.h>
 #include <ELogs/Alert.h>
+#include <Thread/WaiterThread.h>
 
 #include <map>
 #include <string>
+#include <condition_variable>
+#include <thread>
 
 class User;
 class XMLQuery;
@@ -34,20 +37,30 @@ class QueryResponse;
 namespace ELogs
 {
 
-class Alerts:public APIObjectList<Alert>, public APIAutoInit
+class Alerts:public APIObjectList<Alert>, public APIAutoInit, public WaiterThread
 {
 	static Alerts *instance;
+	
+	bool thread_started = false;
+	std::thread alerts_thread_handle;
 	
 	public:
 		
 		Alerts();
 		virtual ~Alerts();
 		
+		void APIReady();
+		
 		static Alerts *GetInstance() { return instance; }
+		
+		void WaitForShutdown(void);
 		
 		void Reload(bool notify = true);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+	
+	private:
+		static void *alerts_thread(Alerts *alerts);
 };
 
 }

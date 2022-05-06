@@ -56,12 +56,17 @@ bool QueryHandlers::RegisterInit(t_query_handler_init init)
 
 void QueryHandlers::AutoInit()
 {
+	// First call all initializers to construct objects
 	for(int i=0;i<auto_init.size();i++)
 	{
 		APIAutoInit *p = (auto_init[i])(this);
 		if(p)
 			auto_init_ptr.push_back(p);
 	}
+	
+	// Notify all objects that API is ready
+	for(int i=0;i<auto_init_ptr.size();i++)
+		auto_init_ptr[i]->APIReady();
 }
 
 bool QueryHandlers::HandleQuery(const User &user, const std::string &type, XMLQuery *query, QueryResponse *response)

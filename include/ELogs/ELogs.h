@@ -40,7 +40,7 @@ class ELogs
 	static void add_auto_filters(const std::map<std::string, std::string> filters, const Fields &fields, const std::string &prefix, std::string &query_where, std::vector<void *> &values, int *val_int, std::string *val_str);
 	
 	public:
-		static std::vector<std::map<std::string, std::string>> QueryLogs(std::map<std::string, std::string> filters, unsigned int limit, unsigned int offset);
+		static std::vector<std::map<std::string, std::string>> QueryLogs(std::map<std::string, std::string> filters, unsigned int limit, unsigned int offset = 0);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };

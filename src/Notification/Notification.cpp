@@ -57,6 +57,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 });
 
 using namespace std;
+using nlohmann::json;
 
 Notification::Notification(DB *db,unsigned int notification_id)
 {
@@ -66,8 +67,6 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	
 	if(!db->FetchRow())
 		throw Exception("Notification","Unknown notification");
-	
-	unix_socket_path = ConfigurationEvQueue::GetInstance()->Get("network.bind.path");
 	
 	logs_directory = ConfigurationEvQueue::GetInstance()->Get("notifications.logs.directory");
 	
@@ -83,8 +82,20 @@ Notification::Notification(DB *db,unsigned int notification_id)
 	notification_subscribe_all = db->GetFieldInt(2);
 	
 	// Build confiuration JSON
-	notification_configuration = db->GetField(3);
-	plugin_configuration = notification_type.GetConfiguration();
+	try
+	{
+		notification_configuration = db->GetField(3);
+		if(notification_configuration!="")
+			j_notification_configuration = json::parse(notification_configuration);
+		
+		plugin_configuration = notification_type.GetConfiguration();
+		if(plugin_configuration!="")
+			j_plugin_configuration = json::parse(plugin_configuration);
+	}
+	catch(...)
+	{
+		throw Exception("Notification","Invalid json configuration");
+	}
 }
 
 const NotificationType Notification::GetType() const
@@ -92,36 +103,31 @@ const NotificationType Notification::GetType() const
 	return NotificationTypes::GetInstance()->Get(type_id);
 }
 
-pid_t Notification::Call(WorkflowInstance *workflow_instance)
+pid_t Notification::Call(const string &notif_name, unsigned int uid, const vector<string> &params, const json &j_data)
 {
 	try
 	{
-		string configuration;
-		configuration += "{\"pluginconf\":";
-		configuration += plugin_configuration;
-		configuration += ",\"notificationconf\":";
-		configuration += notification_configuration;
-		configuration += ",\"instance\":\"";
-		configuration += json_escape(workflow_instance->GetDOM()->Serialize(workflow_instance->GetDOM()->getDocumentElement()));
-		configuration += "\"}";
+		json j_config = j_data;
+		j_config["pluginconf"] = j_plugin_configuration;
+		j_config["notificationconf"] = j_notification_configuration;
 		
-		vector<string> parameters;
-		parameters.push_back(to_string(id));
-		parameters.push_back(notification_binary);
-		parameters.push_back(timeout);
-		parameters.push_back(to_string(workflow_instance->GetInstanceID()));
-		parameters.push_back(to_string(workflow_instance->GetErrors()));
-		parameters.push_back(unix_socket_path);
+		vector<string> monitor_params;
+		monitor_params.push_back(to_string(id));
+		monitor_params.push_back(to_string(uid));
+		monitor_params.push_back(notification_binary);
+		monitor_params.push_back(timeout);
+		for(int i=0;i<params.size();i++)
+			monitor_params.push_back(params[i]);
 		
 		string data;
-		data += DataSerializer::Serialize(parameters);
-		data += DataSerializer::Serialize(configuration);
+		data += DataSerializer::Serialize(monitor_params);
+		data += DataSerializer::Serialize(j_config.dump());
 		
 		pid_t pid = Forker::GetInstance()->Execute("evq_nf_monitor", data);
 		
 		if(pid<0)
 		{
-			Logger::Log(LOG_WARNING,"[ WID %d ] Unable to execute notification task '%s' : could not fork monitor",workflow_instance->GetInstanceID(),notification_name.c_str());
+			Logger::Log(LOG_WARNING,"Unable to execute notification task '%s' for %s : could not fork monitor",notification_name.c_str(), notif_name.c_str());
 			return pid;
 		}
 		
@@ -129,7 +135,7 @@ pid_t Notification::Call(WorkflowInstance *workflow_instance)
 	}
 	catch(Exception &e)
 	{
-		Logger::Log(LOG_WARNING,"[ WID %d ] Unable to execute notification task '%s' : %s",workflow_instance->GetInstanceID(),notification_name.c_str(),e.error.c_str());
+		Logger::Log(LOG_WARNING,"Unable to execute notification task '%s' for %s : %s",notification_name.c_str(),notif_name.c_str(), e.error.c_str());
 		return -1;
 	}
 }
@@ -194,32 +200,6 @@ void Notification::Delete(unsigned int id)
 	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",&id);
 	
 	db.CommitTransaction();
-}
-
-string Notification::json_escape(const string &str)
-{
-	string escaped_str;
-	for(int i=0;i<str.length();i++)
-	{
-		if(str[i]=='\b')
-			escaped_str+="\\b";
-		else if(str[i]=='\f')
-			escaped_str+="\\f";
-		else if(str[i]=='\r')
-			escaped_str+="\\r";
-		else if(str[i]=='\n')
-			escaped_str+="\\n";
-		else if(str[i]=='\t')
-			escaped_str+="\\t";
-		else if(str[i]=='\"')
-			escaped_str+="\\\"";
-		else if(str[i]=='\\')
-			escaped_str+="\\\\";
-		else
-			escaped_str+=str[i];
-	}
-	
-	return escaped_str;
 }
 
 void Notification::create_edit_check(unsigned int type_id,const string &name, const string parameters)

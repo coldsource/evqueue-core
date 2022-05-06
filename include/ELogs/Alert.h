@@ -58,6 +58,7 @@ class Alert
 		unsigned int GetPeriod() const { return period; }
 		const std::string &GetGroupby() const { return groupby; }
 		const std::string &GetFilters() const { return filters; }
+		const nlohmann::json &GetJsonFilters() const { return json_filters; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
 		
 		static bool CheckName(const std::string &alert_name);

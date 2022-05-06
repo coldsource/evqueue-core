@@ -37,11 +37,13 @@
 #include <Notification/Notifications.h>
 #include <API/QueryResponse.h>
 #include <WS/Events.h>
+#include <nlohmann/json.hpp>
 #include <global.h>
 
 #include <memory>
 
 using namespace std;
+using nlohmann::json;
 
 WorkflowInstance::WorkflowInstance(void):
 	logs_directory(ConfigurationEvQueue::GetInstance()->Get("processmanager.logs.directory"))
@@ -259,8 +261,18 @@ WorkflowInstance::~WorkflowInstance()
 	if(!is_shutting_down)
 	{
 		// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
+		json j;
+		j["instance"] = GetDOM()->Serialize(GetDOM()->getDocumentElement());
+		
 		for(int i = 0; i < notifications.size(); i++)
-			Notifications::GetInstance()->Call(notifications.at(i),this);
+		{
+			Notifications::GetInstance()->Call(
+				notifications.at(i),
+				"workflow instance "+to_string(workflow_instance_id),
+				{to_string(workflow_instance_id), to_string(error_tasks), ConfigurationEvQueue::GetInstance()->Get("network.bind.path")},
+				j
+			);
+		}
 
 		// Unregister new instance to ensure no one is still using it
 		WorkflowInstances::GetInstance()->Remove(workflow_instance_id);

@@ -17,15 +17,24 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _APIAUTOINIT_H_
-#define _APIAUTOINIT_H_
+#ifndef _WAITERTHREAD_H_
+#define _WAITERTHREAD_H_
 
-class APIAutoInit
+#include <mutex>
+#include <condition_variable>
+
+class WaiterThread
 {
+	std::mutex wait_lock;
+	std::condition_variable shutdown_requested;
+	
+	bool is_shutting_down = false;
+	
+	protected:
+		bool wait(int seconds);
+	
 	public:
-		virtual ~APIAutoInit() {}
-		
-		virtual void APIReady() {};
+		void Shutdown(void);
 };
 
 #endif

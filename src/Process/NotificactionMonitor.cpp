@@ -81,12 +81,12 @@ int NotificationMonitor::main()
 	DataSerializer::Unserialize(fd, plugin_conf);
 	
 	int nid = stoi(args[0]);
-	int timeout = stoi(args[2]);
-	int workflow_instance_id = stoi(args[3]);
+	string uid = args[1];
+	int timeout = stoi(args[3]);
 	
 	// Redirect to files
 	string logs_directory = config->Get("processmanager.logs.directory");
-	ProcessExec::SelfFileRedirect(STDERR_FILENO,logs_directory+"/notif_"+to_string(workflow_instance_id)+"_"+to_string(nid));
+	ProcessExec::SelfFileRedirect(STDERR_FILENO,logs_directory+"/notif_"+uid+"_"+to_string(nid));
 	
 	// Catch signals
 	signal(SIGTERM,signal_callback_handler);
@@ -98,10 +98,9 @@ int NotificationMonitor::main()
 	msgbuf.mtext.pid = getpid();
 	msgbuf.mtext.tid = 0; // Normal condition
 	
-	ProcessExec proc(args[1]);
-	proc.AddArgument(args[3]);
-	proc.AddArgument(args[4]);
-	proc.AddArgument(args[5]);
+	ProcessExec proc(args[2]);
+	for(int i=4;i<args.size();i++)
+		proc.AddArgument(args[i]);
 	proc.Pipe(plugin_conf);
 	proc.SetWorkingDirectory(config->Get("notifications.tasks.directory"));
 	
