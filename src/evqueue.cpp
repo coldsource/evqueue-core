@@ -369,22 +369,12 @@ int main(int argc,char **argv)
 		{
 			if(!nc.select())
 			{
-				// End processmanager (blocking until thread ends)
+				// End threads
 				delete pm;
-				
-				// End data piper (blocking until thread ends)
 				delete dp;
-				
-				// End scheduler (blocking until thread ends)
 				delete scheduler;
-				
-				// End retrier (blocking until thread ends)
 				delete retrier;
-				
-				// End websockets server (blocking until thread ends)
 				delete ws;
-				
-				// Wait for active connections to end
 				delete active_connections;
 				
 				// Save current state in database
