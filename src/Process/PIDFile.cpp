@@ -17,47 +17,33 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _DATAPIPER_H_
-#define _DATAPIPER_H_
+#include <Process/PIDFile.h>
+#include <Exception/Exception.h>
 
-#include <thread>
-#include <mutex>
-#include <map>
-#include <string>
+#include <stdio.h>
+#include <unistd.h>
 
-class DataPiper
+using namespace std;
+
+PIDFile::PIDFile(const string &name, const string &filename, pid_t pid)
 {
-	struct st_data
-	{
-		std::string data;
-		size_t written;
-	};
+	this->filename = filename;
 	
-	static DataPiper *instance;
+	pidfile = fopen(filename.c_str(),"w");
+	if(pidfile==0)
+		throw Exception("core","Unable to open "+name+" pid file");
 	
-	bool is_shutting_down = false;
-	
-	std::thread dp_thread_handle;
-	std::mutex lock;
-	
-	// Self pipe, used to woke poll()
-	int self_pipe[2];
-	
-	// Associates file descriptor (pipe) to data to be sent
-	std::map<int, st_data> pipe_data;
-	
-	static void dp_thread(DataPiper *dp);
-	
-	public:
-		DataPiper();
-		~DataPiper();
-		
-		static DataPiper *GetInstance() { return instance; }
-		
-		void PipeData(int fd, const std::string &data);
-		
-		void Shutdown();
-		void WaitForShutdown();
-};
+	if(pid)
+		Write(pid);
+}
 
-#endif
+PIDFile::~PIDFile()
+{
+	unlink(filename.c_str());
+}
+
+void PIDFile::Write(pid_t pid)
+{
+	fprintf(pidfile,"%d\n",pid);
+	fclose(pidfile);
+}

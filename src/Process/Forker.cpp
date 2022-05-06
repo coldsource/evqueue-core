@@ -24,6 +24,7 @@
 #include <Process/tools_ipc.h>
 #include <Process/Monitor.h>
 #include <Process/NotificationMonitor.h>
+#include <Process/PIDFile.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Logger/Logger.h>
 #include <Exception/Exception.h>
@@ -80,85 +81,95 @@ pid_t Forker::Start()
 		
 		signal(SIGCHLD,signal_callback_handler); // Reap children
 		
-		// Clean early instanciation of QueryHandlers
-		if(QueryHandlers::GetInstance())
-			delete QueryHandlers::GetInstance();
-		
-		while(true)
 		{
-			string type;
-			if(!DataSerializer::Unserialize(pipe_evq_to_forker[0], type))
-			{
-				syslog(LOG_NOTICE, "forker: daemon is gone, exiting...");
-				return 0; // Other end of the pipe has been close, daemon is terminating
-			}
+			string pidfile = ConfigurationEvQueue::GetInstance()->Get("forker.pidfile");
+			PIDFile pidf("forker", pidfile, getpid());
 			
-			if(type=="init")
-			{
-				// Close other pipes ends
-				close(pipe_evq_to_forker[1]);
-				close(pipe_forker_to_evq[0]);
-				continue;
-			}
+			// Clean early instanciation of QueryHandlers
+			if(QueryHandlers::GetInstance())
+				delete QueryHandlers::GetInstance();
 			
-			string pipe_path;
-			if(!DataSerializer::Unserialize(pipe_evq_to_forker[0], pipe_path))
+			while(true)
 			{
-				syslog(LOG_CRIT, "forker: could not read from communication pipe, exiting...");
-				return 0;
-			}
-			
-			pid_t proc_pid;
-			
-			int fd = open(pipe_path.c_str(),O_RDONLY);
-			if(fd<0)
-				proc_pid = -2;
-			else
-			{
-				proc_pid = fork();
-				
-				if(proc_pid==0)
+				string type;
+				if(!DataSerializer::Unserialize(pipe_evq_to_forker[0], type))
 				{
-					setsid(); // This is used to avoid CTRL+C killing all child processes
-					
-					// Reset signal handlers
-					signal(SIGCHLD,SIG_DFL);
-					signal(SIGTERM,SIG_DFL);
-					
-					// Close communiction pipes with evqueue
-					close(pipe_evq_to_forker[0]);
-					close(pipe_forker_to_evq[1]);
-					
-					// Change display in ps
-					setproctitle(type.c_str());
-					
-					int retcode = -2;
-					if(type=="evq_monitor")
-					{
-						Monitor monitor(fd);
-						retcode = monitor.main();
-					}
-					else if(type=="evq_nf_monitor")
-					{
-						NotificationMonitor notif_monitor(fd);
-						retcode = notif_monitor.main();
-					}
-					
-					return 0;
+					syslog(LOG_NOTICE, "forker: daemon is gone, exiting...");
+					break; // Other end of the pipe has been close, daemon is terminating
 				}
 				
-				close(fd);
+				if(type=="init")
+				{
+					// Close other pipes ends
+					close(pipe_evq_to_forker[1]);
+					close(pipe_forker_to_evq[0]);
+					continue;
+				}
+				
+				string pipe_path;
+				if(!DataSerializer::Unserialize(pipe_evq_to_forker[0], pipe_path))
+				{
+					syslog(LOG_CRIT, "forker: could not read from communication pipe, exiting...");
+					break;
+				}
+				
+				pid_t proc_pid;
+				
+				int fd = open(pipe_path.c_str(),O_RDONLY);
+				if(fd<0)
+					proc_pid = -2;
+				else
+				{
+					proc_pid = fork();
+					
+					if(proc_pid==0)
+					{
+						setsid(); // This is used to avoid CTRL+C killing all child processes
+						
+						// Reset signal handlers
+						signal(SIGCHLD,SIG_DFL);
+						signal(SIGTERM,SIG_DFL);
+						
+						// Close communiction pipes with evqueue
+						close(pipe_evq_to_forker[0]);
+						close(pipe_forker_to_evq[1]);
+						
+						// Change display in ps
+						setproctitle(type.c_str());
+						
+						int retcode = -2;
+						if(type=="evq_monitor")
+						{
+							Monitor monitor(fd);
+							retcode = monitor.main();
+						}
+						else if(type=="evq_nf_monitor")
+						{
+							NotificationMonitor notif_monitor(fd);
+							retcode = notif_monitor.main();
+						}
+						
+						return 0;
+					}
+					
+					close(fd);
+				}
+				
+				string pid_str = DataSerializer::Serialize(proc_pid);
+				if(write(pipe_forker_to_evq[1],pid_str.c_str(),pid_str.length())!=pid_str.length())
+					syslog(LOG_CRIT, "Forker: could not write to communication pipe");
 			}
-			
-			string pid_str = DataSerializer::Serialize(proc_pid);
-			if(write(pipe_forker_to_evq[1],pid_str.c_str(),pid_str.length())!=pid_str.length())
-				syslog(LOG_CRIT, "Forker: could not write to communication pipe");
 		}
+		
+		exit(0);
 	}
 	
 	// Close other pipes ends
 	close(pipe_evq_to_forker[0]);
 	close(pipe_forker_to_evq[1]);
+	
+	if(forker_pid<0)
+		throw Exception("core", "Could not start forker, fork() returned error");
 	
 	return forker_pid;
 }

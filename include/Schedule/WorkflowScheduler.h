@@ -55,6 +55,8 @@ class WorkflowScheduler:public Scheduler
 		
 		static WorkflowScheduler *GetInstance() { return instance; }
 		
+		void LoadDBState();
+		
 		void ScheduleWorkflow(WorkflowSchedule *workflow_schedule, unsigned int workflow_instance_id = 0);
 		void ScheduledWorkflowInstanceStop(unsigned int workflow_schedule_id, bool success);
 		

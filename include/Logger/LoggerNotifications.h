@@ -20,11 +20,13 @@
 #ifndef _LOGGERNOTIFICATIONS_H_
 #define _LOGGERNOTIFICATIONS_H_
 
+#include <API/APIAutoInit.h>
+
 #include <sys/types.h>
 
 #include <string>
 
-class LoggerNotifications
+class LoggerNotifications: public APIAutoInit
 {
 	static LoggerNotifications *instance;
 	

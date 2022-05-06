@@ -33,8 +33,6 @@
 #include <syslog.h>
 #include <errno.h>
 #include <stdio.h>
-#include <pwd.h>
-#include <grp.h>
 #include <libgen.h>
 #include <time.h>
 
@@ -47,8 +45,6 @@
 #endif
 
 #include <Logger/Logger.h>
-#include <Logger/LoggerAPI.h>
-#include <Logger/LoggerNotifications.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
 #include <Workflow/Workflow.h>
@@ -84,6 +80,8 @@
 #include <Process/tools_proc.h>
 #include <Process/Forker.h>
 #include <IO/NetworkConnections.h>
+#include <Process/PIDFile.h>
+#include <Process/Args.h>
 
 #include <xercesc/util/PlatformUtils.hpp>
 
@@ -134,60 +132,39 @@ int main(int argc,char **argv)
 	g_argc = argc;
 	g_argv = argv;
 	
-	// Check parameters
-	const char *config_filename = 0;
-	bool daemonize = false;
-	bool daemonized = false;
+	const map<string, string> args_config = {
+		{"--daemon", "flag"},
+		{"--wait-db", "flag"},
+		{"--config", "string"},
+		{"--ipcq-remove", "flag"},
+		{"--ipcq-stats", "flag"},
+		{"--ipc-terminate-tid", "integer"},
+		{"--version", "flag"}
+	};
 	
-	bool wait_db = false;
-	
-	bool ipcq_remove = false;
-	bool ipcq_stats = false;
-	int ipc_terminate_tid = -1;
-	
-	for(int i=1;i<argc;i++)
+	Args args;
+	try
 	{
-		if(strcmp(argv[i],"--daemon")==0)
-			daemonize = true;
-		else if(strcmp(argv[i],"--config")==0 && i+1<argc)
-		{
-			config_filename = argv[i+1];
-			i++;
-		}
-		else if(strcmp(argv[i],"--wait-db")==0)
-		{
-			wait_db = true;
-			break;
-		}
-		else if(strcmp(argv[i],"--ipcq-remove")==0)
-		{
-			ipcq_remove = true;
-			break;
-		}
-		else if(strcmp(argv[i],"--ipcq-stats")==0)
-		{
-			ipcq_stats = true;
-			break;
-		}
-		else if(strcmp(argv[i],"--ipc-terminate-tid")==0 && i+1<argc)
-		{
-			ipc_terminate_tid = atoi(argv[i+1]);
-			break;
-		}
-		else if(strcmp(argv[i],"--version")==0)
-		{
-			printf("evQueue version " EVQUEUE_VERSION " (built " __DATE__ ")\n");
-			return 0;
-		}
-		else
-		{
-			fprintf(stderr,"Unknown option : %s\n",argv[i]);
-			tools_print_usage();
-			return -1;
-		}
+		args = Args(args_config, argc, argv);
+	}
+	catch(Exception &e)
+	{
+		printf("%s\n", e.error.c_str());
+		tools_print_usage();
+		return 0;
 	}
 	
-	if(config_filename==0)
+	// Check parameters
+	bool daemonized = false;
+	
+	if(args["--version"])
+	{
+		printf("evQueue version " EVQUEUE_VERSION " (built " __DATE__ ")\n");
+		return 0;
+	}
+	
+	string config_filename = args["--config"];
+	if(config_filename=="")
 	{
 		tools_print_usage();
 		return -1;
@@ -211,50 +188,16 @@ int main(int argc,char **argv)
 		config.Substitute();
 		
 		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
-		if(ipcq_remove)
+		if(args["--ipcq-remove"])
 			return ipc_queue_destroy(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
-		else if(ipcq_stats)
+		else if(args["--ipcq-stats"])
 			return ipc_queue_stats(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
-		else if(ipc_terminate_tid!=-1)
-			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,ipc_terminate_tid,-1);
+		else if((int)args["--ipc-terminate-tid"]!=-1)
+			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,args["--ipc-terminate-tid"],-1);
 		
-		// Get/Compute GID
-		int gid;
-		try
-		{
-			gid = std::stoi(config.Get("core.gid"));
-		}
-		catch(const std::invalid_argument& excpt)
-		{
-			struct group *group_entry = getgrnam(config.Get("core.gid").c_str());
-			if(!group_entry)
-				throw Exception("core","Unable to find group");
-			
-			gid = group_entry->gr_gid;
-		}
-		catch(const std::out_of_range & excpt)
-		{
-			throw Exception("core","Invalid GID");
-		}
-		
-		// Get/Compute UID
-		int uid;
-		try
-		{
-			uid = std::stoi(config.Get("core.uid"));
-		}
-		catch(const std::invalid_argument& excpt)
-		{
-			struct passwd *user_entry = getpwnam(config.Get("core.uid").c_str());
-			if(!user_entry)
-				throw Exception("core","Unable to find user");
-			
-			uid = user_entry->pw_uid;
-		}
-		catch(const std::out_of_range & excpt)
-		{
-			throw Exception("core","Invalid UID");
-		}
+		// Get/Compute GID / UID
+		int gid = config.GetGID("core.gid");
+		int uid = config.GetUID("core.uid");
 		
 		// Change working directory
 		if(config.Get("core.wd").length()>0)
@@ -272,23 +215,7 @@ int main(int argc,char **argv)
 		
 		// Start forker very early to get cleanest ENV as possible (we still need configuration so)
 		Forker forker;
-		pid_t forker_pid = forker.Start();
-		if(forker_pid==0)
-		{
-			unlink(config.Get("forker.pidfile").c_str());
-			return 0; // Forker clean exit
-		}
-		
-		if(forker_pid<0)
-			throw Exception("core", "Could not start forker, fork() returned error");
-		
-		// Open pid file before fork to eventually print errors
-		FILE *forker_pidfile = fopen(config.Get("forker.pidfile").c_str(),"w");
-		if(forker_pidfile==0)
-			throw Exception("core","Unable to open forker pid file");
-		
-		fprintf(forker_pidfile,"%d\n",forker_pid);
-		fclose(forker_pidfile);
+		forker.Start();
 		
 		// Position signal handlers
 		struct sigaction sa;
@@ -314,14 +241,8 @@ int main(int argc,char **argv)
 		DB::StartThread();
 		
 		// Create logger and events as soon as possible
-		Logger *logger = new Logger();
-		Events *events = new Events();
-		
-		// Create API logger
-		LoggerAPI *logger_api = new LoggerAPI();
-		
-		// Create notifications logger
-		LoggerNotifications *logger_notifications = new LoggerNotifications();
+		Logger logger;
+		Events events;
 		
 		// Set locale
 		if(!setlocale(LC_ALL,config.Get("core.locale").c_str()))
@@ -335,7 +256,7 @@ int main(int argc,char **argv)
 		
 		// Check database connection
 		DB db;
-		if(wait_db)
+		if(args["--wait-db"])
 			db.Wait();
 		else
 			db.Ping();
@@ -344,11 +265,9 @@ int main(int argc,char **argv)
 		tools_init_db();
 		
 		// Open pid file before fork to eventually print errors
-		FILE *pidfile = fopen(config.Get("core.pidfile").c_str(),"w");
-		if(pidfile==0)
-			throw Exception("core","Unable to open pid file");
+		PIDFile pidf("core", config.Get("core.pidfile"));
 		
-		if(daemonize)
+		if(args["--daemon"])
 		{
 			if(daemon(1,0)!=0)
 				throw Exception("core","Error trying to daemonize process");
@@ -363,8 +282,7 @@ int main(int argc,char **argv)
 		xercesc::XMLPlatformUtils::Initialize();
 		
 		// Write pid after daemonization
-		fprintf(pidfile,"%d\n",getpid());
-		fclose(pidfile);
+		pidf.Write(getpid());
 		
 		// Instanciate sequence generator, used for savepoint level 0 or 1
 		SequenceGenerator seq;
@@ -377,7 +295,7 @@ int main(int argc,char **argv)
 #endif
 		
 		// Create statistics counter
-		Statistics *stats = new Statistics();
+		Statistics stats;
 		
 		// Start retrier
 		Retrier *retrier = new Retrier();
@@ -399,54 +317,14 @@ int main(int argc,char **argv)
 		RetrySchedules *retry_schedules = new RetrySchedules();
 		
 		// Check if workflows are to resume (we have to resume them before starting ProcessManager)
-		db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",&config.Get("cluster.node.name"));
-		while(db.FetchRow())
-		{
-			Logger::Log(LOG_NOTICE,"[WID %d] Resuming",db.GetFieldInt(0));
-			
-			WorkflowInstance *workflow_instance = 0;
-			bool workflow_terminated;
-			try
-			{
-				workflow_instance = new WorkflowInstance(db.GetFieldInt(0));
-				workflow_instance->Resume(&workflow_terminated);
-				if(workflow_terminated)
-					delete workflow_instance;
-			}
-			catch(Exception &e)
-			{
-				Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to resume : [ %s ] %s\n",db.GetFieldInt(0),e.context.c_str(),e.error.c_str());
-				
-				if(workflow_instance)
-					delete workflow_instance;
-			}
-		}
+		workflow_instances->Resume();
 		
 		// On level 0 or 1, executing workflows are only stored during engine restart. Purge them since they are resumed
 		if(ConfigurationEvQueue::GetInstance()->GetInt("workflowinstance.savepoint.level")<=1)
 			db.Query("DELETE FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
 		
 		// Load workflow schedules
-		db.QueryPrintf("SELECT ws.workflow_schedule_id, w.workflow_name, wi.workflow_instance_id FROM t_workflow_schedule ws LEFT JOIN t_workflow_instance wi ON(wi.workflow_schedule_id=ws.workflow_schedule_id AND wi.workflow_instance_status='EXECUTING' AND wi.node_name=%s) INNER JOIN t_workflow w ON(ws.workflow_id=w.workflow_id) WHERE ws.node_name IN(%s,'all','any') AND ws.workflow_schedule_active=1",
-				&config.Get("cluster.node.name"),
-				&config.Get("cluster.node.name")
-			);
-		while(db.FetchRow())
-		{
-			WorkflowSchedule *workflow_schedule = 0;
-			try
-			{
-				workflow_schedule = new WorkflowSchedule(db.GetFieldInt(0));
-				scheduler->ScheduleWorkflow(workflow_schedule, db.GetFieldInt(2));
-			}
-			catch(Exception &e)
-			{
-				Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",db.GetFieldInt(0),e.context.c_str(),e.error.c_str());
-				
-				if(workflow_schedule)
-					delete workflow_schedule;
-			}
-		}
+		scheduler->LoadDBState();
 		
 		// Release database connection
 		db.Disconnect();
@@ -479,38 +357,11 @@ int main(int argc,char **argv)
 		ActiveConnections *active_connections = new ActiveConnections();
 		
 		// Initialize cluster
-		Cluster *cluster = new Cluster();
-		cluster->ParseConfiguration(config.Get("cluster.nodes"));
+		Cluster cluster(config.Get("cluster.nodes"));
 		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
-		// Create TCP and UNIX sockets
-		NetworkConnections::t_stream_handler api_handler = [](int s) {
-			if(ActiveConnections::GetInstance()->GetAPINumber()>=ConfigurationEvQueue::GetInstance()->GetInt("network.connections.max"))
-			{
-				close(s);
-				
-				Logger::Log(LOG_WARNING,"Max API connections reached, dropping connection");
-			}
-			
-			ActiveConnections::GetInstance()->StartAPIConnection(s);
-		};
-		
-		nc.RegisterTCP("API (tcp)", config.Get("network.bind.ip"), config.GetInt("network.bind.port"), config.GetInt("network.listen.backlog"), api_handler);
-		nc.RegisterUNIX("API (unix)", config.Get("network.bind.path"), config.GetInt("network.listen.backlog"), api_handler);
-		
-		// Create Websocket TCP socket
-		nc.RegisterTCP("WebSocket (tcp)", config.Get("ws.bind.ip"), config.GetInt("ws.bind.port"), config.GetInt("ws.listen.backlog"), [](int s) {
-			if(ActiveConnections::GetInstance()->GetWSNumber()>=ConfigurationEvQueue::GetInstance()->GetInt("ws.connections.max"))
-			{
-				close(s);
-				
-				Logger::Log(LOG_WARNING,"Max WebSocket connections reached, dropping connection");
-			}
-			
-			ActiveConnections::GetInstance()->StartWSConnection(s);
-		});
-		
+		// Start Websocket server
 		WSServer *ws = new WSServer();
 		
 		// Loop for incoming connections
@@ -518,61 +369,42 @@ int main(int argc,char **argv)
 		{
 			if(!nc.select())
 			{
-				// Request shutdown on ProcessManager and wait
-				pm->Shutdown();
-				pm->WaitForShutdown();
+				// End processmanager (blocking until thread ends)
+				delete pm;
 				
-				// Request shutdown on data piper and wait
-				dp->Shutdown();
-				dp->WaitForShutdown();
+				// End data piper (blocking until thread ends)
+				delete dp;
 				
-				// Request shutdown on scheduler and wait
-				scheduler->Shutdown();
-				scheduler->WaitForShutdown();
+				// End scheduler (blocking until thread ends)
+				delete scheduler;
 				
-				// Request shutdown on Retrier and wait
-				retrier->Shutdown();
-				retrier->WaitForShutdown();
+				// End retrier (blocking until thread ends)
+				delete retrier;
 				
-				// Request shutdown on websockets server and wait
-				ws->Shutdown();
-				ws->WaitForShutdown();
+				// End websockets server (blocking until thread ends)
+				delete ws;
 				
 				// Wait for active connections to end
-				Logger::Log(LOG_NOTICE,"Waiting for active connections to end...");
-				active_connections->Shutdown();
-				active_connections->WaitForShutdown();
+				delete active_connections;
 				
 				// Save current state in database
 				workflow_instances->RecordSavepoint();
 				
 				// All threads have exited, we can cleanly exit
-				delete stats;
-				delete retrier;
-				delete scheduler;
 				delete workflow_schedules;
 				delete pool;
 				delete workflow_instances;
 				delete workflows;
 				delete retry_schedules;
-				delete pm;
-				delete dp;
 				delete gc;
 				delete qh;
-				delete cluster;
-				delete active_connections;
-				delete logger_api;
-				delete logger_notifications;
-				delete events;
-				delete ws;
 				
 				xercesc::XMLPlatformUtils::Terminate();
 				
-				unlink(config.Get("core.pidfile").c_str());
 				if(config.Get("network.bind.path").length()>0)
 					unlink(config.Get("network.bind.path").c_str());
+				
 				Logger::Log(LOG_NOTICE,"Clean exit");
-				delete logger;
 				
 				DB::StopThread();
 				DB::FreeLibrary();
@@ -592,9 +424,6 @@ int main(int argc,char **argv)
 		
 		if(!daemonized)
 			fprintf(stderr,"Unexpected exception in %s : %s\n",e.context.c_str(),e.error.c_str());
-		
-		if(ConfigurationEvQueue::GetInstance())
-			unlink(ConfigurationEvQueue::GetInstance()->Get("core.pidfile").c_str());
 		
 		return -1;
 	}

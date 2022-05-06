@@ -43,6 +43,9 @@ Scheduler::Scheduler()
 
 Scheduler::~Scheduler()
 {
+	Shutdown();
+	WaitForShutdown();
+	
 	// Delete all events
 	Event *tmp;
 	Event **event = &first_event;

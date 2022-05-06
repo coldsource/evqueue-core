@@ -12,6 +12,26 @@
 #include <API/ActiveConnections.h>
 #include <Logger/Logger.h>
 #include <API/Statistics.h>
+#include <API/QueryHandlers.h>
+#include <IO/NetworkConnections.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	
+	// Create Websocket TCP socket
+	NetworkConnections::GetInstance()->RegisterTCP("WebSocket (tcp)", config->Get("ws.bind.ip"), config->GetInt("ws.bind.port"), config->GetInt("ws.listen.backlog"), [](int s) {
+		if(ActiveConnections::GetInstance()->GetWSNumber()>=ConfigurationEvQueue::GetInstance()->GetInt("ws.connections.max"))
+		{
+			close(s);
+			
+			Logger::Log(LOG_WARNING,"Max WebSocket connections reached, dropping connection");
+		}
+		
+		ActiveConnections::GetInstance()->StartWSConnection(s);
+	});
+	
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -75,7 +95,8 @@ WSServer::WSServer()
 
 WSServer::~WSServer()
 {
-	
+	Shutdown();
+	WaitForShutdown();
 }
  
 int WSServer::callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )

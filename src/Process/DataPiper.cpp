@@ -40,6 +40,12 @@ DataPiper::DataPiper()
 	dp_thread_handle = thread(DataPiper::dp_thread,this);
 }
 
+DataPiper::~DataPiper()
+{
+	Shutdown();
+	WaitForShutdown();
+}
+
 void DataPiper::PipeData(int fd, const string &data)
 {
 	unique_lock<mutex> llock(lock);

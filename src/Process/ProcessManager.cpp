@@ -66,7 +66,6 @@ int ProcessManager::log_maxsize;
 ProcessManager::ProcessManager()
 {
 	Configuration *config = ConfigurationEvQueue::GetInstance();
-	const char *logs_delete_str;
 	logs_directory = config->Get("processmanager.logs.directory");
 	
 	logs_delete = config->GetBool("processmanager.logs.delete");
@@ -87,6 +86,8 @@ ProcessManager::ProcessManager()
 
 ProcessManager::~ProcessManager()
 {
+	Shutdown();
+	WaitForShutdown();
 }
 
 void *ProcessManager::Fork(ProcessManager *pm)

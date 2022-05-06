@@ -53,6 +53,9 @@ void Logger::Log(int level,const char *msg,...)
 	va_list ap;
 	int n;
 	
+	if(!instance)
+		return;
+	
 	if((!instance->log_syslog || level>instance->syslog_filter) && (!instance->log_db || level>instance->db_filter))
 		return;
 	
@@ -68,6 +71,9 @@ void Logger::Log(int level,const char *msg,...)
 
 void Logger::Log(int level,const string &msg)
 {
+	if(!instance)
+		return;
+	
 	if(instance->log_syslog && level<=instance->syslog_filter)
 		syslog(LOG_NOTICE,"%s",msg.c_str());
 	

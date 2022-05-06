@@ -73,6 +73,41 @@ WorkflowScheduler::~WorkflowScheduler()
 		delete[] wfs_executing_instances;
 }
 
+void WorkflowScheduler::LoadDBState()
+{
+	DB db;
+	
+	string node_name = ConfigurationEvQueue::GetInstance()->Get("cluster.node.name");
+	
+	db.QueryPrintf(" \
+		SELECT ws.workflow_schedule_id, w.workflow_name, wi.workflow_instance_id \
+		FROM t_workflow_schedule ws \
+		LEFT JOIN t_workflow_instance wi ON(wi.workflow_schedule_id=ws.workflow_schedule_id AND wi.workflow_instance_status='EXECUTING' AND wi.node_name=%s) \
+		INNER JOIN t_workflow w ON(ws.workflow_id=w.workflow_id) \
+		WHERE ws.node_name IN(%s,'all','any') \
+		AND ws.workflow_schedule_active=1",
+		&node_name,
+		&node_name
+	);
+
+	while(db.FetchRow())
+	{
+		WorkflowSchedule *workflow_schedule = 0;
+		try
+		{
+			workflow_schedule = new WorkflowSchedule(db.GetFieldInt(0));
+			ScheduleWorkflow(workflow_schedule, db.GetFieldInt(2));
+		}
+		catch(Exception &e)
+		{
+			Logger::Log(LOG_NOTICE,"[WSID %d] Unexpected exception trying initialize workflow schedule : [ %s ] %s\n",db.GetFieldInt(0),e.context.c_str(),e.error.c_str());
+			
+			if(workflow_schedule)
+				delete workflow_schedule;
+		}
+	}
+}
+
 void WorkflowScheduler::ScheduleWorkflow(WorkflowSchedule *workflow_schedule, unsigned int workflow_instance_id)
 {
 	unique_lock<recursive_mutex> llock(wfs_mutex);

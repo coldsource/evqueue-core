@@ -32,6 +32,8 @@
 #include <API/ActiveConnections.h>
 #include <API/tools.h>
 #include <API/APISession.h>
+#include <API/QueryHandlers.h>
+#include <IO/NetworkConnections.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -42,6 +44,29 @@
 #include <string>
 
 #include <XML/XMLString.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	
+	// Create TCP and UNIX sockets
+	NetworkConnections::t_stream_handler api_handler = [](int s) {
+		if(ActiveConnections::GetInstance()->GetAPINumber()>=ConfigurationEvQueue::GetInstance()->GetInt("network.connections.max"))
+		{
+			close(s);
+			
+			Logger::Log(LOG_WARNING,"Max API connections reached, dropping connection");
+		}
+		
+		ActiveConnections::GetInstance()->StartAPIConnection(s);
+	};
+	
+	NetworkConnections *nc = NetworkConnections::GetInstance();
+	nc->RegisterTCP("API (tcp)", config->Get("network.bind.ip"), config->GetInt("network.bind.port"), config->GetInt("network.listen.backlog"), api_handler);
+	nc->RegisterUNIX("API (unix)", config->Get("network.bind.path"), config->GetInt("network.listen.backlog"), api_handler);
+	
+	return (APIAutoInit *)0;
+});
+
 using namespace std;
 
 void handle_connection(int s)

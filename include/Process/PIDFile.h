@@ -17,43 +17,22 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _ACTIVECONNECTIONS_H_
-#define _ACTIVECONNECTIONS_H_
+#ifndef _PIDFILE_H_
+#define _PIDFILE_H_
 
-#include <thread>
-#include <mutex>
-#include <set>
-#include <map>
+#include <sys/types.h>
 
-class ActiveConnections
+#include <string>
+
+class PIDFile
 {
-	static ActiveConnections *instance;
-	
-	bool is_shutting_down;
-	
-	std::map<std::thread::id,std::thread> active_api_threads;
-	std::set<int> active_api_sockets;
-	std::set<int> active_ws_sockets;
-	
-	std::mutex lock;
+	std::string filename;
+	FILE *pidfile;
 	
 	public:
-		ActiveConnections();
-		~ActiveConnections();
-		
-		static ActiveConnections *GetInstance() { return  instance; }
-		
-		void StartAPIConnection(int s);
-		void EndAPIConnection(std::thread::id thread_id);
-		
-		void StartWSConnection(int s);
-		void EndWSConnection(int s);
-		
-		unsigned int GetAPINumber();
-		unsigned int GetWSNumber();
-		
-		void Shutdown(void);
-		void WaitForShutdown();
+		PIDFile(const std::string &name, const std::string &filename, pid_t pid = 0);
+		void Write(pid_t pid);
+		~PIDFile();
 };
 
 #endif

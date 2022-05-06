@@ -52,6 +52,36 @@ WorkflowInstances::WorkflowInstances()
 	is_shutting_down = false;
 }
 
+void WorkflowInstances::Resume()
+{
+	DB db;
+	
+	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	
+	db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",&(config->Get("cluster.node.name")));
+	while(db.FetchRow())
+	{
+		Logger::Log(LOG_NOTICE,"[WID %d] Resuming",db.GetFieldInt(0));
+		
+		WorkflowInstance *workflow_instance = 0;
+		bool workflow_terminated;
+		try
+		{
+			workflow_instance = new WorkflowInstance(db.GetFieldInt(0));
+			workflow_instance->Resume(&workflow_terminated);
+			if(workflow_terminated)
+				delete workflow_instance;
+		}
+		catch(Exception &e)
+		{
+			Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to resume : [ %s ] %s\n",db.GetFieldInt(0),e.context.c_str(),e.error.c_str());
+			
+			if(workflow_instance)
+				delete workflow_instance;
+		}
+	}
+}
+
 void WorkflowInstances::Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance)
 {
 	unique_lock<mutex> llock(lock);

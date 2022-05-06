@@ -47,6 +47,8 @@ class WorkflowInstances
 		
 		static WorkflowInstances *GetInstance() { return instance; }
 		
+		void Resume();
+		
 		void Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance);
 		void Remove(unsigned int workflow_instance_id);
 		bool Cancel(const User &user, unsigned int workflow_instance_id);

@@ -38,7 +38,7 @@ using namespace std;
 
 Cluster *Cluster::instance = 0;
 
-void Cluster::ParseConfiguration(const string &conf)
+Cluster::Cluster(const string &conf)
 {
 	instance = this;
 	

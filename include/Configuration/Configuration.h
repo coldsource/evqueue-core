@@ -38,6 +38,8 @@ class Configuration
 		int GetInt(const std::string &entry) const;
 		int GetSize(const std::string &entry) const;
 		bool GetBool(const std::string &entry) const;
+		int GetUID(const std::string &entry) const;
+		int GetGID(const std::string &entry) const;
 
 	protected:
 		void check_f_is_exec(const std::string &filename);

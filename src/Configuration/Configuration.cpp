@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 
 using namespace std;
 
@@ -85,6 +88,46 @@ bool Configuration::GetBool(const string &entry) const
 	if(value=="yes" || value=="true" || value=="1")
 		return true;
 	return false;
+}
+
+int Configuration::GetUID(const string &entry) const
+{
+	try
+	{
+		return std::stoi(Get("core.uid"));
+	}
+	catch(const std::invalid_argument& excpt)
+	{
+		struct passwd *user_entry = getpwnam(Get("core.uid").c_str());
+		if(!user_entry)
+			throw Exception("core","Unable to find user");
+		
+		return user_entry->pw_uid;
+	}
+	catch(const std::out_of_range & excpt)
+	{
+		throw Exception("core","Invalid UID");
+	}
+}
+
+int Configuration::GetGID(const string &entry) const
+{
+	try
+	{
+		return std::stoi(Get("core.gid"));
+	}
+	catch(const std::invalid_argument& excpt)
+	{
+		struct group *group_entry = getgrnam(Get("core.gid").c_str());
+		if(!group_entry)
+			throw Exception("core","Unable to find group");
+		
+		return group_entry->gr_gid;
+	}
+	catch(const std::out_of_range & excpt)
+	{
+		throw Exception("core","Invalid GID");
+	}
 }
 
 void Configuration::check_f_is_exec(const string &filename)

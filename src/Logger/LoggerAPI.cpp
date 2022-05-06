@@ -22,6 +22,11 @@
 #include <User/User.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	return (APIAutoInit *)new LoggerAPI();
+});
 
 using namespace std;
 
@@ -37,7 +42,7 @@ LoggerAPI::LoggerAPI():
 
 void LoggerAPI::LogAction(const User &user, unsigned int object_id, const string &object_type, const string &group, const string &action)
 {
-	if(!instance->enabled)
+	if(!instance || !instance->enabled)
 		return;
 	
 	DB db;
