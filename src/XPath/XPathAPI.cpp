@@ -33,8 +33,6 @@
 
 #ifdef BUILD_MODULE_EVQUEUE_CORE
 
-#pragma message("Enabling API module as compiled in evQueue core")
-
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("xpath",XPathAPI::HandleQuery);
 	return (APIAutoInit *)0;
