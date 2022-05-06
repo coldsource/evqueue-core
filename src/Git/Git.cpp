@@ -34,6 +34,7 @@
 #include <XML/XMLFormatter.h>
 #include <Crypto/base64.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -43,6 +44,13 @@
 
 #include <string>
 #include <memory>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("git",Git::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"GIT_PULLED","GIT_SAVED","GIT_LOADED","GIT_REMOVED"});
+	return (APIAutoInit *)new Git();
+});
+
 
 using namespace std;
 

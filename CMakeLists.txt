@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(EVQUEUE_VERSION "3.2")
+set(EVQUEUE_VERSION "3.3")
 
 set(CMAKE_BUILD_TYPE Release)
 
@@ -83,6 +83,7 @@ add_executable(evqueue
 	)
 
 target_compile_definitions(evqueue PRIVATE USE_DATA_PIPER)
+target_compile_definitions(evqueue PRIVATE BUILD_MODULE_EVQUEUE_CORE)
 
 if(USELIBGIT2)
 	add_definitions(-DUSELIBGIT2)

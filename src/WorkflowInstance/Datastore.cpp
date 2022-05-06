@@ -24,8 +24,14 @@
 #include <API/XMLQuery.h>
 #include <Crypto/base64.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <API/QueryHandlers.h>
 
 #include <zlib.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("datastore", Datastore::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

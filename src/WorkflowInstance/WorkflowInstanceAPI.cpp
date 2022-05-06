@@ -35,9 +35,16 @@
 #include <User/User.h>
 #include <Tag/Tag.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string>
 #include <map>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("instance",WorkflowInstanceAPI::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"INSTANCE_TAGGED","INSTANCE_UNTAGGED","INSTANCE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

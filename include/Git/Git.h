@@ -26,10 +26,12 @@ class LibGit2;
 class User;
 class DOMDocument;
 
+#include <API/APIAutoInit.h>
+
 #include <mutex>
 #include <string>
 
-class Git
+class Git: public APIAutoInit
 {
 	static Git *instance;
 	

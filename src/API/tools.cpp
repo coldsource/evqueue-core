@@ -39,6 +39,7 @@
 #include <ELogs/Channels.h>
 #include <ELogs/ChannelGroups.h>
 #include <Exception/Exception.h>
+#include <API/QueryHandlers.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -49,6 +50,12 @@
 #include <signal.h>
 
 using namespace std;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("control",tools_handle_query);
+	qh->RegisterHandler("status",tools_handle_query);
+	return (APIAutoInit *)0;
+});
 
 void tools_config_reload(const std::string &module,bool notify)
 {

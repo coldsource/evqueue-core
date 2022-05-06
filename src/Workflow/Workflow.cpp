@@ -38,10 +38,17 @@
 #include <Crypto/base64.h>
 #include <DOM/DOMDocument.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 
 #include <memory>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("workflow",Workflow::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"WORKFLOW_CREATED","WORKFLOW_MODIFIED","WORKFLOW_REMOVED","WORKFLOW_SUBSCRIBED","WORKFLOW_UNSUBSCRIBED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

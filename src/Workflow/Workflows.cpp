@@ -27,10 +27,16 @@
 #include <Cluster/Cluster.h>
 #include <Crypto/Sha1String.h>
 #include <User/User.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 
 Workflows *Workflows::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("workflows",Workflows::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

@@ -55,7 +55,6 @@
 #include <Workflow/Workflows.h>
 #include <WorkflowInstance/WorkflowInstance.h>
 #include <WorkflowInstance/WorkflowInstances.h>
-#include <WorkflowInstance/WorkflowInstanceAPI.h>
 #include <Configuration/ConfigurationReader.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
@@ -73,18 +72,13 @@
 #include <DB/SequenceGenerator.h>
 #include <Crypto/Random.h>
 #include <Process/DataPiper.h>
-#include <WorkflowInstance/Datastore.h>
 #include <API/QueryHandlers.h>
 #include <Cluster/Cluster.h>
 #include <API/ActiveConnections.h>
-#include <Git/Git.h>
-#include <IO/Filesystem.h>
 #include <API/handle_connection.h>
 #include <API/tools.h>
 #include <Process/tools_ipc.h>
 #include <DB/tools_db.h>
-#include <API/ping.h>
-#include <XPath/XPathAPI.h>
 #include <WS/Events.h>
 #include <WS/WSServer.h>
 #include <Process/tools_proc.h>
@@ -389,7 +383,7 @@ int main(int argc,char **argv)
 		fclose(pidfile);
 		
 		// Instanciate sequence generator, used for savepoint level 0 or 1
-		SequenceGenerator *seq = new SequenceGenerator();
+		SequenceGenerator seq;
 		
 		// Instanciate random numbers generator
 		Random random;
@@ -397,9 +391,6 @@ int main(int argc,char **argv)
 #ifdef USELIBGIT2
 		git_libgit2_init();
 #endif
-		
-		// Git repository
-		Git *git = new Git();
 		
 		// Create statistics counter
 		Statistics *stats = new Statistics();
@@ -490,25 +481,14 @@ int main(int argc,char **argv)
 		NetworkConnections nc;
 		
 		// Initialize query handlers
-		qh->RegisterHandler("workflow",Workflow::HandleQuery);
-		qh->RegisterHandler("workflows",Workflows::HandleQuery);
-		qh->RegisterHandler("instance",WorkflowInstanceAPI::HandleQuery);
 		qh->RegisterHandler("instances",WorkflowInstances::HandleQuery);
-		qh->RegisterHandler("queue",Queue::HandleQuery);
 		qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
 		qh->RegisterHandler("retry_schedule",RetrySchedule::HandleQuery);
 		qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
 		qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
 		qh->RegisterHandler("workflow_schedules",WorkflowSchedules::HandleQuery);
-		qh->RegisterHandler("control",tools_handle_query);
-		qh->RegisterHandler("status",tools_handle_query);
 		qh->RegisterHandler("statistics",Statistics::HandleQuery);
-		qh->RegisterHandler("ping",ping_handle_query);
-		qh->RegisterHandler("git",Git::HandleQuery);
-		qh->RegisterHandler("filesystem",Filesystem::HandleQuery);
-		qh->RegisterHandler("datastore",Datastore::HandleQuery);
 		qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
-		qh->RegisterHandler("xpath",XPathAPI::HandleQuery);
 		qh->AutoInit();
 		
 		// Create active connections set
@@ -591,7 +571,6 @@ int main(int argc,char **argv)
 				
 				// All threads have exited, we can cleanly exit
 				delete stats;
-				delete git;
 				delete retrier;
 				delete scheduler;
 				delete workflow_schedules;
@@ -602,7 +581,6 @@ int main(int argc,char **argv)
 				delete pm;
 				delete dp;
 				delete gc;
-				delete seq;
 				delete qh;
 				delete cluster;
 				delete active_connections;
