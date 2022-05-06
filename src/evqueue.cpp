@@ -484,13 +484,6 @@ int main(int argc,char **argv)
 		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
-		int re,s;
-		struct sockaddr_un local_addr_unix,remote_addr_unix;
-		socklen_t remote_addr_len_unix;
-		
-		struct sockaddr_in local_addr,remote_addr;
-		socklen_t remote_addr_len;
-		
 		// Create TCP and UNIX sockets
 		NetworkConnections::t_stream_handler api_handler = [](int s) {
 			if(ActiveConnections::GetInstance()->GetAPINumber()>=ConfigurationEvQueue::GetInstance()->GetInt("network.connections.max"))
