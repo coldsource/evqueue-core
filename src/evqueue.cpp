@@ -335,26 +335,10 @@ int main(int argc,char **argv)
 		
 		// Check database connection
 		DB db;
-		while(true)
-		{
-			try
-			{
-				db.Ping();
-			}
-			catch(Exception &e)
-			{
-				if(wait_db && (e.codeno==2002 || e.codeno==2013))
-				{
-					Logger::Log(LOG_WARNING, "Database not yet ready, retrying...");
-					sleep(1);
-					continue;
-				}
-				
-				throw e;
-			}
-			
-			break;
-		}
+		if(wait_db)
+			db.Wait();
+		else
+			db.Ping();
 		
 		// Initialize DB
 		tools_init_db();

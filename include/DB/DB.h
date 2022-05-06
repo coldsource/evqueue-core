@@ -96,6 +96,8 @@ public:
 	static void StopThread(void);
 	
 	void Ping(void);
+	void Wait(void);
+	
 	void Query(const char *query);
 	void QueryPrintfC(const char *query,...);
 	void QueryPrintf(const std::string &query,...);

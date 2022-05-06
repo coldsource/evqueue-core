@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <vector>
 #include <string>
@@ -121,6 +122,30 @@ void DB::Ping(void)
 	
 	if(mysql_ping(mysql)!=0)
 		throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
+}
+
+void DB::Wait(void)
+{
+	while(true)
+	{
+		try
+		{
+			Ping();
+		}
+		catch(Exception &e)
+		{
+			if(e.codeno==2002 || e.codeno==2013)
+			{
+				Logger::Log(LOG_WARNING, "Database not yet ready, retrying...");
+				sleep(1);
+				continue;
+			}
+			
+			throw e;
+		}
+		
+		break;
+	}
 }
 
 void DB::Query(const char *query)
