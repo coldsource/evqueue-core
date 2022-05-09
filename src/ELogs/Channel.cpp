@@ -144,6 +144,7 @@ void Channel::ParseLog(const string &log_str, map<string, string> &group_fields,
 	{
 		// Parse date, based on specified format
 		struct tm date_t;
+		memset(&date_t, 0, sizeof(struct tm));
 		
 		// Get raw date and parse it
 		get_log_part(matches, "date", date_idx, group_fields);
