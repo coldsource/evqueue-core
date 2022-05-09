@@ -64,7 +64,6 @@
 #include <API/Statistics.h>
 #include <Schedule/RetrySchedule.h>
 #include <Schedule/RetrySchedules.h>
-#include <DB/GarbageCollector.h>
 #include <DB/SequenceGenerator.h>
 #include <Crypto/Random.h>
 #include <Process/DataPiper.h>
@@ -335,9 +334,6 @@ int main(int argc,char **argv)
 		// Start Process Manager (Forker & Gatherer)
 		ProcessManager *pm = new ProcessManager();
 		
-		// Start garbage GarbageCollector
-		GarbageCollector *gc = new GarbageCollector();
-		
 		// Initialize general module structures
 		QueryHandlers *qh = QueryHandlers::GetInstance();
 		NetworkConnections nc;
@@ -388,7 +384,6 @@ int main(int argc,char **argv)
 				delete workflow_instances;
 				delete workflows;
 				delete retry_schedules;
-				delete gc;
 				delete qh;
 				
 				xercesc::XMLPlatformUtils::Terminate();

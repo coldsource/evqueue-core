@@ -21,12 +21,13 @@
 #define _GARBAGECOLLECTOR_H_
 
 #include <Thread/WaiterThread.h>
+#include <API/APIAutoInit.h>
 
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
-class GarbageCollector: public WaiterThread
+class GarbageCollector: public WaiterThread, public APIAutoInit
 {
 	private:
 		bool enable;
@@ -46,6 +47,8 @@ class GarbageCollector: public WaiterThread
 	public:
 		GarbageCollector();
 		~GarbageCollector();
+		
+		void APIReady();
 		
 		void WaitForShutdown(void);
 	

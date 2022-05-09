@@ -23,10 +23,15 @@
 #include <Logger/Logger.h>
 #include <Exception/Exception.h>
 #include <Cluster/UniqueAction.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	return (APIAutoInit *)new GarbageCollector();
+});
 
 using namespace std;
 
@@ -46,12 +51,6 @@ GarbageCollector::GarbageCollector()
 	uniqueaction_retention = config->GetInt("gc.uniqueaction.retention");
 	elogs_retention = config->GetInt("gc.elogs.retention");
 	dbname = config->Get("mysql.database");
-	
-	if(enable)
-	{
-		// Create our thread
-		gc_thread_handle = thread(GarbageCollector::gc_thread,this);
-	}
 }
 
 GarbageCollector::~GarbageCollector()
@@ -60,9 +59,18 @@ GarbageCollector::~GarbageCollector()
 	WaitForShutdown();
 }
 
+void GarbageCollector::APIReady()
+{
+	if(enable)
+	{
+		// Create our thread
+		gc_thread_handle = thread(GarbageCollector::gc_thread,this);
+	}
+}
+
 void GarbageCollector::WaitForShutdown(void)
 {
-	if(!enable)
+	if(!enable || gc_thread_handle.get_id()==thread::id())
 		return; // gc_thread not launched, nothing to wait on
 	
 	gc_thread_handle.join();
