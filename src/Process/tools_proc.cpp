@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <signal.h>
 
 // Clean all unneeded open file descriptors
 void sanitize_fds(int start)
@@ -78,4 +79,23 @@ void setproctitle(const char *title)
 	char *end = g_argv[g_argc-1]+strlen(g_argv[g_argc-1]);
 	memset(start,0,end-start);
 	memcpy(start,title,MIN(strlen(title), end-start-1));
+}
+
+void set_sighandler(void (*sigh) (int), const std::vector<int> &sigs)
+{
+	struct sigaction sa;
+	sigset_t block_mask;
+	
+	sigemptyset(&block_mask);
+	
+	for(int i=0;i<sigs.size();i++)
+		sigaddset(&block_mask, sigs[i]);
+	
+	sa.sa_handler = sigh;
+	sa.sa_mask = block_mask;
+	sa.sa_flags = 0;
+	
+	for(int i=0;i<sigs.size();i++)
+		sigaction(sigs[i],&sa,0);
+	
 }

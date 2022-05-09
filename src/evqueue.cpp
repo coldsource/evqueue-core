@@ -21,24 +21,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include <fcntl.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/wait.h>
-#include <sys/un.h>
-#include <sys/stat.h>
-#include <arpa/inet.h>
 #include <syslog.h>
 #include <errno.h>
 #include <stdio.h>
-#include <libgen.h>
 #include <time.h>
 
 #include <string>
-#include <stdexcept>
-
 
 #ifdef USELIBGIT2
 #include <git2.h>
@@ -70,7 +59,6 @@
 #include <API/QueryHandlers.h>
 #include <Cluster/Cluster.h>
 #include <API/ActiveConnections.h>
-#include <API/handle_connection.h>
 #include <API/tools.h>
 #include <Process/tools_ipc.h>
 #include <DB/tools_db.h>
@@ -217,23 +205,7 @@ int main(int argc,char **argv)
 		forker.Start();
 		
 		// Position signal handlers
-		struct sigaction sa;
-		sigset_t block_mask;
-		
-		sigemptyset(&block_mask);
-		sigaddset(&block_mask, SIGINT);
-		sigaddset(&block_mask, SIGTERM);
-		sigaddset(&block_mask, SIGHUP);
-		sigaddset(&block_mask, SIGUSR1);
-		
-		sa.sa_handler = signal_callback_handler;
-		sa.sa_mask = block_mask;
-		sa.sa_flags = 0;
-		
-		sigaction(SIGHUP,&sa,0);
-		sigaction(SIGINT,&sa,0);
-		sigaction(SIGTERM,&sa,0);
-		sigaction(SIGUSR1,&sa,0);
+		set_sighandler(signal_callback_handler, {SIGINT, SIGTERM, SIGHUP, SIGUSR1});
 		
 		// Initialize external libraries
 		DB::InitLibrary();
@@ -254,11 +226,13 @@ int main(int argc,char **argv)
 		config.Check();
 		
 		// Check database connection
-		DB db;
-		if(args["--wait-db"])
-			db.Wait();
-		else
-			db.Ping();
+		{
+			DB db;
+			if(args["--wait-db"])
+				db.Wait();
+			else
+				db.Ping();
+		}
 		
 		// Initialize DB
 		tools_init_db();
@@ -320,9 +294,6 @@ int main(int argc,char **argv)
 		
 		// Load workflow schedules
 		scheduler->LoadDBState();
-		
-		// Release database connection
-		db.Disconnect();
 		
 		// Start data piper before process manager
 		DataPiper *dp = new DataPiper();
