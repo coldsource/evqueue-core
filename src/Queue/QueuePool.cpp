@@ -29,6 +29,7 @@
 #include <Cluster/Cluster.h>
 #include <User/User.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -40,6 +41,12 @@
 #include <sys/socket.h>
 
 QueuePool *QueuePool::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"QUEUE_ENQUEUE","QUEUE_DEQUEUE","QUEUE_EXECUTE","QUEUE_TERMINATE"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

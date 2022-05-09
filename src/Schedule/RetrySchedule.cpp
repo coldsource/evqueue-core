@@ -28,9 +28,16 @@
 #include <User/User.h>
 #include <Crypto/base64.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 #include <global.h>
 
 #include <string.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("retry_schedule",RetrySchedule::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"RETRYSCHEDULE_CREATED","RETRYSCHEDULE_MODIFIED","RETRYSCHEDULE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

@@ -26,10 +26,17 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <User/User.h>
+#include <API/QueryHandlers.h>
 
-using namespace std;
 
 WorkflowSchedules *WorkflowSchedules::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("workflow_schedules",WorkflowSchedules::HandleQuery);
+	return (APIAutoInit *)0;
+});
+
+using namespace std;
 
 WorkflowSchedules::WorkflowSchedules():APIObjectList()
 {

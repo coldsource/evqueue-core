@@ -32,12 +32,18 @@
 #include <Cluster/Cluster.h>
 #include <Cluster/UniqueAction.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 
 #include <vector>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	Events::GetInstance()->RegisterEvents({"WORKFLOWSCHEDULE_STARTED","WORKFLOWSCHEDULE_STOPPED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

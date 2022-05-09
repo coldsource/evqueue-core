@@ -34,6 +34,7 @@
 #include <Process/Forker.h>
 #include <Process/DataSerializer.h>
 #include <Process/tools_ipc.h>
+#include <API/QueryHandlers.h>
 #include <DB/DB.h>
 
 #include <stdio.h>
@@ -55,6 +56,12 @@
 #include <arpa/inet.h>
 
 #include <string>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
+	return (APIAutoInit *)0;
+});
+
 
 using namespace std;
 

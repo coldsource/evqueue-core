@@ -31,8 +31,15 @@
 #include <Logger/LoggerAPI.h>
 #include <User/User.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"WORKFLOWSCHEDULE_CREATED","WORKFLOWSCHEDULE_MODIFIED","WORKFLOWSCHEDULE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

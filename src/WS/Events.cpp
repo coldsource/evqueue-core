@@ -31,30 +31,6 @@ Events::Events()
 	throttling = ConfigurationEvQueue::GetInstance()->GetBool("ws.events.throttling");
 	this->ws_context = 0;
 	instance = this;
-	
-	RegisterEvents({
-		"INSTANCE_STARTED",
-		"INSTANCE_TERMINATED",
-		"TASK_ENQUEUE",
-		"TASK_EXECUTE",
-		"TASK_TERMINATE",
-		"TASK_PROGRESS",
-		"QUEUE_ENQUEUE",
-		"QUEUE_DEQUEUE",
-		"QUEUE_EXECUTE",
-		"QUEUE_TERMINATE",
-		"QUEUE_CREATED",
-		"QUEUE_MODIFIED",
-		"QUEUE_REMOVED",
-		"RETRYSCHEDULE_CREATED",
-		"RETRYSCHEDULE_MODIFIED",
-		"RETRYSCHEDULE_REMOVED",
-		"WORKFLOWSCHEDULE_CREATED",
-		"WORKFLOWSCHEDULE_MODIFIED",
-		"WORKFLOWSCHEDULE_REMOVED",
-		"WORKFLOWSCHEDULE_STARTED",
-		"WORKFLOWSCHEDULE_STOPPED"
-	});
 }
 
 Events::~Events()
@@ -168,6 +144,11 @@ void Events::Create(const string &type_str, unsigned int object_id)
 	unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);
+	if(type==0)
+	{
+		Logger::Log(LOG_ERR, "Unknown event : "+type_str);
+		return;
+	}
 	
 	// Find which client has subscribed to this event
 	auto it = subscriptions.find(type);

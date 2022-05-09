@@ -29,10 +29,17 @@
 #include <DB/DB.h>
 #include <DOM/DOMDocument.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("queue",Queue::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"QUEUE_CREATED","QUEUE_MODIFIED","QUEUE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

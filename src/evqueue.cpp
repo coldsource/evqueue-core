@@ -318,10 +318,6 @@ int main(int argc,char **argv)
 		// Check if workflows are to resume (we have to resume them before starting ProcessManager)
 		workflow_instances->Resume();
 		
-		// On level 0 or 1, executing workflows are only stored during engine restart. Purge them since they are resumed
-		if(ConfigurationEvQueue::GetInstance()->GetInt("workflowinstance.savepoint.level")<=1)
-			db.Query("DELETE FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
-		
 		// Load workflow schedules
 		scheduler->LoadDBState();
 		
@@ -339,14 +335,6 @@ int main(int argc,char **argv)
 		NetworkConnections nc;
 		
 		// Initialize query handlers
-		qh->RegisterHandler("instances",WorkflowInstances::HandleQuery);
-		qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
-		qh->RegisterHandler("retry_schedule",RetrySchedule::HandleQuery);
-		qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
-		qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
-		qh->RegisterHandler("workflow_schedules",WorkflowSchedules::HandleQuery);
-		qh->RegisterHandler("statistics",Statistics::HandleQuery);
-		qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
 		qh->AutoInit();
 		
 		// Create active connections set
@@ -387,9 +375,6 @@ int main(int argc,char **argv)
 				delete qh;
 				
 				xercesc::XMLPlatformUtils::Terminate();
-				
-				if(config.Get("network.bind.path").length()>0)
-					unlink(config.Get("network.bind.path").c_str());
 				
 				Logger::Log(LOG_NOTICE,"Clean exit");
 				

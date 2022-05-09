@@ -28,6 +28,8 @@
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <User/User.h>
+#include <API/QueryHandlers.h>
+#include <WS/Events.h>
 
 #include <pthread.h>
 #include <sys/socket.h>
@@ -37,6 +39,12 @@
 #include <vector>
 
 WorkflowInstances *WorkflowInstances::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("instances",WorkflowInstances::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"INSTANCE_STARTED","INSTANCE_TERMINATED","TASK_ENQUEUE","TASK_EXECUTE","TASK_TERMINATE","TASK_PROGRESS"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -80,6 +88,10 @@ void WorkflowInstances::Resume()
 				delete workflow_instance;
 		}
 	}
+	
+	// On level 0 or 1, executing workflows are only stored during engine restart. Purge them since they are resumed
+	if(config->GetInt("workflowinstance.savepoint.level")<=1)
+		db.Query("DELETE FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
 }
 
 void WorkflowInstances::Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance)
