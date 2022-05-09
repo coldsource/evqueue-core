@@ -71,7 +71,7 @@ void NetworkConnections::RegisterTCP(const string &name, const string &bind_ip, 
 	
 	Logger::Log(LOG_NOTICE,"%s accepting connections on port %d", name.c_str(), port);
 	
-	connections.push_back({listen_socket, name, TCP, 0, cbk, 0});
+	connections.push_back({listen_socket, name, "", TCP, 0, cbk, 0});
 }
 
 void NetworkConnections::RegisterUNIX(const string &name, const string &bind_path, int backlog, t_stream_handler cbk)
@@ -100,7 +100,7 @@ void NetworkConnections::RegisterUNIX(const string &name, const string &bind_pat
 	
 	Logger::Log(LOG_NOTICE,"%s accepting connections on unix socket %s", name.c_str(), bind_path.c_str());
 	
-	connections.push_back({listen_socket_unix, name, UNIX, 0, cbk, 0});
+	connections.push_back({listen_socket_unix, name, bind_path, UNIX, 0, cbk, 0});
 }
 
 void NetworkConnections::RegisterUDP(const string &name, const string &bind_ip, int port, int maxlen, t_dgram_handler cbk)
@@ -129,7 +129,7 @@ void NetworkConnections::RegisterUDP(const string &name, const string &bind_ip, 
 	
 	Logger::Log(LOG_NOTICE,"%s waiting UDP messages on port %d",name.c_str(), port);
 	
-	connections.push_back({listen_socket_udp, name, UDP, maxlen, 0, cbk});
+	connections.push_back({listen_socket_udp, name, "", UDP, maxlen, 0, cbk});
 }
 
 bool NetworkConnections::select()
@@ -186,5 +186,10 @@ void NetworkConnections::Shutdown()
 	
 	// Shutdown requested, close listening sockets
 	for(int i=0;i<connections.size();i++)
+	{
 		close(connections[i].socket);
+		
+		if(connections[i].type==UNIX)
+			unlink(connections[i].path.c_str());
+	}
 }

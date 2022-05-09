@@ -41,6 +41,7 @@ class NetworkConnections
 		{
 			int socket;
 			std::string name;
+			std::string path;
 			en_type type;
 			int maxlen;
 			t_stream_handler stream_handler;
