@@ -96,6 +96,12 @@ void Channel::init(unsigned int id, unsigned int group_id, const std::string &na
 		throw Exception("Channel", "invalid regex");
 	}
 	
+	create_edit_check(name, group_id, config);
+	
+	date_format = json_config["date_format"];
+	if(date_format!="auto")
+		date_idx = (int)json_config["date_field"];
+	
 	crit_idx = -1;
 	if(json_config["crit"].type()==nlohmann::json::value_t::string)
 		crit = Field::PackCrit(json_config["crit"]);
@@ -123,13 +129,33 @@ void Channel::ParseLog(const string &log_str, map<string, string> &group_fields,
 	if(!regex_search(log_str, matches, log_regex))
 		throw Exception("Channel", "unable to match log message for channel «"+channel_name+"»");
 	
-	char buf[32];
-	struct tm now_t;
-	time_t now = time(0);
-	localtime_r(&now, &now_t);
-	strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &now_t);
-	
-	group_fields["date"] = buf;
+	if(date_format=="auto")
+	{
+		// Automatic date, generate date based on reception time (now)
+		char buf[32];
+		struct tm now_t;
+		time_t now = time(0);
+		localtime_r(&now, &now_t);
+		strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &now_t);
+		
+		group_fields["date"] = buf;
+	}
+	else
+	{
+		// Parse date, based on specified format
+		struct tm date_t;
+		
+		// Get raw date and parse it
+		get_log_part(matches, "date", date_idx, group_fields);
+		if(!strptime(group_fields["date"].c_str(), date_format.c_str(), &date_t))
+			throw Exception("Channel", "Unable to parse date");
+		
+		// Normalize date
+		char buf[32];
+		strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &date_t);
+		group_fields["date"] = buf;
+		
+	}
 	
 	if(crit_idx<0)
 		group_fields["crit"] = Field::UnpackCrit(crit);
@@ -279,7 +305,8 @@ void Channel::create_edit_check(const std::string &name, unsigned int group_id, 
 	if(!CheckChannelName(name))
 		throw Exception("Channel","Invalid channel name","INVALID_PARAMETER");
 	
-	ChannelGroups::GetInstance()->Get(group_id);
+	if(group_id!=-1)
+		ChannelGroups::GetInstance()->Get(group_id);
 	
 	if(config=="")
 		throw Exception("Channel","Empty config","INVALID_PARAMETER");
@@ -312,6 +339,21 @@ void Channel::create_edit_check(const std::string &name, unsigned int group_id, 
 		throw Exception("Channel","Invalid regex : " + string(e.what()),"INVALID_PARAMETER");
 	}
 	
+	if(!j.contains("date_format"))
+		throw Exception("Channel","Missing date_format attribute in config","INVALID_PARAMETER");
+	
+	if(j["date_format"].type()!=nlohmann::json::value_t::string || j["date_format"]=="")
+		throw Exception("Channel","date_format attribute must be a non empty string","INVALID_PARAMETER");
+	
+	// Check date format / field
+	if(j["date_format"]!="auto")
+	{
+		if(!j.contains("date_field"))
+			throw Exception("Channel","date_field must be provided if date format is not automatic","INVALID_PARAMETER");
+	
+		check_int_field(j, "date_field");
+	}
+	
 	if(!j.contains("crit"))
 		throw Exception("Channel","Missing crit attribute in config","INVALID_PARAMETER");
 	
@@ -332,6 +374,7 @@ void Channel::create_edit_check(const std::string &name, unsigned int group_id, 
 	{
 		auto matches = j["matches"];
 		
+		// Check group and channel fields
 		for(auto it = matches.begin(); it!=matches.end(); ++it)
 			check_int_field(matches, it.key());
 	}

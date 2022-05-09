@@ -50,6 +50,9 @@ class Channel
 	
 	std::regex log_regex;
 	
+	std::string date_format;
+	int date_idx;
+	
 	int crit;
 	int crit_idx;
 	
