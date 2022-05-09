@@ -41,7 +41,6 @@ class Alerts:public APIObjectList<Alert>, public APIAutoInit, public WaiterThrea
 {
 	static Alerts *instance;
 	
-	bool thread_started = false;
 	std::thread alerts_thread_handle;
 	
 	public:

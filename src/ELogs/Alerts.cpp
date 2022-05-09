@@ -61,12 +61,11 @@ Alerts::~Alerts()
 void Alerts::APIReady()
 {
 	alerts_thread_handle = thread(Alerts::alerts_thread,this);
-	thread_started = true;
 }
 
 void Alerts::WaitForShutdown(void)
 {
-	if(thread_started)
+	if(alerts_thread_handle.get_id()!=thread::id())
 		alerts_thread_handle.join();
 }
 
