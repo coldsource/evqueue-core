@@ -42,6 +42,7 @@ class Alert
 	unsigned int period;
 	std::string groupby;
 	std::string filters;
+	int active;
 	
 	std::vector<unsigned int> notifications;
 	
@@ -60,12 +61,15 @@ class Alert
 		const std::string &GetFilters() const { return filters; }
 		const nlohmann::json &GetJsonFilters() const { return json_filters; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
+		bool GetIsActive() const { return active!=0; }
+		
 		
 		static bool CheckName(const std::string &alert_name);
 		static void Get(unsigned int id, QueryResponse *response);
-		static unsigned int Create(const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &groupby, const std::string &filters, const std::string &notifications);
-		static void Edit(unsigned int id, const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &groupby, const std::string &filters, const std::string &notifications);
+		static unsigned int Create(const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &groupby, const std::string &filters, const std::string &notifications, bool active);
+		static void Edit(unsigned int id, const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &groupby, const std::string &filters, const std::string &notifications, bool active);
 		static void Delete(unsigned int id);
+		static void SetIsActive(unsigned int id, bool active);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 		

@@ -53,7 +53,7 @@ Alert::Alert()
 
 Alert::Alert(DB *db,unsigned int alert_id)
 {
-	db->QueryPrintf("SELECT alert_id, alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters FROM t_alert WHERE alert_id=%i",&alert_id);
+	db->QueryPrintf("SELECT alert_id, alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters, alert_active FROM t_alert WHERE alert_id=%i",&alert_id);
 	
 	if(!db->FetchRow())
 		throw Exception("Alert","Unknown alert");
@@ -65,6 +65,7 @@ Alert::Alert(DB *db,unsigned int alert_id)
 	period = db->GetFieldInt(4);
 	groupby = db->GetField(5);
 	filters = db->GetField(6);
+	active = db->GetFieldInt(7);
 	
 	db->QueryPrintf("SELECT notification_id FROM t_alert_notification WHERE alert_id=%i", &alert_id);
 	while(db->FetchRow())
@@ -102,6 +103,7 @@ void Alert::Get(unsigned int id, QueryResponse *response)
 	response->SetAttribute("period",to_string(alert.GetPeriod()));
 	response->SetAttribute("groupby",alert.GetGroupby());
 	response->SetAttribute("filters",alert.GetFilters());
+	response->SetAttribute("active",alert.GetIsActive()?"1":"0");
 	
 	auto notifications = alert.GetNotifications();
 	for(int i=0;i<notifications.size();i++)
@@ -111,21 +113,24 @@ void Alert::Get(unsigned int id, QueryResponse *response)
 	}
 }
 
-unsigned int Alert::Create(const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &groupby, const string &filters, const string &notifications)
+unsigned int Alert::Create(const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &groupby, const string &filters, const string &notifications, bool active)
 {
-	 create_edit_check(name, occurrences, period, groupby, filters, notifications);
+	create_edit_check(name, occurrences, period, groupby, filters, notifications);
+	 
+	int iactive = active;
 	
 	DB db("elog");
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters) VALUES(%s, %s, %i, %i, %s, %s)",
+	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters, alert_active) VALUES(%s, %s, %i, %i, %s, %s, %i)",
 		&name,
 		&description,
 		&occurrences,
 		&period,
 		&groupby,
-		&filters
+		&filters,
+		&iactive
 	);
 	
 	unsigned int id = db.InsertID();
@@ -145,9 +150,11 @@ unsigned int Alert::Create(const string &name, const string &description, unsign
 	return id;
 }
 
-void Alert::Edit(unsigned int id, const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &groupby, const string &filters, const string &notifications)
+void Alert::Edit(unsigned int id, const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &groupby, const string &filters, const string &notifications, bool active)
 {
 	create_edit_check(name, occurrences, period, groupby, filters, notifications);
+	
+	int iactive = active;
 	
 	if(!Alerts::GetInstance()->Exists(id))
 		throw Exception("Alert","Alert not found","UNKNOWN_ALERT");
@@ -156,13 +163,14 @@ void Alert::Edit(unsigned int id, const string &name, const string &description,
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("UPDATE t_alert SET alert_name=%s, alert_description=%s, alert_occurrences=%i, alert_period=%i, alert_group=%s, alert_filters=%s WHERE alert_id=%i",
+	db.QueryPrintf("UPDATE t_alert SET alert_name=%s, alert_description=%s, alert_occurrences=%i, alert_period=%i, alert_group=%s, alert_filters=%s, alert_active=%i WHERE alert_id=%i",
 		&name,
 		&description,
 		&occurrences,
 		&period,
 		&groupby,
 		&filters,
+		&iactive,
 		&id
 	);
 	
@@ -306,6 +314,19 @@ void Alert::create_edit_check(const string &name, unsigned int occurrences, unsi
 	}
 }
 
+void Alert::SetIsActive(unsigned int id, bool active)
+{
+	int iactive = active;
+	
+	DB db("elog");
+	
+	// We only store locally schedules that belong to our node, we have to check existence against DB
+	if(!Alerts::GetInstance()->Exists(id))
+		throw Exception("Alert","Alert not found","UNKNOWN_WORKFLOW_SCHEDULE");
+	
+	db.QueryPrintf("UPDATE t_alert SET alert_active=%i WHERE alert_id=%i",&iactive,&id);
+}
+
 bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
 	if(!user.IsAdmin())
@@ -330,12 +351,14 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		string groupby = query->GetRootAttribute("groupby");
 		string filters = query->GetRootAttribute("filters");
 		string notifications = query->GetRootAttribute("notifications");
+		bool active = query->GetRootAttributeBool("active");
 		
+		unsigned int id;
 		string ev;
 		
 		if(action=="create")
 		{
-			unsigned int id = Create(name, description, occurrences, period, groupby, filters, notifications);
+			id = Create(name, description, occurrences, period, groupby, filters, notifications, active);
 			
 			LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
 			
@@ -345,9 +368,9 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		}
 		else
 		{
-			unsigned int id = query->GetRootAttributeInt("id");
+			id = query->GetRootAttributeInt("id");
 			
-			Edit(id,name, description, occurrences, period, groupby, filters, notifications);
+			Edit(id,name, description, occurrences, period, groupby, filters, notifications, active);
 			
 			ev = "ALERT_MODIFIED";
 			
@@ -356,7 +379,7 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		
 		Alerts::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(ev);
+		Events::GetInstance()->Create(ev, id);
 		
 		return true;
 	}
@@ -371,6 +394,34 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
 		
 		Events::GetInstance()->Create("ALERT_REMOVED", id);
+		
+		return true;
+	}
+	else if(action=="lock")
+	{
+		unsigned int id = query->GetRootAttributeInt("id");
+		
+		SetIsActive(id,false);
+		
+		LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
+		
+		Alerts::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("ALERT_MODIFIED",id);
+		
+		return true;
+	}
+	else if(action=="unlock")
+	{
+		unsigned int id = query->GetRootAttributeInt("id");
+		
+		SetIsActive(id,true);
+		
+		LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
+		
+		Alerts::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("ALERT_MODIFIED",id);
 		
 		return true;
 	}

@@ -118,6 +118,7 @@ bool Alerts::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respo
 			node.setAttribute("occurrences", to_string(alert.GetOccurrences()));
 			node.setAttribute("period", to_string(alert.GetPeriod()));
 			node.setAttribute("groupby",alert.GetGroupby());
+			node.setAttribute("active",alert.GetIsActive()?"1":"0");
 		}
 		
 		return true;
@@ -156,6 +157,10 @@ void *Alerts::alerts_thread(Alerts *alerts)
 		for(int i=0;i<alert_objs.size();i++)
 		{
 			Alert alert = alert_objs[i];
+			
+			if(!alert.GetIsActive())
+				continue; // Alert has been disactiated
+			
 			if(timer%alert.GetPeriod()!=0)
 				continue; // Skip alert if period is not yet reached
 			
