@@ -94,6 +94,8 @@ void Notifications::Call(unsigned int notification_id, const std::string &notif_
 	{
 		Notification notification = Get(notification_id);
 		
+		Logger::Log(LOG_INFO, "Calling notification «" + notification.GetName() + "»");
+		
 		unique_lock<mutex> llock(lock);
 		
 		if(notification_instances.size()<max_concurrency)

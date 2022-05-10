@@ -140,6 +140,8 @@ void *Alerts::alerts_thread(Alerts *alerts)
 			return 0;
 		}
 		
+		Logger::Log(LOG_INFO, "Processing alerts...");
+		
 		timer++;
 		
 		// Fetch all alerts
@@ -156,6 +158,8 @@ void *Alerts::alerts_thread(Alerts *alerts)
 			Alert alert = alert_objs[i];
 			if(timer%alert.GetPeriod()!=0)
 				continue; // Skip alert if period is not yet reached
+			
+			Logger::Log(LOG_INFO, "Processing alert «" + alert.GetName() + "»");
 			
 			try
 			{
