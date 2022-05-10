@@ -71,7 +71,7 @@ int ELogs::get_filter(const map<string, string> &filters, const string &name,int
 	}
 }
 
-vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsigned int limit, unsigned int offset)
+vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, const string &groupby, unsigned int limit, unsigned int offset)
 {
 	ChannelGroup group;
 	Channel channel;
@@ -80,11 +80,12 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 	string query_select;
 	string query_from;
 	string query_where;
+	string query_groupby;
 	string query_order;
 	string query_limit;
 	vector<void *> values;
 	
-	ELog::BuildSelectFrom(query_select, query_from);
+	ELog::BuildSelectFrom(query_select, query_from, groupby);
 	
 	// Base filters (always present)
 	string filter_crit_str = get_filter(filters, "filter_crit", "");
@@ -134,7 +135,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 		values.push_back(&filter_group);
 		
 		group = ChannelGroups::GetInstance()->Get(filter_group);
-		ELog::BuildSelectFromAppend(query_select, query_from, group.GetFields());
+		ELog::BuildSelectFromAppend(query_select, query_from, group.GetFields(), "group_", groupby);
 	}
 	
 	unsigned int filter_channel = get_filter(filters, "filter_channel",0);
@@ -144,7 +145,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 		values.push_back(&filter_channel);
 		
 		channel = Channels::GetInstance()->Get(filter_channel);
-		ELog::BuildSelectFromAppend(query_select, query_from, channel.GetFields());
+		ELog::BuildSelectFromAppend(query_select, query_from, channel.GetFields(), "channel_", groupby);
 	}
 	
 	auto group_fields = group.GetFields().GetIDMap();
@@ -157,11 +158,14 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 	int channel_filters_val_int[channel_fields.size()];
 	add_auto_filters(filters, channel.GetFields(), "filter_channel_", query_where,values,channel_filters_val_int, channel_filters_val_str);
 	
-	query_order = " ORDER BY l.log_id DESC ";
+	if(groupby=="")
+		query_order = " ORDER BY l.log_id DESC ";
+	else
+		query_groupby = " GROUP BY "+groupby;
 	
-	query_limit = " LIMIT %i,%i ";
-	values.push_back(&offset);
+	query_limit = " LIMIT %i OFFSET %i ";
 	values.push_back(&limit);
+	values.push_back(&offset);
 	
 	db.QueryVsPrintf(query_select+query_from+query_where+query_order+query_limit, values);
 	
@@ -170,22 +174,33 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 	while(db.FetchRow())
 	{
 		map<string, string> result;
-		result["id"] = db.GetField(0);
-		result["channel"] = db.GetField(1);
-		result["crit"] = Field::UnpackCrit(db.GetFieldInt(2));
-		result["date"] = db.GetField(3);
-		
-		int i = 4;
-		if(filter_group!=0)
+		if(groupby=="")
 		{
-			for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
-				result[it->second.GetName()] = it->second.Unpack(db.GetField(i++));
+			result["id"] = db.GetField(0);
+			result["channel"] = db.GetField(1);
+			result["crit"] = Field::UnpackCrit(db.GetFieldInt(2));
+			result["date"] = db.GetField(3);
+			
+			int i = 4;
+			if(filter_group!=0)
+			{
+				for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
+					result[it->second.GetName()] = it->second.Unpack(db.GetField(i++));
+			}
+			
+			if(filter_channel!=0)
+			{
+				for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
+					result["channel_"+it->second.GetName()] = it->second.Unpack(db.GetField(i++));
+			}
 		}
-		
-		if(filter_channel!=0)
+		else
 		{
-			for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
-				result["channel_"+it->second.GetName()] = it->second.Unpack(db.GetField(i++));
+			result["n"] = db.GetField(0);
+			if(groupby.substr(0,6)=="group_")
+				result[groupby] = group.GetFields().Get(groupby.substr(6)).Unpack(db.GetField(1));
+			if(groupby.substr(0,8)=="channel_")
+				result[groupby] = channel.GetFields().Get(groupby.substr(8)).Unpack(db.GetField(1));
 		}
 		
 		results.push_back(result);
@@ -203,7 +218,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
 		
-		auto res = QueryLogs(query->GetRootAttributes(), limit, offset);
+		auto res = QueryLogs(query->GetRootAttributes(), "", limit, offset);
 		
 		for(int i=0;i<res.size();i++)
 		{

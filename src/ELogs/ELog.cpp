@@ -114,15 +114,18 @@ void ELog::query_fields(DB *db, unsigned long long id, const Fields &fields, DOM
 		node.setAttribute(it->second.GetName(), it->second.Unpack(db->GetField(i++)));
 }
 
-void ELog::BuildSelectFrom(string &query_select, string &query_from)
+void ELog::BuildSelectFrom(string &query_select, string &query_from, const string &groupby)
 {
-	query_select = "SELECT l.log_id, c.channel_name, l.log_crit, l.log_date";
+	if(groupby=="")
+		query_select = "SELECT l.log_id, c.channel_name, l.log_crit, l.log_date";
+	else
+		query_select = "SELECT COUNT(*) AS n";
 	
 	query_from = " FROM t_log l ";
 	query_from += " INNER JOIN t_channel c ON c.channel_id=l.channel_id ";
 }
 
-void ELog::BuildSelectFromAppend(string &query_select, string &query_from, const Fields &fields)
+void ELog::BuildSelectFromAppend(string &query_select, string &query_from, const Fields &fields, const string &prefix, const string &groupby)
 {
 	auto fields_map = fields.GetIDMap();
 	
@@ -130,7 +133,8 @@ void ELog::BuildSelectFromAppend(string &query_select, string &query_from, const
 	{
 		string id_str = to_string(it->first);
 		
-		query_select += ", v"+to_string(it->first)+".value AS "+it->second.GetName();
+		if(groupby=="" || prefix+it->second.GetName()==groupby)
+			query_select += ", v"+to_string(it->first)+".value AS "+prefix+it->second.GetName();
 		
 		query_from += " LEFT JOIN "+it->second.GetTableName()+" v"+id_str;
 		query_from += " ON l.log_id=v"+id_str+".log_id AND v"+id_str+".field_id="+id_str+" AND l.log_date=v"+id_str+".log_date ";

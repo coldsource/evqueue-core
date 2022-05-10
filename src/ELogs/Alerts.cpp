@@ -154,7 +154,6 @@ void *Alerts::alerts_thread(Alerts *alerts)
 		for(int i=0;i<alert_objs.size();i++)
 		{
 			Alert alert = alert_objs[i];
-			
 			if(timer%alert.GetPeriod()!=0)
 				continue; // Skip alert if period is not yet reached
 			
@@ -183,8 +182,10 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				strftime(buf,32,"%Y-%m-%d %H:%M:%S",&start_time_t);
 				filters["filter_emitted_from"] = string(buf);
 				
-				auto logs = ELogs::QueryLogs(filters, 1000);
-				if(logs.size()<alert.GetOccurrences())
+				const string groupby = alert.GetGroupby();
+				
+				auto logs = ELogs::QueryLogs(filters, alert.GetGroupby(), 1000);
+				if(groupby=="" && logs.size()<alert.GetOccurrences())
 					continue; // Too few logs to trigger
 				
 				// Build json data for notification script
@@ -192,13 +193,30 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				for(int i=0;i<logs.size(); i++)
 				{
 					json j_log;
+					
+					try
+					{
+						if(groupby!="" && stoi(logs[i]["n"])<alert.GetOccurrences())
+							continue; // To few groupped logs
+					}
+					catch(...)
+					{
+						continue; // Should not happen
+					}
+					
 					for(auto field = logs[i].begin(); field!=logs[i].end(); ++field)
 						j_log[field->first] = field->second;
 					j_logs.push_back(j_log);
 				}
 				
+				if(j_logs.size()==0)
+					continue; // No logs (everything was filtered in the loop), so do not call alert
+				
 				json j;
 				j["logs"] = j_logs;
+				
+				if(groupby!="")
+					j["groupby"] = groupby;
 				
 				auto notifications = alert.GetNotifications();
 				for(int i=0;i<notifications.size(); i++)
