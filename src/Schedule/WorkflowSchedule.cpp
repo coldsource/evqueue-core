@@ -326,29 +326,34 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		string remote_host = query->GetRootAttribute("host","");
 		bool active = query->GetRootAttributeBool("active",true);
 		string comment =  query->GetRootAttribute("comment","");
+		unsigned int id;
+		
+		string ev;
 		
 		if(action=="create")
 		{
-			unsigned int id = Create(workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
+			id = Create(workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create("WORKFLOWSCHEDULE_CREATED",id);
+			ev = "WORKFLOWSCHEDULE_CREATED";
 			
 			response->GetDOM()->getDocumentElement().setAttribute("schedule-id",to_string(id));
 		}
 		else
 		{
-			unsigned int id = query->GetRootAttributeInt("id");
+			id = query->GetRootAttributeInt("id");
 			
 			Edit(id, workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
 			
-			Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
+			ev = "WORKFLOWSCHEDULE_MODIFIED";
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		}
 		
 		WorkflowScheduler::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(ev,id);
 		
 		return true;
 	}
@@ -374,9 +379,9 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
-		
 		WorkflowScheduler::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
 		
 		return true;
 	}
@@ -388,9 +393,9 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
-		
 		WorkflowScheduler::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
 		
 		return true;
 	}
