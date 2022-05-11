@@ -118,6 +118,8 @@ void ELog::BuildSelectFrom(string &query_select, string &query_from, const strin
 {
 	if(groupby=="")
 		query_select = "SELECT l.log_id, c.channel_name, l.log_crit, l.log_date";
+	else if(groupby=="crit")
+		query_select = "SELECT COUNT(*) AS n, l.log_crit AS crit";
 	else
 		query_select = "SELECT COUNT(*) AS n";
 	

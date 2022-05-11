@@ -71,7 +71,7 @@ int ELogs::get_filter(const map<string, string> &filters, const string &name,int
 	}
 }
 
-vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, const string &groupby, unsigned int limit, unsigned int offset)
+vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsigned int limit, unsigned int offset)
 {
 	ChannelGroup group;
 	Channel channel;
@@ -84,6 +84,10 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, const 
 	string query_order;
 	string query_limit;
 	vector<void *> values;
+	
+	string groupby;
+	if(filters.find("groupby")!=filters.end())
+		groupby = filters["groupby"];
 	
 	ELog::BuildSelectFrom(query_select, query_from, groupby);
 	
@@ -167,7 +171,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, const 
 	values.push_back(&limit);
 	values.push_back(&offset);
 	
-	db.QueryVsPrintf(query_select+query_from+query_where+query_order+query_limit, values);
+	db.QueryVsPrintf(query_select+query_from+query_where+query_groupby+query_order+query_limit, values);
 	
 	vector<map<string, string>> results;
 	
@@ -197,9 +201,11 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, const 
 		else
 		{
 			result["n"] = db.GetField(0);
-			if(groupby.substr(0,6)=="group_")
+			if(groupby=="crit")
+				result[groupby] = Field::UnpackCrit(db.GetFieldInt(1));
+			else if(groupby.substr(0,6)=="group_")
 				result[groupby] = group.GetFields().Get(groupby.substr(6)).Unpack(db.GetField(1));
-			if(groupby.substr(0,8)=="channel_")
+			else if(groupby.substr(0,8)=="channel_")
 				result[groupby] = channel.GetFields().Get(groupby.substr(8)).Unpack(db.GetField(1));
 		}
 		
@@ -218,7 +224,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
 		
-		auto res = QueryLogs(query->GetRootAttributes(), "", limit, offset);
+		auto res = QueryLogs(query->GetRootAttributes(), limit, offset);
 		
 		for(int i=0;i<res.size();i++)
 		{

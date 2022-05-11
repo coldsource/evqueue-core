@@ -53,7 +53,7 @@ Alert::Alert()
 
 Alert::Alert(DB *db,unsigned int alert_id)
 {
-	db->QueryPrintf("SELECT alert_id, alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters, alert_active FROM t_alert WHERE alert_id=%i",&alert_id);
+	db->QueryPrintf("SELECT alert_id, alert_name, alert_description, alert_occurrences, alert_period, alert_filters, alert_active FROM t_alert WHERE alert_id=%i",&alert_id);
 	
 	if(!db->FetchRow())
 		throw Exception("Alert","Unknown alert");
@@ -63,9 +63,8 @@ Alert::Alert(DB *db,unsigned int alert_id)
 	description = db->GetField(2);
 	occurrences = db->GetFieldInt(3);
 	period = db->GetFieldInt(4);
-	groupby = db->GetField(5);
-	filters = db->GetField(6);
-	active = db->GetFieldInt(7);
+	filters = db->GetField(5);
+	active = db->GetFieldInt(6);
 	
 	db->QueryPrintf("SELECT notification_id FROM t_alert_notification WHERE alert_id=%i", &alert_id);
 	while(db->FetchRow())
@@ -79,6 +78,9 @@ Alert::Alert(DB *db,unsigned int alert_id)
 	{
 		throw Exception("Alert","Invalid filters json loading alert : "+to_string(alert_id));
 	}
+	
+	if(json_filters.contains("groupby") && json_filters["groupby"]!="")
+		is_groupped = true;
 }
 
 bool Alert::CheckName(const string &alert_name)
@@ -101,7 +103,6 @@ void Alert::Get(unsigned int id, QueryResponse *response)
 	response->SetAttribute("description",alert.GetDescription());
 	response->SetAttribute("occurrences",to_string(alert.GetOccurrences()));
 	response->SetAttribute("period",to_string(alert.GetPeriod()));
-	response->SetAttribute("groupby",alert.GetGroupby());
 	response->SetAttribute("filters",alert.GetFilters());
 	response->SetAttribute("active",alert.GetIsActive()?"1":"0");
 	
@@ -113,9 +114,9 @@ void Alert::Get(unsigned int id, QueryResponse *response)
 	}
 }
 
-unsigned int Alert::Create(const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &groupby, const string &filters, const string &notifications, bool active)
+unsigned int Alert::Create(const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &filters, const string &notifications, bool active)
 {
-	create_edit_check(name, occurrences, period, groupby, filters, notifications);
+	create_edit_check(name, occurrences, period, filters, notifications);
 	 
 	int iactive = active;
 	
@@ -123,12 +124,11 @@ unsigned int Alert::Create(const string &name, const string &description, unsign
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_group, alert_filters, alert_active) VALUES(%s, %s, %i, %i, %s, %s, %i)",
+	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_filters, alert_active) VALUES(%s, %s, %i, %i, %s, %i)",
 		&name,
 		&description,
 		&occurrences,
 		&period,
-		&groupby,
 		&filters,
 		&iactive
 	);
@@ -150,9 +150,9 @@ unsigned int Alert::Create(const string &name, const string &description, unsign
 	return id;
 }
 
-void Alert::Edit(unsigned int id, const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &groupby, const string &filters, const string &notifications, bool active)
+void Alert::Edit(unsigned int id, const string &name, const string &description, unsigned int occurrences, unsigned int period, const string &filters, const string &notifications, bool active)
 {
-	create_edit_check(name, occurrences, period, groupby, filters, notifications);
+	create_edit_check(name, occurrences, period, filters, notifications);
 	
 	int iactive = active;
 	
@@ -163,12 +163,11 @@ void Alert::Edit(unsigned int id, const string &name, const string &description,
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("UPDATE t_alert SET alert_name=%s, alert_description=%s, alert_occurrences=%i, alert_period=%i, alert_group=%s, alert_filters=%s, alert_active=%i WHERE alert_id=%i",
+	db.QueryPrintf("UPDATE t_alert SET alert_name=%s, alert_description=%s, alert_occurrences=%i, alert_period=%i, alert_filters=%s, alert_active=%i WHERE alert_id=%i",
 		&name,
 		&description,
 		&occurrences,
 		&period,
-		&groupby,
 		&filters,
 		&iactive,
 		&id
@@ -201,7 +200,7 @@ void Alert::Delete(unsigned int id)
 	db.CommitTransaction();
 }
 
-void Alert::create_edit_check(const string &name, unsigned int occurrences, unsigned int period, const string &groupby, const string &filters, const string &notifications)
+void Alert::create_edit_check(const string &name, unsigned int occurrences, unsigned int period, const string &filters, const string &notifications)
 {
 	if(!CheckName(name))
 		throw Exception("Alert","Invalid alert name","INVALID_PARAMETER");
@@ -263,8 +262,17 @@ void Alert::create_edit_check(const string &name, unsigned int occurrences, unsi
 			if(!channel.GetFields().Exists(name.substr(15)))
 				throw Exception("Alert","Unknown channel filter : "+name,"INVALID_PARAMETER");
 		}
-		else if(name!="filter_group" && name!="filter_channel")
+		else if(name!="groupby" && name!="filter_group" && name!="filter_channel")
 			throw Exception("Alert","Unknown filter : "+name,"INVALID_PARAMETER");
+	}
+	
+	string groupby;
+	if(j_filters.contains("groupby"))
+	{
+		if(j_filters["groupby"].type()!=nlohmann::json::value_t::string)
+			throw Exception("Alert","groupby must be a string","INVALID_PARAMETER");
+		
+		groupby = j_filters["groupby"];
 	}
 	
 	if(groupby!="" && groupby!="crit")
@@ -348,7 +356,6 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		string description = query->GetRootAttribute("description");
 		unsigned int occurrences = query->GetRootAttributeInt("occurrences");
 		unsigned int period = query->GetRootAttributeInt("period");
-		string groupby = query->GetRootAttribute("groupby");
 		string filters = query->GetRootAttribute("filters");
 		string notifications = query->GetRootAttribute("notifications");
 		bool active = query->GetRootAttributeBool("active");
@@ -358,7 +365,7 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		
 		if(action=="create")
 		{
-			id = Create(name, description, occurrences, period, groupby, filters, notifications, active);
+			id = Create(name, description, occurrences, period, filters, notifications, active);
 			
 			LoggerAPI::LogAction(user,id,"Alert",query->GetQueryGroup(),action);
 			
@@ -370,7 +377,7 @@ bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		{
 			id = query->GetRootAttributeInt("id");
 			
-			Edit(id,name, description, occurrences, period, groupby, filters, notifications, active);
+			Edit(id,name, description, occurrences, period, filters, notifications, active);
 			
 			ev = "ALERT_MODIFIED";
 			

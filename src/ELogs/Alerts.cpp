@@ -117,7 +117,6 @@ bool Alerts::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respo
 			node.setAttribute("description",alert.GetDescription());
 			node.setAttribute("occurrences", to_string(alert.GetOccurrences()));
 			node.setAttribute("period", to_string(alert.GetPeriod()));
-			node.setAttribute("groupby",alert.GetGroupby());
 			node.setAttribute("active",alert.GetIsActive()?"1":"0");
 		}
 		
@@ -191,10 +190,10 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				strftime(buf,32,"%Y-%m-%d %H:%M:%S",&start_time_t);
 				filters["filter_emitted_from"] = string(buf);
 				
-				const string groupby = alert.GetGroupby();
+				bool is_groupped = alert.GetIsGroupped();
 				
-				auto logs = ELogs::QueryLogs(filters, alert.GetGroupby(), 1000);
-				if(groupby=="" && logs.size()<alert.GetOccurrences())
+				auto logs = ELogs::QueryLogs(filters, 1000);
+				if(is_groupped && logs.size()<alert.GetOccurrences())
 					continue; // Too few logs to trigger
 				
 				// Build json data for notification script
@@ -205,7 +204,7 @@ void *Alerts::alerts_thread(Alerts *alerts)
 					
 					try
 					{
-						if(groupby!="" && stoi(logs[i]["n"])<alert.GetOccurrences())
+						if(is_groupped && stoi(logs[i]["n"])<alert.GetOccurrences())
 							continue; // To few groupped logs
 					}
 					catch(...)
@@ -224,8 +223,8 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				json j;
 				j["logs"] = j_logs;
 				
-				if(groupby!="")
-					j["groupby"] = groupby;
+				if(is_groupped)
+					j["groupby"] = filters["groupby"];
 				
 				auto notifications = alert.GetNotifications();
 				for(int i=0;i<notifications.size(); i++)

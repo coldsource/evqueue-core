@@ -40,8 +40,8 @@ class Alert
 	std::string description;
 	unsigned int occurrences;
 	unsigned int period;
-	std::string groupby;
 	std::string filters;
+	bool is_groupped = false;
 	int active;
 	
 	std::vector<unsigned int> notifications;
@@ -57,17 +57,17 @@ class Alert
 		const std::string &GetDescription() const { return description; }
 		unsigned int GetOccurrences() const { return occurrences; }
 		unsigned int GetPeriod() const { return period; }
-		const std::string &GetGroupby() const { return groupby; }
 		const std::string &GetFilters() const { return filters; }
 		const nlohmann::json &GetJsonFilters() const { return json_filters; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
+		bool GetIsGroupped() const { return is_groupped; }
 		bool GetIsActive() const { return active!=0; }
 		
 		
 		static bool CheckName(const std::string &alert_name);
 		static void Get(unsigned int id, QueryResponse *response);
-		static unsigned int Create(const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &groupby, const std::string &filters, const std::string &notifications, bool active);
-		static void Edit(unsigned int id, const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &groupby, const std::string &filters, const std::string &notifications, bool active);
+		static unsigned int Create(const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &filters, const std::string &notifications, bool active);
+		static void Edit(unsigned int id, const std::string &name, const std::string &description, unsigned int occurrences, unsigned int period, const std::string &filters, const std::string &notifications, bool active);
 		static void Delete(unsigned int id);
 		static void SetIsActive(unsigned int id, bool active);
 		
@@ -76,7 +76,7 @@ class Alert
 		static bool test();
 	
 	private:
-		static void create_edit_check(const std::string &name, unsigned int occurencies, unsigned int period, const std::string &groupby, const std::string &filters, const std::string &notifications);
+		static void create_edit_check(const std::string &name, unsigned int occurencies, unsigned int period, const std::string &filters, const std::string &notifications);
 };
 
 }
