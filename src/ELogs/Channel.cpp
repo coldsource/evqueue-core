@@ -73,6 +73,8 @@ Channel::Channel(unsigned int id, unsigned int group_id, const std::string &name
 
 void Channel::init(unsigned int id, unsigned int group_id, const std::string &name, const std::string &config)
 {
+	const string excpt_context("Channel «"+name+"»");
+	
 	this->channel_id = id;
 	this->channel_group_id = group_id;
 	channel_name = name;
@@ -84,7 +86,7 @@ void Channel::init(unsigned int id, unsigned int group_id, const std::string &na
 	}
 	catch(...)
 	{
-		throw Exception("Channel", "invalid config json");
+		throw Exception(excpt_context, "invalid config json");
 	}
 	
 	try
@@ -93,7 +95,7 @@ void Channel::init(unsigned int id, unsigned int group_id, const std::string &na
 	}
 	catch(...)
 	{
-		throw Exception("Channel", "invalid regex");
+		throw Exception(excpt_context, "invalid regex");
 	}
 	
 	create_edit_check(name, group_id, config);
@@ -303,14 +305,16 @@ bool Channel::check_int_field(const json &j, const string &name)
 
 void Channel::create_edit_check(const std::string &name, unsigned int group_id, const std::string &config)
 {
+	const string excpt_context("Channel «"+name+"»");
+	
 	if(!CheckChannelName(name))
-		throw Exception("Channel","Invalid channel name","INVALID_PARAMETER");
+		throw Exception(excpt_context,"Invalid channel name","INVALID_PARAMETER");
 	
 	if(group_id!=-1)
 		ChannelGroups::GetInstance()->Get(group_id);
 	
 	if(config=="")
-		throw Exception("Channel","Empty config","INVALID_PARAMETER");
+		throw Exception(excpt_context,"Empty config","INVALID_PARAMETER");
 	
 	json j;
 	
@@ -320,16 +324,16 @@ void Channel::create_edit_check(const std::string &name, unsigned int group_id, 
 	}
 	catch(...)
 	{
-		throw Exception("Channel","Invalid configuration json","INVALID_PARAMETER");
+		throw Exception(excpt_context,"Invalid configuration json","INVALID_PARAMETER");
 	}
 	
 	if(!j.contains("regex"))
-		throw Exception("Channel","Missing regex attribute in config","INVALID_PARAMETER");
+		throw Exception(excpt_context,"Missing regex attribute in config","INVALID_PARAMETER");
 	
 	string regex_str = j["regex"];
 	
 	if(regex_str=="")
-		throw Exception("Channel","Empty regex","INVALID_PARAMETER");
+		throw Exception(excpt_context,"Empty regex","INVALID_PARAMETER");
 	
 	try
 	{
@@ -337,31 +341,31 @@ void Channel::create_edit_check(const std::string &name, unsigned int group_id, 
 	}
 	catch(std::regex_error &e)
 	{
-		throw Exception("Channel","Invalid regex : " + string(e.what()),"INVALID_PARAMETER");
+		throw Exception(excpt_context,"Invalid regex : " + string(e.what()),"INVALID_PARAMETER");
 	}
 	
 	if(!j.contains("date_format"))
-		throw Exception("Channel","Missing date_format attribute in config","INVALID_PARAMETER");
+		throw Exception(excpt_context,"Missing date_format attribute in config","INVALID_PARAMETER");
 	
 	if(j["date_format"].type()!=nlohmann::json::value_t::string || j["date_format"]=="")
-		throw Exception("Channel","date_format attribute must be a non empty string","INVALID_PARAMETER");
+		throw Exception(excpt_context,"date_format attribute must be a non empty string","INVALID_PARAMETER");
 	
 	// Check date format / field
 	if(j["date_format"]!="auto")
 	{
 		if(!j.contains("date_field"))
-			throw Exception("Channel","date_field must be provided if date format is not automatic","INVALID_PARAMETER");
+			throw Exception(excpt_context,"date_field must be provided if date format is not automatic","INVALID_PARAMETER");
 	
 		check_int_field(j, "date_field");
 	}
 	
 	if(!j.contains("crit"))
-		throw Exception("Channel","Missing crit attribute in config","INVALID_PARAMETER");
+		throw Exception(excpt_context,"Missing crit attribute in config","INVALID_PARAMETER");
 	
 	if(j["crit"].type()==nlohmann::json::value_t::string)
 		Field::PackCrit(j["crit"]);
 	else if(j["crit"].type()!=nlohmann::json::value_t::number_unsigned)
-		throw Exception("Channel","crit attribute must be an integer or a string","INVALID_PARAMETER");
+		throw Exception(excpt_context,"crit attribute must be an integer or a string","INVALID_PARAMETER");
 	
 	if(j.contains("group_matches"))
 	{
