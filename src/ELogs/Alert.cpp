@@ -195,7 +195,8 @@ void Alert::Delete(unsigned int id)
 	db.StartTransaction();
 	
 	db.QueryPrintf("DELETE FROM t_alert WHERE alert_id=%i",&id);
-	db.QueryPrintf("DELETE FROM t_alert_notification WHERE alert_id=%i");
+	db.QueryPrintf("DELETE FROM t_alert_notification WHERE alert_id=%i", &id);
+	db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_id=%i", &id);
 	
 	db.CommitTransaction();
 }

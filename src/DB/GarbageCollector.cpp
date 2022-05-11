@@ -49,7 +49,8 @@ GarbageCollector::GarbageCollector()
 	logsapi_retention = config->GetInt("gc.logsapi.retention");
 	logsnotifications_retention = config->GetInt("gc.logsnotifications.retention");
 	uniqueaction_retention = config->GetInt("gc.uniqueaction.retention");
-	elogs_retention = config->GetInt("gc.elogs.retention");
+	elogs_logs_retention = config->GetInt("gc.elogs.logs.retention");
+	elogs_triggers_retention = config->GetInt("gc.elogs.triggers.retention");
 	dbname = config->Get("mysql.database");
 }
 
@@ -122,73 +123,68 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 	}
 }
 
+string GarbageCollector::pastdate(time_t now, int back_days)
+{
+	time_t past;
+	struct tm past_t;
+	
+	past = now - back_days*86400;
+	localtime_r(&past,&past_t);
+	
+	char buf[32];
+	strftime(buf,32,"%Y-%m-%d %H:%M:%S",&past_t);
+	
+	return string(buf);
+}
+
 int GarbageCollector::purge(time_t now)
 {
-	// Compute dates
-	struct tm wfi_t;
-	struct tm logs_t;
-	struct tm logsapi_t;
-	struct tm logsnotifications_t;
-	struct tm uniqueaction_t;
-	time_t wfi,logs,logsapi,logsnotifications,uniqueaction;
-	
-	wfi = now - workflowinstance_retention*86400;
-	localtime_r(&wfi,&wfi_t);
-	
-	logs = now - logs_retention*86400;
-	localtime_r(&logs,&logs_t);
-	
-	logsapi = now - logsapi_retention*86400;
-	localtime_r(&logsapi,&logsapi_t);
-	
-	logsnotifications = now - logsnotifications_retention*86400;
-	localtime_r(&logsnotifications,&logsnotifications_t);
-	
-	uniqueaction = now - uniqueaction_retention*86400;
-	localtime_r(&uniqueaction,&uniqueaction_t);
-	
 	// Purge
 	try
 	{
 		DB db;
 		DB db2(&db);
-		char buf[32];
+		string date;
 		int deleted_rows = 0;
 		
 		// Purge workflows
-		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&wfi_t);
-		db.QueryPrintfC("DELETE FROM t_workflow_instance WHERE workflow_instance_status='TERMINATED' AND workflow_instance_end <= %s LIMIT %i",buf,&limit);
+		date = pastdate(now, workflowinstance_retention);
+		db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_status='TERMINATED' AND workflow_instance_end <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
 		// Purge associated parameters
-		db.QueryPrintfC("DELETE wip FROM t_workflow_instance_parameters wip LEFT JOIN t_workflow_instance wi ON wip.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.QueryPrintf("DELETE wip FROM t_workflow_instance_parameters wip LEFT JOIN t_workflow_instance wi ON wip.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		// Purge associated custom filters
-		db.QueryPrintfC("DELETE wif FROM t_workflow_instance_filters wif LEFT JOIN t_workflow_instance wi ON wif.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.QueryPrintf("DELETE wif FROM t_workflow_instance_filters wif LEFT JOIN t_workflow_instance wi ON wif.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		// Purge associated datastore entries
-		db.QueryPrintfC("DELETE data FROM t_datastore data LEFT JOIN t_workflow_instance wi ON data.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.QueryPrintf("DELETE data FROM t_datastore data LEFT JOIN t_workflow_instance wi ON data.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		// Purge associated tags
-		db.QueryPrintfC("DELETE wit FROM t_workflow_instance_tag wit LEFT JOIN t_workflow_instance wi ON wit.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.QueryPrintf("DELETE wit FROM t_workflow_instance_tag wit LEFT JOIN t_workflow_instance wi ON wit.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
-		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logs_t);
-		db.QueryPrintfC("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",buf,&limit);
+		date = pastdate(now, logs_retention);
+		db.QueryPrintf("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logsapi_t);
-		db.QueryPrintfC("DELETE FROM t_log_api WHERE log_api_timestamp <= %s LIMIT %i",buf,&limit);
+		date = pastdate(now, logsapi_retention);
+		db.QueryPrintf("DELETE FROM t_log_api WHERE log_api_timestamp <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&logsnotifications_t);
-		db.QueryPrintfC("DELETE FROM t_log_notifications WHERE log_notifications_timestamp <= %s LIMIT %i",buf,&limit);
+		date = pastdate(now, logsnotifications_retention);
+		db.QueryPrintf("DELETE FROM t_log_notifications WHERE log_notifications_timestamp <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		strftime(buf,32,"%Y-%m-%d %H:%M:%S",&uniqueaction_t);
-		db.QueryPrintfC("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",buf,&limit);
+		date = pastdate(now, uniqueaction_retention);
+		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		db.QueryPrintf("SELECT PARTITION_NAME FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 30 OFFSET %i", &dbname, &elogs_retention);
+		date = pastdate(now, elogs_triggers_retention);
+		db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_trigger_date <= %s LIMIT %i",&date,&limit);
+		deleted_rows += db.AffectedRows();
+		
+		db.QueryPrintf("SELECT PARTITION_NAME FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 30 OFFSET %i", &dbname, &elogs_logs_retention);
 		while(db.FetchRow())
 		{
 			db2.QueryPrintf("ALTER TABLE t_elog DROP PARTITION "+db.GetField(0));

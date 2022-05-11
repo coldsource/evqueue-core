@@ -189,7 +189,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 			if(filter_group!=0)
 			{
 				for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
-					result[it->second.GetName()] = it->second.Unpack(db.GetField(i++));
+					result["group_"+it->second.GetName()] = it->second.Unpack(db.GetField(i++));
 			}
 			
 			if(filter_channel!=0)
@@ -223,12 +223,49 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	{
 		unsigned int limit = query->GetRootAttributeInt("limit",100);
 		unsigned int offset = query->GetRootAttributeInt("offset",0);
+		int filter_group = query->GetRootAttributeInt("filter_group", 0);
+		int filter_channel = query->GetRootAttributeInt("filter_channel", 0);
 		
 		auto res = QueryLogs(query->GetRootAttributes(), limit, offset);
 		
+		// Add group fields description if filter_group is set
+		if(filter_group!=0)
+		{
+			DOMElement node_group = (DOMElement)response->AppendXML("<group />");
+			
+			ChannelGroup group = ChannelGroups::GetInstance()->Get(filter_group);
+			
+			auto fields = group.GetFields().GetIDMap();
+			for(auto it = fields.begin(); it!=fields.end(); ++it)
+			{
+				DOMElement node = (DOMElement)response->AppendXML("<field />", node_group);
+				node.setAttribute("id",to_string(it->second.GetID()));
+				node.setAttribute("name",it->second.GetName());
+				node.setAttribute("type",Field::FieldTypeToString(it->second.GetType()));
+			}
+		}
+		
+		// Add channel fields description if filter_group is set
+		if(filter_channel!=0)
+		{
+			DOMElement node_channel = (DOMElement)response->AppendXML("<channel />");
+			
+			Channel channel = Channels::GetInstance()->Get(filter_channel);
+			
+			auto fields = channel.GetFields().GetIDMap();
+			for(auto it = fields.begin(); it!=fields.end(); ++it)
+			{
+				DOMElement node = (DOMElement)response->AppendXML("<field />", node_channel);
+				node.setAttribute("id",to_string(it->second.GetID()));
+				node.setAttribute("name",it->second.GetName());
+				node.setAttribute("type",Field::FieldTypeToString(it->second.GetType()));
+			}
+		}
+		
+		DOMElement node_logs = (DOMElement)response->AppendXML("<logs />");
 		for(int i=0;i<res.size();i++)
 		{
-			DOMElement node = (DOMElement)response->AppendXML("<log />");
+			DOMElement node = (DOMElement)response->AppendXML("<log />", node_logs);
 			for(auto it = res[i].begin(); it!=res[i].end(); ++it)
 				node.setAttribute(it->first, it->second);
 		}

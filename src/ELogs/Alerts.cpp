@@ -28,6 +28,7 @@
 #include <Cluster/Cluster.h>
 #include <ELogs/ELogs.h>
 #include <Notification/Notifications.h>
+#include <WS/Events.h>
 
 #include <regex>
 #include <map>
@@ -39,6 +40,7 @@ Alerts *Alerts::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("alerts", Alerts::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"ALERT_TRIGGER"});
 	return (APIAutoInit *)new Alerts();
 });
 
@@ -188,7 +190,8 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				localtime_r(&start_time,&start_time_t);
 				char buf[32];
 				strftime(buf,32,"%Y-%m-%d %H:%M:%S",&start_time_t);
-				filters["filter_emitted_from"] = string(buf);
+				string start_date(buf);
+				filters["filter_emitted_from"] = start_date;
 				
 				bool is_groupped = alert.GetIsGroupped();
 				
@@ -236,6 +239,19 @@ void *Alerts::alerts_thread(Alerts *alerts)
 						j
 					);
 				}
+				
+				// Log alert trigger
+				DB db("elog");
+				int alert_id = alert.GetID();
+				db.QueryPrintf(
+					"INSERT INTO t_alert_trigger(alert_id, alert_trigger_start, alert_trigger_filters) VALUES(%i,%s, %s)",
+					&alert_id,
+					&start_date,
+					&alert.GetFilters()
+				);
+				
+				// Emit event
+				Events::GetInstance()->Create("ALERT_TRIGGER");
 			}
 			catch(Exception &e)
 			{
