@@ -234,15 +234,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			DOMElement node_group = (DOMElement)response->AppendXML("<group />");
 			
 			ChannelGroup group = ChannelGroups::GetInstance()->Get(filter_group);
-			
-			auto fields = group.GetFields().GetIDMap();
-			for(auto it = fields.begin(); it!=fields.end(); ++it)
-			{
-				DOMElement node = (DOMElement)response->AppendXML("<field />", node_group);
-				node.setAttribute("id",to_string(it->second.GetID()));
-				node.setAttribute("name",it->second.GetName());
-				node.setAttribute("type",Field::FieldTypeToString(it->second.GetType()));
-			}
+			group.GetFields().AppendXMLDescription(response, node_group);
 		}
 		
 		// Add channel fields description if filter_group is set
@@ -251,15 +243,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			DOMElement node_channel = (DOMElement)response->AppendXML("<channel />");
 			
 			Channel channel = Channels::GetInstance()->Get(filter_channel);
-			
-			auto fields = channel.GetFields().GetIDMap();
-			for(auto it = fields.begin(); it!=fields.end(); ++it)
-			{
-				DOMElement node = (DOMElement)response->AppendXML("<field />", node_channel);
-				node.setAttribute("id",to_string(it->second.GetID()));
-				node.setAttribute("name",it->second.GetName());
-				node.setAttribute("type",Field::FieldTypeToString(it->second.GetType()));
-			}
+			channel.GetFields().AppendXMLDescription(response, node_channel);
 		}
 		
 		DOMElement node_logs = (DOMElement)response->AppendXML("<logs />");

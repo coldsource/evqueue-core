@@ -31,6 +31,7 @@ class XMLQuery;
 class QueryResponse;
 class User;
 class DB;
+class DOMElement;
 
 namespace ELogs
 {
@@ -64,6 +65,8 @@ class Fields
 		int GetNumber() const { return id_fields.size(); }
 		
 		void Update(const nlohmann::json &j);
+		
+		void AppendXMLDescription(QueryResponse *response, DOMElement e) const;
 		
 		static bool CheckFieldName(const std::string &field_name);
 };

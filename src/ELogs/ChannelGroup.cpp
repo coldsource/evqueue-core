@@ -84,14 +84,7 @@ void ChannelGroup::Get(unsigned int id, QueryResponse *response)
 	response->SetAttribute("id", to_string(channelgroup.GetID()));
 	response->SetAttribute("name", channelgroup.GetName());
 	
-	auto fields = channelgroup.fields.GetIDMap();
-	for(auto it = fields.begin(); it!=fields.end(); ++it)
-	{
-		DOMElement node = (DOMElement)response->AppendXML("<field />");
-		node.setAttribute("id",to_string(it->second.GetID()));
-		node.setAttribute("name",it->second.GetName());
-		node.setAttribute("type",Field::FieldTypeToString(it->second.GetType()));
-	}
+	channelgroup.GetFields().AppendXMLDescription(response, response->GetDOM()->getDocumentElement());
 }
 
 unsigned int ChannelGroup::Create(const string &name, const string &fields_str)

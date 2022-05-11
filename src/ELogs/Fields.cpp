@@ -20,6 +20,7 @@
 #include <ELogs/Fields.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
+#include <API/QueryResponse.h>
 #include <global.h>
 
 #include <set>
@@ -143,6 +144,17 @@ const Field &Fields::Get(const std::string &name) const
 		throw Exception("Fields", "Unknown field name : "+name);
 	
 	return name_fields.find(name)->second;
+}
+
+void Fields::AppendXMLDescription(QueryResponse *response, DOMElement e) const
+{
+	for(auto it =id_fields.begin(); it!=id_fields.end(); ++it)
+	{
+		DOMElement node = (DOMElement)response->AppendXML("<field />", e);
+		node.setAttribute("id",to_string(it->second.GetID()));
+		node.setAttribute("name",it->second.GetName());
+		node.setAttribute("type",Field::FieldTypeToString(it->second.GetType()));
+	}
 }
 
 bool Fields::CheckFieldName(const string &field_name)
