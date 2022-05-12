@@ -85,7 +85,7 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 	
 	while(true)
 	{
-		if(!gc->wait(/*gc->interval*/ 1))
+		if(!gc->wait(gc->interval))
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 			
