@@ -21,6 +21,7 @@
 #include <API/Statistics.h>
 #include <Logger/Logger.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
 
 using namespace std;
 
@@ -45,7 +46,7 @@ void Events::SetContext(struct lws_context *ws_context)
 
 void Events::RegisterEvent(const std::string name)
 {
-	events_map[name] = events_map_id++;
+	events_map[name] = ++events_map_id;
 }
 
 void Events::RegisterEvents(const std::vector<std::string> &names)
@@ -64,9 +65,17 @@ Events::en_types Events::get_type(const std::string &type_str)
 
 void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int object_filter, int external_id, const string &api_cmd)
 {
-	unique_lock<mutex> llock(lock);
+		unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);
+	if(type==0)
+	{
+		// Unlock before call to prevent deadlock (logger will lock to send events)
+		llock.unlock();
+		
+		Logger::Log(LOG_WARNING, "Unknown subscribed event : "+type_str);
+		throw Exception("Websocket","Unknown event : "+type_str,"INVALID_PARAMETER");
+	}
 	
 	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{object_filter, api_cmd, external_id}));
 	
