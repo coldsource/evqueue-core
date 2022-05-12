@@ -191,7 +191,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 							if(!base64_decode_string(api_cmd,api_cmd_base64))
 								throw Exception("Websocket","Invalid base64 sequence","INVALID_PARAMETER");
 							
-							// Subscribre event
+							// Subscribe event
 							Events::GetInstance()->Subscribe(type,wsi,object_id,external_id,api_cmd);
 							
 							// Sent API command immediatly for initialization
