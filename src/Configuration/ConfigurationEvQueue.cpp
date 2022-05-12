@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <pcrecpp.h>
+#include <regex>
 
 using namespace std;
 
@@ -144,15 +144,16 @@ ConfigurationEvQueue::~ConfigurationEvQueue(void)
 
 void ConfigurationEvQueue::Substitute(void)
 {
-	map<string,string>::iterator it;
-	for(it=entries.begin();it!=entries.end();it++)
+	for(auto it=entries.begin();it!=entries.end();it++)
 	{
-		pcrecpp::RE regex("(\\{[a-zA-Z_]+\\})");
-		pcrecpp::StringPiece str_to_match(it->second);
-		std::string match;
-		while(regex.FindAndConsume(&str_to_match,&match))
+		regex var_regex ("(\\{[a-zA-Z_]+\\})");
+		
+		auto words_begin = sregex_iterator(it->second.begin(), it->second.end(), var_regex);
+		auto words_end = sregex_iterator();
+		
+		for(auto i=words_begin;i!=words_end;++i)
 		{
-			string var = match;
+			string var = i->str();
 			string var_name =  var.substr(1,var.length()-2);
 			
 			const char *value = getenv(var_name.c_str());
