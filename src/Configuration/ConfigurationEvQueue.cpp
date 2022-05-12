@@ -228,6 +228,9 @@ void ConfigurationEvQueue::Check(void)
 	check_size_entry("notifications.logs.maxsize");
 	check_size_entry("elog.log.maxsize");
 
+	if(Get("mysql.database")==Get("elog.mysql.database"))
+		throw Exception("Configuration","mysql.database and elog.mysql.database cannot be the same");
+	
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
 		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");
 	

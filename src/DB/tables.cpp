@@ -20,7 +20,10 @@
 #include <string>
 #include <map>
 
-std::map<std::string,std::string> evqueue_tables = {
+using namespace std;
+
+// evQueue core
+map<string,string> evqueue_tables = {
 {"t_log",
 "CREATE TABLE `t_log` ( \
   `log_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
@@ -44,6 +47,7 @@ std::map<std::string,std::string> evqueue_tables = {
 {"t_notification_type",
 "CREATE TABLE `t_notification_type` ( \
   `notification_type_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `notification_type_scope` ENUM('WORKFLOW', 'ELOGS') CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'WORKFLOW', \
   `notification_type_name` varchar(32) COLLATE utf8_unicode_ci NOT NULL, \
   `notification_type_description` text COLLATE utf8_unicode_ci NOT NULL, \
   `notification_type_manifest` longtext COLLATE utf8_unicode_ci NOT NULL, \
@@ -84,7 +88,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `user_preferences` text CHARACTER SET ascii NOT NULL, \
   PRIMARY KEY (`user_id`), \
   UNIQUE KEY `user_login` (`user_login`) \
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_user_right",
 "CREATE TABLE `t_user_right` ( \
@@ -192,7 +196,7 @@ std::map<std::string,std::string> evqueue_tables = {
   `tag_label` varchar(64) CHARACTER SET utf8 NOT NULL, \
   PRIMARY KEY (`tag_id`), \
   UNIQUE KEY `tag_label` (`tag_label`) \
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
 {"t_workflow_instance_tag",
 "CREATE TABLE `t_workflow_instance_tag` ( \
@@ -208,12 +212,12 @@ std::map<std::string,std::string> evqueue_tables = {
   `node_name` varchar(32) CHARACTER SET ascii NOT NULL, \
   `user_id` int(10) unsigned NOT NULL, \
   `log_api_object_id` int(10) unsigned NOT NULL, \
-  `log_api_object_type` enum('Workflow','WorkflowSchedule','RetrySchedule','User','Tag','Queue') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  `log_api_object_type` enum('Workflow','WorkflowSchedule','RetrySchedule','User','Tag','Queue','Channel','ChannelGroup','Alert') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `log_api_group` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `log_api_action` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `log_api_timestamp` timestamp NOT NULL DEFAULT current_timestamp(), \
   PRIMARY KEY (`log_api_id`) \
-) ENGINE=InnoDB AUTO_INCREMENT=948 DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
 "},
 {"t_log_notifications",
 "CREATE TABLE `t_log_notifications` ( \
@@ -233,4 +237,165 @@ std::map<std::string,std::string> evqueue_tables = {
   KEY `workflow_instance_filter` (`workflow_instance_filter`,`workflow_instance_filter_value`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
+};
+
+// evQueue elogs moodule
+map<string, string> evqueue_elogs_tables = {
+{"t_alert",
+"CREATE TABLE `t_alert` ( \
+  `alert_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `alert_name` varchar(64) CHARACTER SET utf8 NOT NULL, \
+  `alert_description` text CHARACTER SET utf8 NOT NULL, \
+  `alert_occurrences` int(10) unsigned NOT NULL, \
+  `alert_period` int(10) unsigned NOT NULL, \
+  `alert_group` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  `alert_filters` text CHARACTER SET utf8 NOT NULL, \
+  `alert_active` tinyint(4) NOT NULL DEFAULT 1, \
+  PRIMARY KEY (`alert_id`), \
+  UNIQUE KEY `alert_name` (`alert_name`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+"},
+{"t_alert_notification",
+"CREATE TABLE `t_alert_notification` ( \
+  `alert_id` int(10) unsigned NOT NULL, \
+  `notification_id` int(10) unsigned NOT NULL, \
+  PRIMARY KEY (`alert_id`,`notification_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+"},
+{"t_alert_trigger",
+"CREATE TABLE `t_alert_trigger` ( \
+  `alert_trigger_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `alert_id` int(10) unsigned NOT NULL, \
+  `alert_trigger_start` datetime NOT NULL, \
+  `alert_trigger_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `alert_trigger_filters` text CHARACTER SET utf8 NOT NULL, \
+  PRIMARY KEY (`alert_trigger_id`), \
+  KEY `alert_id` (`alert_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+"},
+{"t_channel",
+"CREATE TABLE `t_channel` ( \
+  `channel_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `channel_group_id` int(10) unsigned NOT NULL, \
+  `channel_name` varchar(32) CHARACTER SET utf8 NOT NULL, \
+  `channel_config` text CHARACTER SET utf8 NOT NULL, \
+  PRIMARY KEY (`channel_id`), \
+  UNIQUE KEY `log_channel_name` (`channel_name`), \
+  KEY `channel_group_id` (`channel_group_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+"},
+{"t_channel_group",
+"CREATE TABLE `t_channel_group` ( \
+  `channel_group_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `channel_group_name` varchar(32) CHARACTER SET utf8 NOT NULL, \
+  PRIMARY KEY (`channel_group_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+"},
+{"t_field",
+"CREATE TABLE `t_field` ( \
+  `field_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `channel_group_id` int(10) unsigned DEFAULT NULL, \
+  `channel_id` int(10) unsigned DEFAULT NULL, \
+  `field_name` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  `field_type` enum('CHAR','INT','IP','PACK','TEXT','ITEXT') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  PRIMARY KEY (`field_id`), \
+  UNIQUE KEY `channel_id` (`channel_id`,`field_name`) USING BTREE, \
+  KEY `channel_group_id` (`channel_group_id`,`field_name`) USING BTREE \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+"},
+{"t_log",
+"CREATE TABLE `t_log` ( \
+  `log_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, \
+  `channel_id` int(10) unsigned NOT NULL, \
+  `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `log_crit` int(10) unsigned NOT NULL, \
+  PRIMARY KEY (`log_id`,`log_date`) USING BTREE, \
+  KEY `log_crit` (`log_crit`), \
+  KEY `log_date` (`log_date`) USING BTREE, \
+  KEY `channel_id` (`log_date`,`channel_id`) USING BTREE \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3' \
+ PARTITION BY RANGE (to_days(`log_date`)) \
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = InnoDB); \
+"},
+{"t_pack",
+"CREATE TABLE `t_pack` ( \
+  `pack_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+  `pack_string` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL, \
+  PRIMARY KEY (`pack_id`), \
+  UNIQUE KEY `log_pack_string` (`pack_string`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3'; \
+"},
+{"t_value_char",
+"CREATE TABLE `t_value_char` ( \
+  `log_id` bigint(20) unsigned NOT NULL, \
+  `field_id` int(10) unsigned NOT NULL, \
+  `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `value` varchar(255) NOT NULL, \
+  PRIMARY KEY (`log_id`,`field_id`,`log_date`) USING BTREE, \
+  KEY `elog_field_id` (`field_id`,`value`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3' \
+ PARTITION BY RANGE (to_days(`log_date`)) \
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = InnoDB); \
+"},
+{"t_value_int",
+"CREATE TABLE `t_value_int` ( \
+  `log_id` bigint(20) unsigned NOT NULL, \
+  `field_id` int(10) unsigned NOT NULL, \
+  `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `value` int(11) NOT NULL, \
+  PRIMARY KEY (`log_id`,`field_id`,`log_date`) USING BTREE, \
+  KEY `elog_field_id` (`field_id`,`value`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3' \
+ PARTITION BY RANGE (to_days(`log_date`)) \
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = InnoDB); \
+"},
+{"t_value_ip",
+"CREATE TABLE `t_value_ip` ( \
+  `log_id` bigint(20) unsigned NOT NULL, \
+  `field_id` int(10) unsigned NOT NULL, \
+  `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `value` varbinary(16) NOT NULL, \
+  PRIMARY KEY (`log_id`,`field_id`,`log_date`) USING BTREE, \
+  KEY `elog_field_id` (`field_id`,`value`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3' \
+ PARTITION BY RANGE (to_days(`log_date`)) \
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = InnoDB); \
+"},
+{"t_value_itext",
+"CREATE TABLE `t_value_itext` ( \
+  `log_id` bigint(20) unsigned NOT NULL, \
+  `field_id` int(10) unsigned NOT NULL, \
+  `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `value` text NOT NULL, \
+  `value_sha1` binary(20) NOT NULL, \
+  PRIMARY KEY (`log_id`,`field_id`,`log_date`) USING BTREE, \
+  KEY `field_id` (`field_id`,`value_sha1`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3' \
+ PARTITION BY RANGE (to_days(`log_date`)) \
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = InnoDB); \
+"},
+{"t_value_pack",
+"CREATE TABLE `t_value_pack` ( \
+  `log_id` bigint(20) unsigned NOT NULL, \
+  `field_id` int(10) unsigned NOT NULL, \
+  `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `value` int(11) unsigned NOT NULL, \
+  PRIMARY KEY (`log_id`,`field_id`,`log_date`) USING BTREE, \
+  KEY `elog_field_id` (`field_id`,`value`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3' \
+ PARTITION BY RANGE (to_days(`log_date`)) \
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = InnoDB); \
+"},
+{"t_value_text",
+"CREATE TABLE `t_value_text` ( \
+  `log_id` bigint(20) unsigned NOT NULL, \
+  `field_id` int(10) unsigned NOT NULL, \
+  `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
+  `value` text NOT NULL, \
+  PRIMARY KEY (`log_id`,`field_id`,`log_date`) USING BTREE, \
+  KEY `field_id` (`field_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 \
+ PARTITION BY RANGE (to_days(`log_date`)) \
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = InnoDB); \
+"}
 };

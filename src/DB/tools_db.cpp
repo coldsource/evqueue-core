@@ -36,55 +36,76 @@ using namespace std;
 
 void tools_init_db(void)
 {
-	DB db;
-	
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
-	map<string,string>::iterator it;
-	for(it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
+	// evQueue core
 	{
-		db.QueryPrintf(
-			"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
-			&config->Get("mysql.database"),
-			&it->first
-		);
-		
-		if(!db.FetchRow())
+		DB db;
+		for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 		{
-			Logger::Log(LOG_NOTICE,"Table %s does not exists, creating it...",it->first.c_str());
+			db.QueryPrintf(
+				"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
+				&config->Get("mysql.database"),
+				&it->first
+			);
 			
-			db.Query(it->second.c_str());
-			
-			if(it->first=="t_queue")
-				db.Query("INSERT INTO t_queue(queue_name,queue_concurrency,queue_scheduler) VALUES('default',1,'default');");
-			else if(it->first=="t_user")
-				db.Query("INSERT INTO t_user(user_login,user_password,user_profile,user_preferences) VALUES('admin',SHA1('admin'),'ADMIN','');");
-		}
-		else
-		{
-			if(string(db.GetField(0))!="v" EVQUEUE_VERSION)
+			if(!db.FetchRow())
 			{
-				if(db.GetField(0)=="v2.0" && EVQUEUE_VERSION=="2.2")
-					tools_upgrade_v20_v22();
-				else if(db.GetField(0)=="v2.2" && EVQUEUE_VERSION=="3.0")
-					tools_upgrade_v22_v30();
-				else if(db.GetField(0)=="v2.2" && EVQUEUE_VERSION=="3.1")
-				{
-					tools_upgrade_v22_v30();
-					tools_upgrade_v30_v31();
-				}
-				else if(db.GetField(0)=="v3.0" && EVQUEUE_VERSION=="3.1")
-					tools_upgrade_v30_v31();
-				else if(db.GetField(0)=="v3.1" && EVQUEUE_VERSION=="3.2")
-					tools_upgrade_v31_v32();
-				else if(db.GetField(0)=="v3.2" && EVQUEUE_VERSION=="3.3")
-					tools_upgrade_v32_v33();
-				else
-					throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
+				Logger::Log(LOG_NOTICE,"Table %s does not exists, creating it...",it->first.c_str());
+				
+				db.Query(it->second.c_str());
+				
+				if(it->first=="t_queue")
+					db.Query("INSERT INTO t_queue(queue_name,queue_concurrency,queue_scheduler) VALUES('default',1,'default');");
+				else if(it->first=="t_user")
+					db.Query("INSERT INTO t_user(user_login,user_password,user_profile,user_preferences) VALUES('admin',SHA1('admin'),'ADMIN','');");
 			}
+			else
+			{
+				if(string(db.GetField(0))!="v" EVQUEUE_VERSION)
+				{
+					if(db.GetField(0)=="v2.0" && EVQUEUE_VERSION=="2.2")
+						tools_upgrade_v20_v22();
+					else if(db.GetField(0)=="v2.2" && EVQUEUE_VERSION=="3.0")
+						tools_upgrade_v22_v30();
+					else if(db.GetField(0)=="v2.2" && EVQUEUE_VERSION=="3.1")
+					{
+						tools_upgrade_v22_v30();
+						tools_upgrade_v30_v31();
+					}
+					else if(db.GetField(0)=="v3.0" && EVQUEUE_VERSION=="3.1")
+						tools_upgrade_v30_v31();
+					else if(db.GetField(0)=="v3.1" && EVQUEUE_VERSION=="3.2")
+						tools_upgrade_v31_v32();
+					else if(db.GetField(0)=="v3.2" && EVQUEUE_VERSION=="3.3")
+						tools_upgrade_v32_v33();
+					else
+						throw Exception("DB Init","Wrong table version, should be " EVQUEUE_VERSION);
+				}
+				
+				if(it->first=="t_notification")
+					tools_upgrade_t_notification();
+			}
+		}
+	}
+	
+	// evQueue elogs module
+	{
+		DB db("elog");
+		for(auto it=evqueue_elogs_tables.begin();it!=evqueue_elogs_tables.end();++it)
+		{
+			db.QueryPrintf(
+				"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
+				&config->Get("elog.mysql.database"),
+				&it->first
+			);
 			
-			if(it->first=="t_notification")
-				tools_upgrade_t_notification();
+			if(!db.FetchRow())
+			{
+				Logger::Log(LOG_NOTICE,"ELogs table %s does not exists, creating it...",it->first.c_str());
+				
+				db.Query(it->second.c_str());
+			}
 		}
 	}
 }
