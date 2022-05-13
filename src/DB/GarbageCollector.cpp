@@ -36,6 +36,8 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 using namespace std;
 
+GarbageCollector *GarbageCollector::instance = 0;
+
 GarbageCollector::GarbageCollector()
 {
 	// Read configuration
@@ -53,12 +55,16 @@ GarbageCollector::GarbageCollector()
 	elogs_logs_retention = config->GetInt("gc.elogs.logs.retention");
 	elogs_triggers_retention = config->GetInt("gc.elogs.triggers.retention");
 	dbname = config->Get("mysql.database");
+	
+	instance = this;
 }
 
 GarbageCollector::~GarbageCollector()
 {
 	Shutdown();
 	WaitForShutdown();
+	
+	instance = 0;
 }
 
 void GarbageCollector::APIReady()
@@ -68,6 +74,11 @@ void GarbageCollector::APIReady()
 		// Create our thread
 		gc_thread_handle = thread(GarbageCollector::gc_thread,this);
 	}
+}
+
+void GarbageCollector::RegisterPurgeHandler(t_purge handler)
+{
+	purge_handlers.push_back(handler);
 }
 
 void GarbageCollector::WaitForShutdown(void)
@@ -167,22 +178,9 @@ int GarbageCollector::purge(time_t now)
 		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		date = Utils::Date::PastDate(elogs_triggers_retention * 86400, now);
-		db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_trigger_date <= %s LIMIT %i",&date,&limit);
-		deleted_rows += db.AffectedRows();
-		
-		db.QueryPrintf("SELECT PARTITION_NAME FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 30 OFFSET %i", &dbname, &elogs_logs_retention);
-		while(db.FetchRow())
-		{
-			db2.QueryPrintf("ALTER TABLE t_elog DROP PARTITION "+db.GetField(0));
-			db2.QueryPrintf("ALTER TABLE t_value_char DROP PARTITION "+db.GetField(0));
-			db2.QueryPrintf("ALTER TABLE t_value_text DROP PARTITION "+db.GetField(0));
-			db2.QueryPrintf("ALTER TABLE t_value_itext DROP PARTITION "+db.GetField(0));
-			db2.QueryPrintf("ALTER TABLE t_value_ip DROP PARTITION "+db.GetField(0));
-			db2.QueryPrintf("ALTER TABLE t_value_pack DROP PARTITION "+db.GetField(0));
-			db2.QueryPrintf("ALTER TABLE t_int DROP PARTITION "+db.GetField(0));
-			deleted_rows++;
-		}
+		// Run external purge handlers
+		for(int i=0;i<purge_handlers.size();i++)
+			deleted_rows += purge_handlers[i](now);
 		
 		return deleted_rows;
 	}

@@ -26,9 +26,13 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <vector>
 
 class GarbageCollector: public WaiterThread, public APIAutoInit
 {
+	public:
+		typedef int (*t_purge) (time_t now);
+		
 	private:
 		bool enable;
 		int delay;
@@ -45,11 +49,18 @@ class GarbageCollector: public WaiterThread, public APIAutoInit
 		
 		std::thread gc_thread_handle;
 		
+		std::vector<t_purge> purge_handlers;
+		
+		static GarbageCollector *instance;
+		
 	public:
 		GarbageCollector();
 		~GarbageCollector();
 		
+		static GarbageCollector *GetInstance() { return instance; }
+		
 		void APIReady();
+		void RegisterPurgeHandler(t_purge handler);
 		
 		void WaitForShutdown(void);
 	
