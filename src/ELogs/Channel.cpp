@@ -31,6 +31,7 @@
 #include <User/User.h>
 #include <WS/Events.h>
 #include <API/QueryHandlers.h>
+#include <Utils/Date.h>
 #include <global.h>
 
 #include <time.h>
@@ -132,32 +133,12 @@ void Channel::ParseLog(const string &log_str, map<string, string> &group_fields,
 		throw Exception("Channel", "unable to match log message for channel «"+channel_name+"»");
 	
 	if(date_format=="auto")
-	{
-		// Automatic date, generate date based on reception time (now)
-		char buf[32];
-		struct tm now_t;
-		time_t now = time(0);
-		localtime_r(&now, &now_t);
-		strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &now_t);
-		
-		group_fields["date"] = buf;
-	}
+		group_fields["date"] = Utils::Date::FormatDate("%Y-%m-%d %H:%M:%S");
 	else
 	{
-		// Parse date, based on specified format
-		struct tm date_t;
-		memset(&date_t, 0, sizeof(struct tm));
-		
 		// Get raw date and parse it
 		get_log_part(matches, "date", date_idx, group_fields);
-		if(!strptime(group_fields["date"].c_str(), date_format.c_str(), &date_t))
-			throw Exception("Channel", "Unable to parse date");
-		
-		// Normalize date
-		char buf[32];
-		strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &date_t);
-		group_fields["date"] = buf;
-		
+		group_fields["date"] = Utils::Date::ParseDate(group_fields["date"], date_format);
 	}
 	
 	if(crit_idx<0)

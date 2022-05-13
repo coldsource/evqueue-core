@@ -24,6 +24,7 @@
 #include <Exception/Exception.h>
 #include <Cluster/UniqueAction.h>
 #include <API/QueryHandlers.h>
+#include <Utils/Date.h>
 
 #include <string.h>
 #include <unistd.h>
@@ -123,20 +124,6 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 	}
 }
 
-string GarbageCollector::pastdate(time_t now, int back_days)
-{
-	time_t past;
-	struct tm past_t;
-	
-	past = now - back_days*86400;
-	localtime_r(&past,&past_t);
-	
-	char buf[32];
-	strftime(buf,32,"%Y-%m-%d %H:%M:%S",&past_t);
-	
-	return string(buf);
-}
-
 int GarbageCollector::purge(time_t now)
 {
 	// Purge
@@ -148,7 +135,7 @@ int GarbageCollector::purge(time_t now)
 		int deleted_rows = 0;
 		
 		// Purge workflows
-		date = pastdate(now, workflowinstance_retention);
+		date = Utils::Date::PastDate(workflowinstance_retention * 86400, now);
 		db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_status='TERMINATED' AND workflow_instance_end <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
@@ -164,23 +151,23 @@ int GarbageCollector::purge(time_t now)
 		// Purge associated tags
 		db.QueryPrintf("DELETE wit FROM t_workflow_instance_tag wit LEFT JOIN t_workflow_instance wi ON wit.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
-		date = pastdate(now, logs_retention);
+		date = Utils::Date::PastDate(logs_retention * 86400, now);
 		db.QueryPrintf("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		date = pastdate(now, logsapi_retention);
+		date = Utils::Date::PastDate(logsapi_retention * 86400, now);
 		db.QueryPrintf("DELETE FROM t_log_api WHERE log_api_timestamp <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		date = pastdate(now, logsnotifications_retention);
+		date = Utils::Date::PastDate(logsnotifications_retention * 86400, now);
 		db.QueryPrintf("DELETE FROM t_log_notifications WHERE log_notifications_timestamp <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		date = pastdate(now, uniqueaction_retention);
+		date = Utils::Date::PastDate(uniqueaction_retention * 86400, now);
 		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		
-		date = pastdate(now, elogs_triggers_retention);
+		date = Utils::Date::PastDate(elogs_triggers_retention * 86400, now);
 		db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_trigger_date <= %s LIMIT %i",&date,&limit);
 		deleted_rows += db.AffectedRows();
 		

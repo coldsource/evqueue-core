@@ -56,7 +56,6 @@ class GarbageCollector: public WaiterThread, public APIAutoInit
 	private:
 		static void *gc_thread(GarbageCollector *gc);
 		
-		std::string pastdate(time_t now, int back_days);
 		int purge(time_t now);
 };
 

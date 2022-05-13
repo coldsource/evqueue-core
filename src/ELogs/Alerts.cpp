@@ -29,6 +29,7 @@
 #include <ELogs/ELogs.h>
 #include <Notification/Notifications.h>
 #include <WS/Events.h>
+#include <Utils/Date.h>
 
 #include <regex>
 #include <map>
@@ -181,16 +182,7 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				}
 				
 				// Add start date based on alert period
-				time_t now, start_time;
-				struct tm start_time_t;
-				
-				time(&now);
-				start_time = now - alert.GetPeriod() * 60;
-				
-				localtime_r(&start_time,&start_time_t);
-				char buf[32];
-				strftime(buf,32,"%Y-%m-%d %H:%M:%S",&start_time_t);
-				string start_date(buf);
+				string start_date = Utils::Date::PastDate(alert.GetPeriod() * 60);
 				filters["filter_emitted_from"] = start_date;
 				
 				bool is_groupped = alert.GetIsGroupped();

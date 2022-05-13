@@ -33,6 +33,7 @@
 #include <API/QueryResponse.h>
 #include <Crypto/Sha1String.h>
 #include <API/QueryHandlers.h>
+#include <Utils/Date.h>
 
 #include <vector>
 
@@ -100,14 +101,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 	
 	// Default filter for emitted_from to current day for performance reasons
 	if(filter_emitted_from=="")
-	{
-		char buf[32];
-		struct tm now_t;
-		time_t now = time(0);
-		localtime_r(&now, &now_t);
-		strftime(buf, 32, "%Y-%m-%d 00:00:00", &now_t);
-		filter_emitted_from = string(buf);
-	}
+		filter_emitted_from = Utils::Date::FormatDate("%Y-%m-%d 00:00:00");
 	
 	DB db("elog");
 	
