@@ -136,7 +136,6 @@ int main(int argc,char **argv)
 	}
 	catch(Exception &e)
 	{
-		printf("%s\n", e.error.c_str());
 		tools_print_usage();
 		return 0;
 	}
