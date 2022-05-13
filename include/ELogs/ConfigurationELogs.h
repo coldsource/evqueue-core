@@ -17,27 +17,25 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _CONFIGURATIONEVQUEUE_H_
-#define _CONFIGURATIONEVQUEUE_H_
-
-#include <string>
-#include <map>
+#ifndef _CONFIGURATIONELOGS_H_
+#define _CONFIGURATIONELOGS_H_
 
 #include <Configuration/Configuration.h>
 
-class QueryResponse;
+namespace ELogs
+{
 
-class ConfigurationEvQueue:public Configuration
+class ConfigurationELogs: public Configuration
 {
 	public:
-		ConfigurationEvQueue(void);
-		virtual ~ConfigurationEvQueue(void);
+		ConfigurationELogs();
+		virtual ~ConfigurationELogs();
 		
-		static ConfigurationEvQueue *GetInstance() { return (ConfigurationEvQueue *)instance; }
+		static ConfigurationELogs *GetInstance() { return (ConfigurationELogs *)instance; }
 		
 		void Check(void);
-		
-		void SendConfiguration(QueryResponse *response);
 };
+
+}
 
 #endif

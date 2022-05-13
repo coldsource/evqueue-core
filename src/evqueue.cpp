@@ -41,7 +41,7 @@
 #include <WorkflowInstance/WorkflowInstance.h>
 #include <WorkflowInstance/WorkflowInstances.h>
 #include <Configuration/ConfigurationReader.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Configuration/Configuration.h>
 #include <Exception/Exception.h>
 #include <Schedule/Retrier.h>
 #include <Schedule/WorkflowScheduler.h>
@@ -168,28 +168,30 @@ int main(int argc,char **argv)
 		sanitize_fds(3);
 		
 		// Read configuration
-		ConfigurationEvQueue config;
-		ConfigurationReader::Read(config_filename, &config);
+		Configuration *config = Configuration::GetInstance();
+		config->Merge();
+		
+		ConfigurationReader::Read(config_filename, config);
 		
 		// Substitute configuration variables with environment if needed
-		config.Substitute();
+		config->Substitute();
 		
 		// Handle utils tasks if specified on command line. This must be done after configuration is loaded since QID is in configuration file
 		if(args["--ipcq-remove"])
-			return ipc_queue_destroy(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
+			return ipc_queue_destroy(config->Get("core.ipc.qid").c_str());
 		else if(args["--ipcq-stats"])
-			return ipc_queue_stats(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str());
+			return ipc_queue_stats(config->Get("core.ipc.qid").c_str());
 		else if((int)args["--ipc-terminate-tid"]!=-1)
-			return ipc_send_exit_msg(ConfigurationEvQueue::GetInstance()->Get("core.ipc.qid").c_str(),1,args["--ipc-terminate-tid"],-1);
+			return ipc_send_exit_msg(config->Get("core.ipc.qid").c_str(),1,args["--ipc-terminate-tid"],-1);
 		
 		// Get/Compute GID / UID
-		int gid = config.GetGID("core.gid");
-		int uid = config.GetUID("core.uid");
+		int gid = config->GetGID("core.gid");
+		int uid = config->GetUID("core.uid");
 		
 		// Change working directory
-		if(config.Get("core.wd").length()>0)
+		if(config->Get("core.wd").length()>0)
 		{
-			if(chdir(config.Get("core.wd").c_str())!=0)
+			if(chdir(config->Get("core.wd").c_str())!=0)
 				throw Exception("core","Unable to change working directory");
 		}
 		
@@ -216,14 +218,15 @@ int main(int argc,char **argv)
 		Events events;
 		
 		// Set locale
-		if(!setlocale(LC_ALL,config.Get("core.locale").c_str()))
+		if(!setlocale(LC_ALL,config->Get("core.locale").c_str()))
 		{
-			Logger::Log(LOG_ERR,"Unknown locale : %s",config.Get("core.locale").c_str());
+			Logger::Log(LOG_ERR,"Unknown locale : %s",config->Get("core.locale").c_str());
 			throw Exception("core","Unable to set locale");
 		}
 		
 		// Sanity checks on configuration values and access rights
-		config.Check();
+		config->Split();
+		config->CheckAll();
 		
 		// Check database connection
 		{
@@ -238,7 +241,7 @@ int main(int argc,char **argv)
 		tools_init_db();
 		
 		// Open pid file before fork to eventually print errors
-		PIDFile pidf("core", config.Get("core.pidfile"));
+		PIDFile pidf("core", config->Get("core.pidfile"));
 		
 		if(args["--daemon"])
 		{
@@ -312,7 +315,7 @@ int main(int argc,char **argv)
 		ActiveConnections *active_connections = new ActiveConnections();
 		
 		// Initialize cluster
-		Cluster cluster(config.Get("cluster.nodes"));
+		Cluster cluster(config->Get("cluster.nodes"));
 		
 		Logger::Log(LOG_NOTICE,"evqueue core started");
 		
@@ -355,6 +358,9 @@ int main(int argc,char **argv)
 #ifdef USELIBGIT2
 				git_libgit2_shutdown();
 #endif
+				
+				// Lastly, delete config
+				delete config;
 				
 				return 0;
 			}

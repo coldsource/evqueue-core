@@ -27,11 +27,10 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <regex>
+
+static auto init = Configuration::GetInstance()->RegisterConfig(new ConfigurationEvQueue());
 
 using namespace std;
-
-ConfigurationEvQueue *ConfigurationEvQueue::instance=0;
 
 ConfigurationEvQueue::ConfigurationEvQueue(void)
 {
@@ -56,8 +55,6 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["gc.logs.retention"] = "7";
 	entries["gc.workflowinstance.retention"] = "30";
 	entries["gc.uniqueaction.retention"] = "30";
-	entries["gc.elogs.logs.retention"] = "90";
-	entries["gc.elogs.triggers.retention"] = "30";
 	entries["logger.db.enable"] = "yes";
 	entries["logger.db.filter"] = "LOG_WARNING";
 	entries["logger.syslog.enable"] = "yes";
@@ -83,15 +80,6 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["ws.keepalive"] = "30";
 	entries["ws.workers"] = "8";
 	entries["ws.events.throttling"] = "yes";
-	entries["elog.mysql.database"] = "evqueue-elogs";
-	entries["elog.mysql.host"] = "localhost";
-	entries["elog.mysql.password"] = "";
-	entries["elog.mysql.user"] = "";
-	entries["elog.bind.ip"] = "*";
-	entries["elog.bind.port"] = "5002";
-	entries["elog.queue.size"] = "1000";
-	entries["elog.bulk.size"] = "500";
-	entries["elog.log.maxsize"] = "4K";
 	entries["notifications.tasks.directory"] = "/tmp";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["notifications.tasks.concurrency"] = "16";
@@ -133,37 +121,10 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["git.signature.name"] = "evQueue";
 	entries["git.signature.email"] = "evqueue@local";
 	entries["git.workflows.subdirectory"] = "workflows";
-	
-	instance=this;
 }
 
 ConfigurationEvQueue::~ConfigurationEvQueue(void)
 {
-	instance = 0;
-}
-
-void ConfigurationEvQueue::Substitute(void)
-{
-	for(auto it=entries.begin();it!=entries.end();it++)
-	{
-		regex var_regex ("(\\{[a-zA-Z_]+\\})");
-		
-		auto words_begin = sregex_iterator(it->second.begin(), it->second.end(), var_regex);
-		auto words_end = sregex_iterator();
-		
-		for(auto i=words_begin;i!=words_end;++i)
-		{
-			string var = i->str();
-			string var_name =  var.substr(1,var.length()-2);
-			
-			const char *value = getenv(var_name.c_str());
-			if(value)
-			{
-				size_t start_pos = it->second.find(var);
-				it->second.replace(start_pos,var.length(),string(value));
-			}
-		}
-	}
 }
 
 void ConfigurationEvQueue::Check(void)
@@ -196,8 +157,6 @@ void ConfigurationEvQueue::Check(void)
 	check_int_entry("gc.logs.retention");
 	check_int_entry("gc.workflowinstance.retention");
 	check_int_entry("gc.uniqueaction.retention");
-	check_int_entry("gc.elogs.logs.retention");
-	check_int_entry("gc.elogs.triggers.retention");
 	check_int_entry("network.connections.max");
 	check_int_entry("network.listen.backlog");
 	check_int_entry("network.rcv.timeout");
@@ -210,9 +169,6 @@ void ConfigurationEvQueue::Check(void)
 	check_int_entry("ws.keepalive");
 	check_int_entry("ws.workers");
 	check_int_entry("ws.bind.port");
-	check_int_entry("elog.bind.port");
-	check_int_entry("elog.queue.size");
-	check_int_entry("elog.bulk.size");
 	check_int_entry("notifications.tasks.timeout");
 	check_int_entry("notifications.tasks.concurrency");
 	check_int_entry("cluster.cnx.timeout");
@@ -227,20 +183,10 @@ void ConfigurationEvQueue::Check(void)
 	check_size_entry("datastore.dom.maxsize");
 	check_size_entry("datastore.db.maxsize");
 	check_size_entry("notifications.logs.maxsize");
-	check_size_entry("elog.log.maxsize");
 
-	if(Get("mysql.database")==Get("elog.mysql.database"))
-		throw Exception("Configuration","mysql.database and elog.mysql.database cannot be the same");
-	
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
 		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");
 	
-	if(GetInt("gc.elogs.logs.retention")<2)
-		throw Exception("Configuration","gc.elogs.logs.retention: cannot be less than 2");
-	
-	if(GetInt("gc.elogs.triggers.retention")<2)
-		throw Exception("Configuration","gc.elogs.triggers.retention: cannot be less than 2");
-
 	if(GetInt("workflowinstance.savepoint.level")<0 || GetInt("workflowinstance.savepoint.level")>3)
 		throw Exception("Configuration","workflowinstance.savepoint.level: invalid value '"+entries["workflowinstance.savepoint.level"]+"'. Value must be between O and 3");
 
