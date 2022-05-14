@@ -139,12 +139,16 @@ void *Alerts::alerts_thread(Alerts *alerts)
 {
 	unsigned int timer = 0;
 	
+	DB::StartThread();
+	
 	while(1)
 	{
 		// Our time resolution is 1 minute, so wait 60 seconds
 		if(!alerts->wait(60))
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Alerts Engine");
+			
+			DB::StopThread();
 			
 			return 0;
 		}
