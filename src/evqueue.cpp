@@ -46,6 +46,7 @@
 #include <global.h>
 #include <Process/ProcessManager.h>
 #include <DB/DB.h>
+#include <DB/DBConfig.h>
 #include <API/Statistics.h>
 #include <Schedule/RetrySchedule.h>
 #include <Schedule/RetrySchedules.h>
@@ -223,14 +224,9 @@ int main(int argc,char **argv)
 		config->Split();
 		config->CheckAll();
 		
-		// Check database connection
-		{
-			DB db;
-			if(args["--wait-db"])
-				db.Wait();
-			else
-				db.Ping();
-		}
+		// Init database and check connection
+		DBConfig::GetInstance()->Init();
+		DBConfig::GetInstance()->Check(args["--wait-db"]);
 		
 		// Initialize DB
 		tools_init_db();
@@ -346,7 +342,8 @@ int main(int argc,char **argv)
 				DB::StopThread();
 				DB::FreeLibrary();
 				
-				// Lastly, delete config
+				// Lastly, delete configs
+				delete DBConfig::GetInstance();
 				delete config;
 				
 				return 0;

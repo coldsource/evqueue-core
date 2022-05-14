@@ -84,7 +84,7 @@ class DB
 	
 public:
 	DB(DB *db);
-	DB(const std::string &name = "");
+	DB(const std::string &name = "evqueue");
 	~DB(void);
 	
 	DB *Clone(void);
@@ -94,6 +94,8 @@ public:
 	
 	static void StartThread(void);
 	static void StopThread(void);
+	
+	std::string GetDatabase() { return database; }
 	
 	void Ping(void);
 	void Wait(void);

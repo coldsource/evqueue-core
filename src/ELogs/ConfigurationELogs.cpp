@@ -18,6 +18,7 @@
  */
 
 #include <ELogs/ConfigurationELogs.h>
+#include <DB/DBConfig.h>
 #include <Exception/Exception.h>
 
 #include <vector>
@@ -28,6 +29,14 @@ namespace ELogs
 {
 
 static auto init = Configuration::GetInstance()->RegisterConfig(new ConfigurationELogs());
+static auto initdb =  DBConfig::GetInstance()->RegisterConfigInit([](DBConfig *dbconf) {
+	Configuration *config = Configuration::GetInstance();
+	string host = config->Get("elog.mysql.host");
+	string user = config->Get("elog.mysql.user");
+	string password = config->Get("elog.mysql.password");
+	string database = config->Get("elog.mysql.database");
+	dbconf->RegisterConfig("elog", host, user, password, database);
+});
 
 ConfigurationELogs::ConfigurationELogs()
 {

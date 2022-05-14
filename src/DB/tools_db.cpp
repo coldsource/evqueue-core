@@ -20,6 +20,7 @@
 #include <DB/tools_db.h>
 #include <DB/tables.h>
 #include <DB/DB.h>
+#include <DB/DBConfig.h>
 #include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <Logger/Logger.h>
@@ -36,6 +37,8 @@ void tools_init_db(void)
 {
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
+	DBConfig::GetInstance()->InitTables();
+	
 	// evQueue core
 	{
 		DB db;
@@ -47,18 +50,7 @@ void tools_init_db(void)
 				&it->first
 			);
 			
-			if(!db.FetchRow())
-			{
-				Logger::Log(LOG_NOTICE,"Table %s does not exists, creating it...",it->first.c_str());
-				
-				db.Query(it->second.c_str());
-				
-				if(it->first=="t_queue")
-					db.Query("INSERT INTO t_queue(queue_name,queue_concurrency,queue_scheduler) VALUES('default',1,'default');");
-				else if(it->first=="t_user")
-					db.Query("INSERT INTO t_user(user_login,user_password,user_profile,user_preferences) VALUES('admin',SHA1('admin'),'ADMIN','');");
-			}
-			else
+			if(db.FetchRow())
 			{
 				if(string(db.GetField(0))!="v" EVQUEUE_VERSION)
 				{
@@ -74,26 +66,6 @@ void tools_init_db(void)
 				
 				if(it->first=="t_notification")
 					tools_upgrade_t_notification();
-			}
-		}
-	}
-	
-	// evQueue elogs module
-	{
-		DB db("elog");
-		for(auto it=evqueue_elogs_tables.begin();it!=evqueue_elogs_tables.end();++it)
-		{
-			db.QueryPrintf(
-				"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
-				&config->Get("elog.mysql.database"),
-				&it->first
-			);
-			
-			if(!db.FetchRow())
-			{
-				Logger::Log(LOG_NOTICE,"ELogs table %s does not exists, creating it...",it->first.c_str());
-				
-				db.Query(it->second.c_str());
 			}
 		}
 	}

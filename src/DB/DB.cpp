@@ -18,6 +18,7 @@
  */
 
 #include <DB/DB.h>
+#include <DB/DBConfig.h>
 #include <Exception/Exception.h>
 #include <Logger/Logger.h>
 #include <Configuration/ConfigurationEvQueue.h>
@@ -33,6 +34,15 @@
 #include <string>
 
 using namespace std;
+
+static auto initdb =  DBConfig::GetInstance()->RegisterConfigInit([](DBConfig *dbconf) {
+	Configuration *config = Configuration::GetInstance();
+	string host = config->Get("mysql.host");
+	string user = config->Get("mysql.user");
+	string password = config->Get("mysql.password");
+	string database = config->Get("mysql.database");
+	dbconf->RegisterConfig("evqueue", host, user, password, database);
+});
 
 DB::DB(DB *db)
 {
@@ -63,23 +73,7 @@ DB::DB(const string &name)
 	is_copy = false;
 	
 	// Read database configuration
-	Configuration *config = ConfigurationEvQueue::GetInstance();
-	if(name=="")
-	{
-		host = config->Get("mysql.host");
-		user = config->Get("mysql.user");
-		password = config->Get("mysql.password");
-		database = config->Get("mysql.database");
-	}
-	else if(name=="elog")
-	{
-		host = config->Get("elog.mysql.host");
-		user = config->Get("elog.mysql.user");
-		password = config->Get("elog.mysql.password");
-		database = config->Get("elog.mysql.database");
-	}
-	else
-		throw Exception("DB","Unknown database "+name);
+	DBConfig::GetInstance()->GetConfig(name, host, user, password, database);
 }
 
 DB::~DB(void)
