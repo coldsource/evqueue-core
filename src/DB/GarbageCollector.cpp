@@ -52,8 +52,6 @@ GarbageCollector::GarbageCollector()
 	logsapi_retention = config->GetInt("gc.logsapi.retention");
 	logsnotifications_retention = config->GetInt("gc.logsnotifications.retention");
 	uniqueaction_retention = config->GetInt("gc.uniqueaction.retention");
-	elogs_logs_retention = config->GetInt("gc.elogs.logs.retention");
-	elogs_triggers_retention = config->GetInt("gc.elogs.triggers.retention");
 	dbname = config->Get("mysql.database");
 	
 	instance = this;

@@ -43,8 +43,6 @@ class GarbageCollector: public WaiterThread, public APIAutoInit
 		int logsapi_retention;
 		int logsnotifications_retention;
 		int uniqueaction_retention;
-		int elogs_logs_retention;
-		int elogs_triggers_retention;
 		std::string dbname;
 		
 		std::thread gc_thread_handle;
