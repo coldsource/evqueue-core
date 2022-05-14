@@ -45,6 +45,7 @@ class Workflows:public APIObjectList<Workflow>
 		void Reload(bool notify = true);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		static void HandleReload(bool notify);
 };
 
 #endif

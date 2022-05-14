@@ -71,6 +71,7 @@ class Notifications:public APIObjectList<Notification>, public APIAutoInit
 		void Exit(pid_t pid, int status, char retcode);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		static void HandleReload(bool notify);
 	
 	private:
 		void store_log(pid_t pid, unsigned int uid, unsigned int notification_id);

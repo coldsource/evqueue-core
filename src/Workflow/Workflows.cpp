@@ -35,6 +35,7 @@ Workflows *Workflows::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("workflows",Workflows::HandleQuery);
+	qh->RegisterReloadHandler("workflows", Workflows::HandleReload);
 	return (APIAutoInit *)0;
 });
 
@@ -113,4 +114,10 @@ bool Workflows::HandleQuery(const User &user, XMLQuery *query, QueryResponse *re
 	}
 	
 	return false;
+}
+
+void Workflows::HandleReload(bool notify)
+{
+	Workflows *workflows = Workflows::GetInstance();
+	workflows->Reload(notify);
 }

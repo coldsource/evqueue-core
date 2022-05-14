@@ -17,8 +17,6 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifdef USELIBGIT2
-
 #include <Git/LibGit2.h>
 #include <Configuration/ConfigurationEvQueue.h>
 
@@ -26,6 +24,9 @@
 #include <time.h>
 
 using namespace std;
+
+namespace Git
+{
 
 LibGit2::LibGit2(string path)
 {
@@ -506,4 +507,4 @@ bool LibGit2::delta_with_parent(git_commit *commit, int i, git_diff_options *opt
 	return ndeltas > 0;
 }
 
-#endif
+}

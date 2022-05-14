@@ -31,13 +31,16 @@ class APIAutoInit;
 class QueryHandlers;
 
 typedef bool (*t_query_handler)(const User &user, XMLQuery *query, QueryResponse *response);
+typedef void (*t_reload_handler)(bool notify);
 typedef APIAutoInit * (*t_query_handler_init)(QueryHandlers *qh);
 
 class QueryHandlers
 {
 	static QueryHandlers *instance;
 	
-	std::map<std::string,t_query_handler> handlers;
+	std::map<std::string,t_query_handler> query_handlers;
+	std::map<std::string,t_reload_handler> reload_handlers;
+	std::map<std::string, std::string> modules;
 	
 	std::vector<APIAutoInit *> auto_init_ptr;
 	std::vector<t_query_handler_init> auto_init;
@@ -48,11 +51,17 @@ class QueryHandlers
 		
 		static QueryHandlers *GetInstance();
 		
+		const std::map<std::string, std::string> &GetModules() { return modules; }
+		
 		bool RegisterInit(t_query_handler_init init);
 		void AutoInit();
 		
 		void RegisterHandler(const std::string &type, t_query_handler handler);
+		void RegisterReloadHandler(const std::string &type, t_reload_handler handler);
+		void RegisterModule(const std::string &name, const std::string &version);
+		
 		bool HandleQuery(const User &user, const std::string &type, XMLQuery *query, QueryResponse *response);
+		bool Reload(const std::string &module, bool notify);
 };
 
 #endif

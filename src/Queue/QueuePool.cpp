@@ -44,6 +44,7 @@ QueuePool *QueuePool::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
+	qh->RegisterReloadHandler("queuepool", QueuePool::HandleReload);
 	Events::GetInstance()->RegisterEvents({"QUEUE_ENQUEUE","QUEUE_DEQUEUE","QUEUE_EXECUTE","QUEUE_TERMINATE"});
 	return (APIAutoInit *)0;
 });
@@ -462,6 +463,12 @@ bool QueuePool::HandleQuery(const User &user, XMLQuery *query, QueryResponse *re
 	}
 	
 	return false;
+}
+
+void QueuePool::HandleReload(bool notify)
+{
+	QueuePool *qp = QueuePool::GetInstance();
+	qp->Reload(notify);
 }
 
 Queue *QueuePool::get_queue(unsigned int id)

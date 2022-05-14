@@ -41,6 +41,7 @@ Alerts *Alerts::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("alerts", Alerts::HandleQuery);
+	qh->RegisterReloadHandler("alerts", Alerts::HandleReload);
 	Events::GetInstance()->RegisterEvents({"ALERT_TRIGGER"});
 	return (APIAutoInit *)new Alerts();
 });
@@ -127,6 +128,11 @@ bool Alerts::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respo
 	}
 	
 	return false;
+}
+
+void Alerts::HandleReload(bool notify)
+{
+	Alerts::GetInstance()->Reload(notify);
 }
 
 void *Alerts::alerts_thread(Alerts *alerts)

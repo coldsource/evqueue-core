@@ -20,6 +20,7 @@
 #include <Notification/Notifications.h>
 #include <Notification/Notification.h>
 #include <Notification/NotificationType.h>
+#include <Notification/NotificationTypes.h>
 #include <DB/DB.h>
 #include <Exception/Exception.h>
 #include <Logger/Logger.h>
@@ -38,6 +39,7 @@ Notifications *Notifications::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("notifications", Notifications::HandleQuery);
+	qh->RegisterReloadHandler("notifications", Notifications::HandleReload);
 	return (APIAutoInit *)new Notifications();
 });
 
@@ -198,6 +200,12 @@ bool Notifications::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 	}
 	
 	return false;
+}
+
+void Notifications::HandleReload(bool notify)
+{
+	NotificationTypes::GetInstance()->Reload(notify);
+	Notifications::GetInstance()->Reload(notify);
 }
 
 void Notifications::store_log(pid_t pid, unsigned int uid, unsigned int notification_id)

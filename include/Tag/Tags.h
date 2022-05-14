@@ -42,6 +42,7 @@ class Tags:public APIObjectList<Tag>, public APIAutoInit
 		void Reload(bool notify = true);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		static void HandleReload(bool notify);
 };
 
 

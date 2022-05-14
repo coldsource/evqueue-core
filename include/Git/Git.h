@@ -22,7 +22,6 @@
 
 class XMLQuery;
 class QueryResponse;
-class LibGit2;
 class User;
 class DOMDocument;
 
@@ -30,6 +29,11 @@ class DOMDocument;
 
 #include <mutex>
 #include <string>
+
+namespace Git
+{
+
+class LibGit2;
 
 class Git: public APIAutoInit
 {
@@ -39,9 +43,7 @@ class Git: public APIAutoInit
 	
 	std::string repo_path;
 	
-#ifdef USELIBGIT2
 	LibGit2 *repo = 0;
-#endif
 	
 	std::string workflows_subdirectory;
 	std::string tasks_subdirectory;
@@ -52,24 +54,25 @@ class Git: public APIAutoInit
 		
 		static Git *GetInstance() { return  instance; }
 		
-#ifdef USELIBGIT2
 		void SaveWorkflow(const std::string &name, const std::string &commit_log, bool force);
 		void LoadWorkflow(const std::string &name);
 		void GetWorkflow(const std::string &name, QueryResponse *response);
 		std::string GetWorkflowHash(const std::string &rev,const std::string &name);
 		void RemoveWorkflow(const std::string &name,const std::string &commit_log);
 		void ListWorkflows(QueryResponse *response);
-#endif
+		
+		virtual void APIReady();
+		virtual void APIShutdown();
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
-#ifdef USELIBGIT2
 		std::string save_file(const std::string &filename, const std::string &content, const std::string &db_lastcommit, const std::string &commit_log, bool force);
 		DOMDocument *load_file(const std::string &filename);
 		void list_files(const std::string directory, QueryResponse *response);
 		std::string get_file_hash(const std::string filename);
-#endif
 };
+
+}
 
 #endif

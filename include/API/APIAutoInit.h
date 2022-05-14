@@ -26,6 +26,7 @@ class APIAutoInit
 		virtual ~APIAutoInit() {}
 		
 		virtual void APIReady() {};
+		virtual void APIShutdown() {};
 };
 
 #endif

@@ -57,6 +57,7 @@ class Alerts:public APIObjectList<Alert>, public APIAutoInit, public WaiterThrea
 		void Reload(bool notify = true);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		static void HandleReload(bool notify);
 	
 	private:
 		static void *alerts_thread(Alerts *alerts);

@@ -29,10 +29,6 @@
 
 #include <string>
 
-#ifdef USELIBGIT2
-#include <git2.h>
-#endif
-
 #include <Logger/Logger.h>
 #include <Queue/Queue.h>
 #include <Queue/QueuePool.h>
@@ -90,7 +86,7 @@ void signal_callback_handler(int signum)
 	else if(signum==SIGHUP)
 	{
 		Logger::Log(LOG_NOTICE,"Got SIGHUP, reloading configuration");
-		tools_config_reload("all",false);
+		QueryHandlers::GetInstance()->Reload("all", false);
 	}
 	else if(signum==SIGUSR1)
 	{
@@ -265,10 +261,6 @@ int main(int argc,char **argv)
 		// Instanciate random numbers generator
 		Random random;
 		
-#ifdef USELIBGIT2
-		git_libgit2_init();
-#endif
-		
 		// Create statistics counter
 		Statistics stats;
 		
@@ -353,10 +345,6 @@ int main(int argc,char **argv)
 				
 				DB::StopThread();
 				DB::FreeLibrary();
-				
-#ifdef USELIBGIT2
-				git_libgit2_shutdown();
-#endif
 				
 				// Lastly, delete config
 				delete config;

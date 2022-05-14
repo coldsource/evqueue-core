@@ -17,8 +17,6 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifdef USELIBGIT2
-
 #ifndef _LIBGIT2_H_
 #define _LIBGIT2_H_
 
@@ -28,6 +26,10 @@
 #include <vector>
 
 #include <Exception/Exception.h>
+
+namespace Git
+{
+
 class LigGit2Exception:public Exception
 {
 	public:
@@ -67,6 +69,6 @@ class LibGit2
 		bool delta_with_parent(git_commit *commit, int i, git_diff_options *opts);
 };
 
-#endif
+}
 
 #endif

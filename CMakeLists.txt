@@ -8,20 +8,12 @@ project(evqueue)
 
 # Detect libgit2 library
 find_library(HAS_LIBGIT2 libgit2.so)
-find_library(HAS_STATICLIBGIT2 libgit2.a)
 
 # We prefer shared version
 if(HAS_LIBGIT2)
 	option(USELIBGIT2 "Enable libgit2 support" ON)
 else()
 	option(USELIBGIT2 "Enable libgit2 support" OFF)
-	
-	# Shared version is not available, try static one
-	if(HAS_STATICLIBGIT2)
-		option(USESTATICLIBGIT2 "Enable static libgit2 support" ON)
-	else()
-		option(USESTATICLIBGIT2 "Enable static libgit2 support" OFF)
-	endif(HAS_STATICLIBGIT2)
 endif(HAS_LIBGIT2)
 
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
@@ -75,7 +67,6 @@ add_executable(evqueue
 	${srcProcess}
 	${srcIO}
 	${srcQueue}
-	${srcGit}
 	${srcWS}
 	${srcZip}
 	${srcThread}
@@ -87,24 +78,6 @@ add_executable(evqueue
 target_compile_definitions(evqueue PRIVATE USE_DATA_PIPER)
 target_compile_definitions(evqueue PRIVATE BUILD_MODULE_EVQUEUE_CORE)
 
-if(USELIBGIT2)
-	add_definitions(-DUSELIBGIT2)
-	target_link_libraries(evqueue git2)
-	Message("Git support is enabled")
-endif(USELIBGIT2)
-
-if(USESTATICLIBGIT2)
-	add_definitions(-DUSELIBGIT2)
-	target_link_libraries(evqueue libgit2.a)
-	target_link_libraries(evqueue ssh2)
-	target_link_libraries(evqueue http_parser)
-	target_link_libraries(evqueue curl)
-	target_link_libraries(evqueue ssl)
-	target_link_libraries(evqueue crypto)
-	target_link_libraries(evqueue rt)
-	Message("Git static support is enabled")
-endif(USESTATICLIBGIT2)
-
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -115,6 +88,12 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 else()
     message(FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER} has no C++11 support.")
 endif()
+
+if(USELIBGIT2)
+	target_sources(evqueue PRIVATE ${srcGit})
+	target_link_libraries(evqueue git2)
+	Message("Git support is enabled")
+endif(USELIBGIT2)
 
 include_directories(include /usr/include)
 

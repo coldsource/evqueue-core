@@ -42,6 +42,7 @@
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	Events::GetInstance()->RegisterEvents({"WORKFLOWSCHEDULE_STARTED","WORKFLOWSCHEDULE_STOPPED"});
+	qh->RegisterReloadHandler("scheduler", WorkflowScheduler::HandleReload);
 	return (APIAutoInit *)0;
 });
 
@@ -377,6 +378,12 @@ void WorkflowScheduler::SendStatus(QueryResponse *response)
 			status_node.appendChild(workflow_node);
 		}
 	}
+}
+
+void WorkflowScheduler::HandleReload(bool notify)
+{
+	WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
+	scheduler->Reload(notify);
 }
 
 void WorkflowScheduler::init(void)

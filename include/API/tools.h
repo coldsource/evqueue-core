@@ -26,7 +26,6 @@ class XMLQuery;
 class QueryResponse;
 class User;
 
-void tools_config_reload(const std::string &module,bool notify);
 void tools_sync_tasks(bool notify);
 void tools_sync_notifications(bool notify);
 void tools_flush_retrier(void);

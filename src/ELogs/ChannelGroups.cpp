@@ -38,6 +38,7 @@ namespace ELogs
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("channel_groups", ChannelGroups::HandleQuery);
+	qh->RegisterReloadHandler("channel_groups", ChannelGroups::HandleReload);
 	return (APIAutoInit *)new ChannelGroups();
 });
 
@@ -104,6 +105,11 @@ bool ChannelGroups::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 	}
 	
 	return false;
+}
+
+void ChannelGroups::HandleReload(bool notify)
+{
+	ChannelGroups::GetInstance()->Reload(notify);
 }
 
 }

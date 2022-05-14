@@ -32,6 +32,7 @@ Tags *Tags::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("tags", Tags::HandleQuery);
+	qh->RegisterReloadHandler("tags", Tags::HandleReload);
 	return (APIAutoInit *)new Tags();
 });
 
@@ -98,4 +99,10 @@ bool Tags::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 	}
 	
 	return false;
+}
+
+void Tags::HandleReload(bool notify)
+{
+	Tags *tags = Tags::GetInstance();
+	tags->Reload(notify);
 }

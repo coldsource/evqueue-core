@@ -64,6 +64,8 @@ class WorkflowScheduler:public Scheduler
 		
 		void SendStatus(QueryResponse *response);
 		
+		static void HandleReload(bool notify);
+		
 	protected:
 		void event_removed(Event *e, event_reasons reason);
 	

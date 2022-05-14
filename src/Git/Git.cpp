@@ -41,46 +41,36 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <git2.h>
 
 #include <string>
 #include <memory>
 
+using namespace std;
+
+namespace Git
+{
+
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	qh->RegisterHandler("git",Git::HandleQuery);
+	qh->RegisterModule("git", EVQUEUE_VERSION);
 	Events::GetInstance()->RegisterEvents({"GIT_PULLED","GIT_SAVED","GIT_LOADED","GIT_REMOVED"});
 	return (APIAutoInit *)new Git();
 });
-
-
-using namespace std;
 
 Git *Git::instance = 0;
 
 Git::Git()
 {
-#ifdef USELIBGIT2
-	Configuration *config = ConfigurationEvQueue::GetInstance();
-	
-	repo_path = config->Get("git.repository");
-	
-	if(repo_path.length())
-		repo = new LibGit2(repo_path);
-	
-	workflows_subdirectory = config->Get("git.workflows.subdirectory");
-#endif
-	
 	instance = this;
 }
 
 Git::~Git()
 {
-#ifdef USELIBGIT2
 	if(repo)
 		delete repo;
-#endif
 }
 
-#ifdef USELIBGIT2
 void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 {
 	unique_lock<mutex> llock(lock);
@@ -187,13 +177,27 @@ void Git::ListWorkflows(QueryResponse *response)
 	list_files(workflows_subdirectory,response);
 }
 
-#endif // USELIBGIT2
+void Git::APIReady()
+{
+	git_libgit2_init();
+	
+	Configuration *config = ConfigurationEvQueue::GetInstance();
+	
+	repo_path = config->Get("git.repository");
+	
+	if(repo_path.length())
+		repo = new LibGit2(repo_path);
+	
+	workflows_subdirectory = config->Get("git.workflows.subdirectory");
+}
+
+void Git::APIShutdown()
+{
+	git_libgit2_shutdown();
+}
 
 bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-#ifndef USELIBGIT2
-	throw Exception("Git", "evQueue was not compiled with git support");
-#else
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
@@ -258,10 +262,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 	}
 	
 	return false;
-#endif // USELIBGIT2
 }
-
-#ifdef USELIBGIT2
 
 string Git::save_file(const string &filename, const string &content, const string &db_lastcommit, const string &commit_log, bool force)
 {
@@ -401,4 +402,4 @@ string Git::get_file_hash(const string filename)
 	return hash;
 }
 
-#endif // USELIBGIT2
+}

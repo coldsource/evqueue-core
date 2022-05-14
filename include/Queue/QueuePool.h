@@ -84,6 +84,7 @@ class QueuePool
 		bool Exists(unsigned int id);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		static void HandleReload(bool notify);
 		
 	private:
 		Queue *get_queue(unsigned int id);
