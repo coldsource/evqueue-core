@@ -113,14 +113,6 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["cluster.cnx.timeout"] = "10";
 	entries["cluster.rcv.timeout"] = "5";
 	entries["cluster.snd.timeout"] = "5";
-	entries["git.repository"] = "";
-	entries["git.user"] = "";
-	entries["git.password"] = "";
-	entries["git.public_key"] = "";
-	entries["git.private_key"] = "";
-	entries["git.signature.name"] = "evQueue";
-	entries["git.signature.email"] = "evqueue@local";
-	entries["git.workflows.subdirectory"] = "workflows";
 }
 
 ConfigurationEvQueue::~ConfigurationEvQueue(void)
@@ -213,7 +205,7 @@ void ConfigurationEvQueue::SendConfiguration(QueryResponse *response)
 	{
 		DOMElement entry_node = xmldoc->createElement("entry");
 		entry_node.setAttribute("name",it->first);
-		if(it->first=="mysql.password" || it->first=="cluster.notify.password" || it->first=="git.password")
+		if(it->first.size()>9 && it->first.substr(it->first.size()-9)==".password" )
 			entry_node.setAttribute("value","****"); // Do not send password
 		else
 			entry_node.setAttribute("value",it->second);

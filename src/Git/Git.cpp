@@ -24,7 +24,7 @@
 #include <XML/XMLUtils.h>
 #include <Workflow/Workflow.h>
 #include <Workflow/Workflows.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Configuration/Configuration.h>
 #include <Exception/Exception.h>
 #include <IO/FileManager.h>
 #include <Logger/Logger.h>
@@ -181,7 +181,7 @@ void Git::APIReady()
 {
 	git_libgit2_init();
 	
-	Configuration *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	
 	repo_path = config->Get("git.repository");
 	
