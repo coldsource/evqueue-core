@@ -114,7 +114,7 @@ pid_t Forker::Start()
 				{
 					syslog(LOG_CRIT, "forker: could not read from communication pipe, exiting...");
 					break;
-				}exit(0);
+				}
 				
 				pid_t proc_pid;
 				
