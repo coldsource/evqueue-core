@@ -16,6 +16,9 @@ else()
 	option(USELIBGIT2 "Enable libgit2 support" OFF)
 endif(HAS_LIBGIT2)
 
+# ELogs support
+option(USEELOGS "Enable ELogs support" ON)
+
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
 aux_source_directory(src/WorkflowInstance srcWorkflowInstance)
@@ -58,7 +61,6 @@ add_executable(evqueue
 	${srcWorkflow}
 	${srcXML}
 	${srcLogs}
-	${srcELogs}
 	${srcAPI}
 	${srcLogger}
 	${srcCluster}
@@ -94,6 +96,11 @@ if(USELIBGIT2)
 	target_link_libraries(evqueue git2)
 	Message("Git support is enabled")
 endif(USELIBGIT2)
+
+if(USEELOGS)
+	target_sources(evqueue PRIVATE ${srcELogs})
+	Message("ELogs support is enabled")
+endif(USEELOGS)
 
 include_directories(include /usr/include)
 
