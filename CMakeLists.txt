@@ -123,13 +123,6 @@ else()
 	message(FATAL_ERROR "xerces-c development library is not installed")
 endif()
 
-find_path(PCREPP_INCLUDE pcrecpp.h /usr/include)
-if(PCREPP_INCLUDE)
-	message("pecre++ development library is installed")
-else()
-	message(FATAL_ERROR "pecre++ development library is not installed")
-endif()
-
 find_path(WEBSOCKETS_INCLUDE libwebsockets.h /usr/include)
 if(WEBSOCKETS_INCLUDE)
 	message("websockets development library is installed")
@@ -147,7 +140,6 @@ endif()
 target_link_libraries(evqueue z)
 target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
-target_link_libraries(evqueue pcrecpp)
 target_link_libraries(evqueue websockets)
 target_link_libraries(evqueue zip)
 
@@ -172,7 +164,6 @@ add_executable(evqueue_wfmanager
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_wfmanager xerces-c)
-target_link_libraries(evqueue_wfmanager pcrecpp)
 
 
 
@@ -194,7 +185,6 @@ add_executable(evqueue_api
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_api xerces-c)
-target_link_libraries(evqueue_api pcrecpp)
 
 
 

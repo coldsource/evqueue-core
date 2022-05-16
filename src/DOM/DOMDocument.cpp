@@ -25,8 +25,7 @@
 #include <Exception/Exception.h>
 #include <XML/XMLString.h>
 
-#include <pcrecpp.h>
-
+#include <regex>
 #include <memory>
 
 using namespace std;
@@ -168,16 +167,16 @@ string DOMDocument::ExpandXPathAttribute(const string &attribute,DOMNode context
 {
 	string attribute_expanded = attribute;
 	
-	pcrecpp::RE regex("(\\{[^\\}]+\\})");
-	pcrecpp::StringPiece str_to_match(attribute);
-	std::string match;
-	while(regex.FindAndConsume(&str_to_match,&match))
+	regex attr_regex("(\\{[^\\}]+\\})");
+	
+	auto words_begin = sregex_iterator(attribute.begin(), attribute.end(), attr_regex);
+	auto words_end = sregex_iterator();
+	for(auto i=words_begin;i!=words_end;++i)
 	{
-		string xpath_piece_raw = match;
+		string xpath_piece_raw = i->str();
 		string xpath_piece =  xpath_piece_raw.substr(1,xpath_piece_raw.length()-2);
 		
 		unique_ptr<DOMXPathResult> value_nodes(evaluate(xpath_piece,context_node,DOMXPathResult::FIRST_RESULT_TYPE));
-		
 		if(value_nodes->isNode())
 		{
 			DOMNode value_node = value_nodes->getNodeValue();
