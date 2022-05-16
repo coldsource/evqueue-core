@@ -25,10 +25,11 @@
 #include <Process/Monitor.h>
 #include <Process/NotificationMonitor.h>
 #include <Process/PIDFile.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Configuration/Configuration.h>
 #include <Logger/Logger.h>
 #include <Exception/Exception.h>
 #include <API/QueryHandlers.h>
+#include <DB/DBConfig.h>
 
 #include <sys/prctl.h>
 #include <signal.h>
@@ -63,8 +64,10 @@ Forker::Forker()
 		throw Exception("Forker","Could not create internal communication pipe");
 	
 	
-	pipes_directory = ConfigurationEvQueue::GetInstance()->Get("forker.pipes.directory");
-	node_name = ConfigurationEvQueue::GetInstance()->Get("cluster.node.name");
+	Configuration *config = Configuration::GetInstance();
+	pipes_directory = config->Get("forker.pipes.directory");
+	node_name = config->Get("cluster.node.name");
+	forker_pidfile =  config->Get("forker.pidfile");
 	
 	instance = this;
 }
@@ -82,12 +85,12 @@ pid_t Forker::Start()
 		signal(SIGCHLD,signal_callback_handler); // Reap children
 		
 		{
-			string pidfile = ConfigurationEvQueue::GetInstance()->Get("forker.pidfile");
-			PIDFile pidf("forker", pidfile, getpid());
+			PIDFile pidf("forker", forker_pidfile, getpid());
 			
-			// Clean early instanciation of QueryHandlers
-			if(QueryHandlers::GetInstance())
-				delete QueryHandlers::GetInstance();
+			// Clean early instanciation of handlers
+			delete QueryHandlers::GetInstance();
+			delete Configuration::GetInstance();
+			delete DBConfig::GetInstance();
 			
 			while(true)
 			{
@@ -111,7 +114,7 @@ pid_t Forker::Start()
 				{
 					syslog(LOG_CRIT, "forker: could not read from communication pipe, exiting...");
 					break;
-				}
+				}exit(0);
 				
 				pid_t proc_pid;
 				
@@ -161,7 +164,7 @@ pid_t Forker::Start()
 			}
 		}
 		
-		exit(0);
+		return 0;
 	}
 	
 	// Close other pipes ends

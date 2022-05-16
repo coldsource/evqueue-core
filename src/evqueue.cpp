@@ -200,7 +200,8 @@ int main(int argc,char **argv)
 		
 		// Start forker very early to get cleanest ENV as possible (we still need configuration so)
 		Forker forker;
-		forker.Start();
+		if(forker.Start()==0)
+			return 0; // Forker clean exit
 		
 		// Position signal handlers
 		set_sighandler(signal_callback_handler, {SIGINT, SIGTERM, SIGHUP, SIGUSR1});
