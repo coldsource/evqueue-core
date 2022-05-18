@@ -17,16 +17,18 @@ if [ "$1" = "configure" ]; then
 	
 	. /usr/share/debconf/confmodule
 	db_get evqueue-core/hostname
-	sed --in-place -e "s/#\?[ ]*mysql.host[ ]*=.*/mysql.host=$RET/" /etc/evqueue.conf
+	sed --in-place -e "s/^#\?[ ]*mysql.host[ ]*=.*/mysql.host=$RET/" /etc/evqueue.conf
 
 	db_get evqueue-core/user
-	sed --in-place -e "s/#\?[ ]*mysql.user[ ]*=.*/mysql.user=$RET/" /etc/evqueue.conf
+	sed --in-place -e "s/^#\?[ ]*mysql.user[ ]*=.*/mysql.user=$RET/" /etc/evqueue.conf
+	sed --in-place -e "s/^#\?[ ]*mysql.user[ ]*=.*/elog.mysql.user=$RET/" /etc/evqueue.conf
 
 	db_get evqueue-core/password
-	sed --in-place -e "s/#\?[ ]*mysql.password[ ]*=.*/mysql.password=$RET/" /etc/evqueue.conf
+	sed --in-place -e "s/^#\?[ ]*mysql.password[ ]*=.*/mysql.password=$RET/" /etc/evqueue.conf
+	sed --in-place -e "s/^#\?[ ]*mysql.password[ ]*=.*/elog.mysql.password=$RET/" /etc/evqueue.conf
 
 	db_get evqueue-core/database
-	sed --in-place -e "s/#\?[ ]*mysql.database[ ]*=.*/mysql.database=$RET/" /etc/evqueue.conf
+	sed --in-place -e "s/^#\?[ ]*mysql.database[ ]*=.*/mysql.database=$RET/" /etc/evqueue.conf
 
 	if service --status-all | grep -Fq 'rsyslog'; then	
 		service rsyslog restart
