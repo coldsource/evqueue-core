@@ -8,7 +8,7 @@ if [ "$1" = "configure" ]; then
 	fi
 	
 	if ! getent passwd evqueue > /dev/null 2>&1 ; then
-		adduser --quiet --system --disabled-login --ingroup evqueue --home /var/run/evqueue/ --no-create-home evqueue
+		adduser --quiet --system --disabled-login --ingroup evqueue --home /run/evqueue/ --no-create-home evqueue
 	fi
 
 	chown evqueue:evqueue /usr/share/evqueue-core/plugins
