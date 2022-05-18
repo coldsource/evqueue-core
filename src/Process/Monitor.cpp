@@ -22,7 +22,6 @@
 #include <Process/tools_ipc.h>
 #include <Process/DataSerializer.h>
 #include <Configuration/Configuration.h>
-#include <Configuration/ConfigurationEvQueue.h>
 #include <Exception/Exception.h>
 #include <Process/ProcessExec.h>
 
@@ -61,7 +60,7 @@ using namespace std;
 
 int Monitor::main()
 {
-	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	
 	// Catch signals
 	signal(SIGTERM,signal_callback_handler);
@@ -340,6 +339,8 @@ int Monitor::main()
 		// Notify evqueue
 		if(msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0)==-1)
 			syslog(LOG_CRIT, "evq_monitor: failed to send daemon notification");
+		
+		delete config;
 		
 		return msgbuf.mtext.retcode;
 	}

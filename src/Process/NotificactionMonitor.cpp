@@ -21,7 +21,8 @@
 #include <Process/DataSerializer.h>
 #include <Process/tools_ipc.h>
 #include <Process/ProcessExec.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Process/DataPiper.h>
+#include <Configuration/Configuration.h>
 #include <global.h>
 
 #include <stdio.h>
@@ -65,7 +66,7 @@ static void signal_callback_handler(int signum)
 
 int NotificationMonitor::main()
 {
-	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	
 	// Create message queue
 	int msgqid = ipc_openq(config->Get("core.ipc.qid").c_str());
@@ -129,6 +130,10 @@ int NotificationMonitor::main()
 	}
 	
 	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0); // Notify evqueue
+	
+	delete config;
+	if(DataPiper::GetInstance())
+		delete DataPiper::GetInstance();
 	
 	return msgbuf.mtext.retcode;
 }
