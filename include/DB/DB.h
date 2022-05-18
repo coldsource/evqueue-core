@@ -100,9 +100,8 @@ public:
 	void Ping(void);
 	void Wait(void);
 	
-	void Query(const char *query);
-	void QueryPrintfC(const char *query,...);
-	void QueryPrintf(const std::string &query,...);
+	void Query(std::string query);
+	void QueryPrintf(const char *query,...);
 	void QueryVsPrintf(const std::string &query,const std::vector<void *> &args);
 	std::string EscapeString(const std::string &str);
 	int InsertID(void);
@@ -139,6 +138,7 @@ public:
 	
 private:
 	void connect();
+	std::string get_query_value(char type, int idx, const std::vector<void *> &args); 
 };
 
 #endif

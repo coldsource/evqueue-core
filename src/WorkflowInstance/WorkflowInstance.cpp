@@ -319,6 +319,8 @@ void WorkflowInstance::SendStatus(QueryResponse *response, bool full_status)
 
 void WorkflowInstance::record_log(DOMElement node, const char *log)
 {
+	const string log_str(log);
+	
 	if(strlen(log)<log_dom_maxsize)
 	{
 		node.appendChild(xmldoc->createTextNode(log));
@@ -328,7 +330,7 @@ void WorkflowInstance::record_log(DOMElement node, const char *log)
 		DB db;
 		try
 		{
-			db.QueryPrintfC("INSERT INTO t_datastore(workflow_instance_id,datastore_value) VALUES(%i,%s)",&workflow_instance_id,log);
+			db.QueryPrintf("INSERT INTO t_datastore(workflow_instance_id,datastore_value) VALUES(%i,%s)",&workflow_instance_id,&log_str);
 			
 			int datastore_id = db.InsertID();
 			node.setAttribute("datastore-id",to_string(datastore_id));

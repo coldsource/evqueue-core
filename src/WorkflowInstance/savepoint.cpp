@@ -83,12 +83,12 @@ void WorkflowInstance::record_savepoint(bool force)
 				if(xmldoc->getDocumentElement().getAttribute("status")!="TERMINATED")
 				{
 					// Only update savepoint if workflow is still running
-					db.QueryPrintfC("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",savepoint.c_str(),&workflow_instance_id);
+					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",&savepoint,&workflow_instance_id);
 				}
 				else
 				{
 					// Update savepoint and status if workflow is terminated
-					db.QueryPrintfC("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",savepoint.c_str(),&error_tasks,&workflow_instance_id);
+					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",&savepoint,&error_tasks,&workflow_instance_id);
 					
 					fill_custom_filters();
 					fill_automatic_tags();
@@ -97,10 +97,18 @@ void WorkflowInstance::record_savepoint(bool force)
 			else
 			{
 				// Always insert full informations as we are called at workflow end or when engine restarts
-				db.QueryPrintfC("\
+				db.QueryPrintf("\
 					INSERT INTO t_workflow_instance(workflow_instance_id,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_start,workflow_instance_end,workflow_instance_status,workflow_instance_errors,workflow_instance_savepoint)\
 					VALUES(%i,%i,%i,%s,%s,%s,%s,%i,%s)",
-					&workflow_instance_id,&workflow_id,&workflow_schedule_id,workflow_instance_host.length()?workflow_instance_host.c_str():0,workflow_instance_start.c_str(),workflow_instance_end.length()?workflow_instance_end.c_str():"0000-00-00 00:00:00",workflow_instance_status.c_str(),&error_tasks,savepoint.c_str());
+					&workflow_instance_id,
+					&workflow_id,
+					&workflow_schedule_id,
+					workflow_instance_host.length()?&workflow_instance_host:0,
+					&workflow_instance_start,
+					workflow_instance_end.length()?&workflow_instance_end:0,
+					&workflow_instance_status,
+					&error_tasks,
+					&savepoint);
 			}
 
 			break;

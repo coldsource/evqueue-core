@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <string>
+#include <regex>
 
 using namespace std;
 
@@ -142,7 +143,7 @@ void DB::Wait(void)
 	}
 }
 
-void DB::Query(const char *query)
+void DB::Query(const std::string &query)
 {
 	connect();
 	
@@ -152,9 +153,9 @@ void DB::Query(const char *query)
 		res=0;
 	}
 
-	Logger::Log(LOG_DEBUG, "Executing query : %s",query);
+	Logger::Log(LOG_DEBUG, "Executing query : " + query);
 	
-	if(mysql_query(mysql,query)!=0)
+	if(mysql_query(mysql,query.c_str())!=0)
 	{
 		string error = mysql_error(mysql);
 		int code = mysql_errno(mysql);
@@ -173,392 +174,84 @@ void DB::Query(const char *query)
 	}
 }
 
-void DB::QueryPrintfC(const char *query,...)
+void DB::QueryPrintf(const char *query,...)
 {
-	int len,escaped_len;
-	const char *arg_str;
-	const int *arg_int;
 	va_list ap;
 
 	va_start(ap,query);
 
-	len = strlen(query);
-	escaped_len = 0;
-	for(int i=0;i<len;i++)
-	{
-		if(query[i]=='%')
-		{
-			switch(query[i+1])
-			{
-				case 's':
-					arg_str = va_arg(ap,const char *);
-					if(arg_str)
-						escaped_len += 2+2*strlen(arg_str); // 2 Quotes + Escaped string
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-				
-				case 'i':
-					arg_int = va_arg(ap,const int *);
-					if(arg_int)
-						escaped_len += 16; // Integer
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-
-				default:
-					escaped_len++;
-					break;
-			}
-		}
-		else
-			escaped_len++;
-	}
-
-	va_end(ap);
-
-
-	va_start(ap,query);
-
-	char *escaped_query = new char[escaped_len+1];
-	int j = 0;
-	for(int i=0;i<len;i++)
-	{
-		if(query[i]=='%')
-		{
-			switch(query[i+1])
-			{
-				case 's':
-					arg_str = va_arg(ap,const char *);
-					if(arg_str)
-					{
-						escaped_query[j++] = '\'';
-						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str, strlen(arg_str));
-						escaped_query[j++] = '\'';
-					}
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-				
-				case 'i':
-					arg_int = va_arg(ap,const int *);
-					if(arg_int)
-						j += sprintf(escaped_query+j,"%d",*arg_int);
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-
-				default:
-					escaped_query[j++] = query[i];
-					break;
-			}
-		}
-		else
-			escaped_query[j++] = query[i];
-	}
-
-	va_end(ap);
-
-	escaped_query[j] = '\0';
-
-	try
-	{
-		Query(escaped_query);
-	}
-	catch(Exception &e)
-	{
-		delete[] escaped_query;
-		throw e;
-	}
+	vector<void *> args;
 	
-	delete[] escaped_query;
-}
-
-void DB::QueryPrintf(const string &query,...)
-{
-	int len,escaped_len;
-	const string *arg_str;
-	const int *arg_int;
-	const long long *arg_ll;
-	va_list ap;
-
-	va_start(ap,query);
-
-	len = query.length();
-	escaped_len = 0;
-	for(int i=0;i<len;i++)
+	int i = 0;
+	while(query[i]!='\0')
 	{
 		if(query[i]=='%')
 		{
 			switch(query[i+1])
 			{
-				case 'c': // Column
-					arg_str = va_arg(ap,const string *);
-					if(arg_str)
-						escaped_len += arg_str->length();
-					i++;
+				case 'c':case 's':
+					args.push_back((void *)va_arg(ap,const string *));
 					break;
-				
-				case 's': // String
-					arg_str = va_arg(ap,const string *);
-					if(arg_str)
-						escaped_len += 2+2*arg_str->length(); // 2 Quotes + Escaped string
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-				
-				case 'i': // Integer
-					arg_int = va_arg(ap,const int *);
-					if(arg_int)
-						escaped_len += 16; // Integer
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-				
-				case 'l': // Long long
-					arg_ll = va_arg(ap,const long long *);
-					if(arg_ll)
-						escaped_len += 32; // Long long
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-
-				default:
-					escaped_len++;
-					break;
-			}
-		}
-		else
-			escaped_len++;
-	}
-
-	va_end(ap);
-
-
-	va_start(ap,query);
-
-	char *escaped_query = new char[escaped_len+1];
-	int j = 0;
-	for(int i=0;i<len;i++)
-	{
-		if(query[i]=='%')
-		{
-			switch(query[i+1])
-			{
-				case 'c':
-					arg_str = va_arg(ap,const string *);
-					if(arg_str)
-					{
-						memcpy(escaped_query+j, arg_str->c_str(), arg_str->length());
-						j += arg_str->length();
-					}
-					i++;
-					break;
-				
-				case 's':
-					arg_str = va_arg(ap,const string *);
-					if(arg_str)
-					{
-						escaped_query[j++] = '\'';
-						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str->c_str(), arg_str->length());
-						escaped_query[j++] = '\'';
-					}
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-				
 				case 'i':
-					arg_int = va_arg(ap,const int *);
-					if(arg_int)
-						j += sprintf(escaped_query+j,"%d",*arg_int);
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
+					args.push_back((void *)va_arg(ap,const int *));
 					break;
-				
 				case 'l':
-					arg_ll = va_arg(ap,const long long *);
-					if(arg_ll)
-						j += sprintf(escaped_query+j,"%lld",*arg_ll);
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-
-				default:
-					escaped_query[j++] = query[i];
+					args.push_back((void *)va_arg(ap,const long long *));
 					break;
 			}
 		}
-		else
-			escaped_query[j++] = query[i];
+		
+		i++;
 	}
 
 	va_end(ap);
 
-	escaped_query[j] = '\0';
 
-	try
-	{
-		Query(escaped_query);
-	}
-	catch(Exception &e)
-	{
-		delete[] escaped_query;
-		throw e;
-	}
-	
-	delete[] escaped_query;
+	QueryVsPrintf(query, args);
 }
 
 void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
 {
-	int len,escaped_len;
-	const string *arg_str;
-	const int *arg_int;
-	const long long *arg_ll;
+	regex prct_regex("%(c|s|i|l)");
 	
-	int cur = 0;
-
-	len = query.length();
-	escaped_len = 0;
-	for(int i=0;i<len;i++)
+	auto words_begin = sregex_iterator(q.begin(), q.end(), prct_regex);
+	auto words_end = sregex_iterator();
+	
+	int last_pos = 0;
+	int match_i = 0;
+	string escaped_query;
+	for (sregex_iterator i = words_begin; i != words_end; ++i)
 	{
-		if(query[i]=='%')
-		{
-			switch(query[i+1])
-			{
-				case 's':
-					arg_str = (string *)args.at(cur++);
-					if(arg_str)
-						escaped_len += 2+2*arg_str->length(); // 2 Quotes + Escaped string
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-				
-				case 'i':
-					arg_int = (int *)args.at(cur++);
-					if(arg_int)
-						escaped_len += 16; // Integer
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-				
-				case 'l':
-					arg_int = (int *)args.at(cur++);
-					if(arg_int)
-						escaped_len += 32; // Integer
-					else
-						escaped_len += 4; // NULL
-					i++;
-					break;
-
-				default:
-					escaped_len++;
-					break;
-			}
-		}
-		else
-			escaped_len++;
-	}
-
-	cur = 0;
-
-	char *escaped_query = new char[escaped_len+1];
-	int j = 0;
-	for(int i=0;i<len;i++)
-	{
-		if(query[i]=='%')
-		{
-			switch(query[i+1])
-			{
-				case 's':
-					arg_str = (string *)args.at(cur++);
-					if(arg_str)
-					{
-						escaped_query[j++] = '\'';
-						j += mysql_real_escape_string(mysql, escaped_query+j, arg_str->c_str(), arg_str->length());
-						escaped_query[j++] = '\'';
-					}
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-				
-				case 'i':
-					arg_int = (int *)args.at(cur++);
-					if(arg_int)
-						j += sprintf(escaped_query+j,"%d",*arg_int);
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-				
-				case 'l':
-					arg_ll = (long long *)args.at(cur++);
-					if(arg_ll)
-						j += sprintf(escaped_query+j,"%lld",*arg_ll);
-					else
-					{
-						strcpy(escaped_query+j,"NULL");
-						j += 4;
-					}
-					i++;
-					break;
-
-				default:
-					escaped_query[j++] = query[i];
-					break;
-			}
-		}
-		else
-			escaped_query[j++] = query[i];
-	}
-
-	escaped_query[j] = '\0';
-
-	try
-	{
-		Query(escaped_query);
-	}
-	catch(Exception &e)
-	{
-		delete[] escaped_query;
-		throw e;
+		smatch m = *i;
+		escaped_query += query.substr(last_pos, m.position()-last_pos) + get_query_value(m.str()[1], match_i, args);
+		last_pos = m.position()+m.length();
+		
+		match_i++;
 	}
 	
-	delete[] escaped_query;
+	escaped_query += query.substr(last_pos);
+	
+	Query(escaped_query);
+}
+
+string DB::get_query_value(char type, int idx, const std::vector<void *> &args)
+{
+	if(args[idx]==0)
+		return "NULL";
+	
+	switch(type)
+	{
+		case 'c':
+			return *((string *)args[idx]);
+		case 's':
+			return "'" + EscapeString(*((const string *)args[idx])) + "'";
+		case 'i':
+			return to_string(*(const int *)args[idx]);
+		case 'l':
+			return to_string(*(const long long *)args[idx]);
+	}
+	
+	return "";
 }
 
 string DB::EscapeString(const string &str)
