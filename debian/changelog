@@ -1,3 +1,10 @@
+evqueue-core (3.3-1) buster; urgency=medium
+
+  * ELogs
+  * Bugfixes
+
+ -- Thibault KUMMER <bob@coldsource.net>  Mon, 18 May 2022 13:50:00 +0200
+
 evqueue-core (3.2-1) buster; urgency=medium
 
   * Automatic tags
