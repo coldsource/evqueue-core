@@ -45,11 +45,11 @@ void LoggerNotifications::Log(pid_t pid, const string &log)
 	
 	DB db;
 	
-	db.QueryPrintf("INSERT INTO t_log_notifications(node_name,log_notifications_pid,log_notifications_message) VALUES(%s,%i,%s)",
+	db.QueryPrintf("INSERT INTO t_log_notifications(node_name,log_notifications_pid,log_notifications_message) VALUES(%s,%i,%s)", {
 		&instance->node_name,
 		&pid,
 		&log
-		);
+	});
 	
 	Events::GetInstance()->Create("LOG_NOTIFICATION");
 }

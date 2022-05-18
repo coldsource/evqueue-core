@@ -89,7 +89,6 @@ pid_t Forker::Start()
 			
 			// Clean early instanciation of handlers
 			delete QueryHandlers::GetInstance();
-			delete Configuration::GetInstance();
 			delete DBConfig::GetInstance();
 			
 			while(true)
@@ -164,6 +163,7 @@ pid_t Forker::Start()
 			}
 		}
 		
+		delete Configuration::GetInstance();
 		return 0;
 	}
 	

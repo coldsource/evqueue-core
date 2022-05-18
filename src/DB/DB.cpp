@@ -143,7 +143,7 @@ void DB::Wait(void)
 	}
 }
 
-void DB::Query(const std::string &query)
+void DB::Query(const string &query)
 {
 	connect();
 	
@@ -174,47 +174,11 @@ void DB::Query(const std::string &query)
 	}
 }
 
-void DB::QueryPrintf(const char *query,...)
-{
-	va_list ap;
-
-	va_start(ap,query);
-
-	vector<void *> args;
-	
-	int i = 0;
-	while(query[i]!='\0')
-	{
-		if(query[i]=='%')
-		{
-			switch(query[i+1])
-			{
-				case 'c':case 's':
-					args.push_back((void *)va_arg(ap,const string *));
-					break;
-				case 'i':
-					args.push_back((void *)va_arg(ap,const int *));
-					break;
-				case 'l':
-					args.push_back((void *)va_arg(ap,const long long *));
-					break;
-			}
-		}
-		
-		i++;
-	}
-
-	va_end(ap);
-
-
-	QueryVsPrintf(query, args);
-}
-
-void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
+void DB::QueryPrintf(const string &query,const vector<const void *> &args)
 {
 	regex prct_regex("%(c|s|i|l)");
 	
-	auto words_begin = sregex_iterator(q.begin(), q.end(), prct_regex);
+	auto words_begin = sregex_iterator(query.begin(), query.end(), prct_regex);
 	auto words_end = sregex_iterator();
 	
 	int last_pos = 0;
@@ -234,7 +198,7 @@ void DB::QueryVsPrintf(const string &query,const vector<void *> &args)
 	Query(escaped_query);
 }
 
-string DB::get_query_value(char type, int idx, const std::vector<void *> &args)
+string DB::get_query_value(char type, int idx, const std::vector<const void *> &args)
 {
 	if(args[idx]==0)
 		return "NULL";

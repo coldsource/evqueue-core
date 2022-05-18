@@ -45,10 +45,10 @@ void tools_init_db(void)
 		for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 		{
 			db.QueryPrintf(
-				"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
+				"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s", {
 				&config->Get("mysql.database"),
 				&it->first
-			);
+			});
 			
 			if(db.FetchRow())
 			{
@@ -81,7 +81,7 @@ void tools_upgrade_v30_v31(void)
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 	{
 		string version = "v" EVQUEUE_VERSION;
-		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
+		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s", {&version});
 	}
 }
 
@@ -95,7 +95,7 @@ void tools_upgrade_v31_v32(void)
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 	{
 		string version = "v" EVQUEUE_VERSION;
-		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
+		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s", {&version});
 	}
 }
 
@@ -113,7 +113,7 @@ void tools_upgrade_v32_v33(void)
 	for(auto it=evqueue_tables.begin();it!=evqueue_tables.end();++it)
 	{
 		string version = "v" EVQUEUE_VERSION;
-		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s",&version);
+		db.QueryPrintf("ALTER TABLE "+it->first+" COMMENT=%s", {&version});
 	}
 }
 
@@ -122,7 +122,7 @@ void tools_upgrade_t_notification()
 	DB db;
 	db.QueryPrintf(
 		"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema=%s AND table_name='t_notification' AND column_name='notification_subscribe_all'",
-		&ConfigurationEvQueue::GetInstance()->Get("mysql.database")
+		{&ConfigurationEvQueue::GetInstance()->Get("mysql.database")}
 	);
 	
 	db.FetchRow();

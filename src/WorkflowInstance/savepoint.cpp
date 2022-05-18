@@ -83,12 +83,18 @@ void WorkflowInstance::record_savepoint(bool force)
 				if(xmldoc->getDocumentElement().getAttribute("status")!="TERMINATED")
 				{
 					// Only update savepoint if workflow is still running
-					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",&savepoint,&workflow_instance_id);
+					db.QueryPrintf(
+						"UPDATE t_workflow_instance SET workflow_instance_savepoint=%s WHERE workflow_instance_id=%i",
+						{&savepoint,&workflow_instance_id}
+					);
 				}
 				else
 				{
 					// Update savepoint and status if workflow is terminated
-					db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",&savepoint,&error_tasks,&workflow_instance_id);
+					db.QueryPrintf(
+						"UPDATE t_workflow_instance SET workflow_instance_savepoint=%s,workflow_instance_status='TERMINATED',workflow_instance_errors=%i,workflow_instance_end=NOW() WHERE workflow_instance_id=%i",
+						{&savepoint,&error_tasks,&workflow_instance_id}
+					);
 					
 					fill_custom_filters();
 					fill_automatic_tags();
@@ -100,7 +106,7 @@ void WorkflowInstance::record_savepoint(bool force)
 				db.QueryPrintf("\
 					INSERT INTO t_workflow_instance(workflow_instance_id,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_start,workflow_instance_end,workflow_instance_status,workflow_instance_errors,workflow_instance_savepoint)\
 					VALUES(%i,%i,%i,%s,%s,%s,%s,%i,%s)",
-					&workflow_instance_id,
+					{&workflow_instance_id,
 					&workflow_id,
 					&workflow_schedule_id,
 					workflow_instance_host.length()?&workflow_instance_host:0,
@@ -108,7 +114,7 @@ void WorkflowInstance::record_savepoint(bool force)
 					workflow_instance_end.length()?&workflow_instance_end:0,
 					&workflow_instance_status,
 					&error_tasks,
-					&savepoint);
+					&savepoint});
 			}
 
 			break;

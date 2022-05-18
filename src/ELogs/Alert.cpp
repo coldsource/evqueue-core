@@ -53,7 +53,7 @@ Alert::Alert()
 
 Alert::Alert(DB *db,unsigned int alert_id)
 {
-	db->QueryPrintf("SELECT alert_id, alert_name, alert_description, alert_occurrences, alert_period, alert_filters, alert_active FROM t_alert WHERE alert_id=%i",&alert_id);
+	db->QueryPrintf("SELECT alert_id, alert_name, alert_description, alert_occurrences, alert_period, alert_filters, alert_active FROM t_alert WHERE alert_id=%i",{&alert_id});
 	
 	if(!db->FetchRow())
 		throw Exception("Alert","Unknown alert");
@@ -66,7 +66,7 @@ Alert::Alert(DB *db,unsigned int alert_id)
 	filters = db->GetField(5);
 	active = db->GetFieldInt(6);
 	
-	db->QueryPrintf("SELECT notification_id FROM t_alert_notification WHERE alert_id=%i", &alert_id);
+	db->QueryPrintf("SELECT notification_id FROM t_alert_notification WHERE alert_id=%i", {&alert_id});
 	while(db->FetchRow())
 		notifications.push_back(db->GetFieldInt(0));
 	
@@ -124,14 +124,14 @@ unsigned int Alert::Create(const string &name, const string &description, unsign
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_filters, alert_active) VALUES(%s, %s, %i, %i, %s, %i)",
+	db.QueryPrintf("INSERT INTO t_alert(alert_name, alert_description, alert_occurrences, alert_period, alert_filters, alert_active) VALUES(%s, %s, %i, %i, %s, %i)", {
 		&name,
 		&description,
 		&occurrences,
 		&period,
 		&filters,
 		&iactive
-	);
+	});
 	
 	unsigned int id = db.InsertID();
 	
@@ -142,7 +142,7 @@ unsigned int Alert::Create(const string &name, const string &description, unsign
 		bool issubscribed = it.value();
 		
 		if(issubscribed)
-			db.QueryPrintf("INSERT INTO t_alert_notification(alert_id, notification_id) VALUES(%i,%i)", &id, &notification_id);
+			db.QueryPrintf("INSERT INTO t_alert_notification(alert_id, notification_id) VALUES(%i,%i)", {&id, &notification_id});
 	}
 	
 	db.CommitTransaction();
@@ -163,7 +163,7 @@ void Alert::Edit(unsigned int id, const string &name, const string &description,
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("UPDATE t_alert SET alert_name=%s, alert_description=%s, alert_occurrences=%i, alert_period=%i, alert_filters=%s, alert_active=%i WHERE alert_id=%i",
+	db.QueryPrintf("UPDATE t_alert SET alert_name=%s, alert_description=%s, alert_occurrences=%i, alert_period=%i, alert_filters=%s, alert_active=%i WHERE alert_id=%i", {
 		&name,
 		&description,
 		&occurrences,
@@ -171,9 +171,9 @@ void Alert::Edit(unsigned int id, const string &name, const string &description,
 		&filters,
 		&iactive,
 		&id
-	);
+	});
 	
-	db.QueryPrintf("DELETE FROM t_alert_notification WHERE alert_id=%i", &id);
+	db.QueryPrintf("DELETE FROM t_alert_notification WHERE alert_id=%i", {&id});
 	
 	json j_notifications = json::parse(notifications);
 	for(auto it = j_notifications.begin(); it!=j_notifications.end(); ++it)
@@ -182,7 +182,7 @@ void Alert::Edit(unsigned int id, const string &name, const string &description,
 		bool issubscribed = it.value();
 		
 		if(issubscribed)
-			db.QueryPrintf("INSERT INTO t_alert_notification(alert_id, notification_id) VALUES(%i,%i)", &id, &notification_id);
+			db.QueryPrintf("INSERT INTO t_alert_notification(alert_id, notification_id) VALUES(%i,%i)", {&id, &notification_id});
 	}
 	
 	db.CommitTransaction();
@@ -194,9 +194,9 @@ void Alert::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_alert WHERE alert_id=%i",&id);
-	db.QueryPrintf("DELETE FROM t_alert_notification WHERE alert_id=%i", &id);
-	db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_id=%i", &id);
+	db.QueryPrintf("DELETE FROM t_alert WHERE alert_id=%i", {&id});
+	db.QueryPrintf("DELETE FROM t_alert_notification WHERE alert_id=%i", {&id});
+	db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_id=%i", {&id});
 	
 	db.CommitTransaction();
 }
@@ -333,7 +333,7 @@ void Alert::SetIsActive(unsigned int id, bool active)
 	if(!Alerts::GetInstance()->Exists(id))
 		throw Exception("Alert","Alert not found","UNKNOWN_WORKFLOW_SCHEDULE");
 	
-	db.QueryPrintf("UPDATE t_alert SET alert_active=%i WHERE alert_id=%i",&iactive,&id);
+	db.QueryPrintf("UPDATE t_alert SET alert_active=%i WHERE alert_id=%i", {&iactive,&id});
 }
 
 bool Alert::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)

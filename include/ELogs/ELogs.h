@@ -37,7 +37,7 @@ class ELogs
 {
 	static std::string get_filter(const std::map<std::string, std::string> &filters, const std::string &name, const std::string &default_val);
 	static int get_filter(const std::map<std::string, std::string> &filters, const std::string &name,int default_val);
-	static void add_auto_filters(const std::map<std::string, std::string> filters, const Fields &fields, const std::string &prefix, std::string &query_where, std::vector<void *> &values, int *val_int, std::string *val_str);
+	static void add_auto_filters(const std::map<std::string, std::string> filters, const Fields &fields, const std::string &prefix, std::string &query_where, std::vector<const void *> &values, int *val_int, std::string *val_str);
 	
 	public:
 		static std::vector<std::map<std::string, std::string>> QueryLogs(std::map<std::string, std::string> filters, unsigned int limit, unsigned int offset = 0);

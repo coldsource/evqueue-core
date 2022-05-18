@@ -66,7 +66,7 @@ void WorkflowInstances::Resume()
 	
 	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
 	
-	db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",&(config->Get("cluster.node.name")));
+	db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",{&config->Get("cluster.node.name")});
 	while(db.FetchRow())
 	{
 		Logger::Log(LOG_NOTICE,"[WID %d] Resuming",db.GetFieldInt(0));
@@ -357,7 +357,7 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 		string query_from = "FROM t_workflow_instance wi, t_workflow w";
 		
 		string query_where = "WHERE wi.workflow_id=w.workflow_id";
-		vector<void *> query_where_values;
+		vector<const void *> query_where_values;
 		
 		if(filter_id!=0)
 		{
@@ -519,7 +519,7 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 		string query = query_select+" "+query_from+" "+query_where+" "+query_groupby+" "+query_order_by+" "+query_limit;
 		
 		DB db;
-		db.QueryVsPrintf(query,query_where_values);
+		db.QueryPrintf(query,query_where_values);
 		map<unsigned int,DOMNode> instance_id_tags_node;
 		while(db.FetchRow())
 		{
@@ -596,7 +596,7 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 		
 		if(i>0)
 		{
-			db.QueryPrintf("SELECT wit.workflow_instance_id, t.tag_id, t.tag_label FROM t_workflow_instance_tag wit, t_tag t WHERE t.tag_id=wit.tag_id AND wit.workflow_instance_id "+query_in);
+			db.Query("SELECT wit.workflow_instance_id, t.tag_id, t.tag_label FROM t_workflow_instance_tag wit, t_tag t WHERE t.tag_id=wit.tag_id AND wit.workflow_instance_id "+query_in);
 			while(db.FetchRow())
 			{
 				auto it = instance_id_tags_node.find(db.GetFieldInt(0));

@@ -53,7 +53,7 @@ ChannelGroup::ChannelGroup():fields(Fields::en_type::GROUP, -1)
 
 ChannelGroup::ChannelGroup(DB *db,unsigned int channel_group_id):fields(Fields::en_type::GROUP, channel_group_id)
 {
-	db->QueryPrintf("SELECT channel_group_id, channel_group_name FROM t_channel_group WHERE channel_group_id=%i",&channel_group_id);
+	db->QueryPrintf("SELECT channel_group_id, channel_group_name FROM t_channel_group WHERE channel_group_id=%i", {&channel_group_id});
 	
 	if(!db->FetchRow())
 		throw Exception("ChannelGroup","Unknown Channel group");
@@ -95,7 +95,7 @@ unsigned int ChannelGroup::Create(const string &name, const string &fields_str)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("INSERT INTO t_channel_group(channel_group_name) VALUES(%s)", &name);
+	db.QueryPrintf("INSERT INTO t_channel_group(channel_group_name) VALUES(%s)", {&name});
 	
 	unsigned int id = db.InsertID();
 	
@@ -120,7 +120,7 @@ void ChannelGroup::Edit(unsigned int id, const std::string &name, const string &
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("UPDATE t_channel_group SET channel_group_name=%s WHERE channel_group_id=%i", &name, &id);
+	db.QueryPrintf("UPDATE t_channel_group SET channel_group_name=%s WHERE channel_group_id=%i", {&name, &id});
 	
 	Fields new_fields(Fields::en_type::GROUP, id);
 	new_fields.Update(json::parse(fields_str));
@@ -134,11 +134,11 @@ void ChannelGroup::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_channel_group WHERE channel_group_id=%i",&id);
-	db.QueryPrintf("DELETE FROM t_channel WHERE channel_group_id=%i", &id);
+	db.QueryPrintf("DELETE FROM t_channel_group WHERE channel_group_id=%i", {&id});
+	db.QueryPrintf("DELETE FROM t_channel WHERE channel_group_id=%i", {&id});
 	
-	db.QueryPrintf("DELETE FROM t_field WHERE channel_group_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel_group cg WHERE cg.channel_group_id=t_field.channel_group_id)");
-	db.QueryPrintf("DELETE FROM t_field WHERE channel_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel c WHERE c.channel_id=t_field.channel_id)");
+	db.Query("DELETE FROM t_field WHERE channel_group_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel_group cg WHERE cg.channel_group_id=t_field.channel_group_id)");
+	db.Query("DELETE FROM t_field WHERE channel_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel c WHERE c.channel_id=t_field.channel_id)");
 	
 	db.CommitTransaction();
 }

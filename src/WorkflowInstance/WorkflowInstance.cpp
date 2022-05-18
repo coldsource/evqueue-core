@@ -191,7 +191,10 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 	if(savepoint_level>=2)
 	{
 		// Insert workflow instance in DB
-		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment, workflow_instance_savepoint, workflow_instance_errors) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s,'',0)",&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host,&workflow_comment);
+		string node_name = ConfigurationEvQueue::GetInstance()->Get("cluster.node.name");
+		db.QueryPrintf(
+			"INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment, workflow_instance_savepoint, workflow_instance_errors) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s,'',0)",
+			{&node_name, &workflow_id, workflow_schedule_id?&workflow_schedule_id:0, &workflow_host, &workflow_comment});
 		this->workflow_instance_id = db.InsertID();
 
 		// Save workflow parameters
@@ -199,7 +202,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 		{
 			parameters->SeekStart();
 			while(parameters->Get(parameter_name,parameter_value))
-				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",&this->workflow_instance_id,&parameter_name,&parameter_value);
+				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",{&this->workflow_instance_id,&parameter_name,&parameter_value});
 		}
 	}
 	else
@@ -224,14 +227,14 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 	DB db;
 
 	// Check workflow exists
-	db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_schedule_id, workflow_id FROM t_workflow_instance WHERE workflow_instance_id='%i'",&workflow_instance_id);
+	db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_schedule_id, workflow_id FROM t_workflow_instance WHERE workflow_instance_id='%i'",{&workflow_instance_id});
 
 	if(!db.FetchRow())
 		throw Exception("WorkflowInstance","Unknown workflow instance");
 
 	if(db.GetFieldIsNULL(0) || db.GetField(0).length()==0)
 	{
-		db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_status='TERMINATED' WHERE workflow_instance_id=%i",&workflow_instance_id);
+		db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_status='TERMINATED' WHERE workflow_instance_id=%i",{&workflow_instance_id});
 
 		throw Exception("WorkflowInstance","Could not resume workflow : empty savepoint");
 	}
@@ -330,7 +333,7 @@ void WorkflowInstance::record_log(DOMElement node, const char *log)
 		DB db;
 		try
 		{
-			db.QueryPrintf("INSERT INTO t_datastore(workflow_instance_id,datastore_value) VALUES(%i,%s)",&workflow_instance_id,&log_str);
+			db.QueryPrintf("INSERT INTO t_datastore(workflow_instance_id,datastore_value) VALUES(%i,%s)",{&workflow_instance_id, &log_str});
 			
 			int datastore_id = db.InsertID();
 			node.setAttribute("datastore-id",to_string(datastore_id));

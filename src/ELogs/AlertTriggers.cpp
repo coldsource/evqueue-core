@@ -52,10 +52,10 @@ bool AlertTriggers::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 			FROM t_alert_trigger at \
 			INNER JOIN t_alert a ON a.alert_id=at.alert_id \
 			ORDER BY at.alert_trigger_date DESC \
-			LIMIT %i OFFSET %i",
+			LIMIT %i OFFSET %i", {
 			&limit,
 			&offset
-		);
+		});
 		
 		while(db.FetchRow())
 		{
@@ -75,7 +75,7 @@ bool AlertTriggers::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 		
 		unsigned int id = query->GetRootAttributeInt("id");
 		
-		db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_trigger_id=%i", &id);
+		db.QueryPrintf("DELETE FROM t_alert_trigger WHERE alert_trigger_id=%i", {&id});
 		
 		Events::GetInstance()->Create("ALERT_TRIGGER");
 		

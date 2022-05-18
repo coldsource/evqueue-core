@@ -61,7 +61,7 @@ Workflow::Workflow()
 
 Workflow::Workflow(DB *db,const string &workflow_name)
 {
-	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_lastcommit FROM t_workflow WHERE workflow_name=%s",&workflow_name);
+	db->QueryPrintf("SELECT workflow_id,workflow_name,workflow_xml, workflow_group, workflow_comment, workflow_lastcommit FROM t_workflow WHERE workflow_name=%s",{&workflow_name});
 	
 	if(!db->FetchRow())
 		throw Exception("Workflow","Unknown Workflow");
@@ -74,7 +74,7 @@ Workflow::Workflow(DB *db,const string &workflow_name)
 	comment = db->GetField(4);
 	lastcommit = db->GetField(5);
 	
-	db->QueryPrintf("SELECT notification_id FROM t_workflow_notification WHERE workflow_id=%i",&workflow_id);
+	db->QueryPrintf("SELECT notification_id FROM t_workflow_notification WHERE workflow_id=%i",{&workflow_id});
 	while(db->FetchRow())
 		notifications.push_back(db->GetFieldInt(0));
 }
@@ -142,7 +142,7 @@ void Workflow::SetLastCommit(const std::string &commit_id)
 {
 	DB db;
 	
-	db.QueryPrintf("UPDATE t_workflow SET workflow_lastcommit=%s WHERE workflow_id=%i",commit_id.length()?&commit_id:0,&workflow_id);
+	db.QueryPrintf("UPDATE t_workflow SET workflow_lastcommit=%s WHERE workflow_id=%i",{commit_id.length()?&commit_id:0,&workflow_id});
 }
 
 string Workflow::SaveToXML()
@@ -229,18 +229,18 @@ unsigned int Workflow::Create(const string &name, const string &base64, const st
 	string xml = create_edit_check(name,base64,group,comment);
 	
 	DB db;
-	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow WHERE workflow_name=%s",&name);
+	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow WHERE workflow_name=%s",{&name});
 	db.FetchRow();
 	if(db.GetFieldInt(0)!=0)
 		throw Exception("Workflow","Workflow name already exists","WORKFLOW_ALREADY_EXISTS"); 
 	
-	db.QueryPrintf("INSERT INTO t_workflow(workflow_name,workflow_xml,workflow_group,workflow_comment,workflow_lastcommit) VALUES(%s,%s,%s,%s,%s)",
+	db.QueryPrintf("INSERT INTO t_workflow(workflow_name,workflow_xml,workflow_group,workflow_comment,workflow_lastcommit) VALUES(%s,%s,%s,%s,%s)", {
 		&name,
 		&xml,
 		&group,
 		&comment,
 		lastcommit.length()?&lastcommit:0
-	);
+	});
 	
 	unsigned int workflow_id = db.InsertID();
 	
@@ -250,7 +250,7 @@ unsigned int Workflow::Create(const string &name, const string &base64, const st
 	while(db.FetchRow())
 	{
 		unsigned int notification_id = db.GetFieldInt(0);
-		db2.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&workflow_id,&notification_id);
+		db2.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)", {&workflow_id,&notification_id});
 	}
 	
 	Workflows::GetInstance()->Reload();
@@ -266,13 +266,13 @@ void Workflow::Edit(unsigned int id,const string &name, const string &base64, co
 		throw Exception("Workflow","Workflow not found","UNKNOWN_WORKFLOW");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_workflow SET workflow_name=%s,workflow_xml=%s,workflow_group=%s,workflow_comment=%s WHERE workflow_id=%i",
+	db.QueryPrintf("UPDATE t_workflow SET workflow_name=%s,workflow_xml=%s,workflow_group=%s,workflow_comment=%s WHERE workflow_id=%i", {
 		&name,
 		&xml,
 		&group,
 		&comment,
 		&id
-	);
+	});
 	
 	Workflows::GetInstance()->Reload();
 }
@@ -285,21 +285,21 @@ void Workflow::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_workflow WHERE workflow_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow WHERE workflow_id=%i",{&id});
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Workflow","Workflow not found","UNKNOWN_WORKFLOW");
 	
 	// Clean notifications
-	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",{&id});
 	
 	// Clean schedules
-	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_id=%i",{&id});
 	if(db.AffectedRows()>0)
 		schedule_deleted = true;
 	
 	// Delete user rights associated
-	db.QueryPrintf("DELETE FROM t_user_right WHERE workflow_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_user_right WHERE workflow_id=%i",{&id});
 	if(db.AffectedRows()>0)
 		rights_deleted = true;
 	
@@ -331,7 +331,7 @@ void Workflow::SubscribeNotification(unsigned int id, unsigned int notification_
 		throw Exception("Workflow","Notification ID not found","UNKNOWN_NOTIFICATION");
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&id,&notification_id);
+	db.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",{&id,&notification_id});
 	
 	Workflows::GetInstance()->Reload();
 }
@@ -339,7 +339,7 @@ void Workflow::SubscribeNotification(unsigned int id, unsigned int notification_
 void Workflow::UnsubscribeNotification(unsigned int id, unsigned int notification_id)
 {
 	DB db;
-	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i AND notification_id=%i",&id,&notification_id);
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i AND notification_id=%i",{&id,&notification_id});
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Workflow","Workflow was not subscribed to this notification","UNKNOWN_NOTIFICATION");
@@ -350,7 +350,7 @@ void Workflow::UnsubscribeNotification(unsigned int id, unsigned int notificatio
 void Workflow::ClearNotifications(unsigned int id)
 {
 	DB db;
-	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE workflow_id=%i",{&id});
 	
 	Workflows::GetInstance()->Reload();
 }

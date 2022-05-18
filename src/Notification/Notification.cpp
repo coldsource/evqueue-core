@@ -63,7 +63,7 @@ Notification::Notification(DB *db,unsigned int notification_id)
 {
 	id = notification_id;
 	
-	db->QueryPrintf("SELECT notification_type_id,notification_name,notification_subscribe_all,notification_parameters FROM t_notification WHERE notification_id=%i",&notification_id);
+	db->QueryPrintf("SELECT notification_type_id,notification_name,notification_subscribe_all,notification_parameters FROM t_notification WHERE notification_id=%i",{&notification_id});
 	
 	if(!db->FetchRow())
 		throw Exception("Notification","Unknown notification");
@@ -162,7 +162,10 @@ void Notification::Create(unsigned int type_id,const string &name, int subscribe
 		throw Exception("Notification","Unknown notification type ID","UNKNOWN_NOTIFICATION_TYPE");
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_notification(notification_type_id,notification_name,notification_subscribe_all,notification_parameters) VALUES(%i,%s,%i,%s)",&type_id,&name,&subscribe_all,&parameters);
+	db.QueryPrintf(
+		"INSERT INTO t_notification(notification_type_id,notification_name,notification_subscribe_all,notification_parameters) VALUES(%i,%s,%i,%s)",
+		{&type_id,&name,&subscribe_all,&parameters}
+	);
 	
 	if(subscribe_all)
 	{
@@ -179,7 +182,10 @@ void Notification::Edit(unsigned int id, unsigned int type_id, const string &nam
 	create_edit_check(0,name,parameters);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_subscribe_all=%i,notification_parameters=%s WHERE notification_id=%i",&type_id,&name,&subscribe_all,&parameters,&id);
+	db.QueryPrintf(
+		"UPDATE t_notification SET notification_type_id=%i,notification_name=%s,notification_subscribe_all=%i,notification_parameters=%s WHERE notification_id=%i",
+		{&type_id,&name,&subscribe_all,&parameters,&id}
+	);
 	
 	
 	if(subscribe_all)
@@ -195,9 +201,9 @@ void Notification::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_notification WHERE notification_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_notification WHERE notification_id=%i",{&id});
 	
-	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",{&id});
 	
 	db.CommitTransaction();
 }
@@ -213,13 +219,13 @@ void Notification::subscribe_all_workflows(unsigned int id)
 	DB db;
 	DB db2(&db);
 	
-	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i",{&id});
 	
 	db.Query("SELECT workflow_id FROM t_workflow");
 	while(db.FetchRow())
 	{
 		unsigned int workflow_id = db.GetFieldInt(0);
-		db2.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",&workflow_id,&id);
+		db2.QueryPrintf("INSERT INTO t_workflow_notification(workflow_id,notification_id) VALUES(%i,%i)",{&workflow_id,&id});
 	}
 }
 

@@ -50,7 +50,7 @@ bool LogsNotifications::HandleQuery(const User &user, XMLQuery *query, QueryResp
 			FROM t_log_notifications \
 			ORDER BY log_notifications_timestamp DESC,log_notifications_id DESC \
 			LIMIT %i,%i",
-			&offset,&limit);
+			{&offset,&limit});
 		
 		while(db.FetchRow())
 		{

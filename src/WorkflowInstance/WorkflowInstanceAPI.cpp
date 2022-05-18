@@ -52,17 +52,17 @@ void WorkflowInstanceAPI::Delete(unsigned int id)
 {
 	DB db;
 	
-	db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",{&id});
 	if(db.AffectedRows()==0)
 		throw Exception("WorkflowInstanceAPI", "Instance ID not found","UNKNOWN_INSTANCE");
 	
-	db.QueryPrintf("DELETE FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",{&id});
 	
-	db.QueryPrintf("DELETE FROM t_workflow_instance_filters WHERE workflow_instance_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_instance_filters WHERE workflow_instance_id=%i",{&id});
 	
-	db.QueryPrintf("DELETE FROM t_datastore WHERE workflow_instance_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_datastore WHERE workflow_instance_id=%i",{&id});
 	
-	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE workflow_instance_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE workflow_instance_id=%i",{&id});
 }
 
 void WorkflowInstanceAPI::Tag(unsigned int id, unsigned int tag_id)
@@ -73,19 +73,19 @@ void WorkflowInstanceAPI::Tag(unsigned int id, unsigned int tag_id)
 	::Tag tag(&db,tag_id);
 	
 	// Check instance existence
-	db.QueryPrintf("SELECT workflow_instance_status FROM t_workflow_instance WHERE workflow_instance_id=%i",&id);
+	db.QueryPrintf("SELECT workflow_instance_status FROM t_workflow_instance WHERE workflow_instance_id=%i",{&id});
 	if(!db.FetchRow())
 		throw Exception("WorkflowInstanceAPI", "Instance ID not found","UNKNOWN_INSTANCE");
 	
 	if(db.GetField(0)!="TERMINATED")
 		throw Exception("WorkflowInstanceAPI", "Instance is not terminated","INSTANCE_IS_RUNNING");
 	
-	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow_instance_tag WHERE workflow_instance_id=%i AND tag_id=%i",&id,&tag_id);
+	db.QueryPrintf("SELECT COUNT(*) FROM t_workflow_instance_tag WHERE workflow_instance_id=%i AND tag_id=%i",{&id,&tag_id});
 	db.FetchRow();
 	if(db.GetFieldInt(0)==1)
 		throw Exception("WorkflowInstanceAPI", "Instance is already tagged","INSTANCE_ALREADY_TAGGED");
 	
-	db.QueryPrintf("INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",&id,&tag_id);
+	db.QueryPrintf("INSERT INTO t_workflow_instance_tag(workflow_instance_id,tag_id) VALUES(%i,%i)",{&id,&tag_id});
 	
 	Events::GetInstance()->Create("INSTANCE_TAGGED",id);
 }
@@ -94,7 +94,7 @@ void WorkflowInstanceAPI::Untag(unsigned int id, unsigned int tag_id)
 {
 	DB db;
 	
-	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE workflow_instance_id=%i AND tag_id=%i",&id,&tag_id);
+	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE workflow_instance_id=%i AND tag_id=%i",{&id,&tag_id});
 	if(db.AffectedRows()==0)
 		throw Exception("WorkflowInstanceAPI", "Instance ID or tag ID not found","UNKNOWN_TAG_OR_INSTANCE");
 }
@@ -167,7 +167,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			DB db;
 			
 			// Fetch existing instance (must be terminated)
-			db.QueryPrintf("SELECT workflow_id,workflow_instance_host,workflow_instance_savepoint,workflow_instance_comment FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",&workflow_instance_id);
+			db.QueryPrintf("SELECT workflow_id,workflow_instance_host,workflow_instance_savepoint,workflow_instance_comment FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='TERMINATED'",{&workflow_instance_id});
 			if(!db.FetchRow())
 				throw Exception("Workflow Debug Resume", "Unable to find instance to resume, or instance is not terminated");
 			
@@ -185,14 +185,14 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			int new_instance_id = 0;
 			if(savepoint_level<2)
 				SequenceGenerator::GetInstance()->GetInc();
-			db.QueryPrintf("INSERT INTO t_workflow_instance(workflow_instance_id,node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment,workflow_instance_savepoint,workflow_instance_errors) VALUES(%i,%s,%i,0,%s,'EXECUTING',NOW(),%s,%s,0)",savepoint_level<2?new_instance_id:0,&node_name,&workflow_id,&workflow_host,&instance_comment,&savepoint);
+			db.QueryPrintf("INSERT INTO t_workflow_instance(workflow_instance_id,node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment,workflow_instance_savepoint,workflow_instance_errors) VALUES(%i,%s,%i,0,%s,'EXECUTING',NOW(),%s,%s,0)",{savepoint_level<2?&new_instance_id:0,&node_name,&workflow_id,&workflow_host,&instance_comment,&savepoint});
 			
 			if(savepoint_level>=2)
 				new_instance_id = db.InsertID();
 			
 			// Clone parameters if needed
 			if(ConfigurationEvQueue::GetInstance()->GetBool("workflowinstance.saveparameters"))
-				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters(workflow_instance_id,workflow_instance_parameter,workflow_instance_parameter_value) SELECT %i,workflow_instance_parameter,workflow_instance_parameter_value FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",&new_instance_id,&workflow_instance_id);
+				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters(workflow_instance_id,workflow_instance_parameter,workflow_instance_parameter_value) SELECT %i,workflow_instance_parameter,workflow_instance_parameter_value FROM t_workflow_instance_parameters WHERE workflow_instance_id=%i",{&new_instance_id,&workflow_instance_id});
 			
 			WorkflowInstance *wi;
 			bool workflow_terminated;
@@ -226,7 +226,9 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			DB db;
 			
 			// Check if workflow instance exists and is eligible to migration
-			db.QueryPrintf("SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",&workflow_instance_id,&config->Get("cluster.node.name"));
+			db.QueryPrintf(
+				"SELECT workflow_instance_id FROM t_workflow_instance WHERE workflow_instance_id=%i AND workflow_instance_status='EXECUTING' AND node_name!=%s",
+				{&workflow_instance_id,&config->Get("cluster.node.name")});
 			if(!db.FetchRow())
 				throw Exception("Workflow Migration","Workflow ID not found or already belongs to this node");
 			
@@ -261,7 +263,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 			if(!wfi->SendInstanceStatus(user, response,workflow_instance_id))
 			{
 				// Workflow is not executing, lookup in database
-				db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_id, workflow_instance_status FROM t_workflow_instance WHERE workflow_instance_id=%i",&workflow_instance_id);
+				db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_id, workflow_instance_status FROM t_workflow_instance WHERE workflow_instance_id=%i",{&workflow_instance_id});
 				if(!db.FetchRow())
 					throw Exception("WorkflowInstance","Unknown workflow instance","UNKNOWN_INSTANCE");
 				

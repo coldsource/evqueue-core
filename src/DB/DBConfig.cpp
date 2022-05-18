@@ -109,10 +109,10 @@ void DBConfig::InitTables()
 		{
 			string database = db.GetDatabase();
 			db.QueryPrintf(
-				"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s",
+				"SELECT table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema=%s AND table_name=%s", {
 				&database,
 				&it_table->first
-			);
+			});
 			
 			if(!db.FetchRow())
 			{

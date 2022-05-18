@@ -211,7 +211,7 @@ void WorkflowInstance::Migrate(bool *workflow_terminated)
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 
 	DB db;
-	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",&config->Get("cluster.node.name"),&workflow_instance_id);
+	db.QueryPrintf("UPDATE t_workflow_instance SET node_name=%s WHERE workflow_instance_id=%i",{&config->Get("cluster.node.name"),&workflow_instance_id});
 }
 
 void WorkflowInstance::Cancel()

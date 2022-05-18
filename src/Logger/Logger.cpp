@@ -82,7 +82,7 @@ void Logger::Log(int level,const string &msg)
 		try
 		{
 			DB db;
-			db.QueryPrintf("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",&instance->node_name,&level,&msg);
+			db.QueryPrintf("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",{&instance->node_name,&level,&msg});
 			
 			if(Events::GetInstance())
 				Events::GetInstance()->Create("LOG_ENGINE");

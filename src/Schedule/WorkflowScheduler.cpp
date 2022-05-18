@@ -92,10 +92,10 @@ void WorkflowScheduler::LoadDBState()
 		LEFT JOIN t_workflow_instance wi ON(wi.workflow_schedule_id=ws.workflow_schedule_id AND wi.workflow_instance_status='EXECUTING' AND wi.node_name=%s) \
 		INNER JOIN t_workflow w ON(ws.workflow_id=w.workflow_id) \
 		WHERE ws.node_name IN(%s,'all','any') \
-		AND ws.workflow_schedule_active=1",
+		AND ws.workflow_schedule_active=1", {
 		&node_name,
 		&node_name
-	);
+	});
 
 	while(db.FetchRow())
 	{

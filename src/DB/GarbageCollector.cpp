@@ -145,35 +145,35 @@ int GarbageCollector::purge(time_t now)
 		
 		// Purge workflows
 		date = Utils::Date::PastDate(workflowinstance_retention * 86400, now);
-		db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_status='TERMINATED' AND workflow_instance_end <= %s LIMIT %i",&date,&limit);
+		db.QueryPrintf("DELETE FROM t_workflow_instance WHERE workflow_instance_status='TERMINATED' AND workflow_instance_end <= %s LIMIT %i",{&date,&limit});
 		deleted_rows += db.AffectedRows();
 		
 		// Purge associated parameters
-		db.QueryPrintf("DELETE wip FROM t_workflow_instance_parameters wip LEFT JOIN t_workflow_instance wi ON wip.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.Query("DELETE wip FROM t_workflow_instance_parameters wip LEFT JOIN t_workflow_instance wi ON wip.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		// Purge associated custom filters
-		db.QueryPrintf("DELETE wif FROM t_workflow_instance_filters wif LEFT JOIN t_workflow_instance wi ON wif.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.Query("DELETE wif FROM t_workflow_instance_filters wif LEFT JOIN t_workflow_instance wi ON wif.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		// Purge associated datastore entries
-		db.QueryPrintf("DELETE data FROM t_datastore data LEFT JOIN t_workflow_instance wi ON data.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.Query("DELETE data FROM t_datastore data LEFT JOIN t_workflow_instance wi ON data.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		// Purge associated tags
-		db.QueryPrintf("DELETE wit FROM t_workflow_instance_tag wit LEFT JOIN t_workflow_instance wi ON wit.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
+		db.Query("DELETE wit FROM t_workflow_instance_tag wit LEFT JOIN t_workflow_instance wi ON wit.workflow_instance_id=wi.workflow_instance_id WHERE wi.workflow_instance_id IS NULL");
 		
 		date = Utils::Date::PastDate(logs_retention * 86400, now);
-		db.QueryPrintf("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",&date,&limit);
+		db.QueryPrintf("DELETE FROM t_log WHERE log_timestamp <= %s LIMIT %i",{&date,&limit});
 		deleted_rows += db.AffectedRows();
 		
 		date = Utils::Date::PastDate(logsapi_retention * 86400, now);
-		db.QueryPrintf("DELETE FROM t_log_api WHERE log_api_timestamp <= %s LIMIT %i",&date,&limit);
+		db.QueryPrintf("DELETE FROM t_log_api WHERE log_api_timestamp <= %s LIMIT %i",{&date,&limit});
 		deleted_rows += db.AffectedRows();
 		
 		date = Utils::Date::PastDate(logsnotifications_retention * 86400, now);
-		db.QueryPrintf("DELETE FROM t_log_notifications WHERE log_notifications_timestamp <= %s LIMIT %i",&date,&limit);
+		db.QueryPrintf("DELETE FROM t_log_notifications WHERE log_notifications_timestamp <= %s LIMIT %i",{&date,&limit});
 		deleted_rows += db.AffectedRows();
 		
 		date = Utils::Date::PastDate(uniqueaction_retention * 86400, now);
-		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",&date,&limit);
+		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_time <= %s LIMIT %i",{&date,&limit});
 		deleted_rows += db.AffectedRows();
 		
 		// Run external purge handlers

@@ -47,7 +47,7 @@ RetrySchedule::RetrySchedule(DB *db,const string &schedule_name)
 {
 	this->name = schedule_name;
 	
-	db->QueryPrintf("SELECT schedule_id, schedule_xml FROM t_schedule WHERE schedule_name=%s",&schedule_name);
+	db->QueryPrintf("SELECT schedule_id, schedule_xml FROM t_schedule WHERE schedule_name=%s",{&schedule_name});
 	
 	if(!db->FetchRow())
 		throw Exception("RetrySchedule","Unknown retry schedule");
@@ -85,7 +85,7 @@ unsigned int RetrySchedule::Create(const std::string &name, const std::string &b
 	string xml = create_edit_check(name,base64);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",&name,&xml);
+	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",{&name,&xml});
 	
 	return db.InsertID();
 }
@@ -98,13 +98,13 @@ void RetrySchedule::Edit(unsigned int id,const std::string &name, const std::str
 	string xml = create_edit_check(name,base64);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_schedule SET schedule_name=%s, schedule_xml=%s WHERE schedule_id=%i",&name,&xml,&id);
+	db.QueryPrintf("UPDATE t_schedule SET schedule_name=%s, schedule_xml=%s WHERE schedule_id=%i",{&name,&xml,&id});
 }
 
 void RetrySchedule::Delete(unsigned int id)
 {
 	DB db;
-	db.QueryPrintf("DELETE FROM t_schedule WHERE schedule_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_schedule WHERE schedule_id=%i",{&id});
 	
 	if(!db.AffectedRows())
 		throw Exception("RetrySchedule","Retry schedule not found","UNKNOWN_RETRY_SCHEDULE");

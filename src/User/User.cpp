@@ -47,7 +47,7 @@ User::User()
 
 User::User(DB *db,unsigned int user_id)
 {
-	db->QueryPrintf("SELECT user_id, user_login,user_password,user_profile,user_preferences FROM t_user WHERE user_id=%i",&user_id);
+	db->QueryPrintf("SELECT user_id, user_login,user_password,user_profile,user_preferences FROM t_user WHERE user_id=%i",{&user_id});
 	
 	if(!db->FetchRow())
 		throw Exception("User","Unknown User");
@@ -59,7 +59,7 @@ User::User(DB *db,unsigned int user_id)
 	user_preferences = db->GetField(4);
 	
 	// Load rights
-	db->QueryPrintf("SELECT workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill FROM t_user_right WHERE user_id=%i",&user_id);
+	db->QueryPrintf("SELECT workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill FROM t_user_right WHERE user_id=%i",{&user_id});
 	while(db->FetchRow())
 	{
 		unsigned int workflow_id = db->GetFieldInt(0);
@@ -160,11 +160,11 @@ unsigned int User::Create(const string &name, const string &password, const stri
 	string password_sha1 = Sha1String(password).GetHex();
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_user(user_login,user_password,user_profile,user_preferences) VALUES(%s,%s,%s,'')",
+	db.QueryPrintf("INSERT INTO t_user(user_login,user_password,user_profile,user_preferences) VALUES(%s,%s,%s,'')",  {
 		&name,
 		&password_sha1,
 		&profile
-	);
+	});
 	
 	return db.InsertID();
 }
@@ -177,20 +177,20 @@ void User::Edit(unsigned int id, const std::string &name, const string &password
 		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_user SET user_login=%s, user_profile=%s WHERE user_id=%i",
+	db.QueryPrintf("UPDATE t_user SET user_login=%s, user_profile=%s WHERE user_id=%i", {
 		&name,
 		&profile,
 		&id
-	);
+	});
 	
 	if(password!="")
 	{
 		string password_sha1 = Sha1String(password).GetHex();
 		
-		db.QueryPrintf("UPDATE t_user SET user_password=%s WHERE user_id=%i",
+		db.QueryPrintf("UPDATE t_user SET user_password=%s WHERE user_id=%i", {
 			&password_sha1,
 			&id
-		);
+		});
 	}
 }
 
@@ -205,10 +205,10 @@ void User::ChangePassword(unsigned int id,const string &password)
 	string password_sha1 = Sha1String(password).GetHex();
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_user SET user_password=%s WHERE user_id=%i",
+	db.QueryPrintf("UPDATE t_user SET user_password=%s WHERE user_id=%i", {
 		&password_sha1,
 		&id
-	);
+	});
 }
 
 void User::UpdatePreferences(unsigned int id, const string &preferences)
@@ -217,10 +217,10 @@ void User::UpdatePreferences(unsigned int id, const string &preferences)
 		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_user SET user_preferences=%s WHERE user_id=%i",
+	db.QueryPrintf("UPDATE t_user SET user_preferences=%s WHERE user_id=%i", {
 		&preferences,
 		&id
-	);
+	});
 }
 
 void User::Delete(unsigned int id)
@@ -229,12 +229,12 @@ void User::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_user WHERE user_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_user WHERE user_id=%i",{&id});
 	
 	if(db.AffectedRows()==0)
 		throw Exception("User","User not found","UNKNOWN_USER");
 	
-	db.QueryPrintf("DELETE FROM t_user_right WHERE user_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_user_right WHERE user_id=%i",{&id});
 	
 	db.CommitTransaction();
 }
@@ -245,7 +245,7 @@ void User::ClearRights(unsigned int id)
 		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	DB db;
-	db.QueryPrintf("DELETE FROM t_user_right WHERE user_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_user_right WHERE user_id=%i",{&id});
 }
 
 void User::ListRights(unsigned int id, QueryResponse *response)
@@ -275,7 +275,7 @@ void User::GrantRight(unsigned int id, unsigned int workflow_id, bool edit, bool
 	int iedit = edit, iread = read, iexec = exec, ikill = kill;
 	db.QueryPrintf(
 		"REPLACE INTO t_user_right(user_id, workflow_id, user_right_edit, user_right_read, user_right_exec, user_right_kill) VALUES(%i,%i,%i,%i,%i,%i)",
-		&id, &workflow_id, &iedit, &iread, &iexec, &ikill
+		{&id, &workflow_id, &iedit, &iread, &iexec, &ikill}
 	);
 }
 
@@ -285,7 +285,7 @@ void User::RevokeRight(unsigned int id, unsigned int workflow_id)
 		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	DB db;
-	db.QueryPrintf("DELETE FROM t_user_right WHERE user_id=%i AND workflow_id=%i",&id, &workflow_id);
+	db.QueryPrintf("DELETE FROM t_user_right WHERE user_id=%i AND workflow_id=%i", {&id, &workflow_id});
 	
 	if(db.AffectedRows()==0)
 		throw Exception("User","No right found on that workflow","ALREADY_NO_RIGHTS");

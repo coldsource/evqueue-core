@@ -74,7 +74,7 @@ bool Datastore::HandleQuery(const User &user, XMLQuery *query, QueryResponse *re
 		unsigned int datastore_id = query->GetRootAttributeInt("id");
 		
 		DB db;
-		db.QueryPrintf("SELECT datastore_value FROM t_datastore WHERE datastore_id=%i",&datastore_id);
+		db.QueryPrintf("SELECT datastore_value FROM t_datastore WHERE datastore_id=%i",{&datastore_id});
 		if(!db.FetchRow())
 			throw Exception("Datastore","Unknown datastore entry");
 		

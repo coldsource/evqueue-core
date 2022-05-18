@@ -246,11 +246,11 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				DB db("elog");
 				int alert_id = alert.GetID();
 				db.QueryPrintf(
-					"INSERT INTO t_alert_trigger(alert_id, alert_trigger_start, alert_trigger_filters) VALUES(%i,%s, %s)",
+					"INSERT INTO t_alert_trigger(alert_id, alert_trigger_start, alert_trigger_filters) VALUES(%i,%s, %s)", {
 					&alert_id,
 					&start_date,
 					&alert.GetFilters()
-				);
+				});
 				
 				// Emit event
 				Events::GetInstance()->Create("ALERT_TRIGGER");

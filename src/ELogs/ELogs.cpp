@@ -85,7 +85,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 	string query_groupby;
 	string query_order;
 	string query_limit;
-	vector<void *> values;
+	vector<const void *> values;
 	
 	string groupby;
 	if(filters.find("groupby")!=filters.end())
@@ -166,7 +166,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 	values.push_back(&limit);
 	values.push_back(&offset);
 	
-	db.QueryVsPrintf(query_select+query_from+query_where+query_groupby+query_order+query_limit, values);
+	db.QueryPrintf(query_select+query_from+query_where+query_groupby+query_order+query_limit, values);
 	
 	vector<map<string, string>> results;
 	
@@ -256,7 +256,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		DB db("elog");
 		
 		string dbname = ConfigurationEvQueue::GetInstance()->Get("elog.mysql.database");
-		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", &dbname);
+		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", {&dbname});
 		
 		while(db.FetchRow())
 		{
@@ -274,7 +274,7 @@ bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	return false;
 }
 
-void ELogs::add_auto_filters(const map<string, string> filters, const Fields &fields, const string &prefix, string &query_where, vector<void *> &values, int *val_int, string *val_str)
+void ELogs::add_auto_filters(const map<string, string> filters, const Fields &fields, const string &prefix, string &query_where, vector<const void *> &values, int *val_int, string *val_str)
 {
 	int i = 0;
 	auto fields_map = fields.GetIDMap();

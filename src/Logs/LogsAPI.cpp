@@ -55,7 +55,7 @@ bool LogsAPI::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		
 		DB db;
 		
-		db.QueryPrintf("SELECT log.node_name,user.user_login,log.log_api_object_id,log.log_api_object_type,log.log_api_group,log.log_api_action,log.log_api_timestamp FROM t_log_api log LEFT JOIN t_user user ON log.user_id=user.user_id ORDER BY log_api_timestamp DESC,log_api_id DESC LIMIT %i,%i",&offset,&limit);
+		db.QueryPrintf("SELECT log.node_name,user.user_login,log.log_api_object_id,log.log_api_object_type,log.log_api_group,log.log_api_action,log.log_api_timestamp FROM t_log_api log LEFT JOIN t_user user ON log.user_id=user.user_id ORDER BY log_api_timestamp DESC,log_api_id DESC LIMIT %i,%i",{&offset,&limit});
 		while(db.FetchRow())
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<log />");

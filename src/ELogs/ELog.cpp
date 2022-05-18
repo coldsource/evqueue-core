@@ -53,7 +53,7 @@ bool ELog::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		unsigned long long id = query->GetRootAttributeLong("id");
 		
 		DB db("elog");
-		db.QueryPrintf("SELECT l.channel_id, c.channel_group_id FROM t_log l INNER JOIN t_channel c ON l.channel_id=c.channel_id WHERE l.log_id=%l", &id);
+		db.QueryPrintf("SELECT l.channel_id, c.channel_group_id FROM t_log l INNER JOIN t_channel c ON l.channel_id=c.channel_id WHERE l.log_id=%l", {&id});
 		db.FetchRow();
 		
 		unsigned int channel_id = db.GetFieldInt(0);
@@ -75,7 +75,7 @@ bool ELog::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		DB db;
 		
 		string dbname = ConfigurationEvQueue::GetInstance()->Get("mysql.database");
-		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_elog' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", &dbname);
+		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_elog' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", {&dbname});
 		
 		while(db.FetchRow())
 		{
@@ -104,7 +104,7 @@ void ELog::query_fields(DB *db, unsigned long long id, const Fields &fields, DOM
 	
 	query_where = " WHERE l.log_id=%l ";
 	
-	db->QueryPrintf(query_select+query_from+query_where, &id);
+	db->QueryPrintf(query_select+query_from+query_where, {&id});
 	if(!db->FetchRow())
 		return;
 	

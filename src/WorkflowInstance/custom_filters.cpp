@@ -59,7 +59,7 @@ void WorkflowInstance::fill_custom_filters()
 				
 				db.QueryPrintf(
 					"INSERT INTO t_workflow_instance_filters(workflow_instance_id,workflow_instance_filter,workflow_instance_filter_value) VALUES(%i,%s,%s)",
-					&workflow_instance_id,&name,&value
+					{&workflow_instance_id,&name,&value}
 				);
 			}
 		}

@@ -39,7 +39,7 @@ Field::Field(unsigned int id)
 {
 	DB db("elog");
 	
-	db.QueryPrintf("SELECT field_id, field_name, field_type FROM t_field WHERE field_id=%i", &id);
+	db.QueryPrintf("SELECT field_id, field_name, field_type FROM t_field WHERE field_id=%i", {&id});
 	if(!db.FetchRow())
 		throw Exception("Field","Unknown field id "+to_string(id));
 	

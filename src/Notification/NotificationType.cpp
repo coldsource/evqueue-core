@@ -46,7 +46,7 @@ using namespace std;
 
 NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 {
-	db->QueryPrintf("SELECT notification_type_id,notification_type_scope,notification_type_name,notification_type_description,notification_type_manifest,notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&notification_type_id);
+	db->QueryPrintf("SELECT notification_type_id,notification_type_scope,notification_type_name,notification_type_description,notification_type_manifest,notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",{&notification_type_id});
 	
 	if(!db->FetchRow())
 		throw Exception("NotificationType","Unknown notification type");
@@ -146,11 +146,11 @@ unsigned int NotificationType::Register(const string &zip_data)
 			notification_type_manifest=VALUES(notification_type_manifest), \
 			notification_type_binary_content=VALUES(notification_type_binary_content \
 		)",
-		&scope,
+		{&scope,
 		&name,
 		&description,
 		&manifest,
-		&binary_data
+		&binary_data}
 		);
 	
 	return db.InsertID();
@@ -165,7 +165,7 @@ void NotificationType::Unregister(unsigned int id)
 	db.StartTransaction();
 	
 	// Delete notification type
-	db.QueryPrintf("DELETE FROM t_notification_type WHERE notification_type_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_notification_type WHERE notification_type_id=%i",{&id});
 	
 	// Remove binary
 	try
@@ -175,7 +175,7 @@ void NotificationType::Unregister(unsigned int id)
 	catch(Exception &e) {}
 	
 	// Delete associated notifications
-	db.QueryPrintf("DELETE FROM t_notification WHERE notification_type_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_notification WHERE notification_type_id=%i",{&id});
 	
 	// Ensure no workflows are bound to removed notifications
 	db.Query("DELETE FROM t_workflow_notification WHERE NOT EXISTS(SELECT * FROM t_notification n WHERE t_workflow_notification.notification_id=n.notification_id)");
@@ -186,7 +186,7 @@ void NotificationType::Unregister(unsigned int id)
 void NotificationType::GetConf(unsigned int id, QueryResponse *response)
 {
 	DB db;
-	db.QueryPrintf("SELECT notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&id);
+	db.QueryPrintf("SELECT notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",{&id});
 	
 	if(!db.FetchRow())
 		throw Exception("NotificationType","Unable to find notification type","UNKNOWN_NOTIFICATION_TYPE");
@@ -205,7 +205,7 @@ void NotificationType::SetConf(unsigned int id, const string &data)
 		throw Exception("NotificationType","Unable to find notification type","UNKNOWN_NOTIFICATION_TYPE");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification_type SET notification_type_conf_content=%s WHERE notification_type_id=%i",&data,&id);
+	db.QueryPrintf("UPDATE t_notification_type SET notification_type_conf_content=%s WHERE notification_type_id=%i",{&data,&id});
 }
 
 bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)

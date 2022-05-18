@@ -43,7 +43,7 @@ Fields::Fields(en_type type, unsigned int id)
 	else
 		col_name = "channel_id";
 	
-	db.QueryPrintf("SELECT field_id, field_name FROM t_field WHERE %c=%i", &col_name, &id);
+	db.QueryPrintf("SELECT field_id, field_name FROM t_field WHERE %c=%i", {&col_name, &id});
 	
 	while(db.FetchRow())
 	{
@@ -95,10 +95,10 @@ void Fields::Update(const json &j)
 			throw Exception("Fields", "Unknow field ID : "+to_string(field_id));
 		
 		if(id_fields[field_id].GetName()!=field_name)
-			db.QueryPrintf("UPDATE t_field SET field_name=%s WHERE field_id=%i", &field_name, &field_id);
+			db.QueryPrintf("UPDATE t_field SET field_name=%s WHERE field_id=%i", {&field_name, &field_id});
 		
 		if(id_fields[field_id].GetType()!=type)
-			db.QueryPrintf("UPDATE t_field SET field_type=%s WHERE field_id=%i", &type_str, &field_id);
+			db.QueryPrintf("UPDATE t_field SET field_type=%s WHERE field_id=%i", {&type_str, &field_id});
 		
 		fields_ids.insert(field_id);
 	}
@@ -109,7 +109,7 @@ void Fields::Update(const json &j)
 		unsigned int field_id = it->first;
 		
 		if(fields_ids.count(field_id)==0)
-			db.QueryPrintf("DELETE FROM t_field WHERE field_id=%i", &field_id);
+			db.QueryPrintf("DELETE FROM t_field WHERE field_id=%i", {&field_id});
 	}
 	
 	// Create new fields
@@ -123,7 +123,7 @@ void Fields::Update(const json &j)
 		string type = field["type"];
 		Field::StringToFieldType(type);
 		
-		db.QueryPrintf("INSERT INTO t_field(%c, field_name, field_type) VALUES(%i, %s, %s)", &col_name, &id, &name, &type);
+		db.QueryPrintf("INSERT INTO t_field(%c, field_name, field_type) VALUES(%i, %s, %s)", {&col_name, &id, &name, &type});
 	}
 	
 	db.CommitTransaction();

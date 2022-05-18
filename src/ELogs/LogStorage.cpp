@@ -83,7 +83,11 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 	next_log_id = db.GetFieldLong(0) + 1;
 	
 	string dbname = config->Get("elog.mysql.database");
-	db.QueryPrintf("SELECT PARTITION_DESCRIPTION FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 1", &dbname);
+	db.QueryPrintf(
+		"SELECT PARTITION_DESCRIPTION FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 1",
+		{&dbname}
+	);
+	
 	if(db.FetchRow())
 		last_partition_days = db.GetFieldInt(0);
 	
@@ -282,8 +286,6 @@ void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field
 		db->BulkDataInt(type, pack_i);
 	else if(field.GetDBType()=="%s")
 		db->BulkDataString(type, pack_str);
-	
-	//db->QueryPrintf("INSERT INTO %c(log_id, field_id, log_date, value) VALUES(%l, %i, %s, "+dbtype+")", &table_name, &log_id, &field_id, &date, packed_val);
 }
 
 unsigned int LogStorage::PackString(const string &str)
@@ -296,7 +298,7 @@ unsigned int LogStorage::PackString(const string &str)
 		return it->second;
 	
 	DB db("elog");
-	db.QueryPrintf("REPLACE INTO t_pack(pack_string) VALUES(%s)", &str);
+	db.QueryPrintf("REPLACE INTO t_pack(pack_string) VALUES(%s)", {&str});
 	
 	unsigned int id = db.InsertID();
 	pack_str_id[str] = id;
@@ -325,13 +327,13 @@ void LogStorage::create_partition(DB *db, const string &date)
 	if(days<=last_partition_days)
 		return; // Nothing to do
 	
-	db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-	db->QueryPrintf("ALTER TABLE t_value_char ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-	db->QueryPrintf("ALTER TABLE t_value_text ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-	db->QueryPrintf("ALTER TABLE t_value_itext ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-	db->QueryPrintf("ALTER TABLE t_value_ip ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-	db->QueryPrintf("ALTER TABLE t_value_int ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
-	db->QueryPrintf("ALTER TABLE t_value_pack ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", &days);
+	db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	db->QueryPrintf("ALTER TABLE t_value_char ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	db->QueryPrintf("ALTER TABLE t_value_text ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	db->QueryPrintf("ALTER TABLE t_value_itext ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	db->QueryPrintf("ALTER TABLE t_value_ip ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	db->QueryPrintf("ALTER TABLE t_value_int ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	db->QueryPrintf("ALTER TABLE t_value_pack ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
 	
 	last_partition_days = days;
 }

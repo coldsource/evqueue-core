@@ -54,7 +54,7 @@ Channel::Channel():fields(Fields::en_type::CHANNEL, -1)
 
 Channel::Channel(DB *db,unsigned int channel_id):fields(Fields::en_type::CHANNEL, channel_id)
 {
-	db->QueryPrintf("SELECT channel_id, channel_group_id, channel_name,channel_config FROM t_channel WHERE channel_id=%i",&channel_id);
+	db->QueryPrintf("SELECT channel_id, channel_group_id, channel_name,channel_config FROM t_channel WHERE channel_id=%i", {&channel_id});
 	
 	if(!db->FetchRow())
 		throw Exception("Channel","Unknown Channel");
@@ -213,11 +213,11 @@ unsigned int Channel::Create(const string &name, unsigned int group_id, const st
 	 create_edit_check(name, group_id, config);
 	
 	DB db("elog");
-	db.QueryPrintf("INSERT INTO t_channel(channel_name,channel_group_id, channel_config) VALUES(%s,%i,%s)",
+	db.QueryPrintf("INSERT INTO t_channel(channel_name,channel_group_id, channel_config) VALUES(%s,%i,%s)", {
 		&name,
 		&group_id,
 		&config
-	);
+	});
 	
 	unsigned int id = db.InsertID();
 	
@@ -239,12 +239,12 @@ void Channel::Edit(unsigned int id, const std::string &name, unsigned int group_
 		throw Exception("Channel","Channel not found","UNKNOWN_CHANNEL");
 	
 	DB db("elog");
-	db.QueryPrintf("UPDATE t_channel SET channel_name=%s, channel_group_id=%i, channel_config=%s WHERE channel_id=%i",
+	db.QueryPrintf("UPDATE t_channel SET channel_name=%s, channel_group_id=%i, channel_config=%s WHERE channel_id=%i", {
 		&name,
 		&group_id,
 		&config,
 		&id
-	);
+	});
 	
 	json j = json::parse(config);
 	if(j.contains("fields"))
@@ -260,8 +260,8 @@ void Channel::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_channel WHERE channel_id=%i",&id);
-	db.QueryPrintf("DELETE FROM t_field WHERE channel_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel c WHERE c.channel_id=t_field.channel_id)");
+	db.QueryPrintf("DELETE FROM t_channel WHERE channel_id=%i", {&id});
+	db.Query("DELETE FROM t_field WHERE channel_id IS NOT NULL AND NOT EXISTS(SELECT * FROM t_channel c WHERE c.channel_id=t_field.channel_id)");
 	
 	db.CommitTransaction();
 }
