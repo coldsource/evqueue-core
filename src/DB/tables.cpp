@@ -91,7 +91,7 @@ map<string,string> evqueue_tables = {
   `user_password` varchar(40) CHARACTER SET ascii NOT NULL, \
   `user_password_salt` varchar(40) CHARACTER SET ascii DEFAULT NULL, \
   `user_password_iterations` int(11) NOT NULL DEFAULT 0, \
-  `user_profile` enum('ADMIN','USER') COstatic auto init = DBConfig::GetInstance()->RegisterTables()LLATE utf8_unicode_ci NOT NULL DEFAULT 'USER', \
+  `user_profile` enum('ADMIN','USER') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'USER', \
   `user_preferences` text CHARACTER SET ascii NOT NULL, \
   PRIMARY KEY (`user_id`), \
   UNIQUE KEY `user_login` (`user_login`) \
