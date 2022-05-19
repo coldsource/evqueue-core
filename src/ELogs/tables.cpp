@@ -115,7 +115,7 @@ static map<string, string> elogs_tables = {
   `log_id` bigint(20) unsigned NOT NULL, \
   `field_id` int(10) unsigned NOT NULL, \
   `log_date` datetime NOT NULL DEFAULT current_timestamp(), \
-  `value` varchar(255) NOT NULL, \
+  `value` varchar(128) NOT NULL, \
   PRIMARY KEY (`log_id`,`field_id`,`log_date`) USING BTREE, \
   KEY `elog_field_id` (`field_id`,`value`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='v3.3' \
