@@ -19,16 +19,19 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
 	
 	// Create Websocket TCP socket
-	NetworkConnections::GetInstance()->RegisterTCP("WebSocket (tcp)", config->Get("ws.bind.ip"), config->GetInt("ws.bind.port"), config->GetInt("ws.listen.backlog"), [](int s) {
-		if(ActiveConnections::GetInstance()->GetWSNumber()>=ConfigurationEvQueue::GetInstance()->GetInt("ws.connections.max"))
-		{
-			close(s);
+	if(config->Get("ws.bind.ip")!="")
+	{
+		NetworkConnections::GetInstance()->RegisterTCP("WebSocket (tcp)", config->Get("ws.bind.ip"), config->GetInt("ws.bind.port"), config->GetInt("ws.listen.backlog"), [](int s) {
+			if(ActiveConnections::GetInstance()->GetWSNumber()>=ConfigurationEvQueue::GetInstance()->GetInt("ws.connections.max"))
+			{
+				close(s);
+				
+				Logger::Log(LOG_WARNING,"Max WebSocket connections reached, dropping connection");
+			}
 			
-			Logger::Log(LOG_WARNING,"Max WebSocket connections reached, dropping connection");
-		}
-		
-		ActiveConnections::GetInstance()->StartWSConnection(s);
-	});
+			ActiveConnections::GetInstance()->StartWSConnection(s);
+		});
+	}
 	
 	return (APIAutoInit *)0;
 });
