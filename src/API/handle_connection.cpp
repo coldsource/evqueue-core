@@ -61,8 +61,11 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 	};
 	
 	NetworkConnections *nc = NetworkConnections::GetInstance();
-	nc->RegisterTCP("API (tcp)", config->Get("network.bind.ip"), config->GetInt("network.bind.port"), config->GetInt("network.listen.backlog"), api_handler);
-	nc->RegisterUNIX("API (unix)", config->Get("network.bind.path"), config->GetInt("network.listen.backlog"), api_handler);
+	if(config->Get("network.bind.ip")!="")
+		nc->RegisterTCP("API (tcp)", config->Get("network.bind.ip"), config->GetInt("network.bind.port"), config->GetInt("network.listen.backlog"), api_handler);
+	
+	if(config->Get("network.bind.path")!="")
+		nc->RegisterUNIX("API (unix)", config->Get("network.bind.path"), config->GetInt("network.listen.backlog"), api_handler);
 	
 	return (APIAutoInit *)0;
 });

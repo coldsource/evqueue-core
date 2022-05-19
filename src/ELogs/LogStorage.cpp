@@ -25,11 +25,10 @@
 #include <ELogs/Channels.h>
 #include <ELogs/Channel.h>
 #include <ELogs/ChannelGroup.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Configuration/Configuration.h>
 #include <Crypto/Sha1String.h>
 #include <API/QueryHandlers.h>
 #include <IO/NetworkConnections.h>
-#include <Configuration/ConfigurationEvQueue.h>
 
 #include <vector>
 
@@ -51,12 +50,15 @@ LogStorage *LogStorage::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
 	// Create UDP socket
-	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	NetworkConnections *nc = NetworkConnections::GetInstance();
 	
-	nc->RegisterUDP("ELogs (udp)", config->Get("elog.bind.ip"), config->GetInt("elog.bind.port"), config->GetSize("elog.log.maxsize"), [](char *buf, size_t len) {
-		LogStorage::GetInstance()->Log(string(buf, len));
-	});
+	if(config->Get("elog.bind.ip")!="")
+	{
+		nc->RegisterUDP("ELogs (udp)", config->Get("elog.bind.ip"), config->GetInt("elog.bind.port"), config->GetSize("elog.log.maxsize"), [](char *buf, size_t len) {
+			LogStorage::GetInstance()->Log(string(buf, len));
+		});
+	}
 	
 	Events::GetInstance()->RegisterEvent("LOG_ELOG");
 	
@@ -67,7 +69,7 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 {
 	DB db("elog");
 	
-	Configuration *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	max_queue_size = config->GetInt("elog.queue.size");
 	bulk_size = config->GetInt("elog.bulk.size");
 	
