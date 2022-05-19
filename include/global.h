@@ -27,7 +27,6 @@
 #define TASK_BINARY_MAX_LEN            128
 #define PARAMETERS_MAX_LEN     (1024*1024)
 #define PARAMETER_NAME_MAX_LEN          64
-#define ERROR_MAX_LEN                  256
 #define USER_NAME_MAX_LEN               32
 #define CHANNEL_NAME_MAX_LEN            32
 #define CHANNEL_GROUP_NAME_MAX_LEN      32
