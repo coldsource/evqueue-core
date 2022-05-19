@@ -198,7 +198,7 @@ void *Alerts::alerts_thread(Alerts *alerts)
 				bool is_groupped = alert.GetIsGroupped();
 				
 				auto logs = ELogs::QueryLogs(filters, 1000);
-				if(is_groupped && logs.size()<alert.GetOccurrences())
+				if(!is_groupped && logs.size()<alert.GetOccurrences())
 					continue; // Too few logs to trigger
 				
 				// Build json data for notification script
