@@ -290,6 +290,12 @@ void ELogs::add_auto_filters(const map<string, string> filters, const Fields &fi
 				query_where += " AND v"+to_string(it->first)+".value_sha1 = "+it->second.GetDBType()+" ";
 				values.push_back(it->second.Pack(filter, &val_int[i], &val_str[i]));
 			}
+			else if(it->second.GetType()==Field::en_type::CHAR && filter.back()=='*')
+			{
+				filter = filter.substr(0, filter.size()-1);
+				query_where += " AND v"+to_string(it->first)+".value LIKE CONCAT("+it->second.GetDBType()+", '%') ";
+				values.push_back(it->second.Pack(filter, &val_int[i], &val_str[i]));
+			}
 			else
 			{
 				query_where += " AND v"+to_string(it->first)+".value = "+it->second.GetDBType()+" ";
