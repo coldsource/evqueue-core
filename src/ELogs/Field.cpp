@@ -276,7 +276,7 @@ const string Field::GetTableName() const
 			return "t_value_char";
 		
 		case Field::en_type::TEXT:
-			return "t_value_itext";
+			return "t_value_text";
 		
 		case Field::en_type::ITEXT:
 			return "t_value_itext";
