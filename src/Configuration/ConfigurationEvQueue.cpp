@@ -190,6 +190,9 @@ void ConfigurationEvQueue::Check(void)
 	
 	if(GetInt("ws.workers")>LWS_MAX_SMP)
 		throw Exception("Configuration","ws.workers is limited by libwebsockets to "+to_string(LWS_MAX_SMP));
+	
+	if(Get("network.bind.ip")=="" && Get("network.bind.path")=="" && Get("ws.bind.ip")=="")
+		throw Exception("Configuration","You have to listen on at least 1 port");
 }
 
 void ConfigurationEvQueue::SendConfiguration(QueryResponse *response)
