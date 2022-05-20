@@ -28,6 +28,7 @@
 #include <Crypto/Sha1String.h>
 #include <User/User.h>
 #include <API/QueryHandlers.h>
+#include <WS/Events.h>
 
 #include <string.h>
 
@@ -135,4 +136,8 @@ void Workflows::HandleNotificationTypeDelete(unsigned int id)
 		// Ensure no workflows are bound to removed notifications
 		db2.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i", {&notification_id});
 	}
+	
+	 Workflows::GetInstance()->Reload();
+	 
+	 Events::GetInstance()->Create("WORKFLOW_MODIFIED");
 }
