@@ -29,15 +29,15 @@ class User;
 
 class NotificationType
 {
-	unsigned int id;
-	std::string scope;
-	std::string name;
-	std::string description;
-	std::string manifest;
-	std::string configuration;
-	
+	private:
+		unsigned int id;
+		std::string scope;
+		std::string name;
+		std::string description;
+		std::string manifest;
+		std::string configuration;
+		
 	public:
-
 		NotificationType(DB *db,unsigned int notification_type_id);
 		
 		unsigned int GetID() { return id; }

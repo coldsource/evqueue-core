@@ -121,3 +121,18 @@ void Workflows::HandleReload(bool notify)
 	Workflows *workflows = Workflows::GetInstance();
 	workflows->Reload(notify);
 }
+
+void Workflows::HandleNotificationTypeDelete(unsigned int id)
+{
+	DB db;
+	DB db2(&db);
+	
+	db.QueryPrintf("SELECT notification_id FROM t_notification WHERE notification_type_id=%i", {&id});
+	while(db.FetchRow())
+	{
+		int notification_id = db.GetFieldInt(0);
+		
+		// Ensure no workflows are bound to removed notifications
+		db2.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i", {&notification_id});
+	}
+}

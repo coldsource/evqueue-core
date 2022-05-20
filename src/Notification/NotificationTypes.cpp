@@ -28,6 +28,7 @@
 #include <User/User.h>
 #include <Crypto/sha1.h>
 #include <API/QueryHandlers.h>
+#include <Workflow/Workflows.h>
 
 #include <string.h>
 
@@ -44,11 +45,27 @@ NotificationTypes::NotificationTypes():APIObjectList()
 {
 	instance = this;
 	
+	// Regsiter handler for Workflows since they are early instanciated
+	RegisterDeleteHandler("WORKFLOW", Workflows::HandleNotificationTypeDelete);
+	
 	Reload(false);
 }
 
 NotificationTypes::~NotificationTypes()
 {
+}
+
+void NotificationTypes::RegisterDeleteHandler(const string &scope, t_delete_handler delete_handler)
+{
+	delete_handlers[scope] = delete_handler;
+}
+
+void NotificationTypes::HandleDelete(unsigned int id)
+{
+	const string scope = Get(id).GetScope();
+	
+	if(delete_handlers.find(scope)!=delete_handlers.end())
+		delete_handlers[scope](id);
 }
 
 void NotificationTypes::Reload(bool notify)

@@ -28,6 +28,7 @@
 #include <Cluster/Cluster.h>
 #include <ELogs/ELogs.h>
 #include <Notification/Notifications.h>
+#include <Notification/NotificationTypes.h>
 #include <WS/Events.h>
 #include <Utils/Date.h>
 
@@ -64,6 +65,8 @@ Alerts::~Alerts()
 
 void Alerts::APIReady()
 {
+	NotificationTypes::GetInstance()->RegisterDeleteHandler("ELOGS", HandleNotificationTypeDelete);
+	
 	alerts_thread_handle = thread(Alerts::alerts_thread,this);
 }
 
@@ -133,6 +136,25 @@ bool Alerts::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respo
 void Alerts::HandleReload(bool notify)
 {
 	Alerts::GetInstance()->Reload(notify);
+}
+
+void Alerts::HandleNotificationTypeDelete(unsigned int id)
+{
+	DB db;
+	DB dbelog("elog");
+	
+	db.QueryPrintf("SELECT notification_id FROM t_notification WHERE notification_type_id=%i", {&id});
+	while(db.FetchRow())
+	{
+		int notification_id = db.GetFieldInt(0);
+		
+		// Ensure no elogs alerts are bound to removed notifications
+		dbelog.QueryPrintf("DELETE FROM t_alert_notification WHERE notification_id=%i", {&notification_id});
+	}
+	
+	Alerts::GetInstance()->Reload();
+	
+	Events::GetInstance()->Create("ALERT_MODIFIED");
 }
 
 void *Alerts::alerts_thread(Alerts *alerts)

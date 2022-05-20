@@ -164,8 +164,14 @@ void NotificationType::Unregister(unsigned int id)
 	
 	db.StartTransaction();
 	
+	// Call delegated delete handler
+	NotificationTypes::GetInstance()->HandleDelete(id);
+	
 	// Delete notification type
 	db.QueryPrintf("DELETE FROM t_notification_type WHERE notification_type_id=%i",{&id});
+	
+	// Delete notification type
+	db.QueryPrintf("DELETE FROM t_notification WHERE notification_type_id=%i",{&id});
 	
 	// Remove binary
 	try
@@ -173,12 +179,6 @@ void NotificationType::Unregister(unsigned int id)
 		RemoveFile(to_string(notification_type.id));
 	}
 	catch(Exception &e) {}
-	
-	// Delete associated notifications
-	db.QueryPrintf("DELETE FROM t_notification WHERE notification_type_id=%i",{&id});
-	
-	// Ensure no workflows are bound to removed notifications
-	db.Query("DELETE FROM t_workflow_notification WHERE NOT EXISTS(SELECT * FROM t_notification n WHERE t_workflow_notification.notification_id=n.notification_id)");
 	
 	db.CommitTransaction();
 }
