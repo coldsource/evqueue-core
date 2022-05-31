@@ -76,7 +76,7 @@ void ChannelGroups::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->Notify("<control action='reload' module='channelgroups' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='channel_groups' notify='no' />\n");
 	}
 }
 
