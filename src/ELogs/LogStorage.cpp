@@ -318,6 +318,18 @@ string LogStorage::UnpackString(int i)
 	if(it!=pack_id_str.end())
 		return it->second;
 	
+	// Try to load value from database if not in cache
+	{
+		DB db("elog");
+
+		db.QueryPrintf("SELECT pack_string FROM t_pack WHERE pack_id=%i", {&i});
+		if(db.FetchRow())
+		{
+			pack_id_str[i] = db.GetField(0);
+			pack_str_id[db.GetField(0)] = i;
+			return db.GetField(0);
+		}
+	}
 	return "";
 }
 
