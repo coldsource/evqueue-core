@@ -38,6 +38,8 @@ class WSServer
 	
 	bool is_cancelling = false;
 	
+	bool ssl_enabled = false;
+	
 	struct lws_context_creation_info info;
 	struct lws_context *context;
 	

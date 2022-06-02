@@ -4,7 +4,7 @@
 #include <API/XMLQuery.h>
 #include <Exception/Exception.h>
 #include <API/QueryResponse.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Configuration/Configuration.h>
 #include <API/QueryHandlers.h>
 #include <WS/Events.h>
 #include <Crypto/base64.h>
@@ -16,13 +16,13 @@
 #include <IO/NetworkConnections.h>
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
-	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	
 	// Create Websocket TCP socket
 	if(config->Get("ws.bind.ip")!="")
 	{
 		NetworkConnections::GetInstance()->RegisterTCP("WebSocket (tcp)", config->Get("ws.bind.ip"), config->GetInt("ws.bind.port"), config->GetInt("ws.listen.backlog"), [](int s) {
-			if(ActiveConnections::GetInstance()->GetWSNumber()>=ConfigurationEvQueue::GetInstance()->GetInt("ws.connections.max"))
+			if(ActiveConnections::GetInstance()->GetWSNumber()>=Configuration::GetInstance()->GetInt("ws.connections.max"))
 			{
 				close(s);
 				
@@ -62,25 +62,56 @@ const struct lws_protocols protocols[] =
 
 WSServer::WSServer()
 {
-	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	memset( &info, 0, sizeof(info) );
 
-	lws_set_log_level(LLL_ERR | LLL_WARN, 0);
+	lws_set_log_level(LLL_ERR | LLL_WARN | LOG_NOTICE, [](int level, const char *msg) {
+		int syslog_level;
+		switch(level)
+		{
+			case LLL_ERR:
+				syslog_level = LOG_ERR;
+				break;
+			
+			case LLL_WARN:
+				syslog_level = LOG_WARNING;
+				break;
+			
+			case LLL_NOTICE:
+				syslog_level = LOG_NOTICE;
+				break;
+		}
+		
+		Logger::Log(syslog_level, string(msg));
+	});
 
 	info.keepalive_timeout = config->GetInt("ws.keepalive");
 	info.timeout_secs = config->GetInt("ws.rcv.timeout");
+
+#if LWS_LIBRARY_VERSION_MAJOR >= 3
+	info.port = CONTEXT_PORT_NO_LISTEN_SERVER;
+#else
 	info.port = CONTEXT_PORT_NO_LISTEN; // CONTEXT_PORT_NO_LISTEN_SERVER Should be used but is not available in this version of LWS
+#endif
+	
 	info.protocols = protocols;
 	info.gid = -1;
 	info.uid = -1;
 	info.count_threads = config->GetInt("ws.workers");
 	info.server_string = "evQueue websockets server";
 	info.vhost_name = "default";
-	/*{
+
+#if LWS_LIBRARY_VERSION_MAJOR >= 3
+	// SSL support
+	if(config->Get("ws.ssl.crt")!="")
+	{
 			info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-			info.ssl_cert_filepath = ssl_cert;
-			info.ssl_private_key_filepath = ssl_key;
-	}*/
+			info.ssl_cert_filepath = config->Get("ws.ssl.crt").c_str();
+			info.ssl_private_key_filepath = config->Get("ws.ssl.key").c_str();
+			
+			ssl_enabled = true;
+	}
+#endif
 
 	context = lws_create_context(&info);
 	if(!context)
@@ -102,6 +133,39 @@ WSServer::~WSServer()
 	WaitForShutdown();
 }
  
+#if LWS_LIBRARY_VERSION_MAJOR >= 3
+int WSServer::callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
+{
+	uint8_t buf[LWS_PRE + 2048], *start = &buf[LWS_PRE], *p = start, *end = &buf[sizeof(buf) - 1];
+	string text = "Forbidden";
+	
+	switch( reason )
+	{
+		case LWS_CALLBACK_HTTP:
+			if (lws_add_http_common_headers(wsi, 403, "text/plain", (lws_filepos_t)text.length(), &p, end))
+				return 1;
+			
+			if (lws_finalize_write_http_header(wsi, start, &p, end))
+				return 1;
+			
+			lws_callback_on_writable(wsi);
+			return 0;
+		
+		case LWS_CALLBACK_HTTP_WRITEABLE:
+			text.insert(0,LWS_PRE,' ');
+			if (lws_write(wsi, (uint8_t *)text.c_str() + LWS_PRE, (unsigned int)text.length() - LWS_PRE, LWS_WRITE_HTTP_FINAL) != text.length() - LWS_PRE)
+				return 1;
+
+			if (lws_http_transaction_completed(wsi))
+				return -1;
+			
+			return 0;
+		
+		default:
+			return lws_callback_http_dummy(wsi, reason, user, in, len);
+	}
+}
+#else
 int WSServer::callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
 {
 	switch( reason )
@@ -115,6 +179,7 @@ int WSServer::callback_http(struct lws *wsi, enum lws_callback_reasons reason, v
 
 	return 0;
 }
+#endif
  
 int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
@@ -248,6 +313,9 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 				}
 				break;
 			}
+			
+			default:
+				break;
 		}
 	}
 	catch(Exception &e)
@@ -268,7 +336,7 @@ void WSServer::Shutdown(void)
 
 void WSServer::WaitForShutdown(void)
 {
-	int nthreads = ConfigurationEvQueue::GetInstance()->GetInt("ws.workers");
+	int nthreads = Configuration::GetInstance()->GetInt("ws.workers");
 	for(int i=0;i<nthreads;i++)
 		threads[i].join();
 	
@@ -278,7 +346,7 @@ void WSServer::WaitForShutdown(void)
 void WSServer::Adopt(int fd)
 {
 	// Configure socket
-	Configuration *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	struct timeval tv;
 	
 	tv.tv_sec = config->GetInt("ws.rcv.timeout");
@@ -289,11 +357,15 @@ void WSServer::Adopt(int fd)
 	tv.tv_usec = 0;
 	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
-#if defined(LWS_ADOPT_SOCKET) || LWS_LIBRARY_VERSION_MAJOR >= 4
+#if LWS_LIBRARY_VERSION_MAJOR >= 3
 	lws_sock_file_fd_type sock;
 	sock.sockfd = fd;
 	struct lws_vhost *vhost = lws_get_vhost_by_name(context, "default");
-	lws_adopt_descriptor_vhost(vhost, (lws_adoption_type)(LWS_ADOPT_SOCKET | LWS_ADOPT_HTTP), sock, 0, 0);
+	
+	if(!ssl_enabled)
+		lws_adopt_descriptor_vhost(vhost, (lws_adoption_type)(LWS_ADOPT_SOCKET | LWS_ADOPT_HTTP), sock, 0, 0);
+	else
+		lws_adopt_descriptor_vhost(vhost, (lws_adoption_type)(LWS_ADOPT_SOCKET | LWS_ADOPT_HTTP | LWS_ADOPT_ALLOW_SSL), sock, 0, 0);
 #else
 	lws_adopt_socket(context, fd);
 #endif
