@@ -136,6 +136,9 @@ bool NetworkConnections::select()
 {
 	fd_set rfds;
 	
+	if(connections.size()==0)
+		throw Exception("NetworkConnections","No network connections configured");
+	
 	FD_ZERO(&rfds);
 	int fdmax = -1;
 	
