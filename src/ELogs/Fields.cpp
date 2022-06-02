@@ -33,8 +33,6 @@ namespace ELogs
 
 Fields::Fields(en_type type, unsigned int id)
 {
-	DB db("elog");
-	
 	this->type = type;
 	this->id = id;
 	
@@ -43,6 +41,10 @@ Fields::Fields(en_type type, unsigned int id)
 	else
 		col_name = "channel_id";
 	
+	if(id==0)
+		return; // Empty object constructor
+	
+	DB db("elog");
 	db.QueryPrintf("SELECT field_id, field_name FROM t_field WHERE %c=%i", {&col_name, &id});
 	
 	while(db.FetchRow())

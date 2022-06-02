@@ -48,7 +48,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 	return (APIAutoInit *)0;
 });
 
-Channel::Channel():fields(Fields::en_type::CHANNEL, -1)
+Channel::Channel():fields(Fields::en_type::CHANNEL, 0)
 {
 }
 
