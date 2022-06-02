@@ -61,6 +61,8 @@ class LogStorage: public APIAutoInit
 	unsigned long long next_log_id;
 	unsigned int last_partition_days;
 	
+	DB *storage_db;
+	
 	public:
 		LogStorage();
 		virtual ~LogStorage();
@@ -79,9 +81,9 @@ class LogStorage: public APIAutoInit
 		static void *ls_thread(LogStorage *ls);
 		
 		void log(const std::vector<std::string> &logs);
-		void store_log(DB *db, const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
-		void log_value(DB *db, unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
-		void create_partition(DB *db, const std::string &date);
+		void store_log(const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
+		void log_value(unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
+		void create_partition(const std::string &date);
 };
 
 }

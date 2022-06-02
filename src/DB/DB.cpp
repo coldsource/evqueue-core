@@ -145,33 +145,46 @@ void DB::Wait(void)
 
 void DB::Query(const string &query)
 {
-	connect();
-	
-	if(res)
+	for(int i=0;i<2;i++)
 	{
-		mysql_free_result(res);
-		res=0;
-	}
-
-	Logger::Log(LOG_DEBUG, "Executing query : " + query);
-	
-	if(mysql_query(mysql,query.c_str())!=0)
-	{
-		string error = mysql_error(mysql);
-		int code = mysql_errno(mysql);
+		connect();
 		
-		if(auto_rollback && transaction_started)
-			RollbackTransaction();
-		
-		throw Exception("DB",error,"SQL_ERROR",code);
-	}
+		if(res)
+		{
+			mysql_free_result(res);
+			res=0;
+		}
 
-	res=mysql_store_result(mysql);
-	if(res==0)
-	{
-		if(mysql_field_count(mysql)!=0)
-			throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
+		Logger::Log(LOG_DEBUG, "Executing query : " + query);
+		
+		if(mysql_query(mysql,query.c_str())!=0)
+		{
+			string error = mysql_error(mysql);
+			int code = mysql_errno(mysql);
+			
+			if(!transaction_started && code==2006)
+			{
+				is_connected = false;
+				continue; // Auto retry once if we just have been disconnected
+			}
+			
+			if(auto_rollback && transaction_started)
+				RollbackTransaction();
+			
+			throw Exception("DB",error,"SQL_ERROR",code);
+		}
+
+		res=mysql_store_result(mysql);
+		if(res==0)
+		{
+			if(mysql_field_count(mysql)!=0)
+				throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
+		}
+		
+		return;
 	}
+	
+	throw Exception("DB","Reconnected to database, but still getting gone away error");
 }
 
 void DB::QueryPrintf(const string &query,const vector<const void *> &args)

@@ -68,6 +68,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 {
 	DB db("elog");
+	storage_db = new DB("elog");
 	
 	Configuration *config = Configuration::GetInstance();
 	max_queue_size = config->GetInt("elog.queue.size");
@@ -102,6 +103,8 @@ LogStorage::~LogStorage()
 {
 	Shutdown();
 	WaitForShutdown();
+	
+	delete storage_db;
 }
 
 void LogStorage::Shutdown(void)
@@ -175,15 +178,13 @@ void LogStorage::log(const vector<string> &logs)
 {
 	smatch matches;
 	
-	DB db("elog");
-	
-	db.BulkStart(Field::en_type::NONE, "t_log", "log_id, channel_id, log_date, log_crit", 4);
-	db.BulkStart(Field::en_type::CHAR, "t_value_char", "log_id, field_id, log_date, value", 4);
-	db.BulkStart(Field::en_type::INT, "t_value_int", "log_id, field_id, log_date, value", 4);
-	db.BulkStart(Field::en_type::IP, "t_value_ip", "log_id, field_id, log_date, value", 4);
-	db.BulkStart(Field::en_type::PACK, "t_value_pack", "log_id, field_id, log_date, value", 4);
-	db.BulkStart(Field::en_type::TEXT, "t_value_text", "log_id, field_id, log_date, value", 4);
-	db.BulkStart(Field::en_type::ITEXT, "t_value_itext", "log_id, field_id, log_date, value, value_sha1", 5);
+	storage_db->BulkStart(Field::en_type::NONE, "t_log", "log_id, channel_id, log_date, log_crit", 4);
+	storage_db->BulkStart(Field::en_type::CHAR, "t_value_char", "log_id, field_id, log_date, value", 4);
+	storage_db->BulkStart(Field::en_type::INT, "t_value_int", "log_id, field_id, log_date, value", 4);
+	storage_db->BulkStart(Field::en_type::IP, "t_value_ip", "log_id, field_id, log_date, value", 4);
+	storage_db->BulkStart(Field::en_type::PACK, "t_value_pack", "log_id, field_id, log_date, value", 4);
+	storage_db->BulkStart(Field::en_type::TEXT, "t_value_text", "log_id, field_id, log_date, value", 4);
+	storage_db->BulkStart(Field::en_type::ITEXT, "t_value_itext", "log_id, field_id, log_date, value, value_sha1", 5);
 	
 	for(int i=0;i<logs.size();i++)
 	{
@@ -205,7 +206,7 @@ void LogStorage::log(const vector<string> &logs)
 			map<string, string> group_fields, channel_fields;
 			channel.ParseLog(log_str, group_fields, channel_fields);
 			
-			store_log(&db, channel, group_fields, channel_fields);
+			store_log(channel, group_fields, channel_fields);
 		}
 		catch(Exception &e)
 		{
@@ -213,29 +214,29 @@ void LogStorage::log(const vector<string> &logs)
 		}
 	}
 	
-	db.StartTransaction();
+	storage_db->StartTransaction();
 	
 	try
 	{
-		db.BulkExec(Field::en_type::NONE);
-		db.BulkExec(Field::en_type::CHAR);
-		db.BulkExec(Field::en_type::INT);
-		db.BulkExec(Field::en_type::IP);
-		db.BulkExec(Field::en_type::PACK);
-		db.BulkExec(Field::en_type::TEXT);
-		db.BulkExec(Field::en_type::ITEXT);
+		storage_db->BulkExec(Field::en_type::NONE);
+		storage_db->BulkExec(Field::en_type::CHAR);
+		storage_db->BulkExec(Field::en_type::INT);
+		storage_db->BulkExec(Field::en_type::IP);
+		storage_db->BulkExec(Field::en_type::PACK);
+		storage_db->BulkExec(Field::en_type::TEXT);
+		storage_db->BulkExec(Field::en_type::ITEXT);
 	}
 	catch(Exception &e)
 	{
 		Logger::Log(LOG_ERR, "Error parsing extern log in "+e.context+" : "+e.error);
 	}
 	
-	db.CommitTransaction();
+	storage_db->CommitTransaction();
 	
 	Events::GetInstance()->Create("LOG_ELOG");
 }
 
-void LogStorage::store_log(DB *db, const Channel &channel, const map<string, string> &group_fields, const map<string, string> &channel_fields)
+void LogStorage::store_log(const Channel &channel, const map<string, string> &group_fields, const map<string, string> &channel_fields)
 {
 	const ChannelGroup group = channel.GetGroup();
 	unsigned long long log_id = next_log_id++;
@@ -243,13 +244,13 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 	
 	// Check if partition exists for the log line
 	if(DB::TO_DAYS(date)>=last_partition_days)
-		create_partition(db, date);
+		create_partition(date);
 	
 	// Insert log line
-	db->BulkDataLong(Field::en_type::NONE, log_id);
-	db->BulkDataInt(Field::en_type::NONE, channel.GetID());
-	db->BulkDataString(Field::en_type::NONE, date);
-	db->BulkDataInt(Field::en_type::NONE, Field::PackCrit(group_fields.find("crit")->second));
+	storage_db->BulkDataLong(Field::en_type::NONE, log_id);
+	storage_db->BulkDataInt(Field::en_type::NONE, channel.GetID());
+	storage_db->BulkDataString(Field::en_type::NONE, date);
+	storage_db->BulkDataInt(Field::en_type::NONE, Field::PackCrit(group_fields.find("crit")->second));
 	
 	
 	for(auto it = group_fields.begin(); it!=group_fields.end(); ++it)
@@ -257,14 +258,14 @@ void LogStorage::store_log(DB *db, const Channel &channel, const map<string, str
 		if(it->first=="date" || it->first=="crit")
 			continue;
 		
-		log_value(db, log_id, group.GetFields().Get(it->first), date, it->second);
+		log_value(log_id, group.GetFields().Get(it->first), date, it->second);
 	}
 	
 	for(auto it = channel_fields.begin(); it!=channel_fields.end(); ++it)
-		log_value(db, log_id, channel.GetFields().Get(it->first), date, it->second);
+		log_value(log_id, channel.GetFields().Get(it->first), date, it->second);
 }
 
-void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field, const string &date, const string &value)
+void LogStorage::log_value(unsigned long long log_id, const Field &field, const string &date, const string &value)
 {
 	auto type = field.GetType();
 	
@@ -272,22 +273,22 @@ void LogStorage::log_value(DB *db, unsigned long long log_id, const Field &field
 	string pack_str;
 	field.Pack(value, &pack_i, &pack_str);
 	
-	db->BulkDataLong(type, log_id);
-	db->BulkDataInt(type, field.GetID());
-	db->BulkDataString(type, date);
+	storage_db->BulkDataLong(type, log_id);
+	storage_db->BulkDataInt(type, field.GetID());
+	storage_db->BulkDataString(type, date);
 	if(field.GetType()==Field::en_type::ITEXT)
 	{
-		db->BulkDataString(type, pack_str.substr(0, 65535));
-		db->BulkDataString(type, Sha1String(pack_str).GetBinary());
+		storage_db->BulkDataString(type, pack_str.substr(0, 65535));
+		storage_db->BulkDataString(type, Sha1String(pack_str).GetBinary());
 	}
 	else if(field.GetType()==Field::en_type::TEXT)
-		db->BulkDataString(type, pack_str.substr(0, 65535));
+		storage_db->BulkDataString(type, pack_str.substr(0, 65535));
 	else if(field.GetType()==Field::en_type::CHAR)
-		db->BulkDataString(type, pack_str.substr(0, 128));
+		storage_db->BulkDataString(type, pack_str.substr(0, 128));
 	else if(field.GetDBType()=="%i")
-		db->BulkDataInt(type, pack_i);
+		storage_db->BulkDataInt(type, pack_i);
 	else if(field.GetDBType()=="%s")
-		db->BulkDataString(type, pack_str);
+		storage_db->BulkDataString(type, pack_str);
 }
 
 unsigned int LogStorage::PackString(const string &str)
@@ -333,7 +334,7 @@ string LogStorage::UnpackString(int i)
 	return "";
 }
 
-void LogStorage::create_partition(DB *db, const string &date)
+void LogStorage::create_partition(const string &date)
 {
 	string part_name = "p"+date.substr(0, 4)+date.substr(5, 2)+date.substr(8, 2);
 	unsigned int days = DB::TO_DAYS(date) + 1;
@@ -341,13 +342,13 @@ void LogStorage::create_partition(DB *db, const string &date)
 	if(days<=last_partition_days)
 		return; // Nothing to do
 	
-	db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
-	db->QueryPrintf("ALTER TABLE t_value_char ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
-	db->QueryPrintf("ALTER TABLE t_value_text ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
-	db->QueryPrintf("ALTER TABLE t_value_itext ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
-	db->QueryPrintf("ALTER TABLE t_value_ip ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
-	db->QueryPrintf("ALTER TABLE t_value_int ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
-	db->QueryPrintf("ALTER TABLE t_value_pack ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	storage_db->QueryPrintf("ALTER TABLE t_log ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	storage_db->QueryPrintf("ALTER TABLE t_value_char ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	storage_db->QueryPrintf("ALTER TABLE t_value_text ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	storage_db->QueryPrintf("ALTER TABLE t_value_itext ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	storage_db->QueryPrintf("ALTER TABLE t_value_ip ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	storage_db->QueryPrintf("ALTER TABLE t_value_int ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
+	storage_db->QueryPrintf("ALTER TABLE t_value_pack ADD PARTITION (PARTITION "+part_name+" VALUES LESS THAN (%i))", {&days});
 	
 	last_partition_days = days;
 }
