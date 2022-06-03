@@ -334,33 +334,38 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		string password = query->GetRootAttribute("password", "");
 		string profile = query->GetRootAttribute("profile");
 		
+		unsigned int id;
+		string event = "";
+		
 		if(action=="create")
 		{
 			if(!user.IsAdmin())
 				User::InsufficientRights();
 			
-			unsigned int id = Create(name, password, profile);
+			id = Create(name, password, profile);
 			response->GetDOM()->getDocumentElement().setAttribute("user-id",to_string(id));
 			
 			LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create("USER_CREATED", id);
+			event = "USER_CREATED";
 		}
 		else
 		{
 			if(!user.IsAdmin())
 				User::InsufficientRights();
 			
-			unsigned int id = get_id_from_query(query);
+			id = get_id_from_query(query);
 			
 			Edit(id, name, password, profile);
 			
 			LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create("USER_MODIFIED", id);
+			event = "USER_MODIFIED";
 		}
 		
 		Users::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(event, id);
 		
 		return true;
 	}
