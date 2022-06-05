@@ -84,7 +84,7 @@ class DB
 	
 public:
 	DB(DB *db);
-	DB(const std::string &name = "evqueue");
+	DB(const std::string &name = "evqueue", bool nodbselect = false);
 	~DB(void);
 	
 	DB *Clone(void);

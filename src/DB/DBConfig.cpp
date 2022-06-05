@@ -50,7 +50,7 @@ void DBConfig::Check(bool wait)
 {
 	for(auto it = configs.begin(); it!=configs.end(); ++it)
 	{
-		DB db(it->first);
+		DB db(it->first, true);
 		if(wait)
 			db.Wait();
 		else
@@ -76,6 +76,30 @@ void DBConfig::GetConfig(const string &name, string &host, string &user, string 
 	user = c.user;
 	password = c.password;
 	database = c.database;
+}
+
+void DBConfig::InitDatabases()
+{
+	for(auto it = configs.begin(); it!=configs.end(); ++it)
+	{
+		auto dbname = it->second.database;
+		
+		DB db(it->first, true);
+		db.QueryPrintf("SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME=%s", {&dbname});
+		if(db.FetchRow() && db.GetFieldInt(0)==0)
+		{
+			Logger::Log(LOG_NOTICE,it->first + " database (" + it->second.database + ") does not exists, creating it...");
+			
+			try
+			{
+				db.QueryPrintf("CREATE DATABASE %c", {&dbname});
+			}
+			catch(Exception &e)
+			{
+				throw Exception("DBConfig", "Error creating database " + it->second.database + " ("+e.error+")");
+			}
+		}
+	}
 }
 
 bool DBConfig::RegisterTables(const string &name, map<string, string> &tables_def)

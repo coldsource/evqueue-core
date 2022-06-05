@@ -62,7 +62,7 @@ DB::DB(DB *db)
 	is_copy = true;
 }
 
-DB::DB(const string &name)
+DB::DB(const string &name, bool nodbselect)
 {
 	// Initialisation de mysql
 	mysql = mysql_init(0);
@@ -75,6 +75,8 @@ DB::DB(const string &name)
 	
 	// Read database configuration
 	DBConfig::GetInstance()->GetConfig(name, host, user, password, database);
+	if(nodbselect)
+		database = "";
 }
 
 DB::~DB(void)
@@ -219,7 +221,7 @@ string DB::get_query_value(char type, int idx, const std::vector<const void *> &
 	switch(type)
 	{
 		case 'c':
-			return *((string *)args[idx]);
+			return "`"+(*((string *)args[idx]))+"`";
 		case 's':
 			return "'" + EscapeString(*((const string *)args[idx])) + "'";
 		case 'i':
@@ -486,7 +488,11 @@ void DB::connect(void)
 	if(is_connected)
 		return; // Nothing to do
 	
-	if(!mysql_real_connect(mysql,host.c_str(),user.c_str(),password.c_str(),database.c_str(),0,0,0))
+	const char *dbptr = 0;
+	if(database!="")
+		dbptr = database.c_str();
+	
+	if(!mysql_real_connect(mysql, host.c_str(), user.c_str(), password.c_str(), dbptr, 0, 0, 0))
 		throw Exception("DB",mysql_error(mysql),"SQL_ERROR",mysql_errno(mysql));
 	
 	is_connected = true;

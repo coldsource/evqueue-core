@@ -37,6 +37,7 @@ void tools_init_db(void)
 {
 	Configuration *config = ConfigurationEvQueue::GetInstance();
 	
+	DBConfig::GetInstance()->InitDatabases();
 	DBConfig::GetInstance()->InitTables();
 	
 	// evQueue core

@@ -56,6 +56,8 @@ class DBConfig
 		void RegisterConfig(const std::string &name, const std::string &host, const std::string &user, const std::string &password, const std::string &database);
 		void GetConfig(const std::string &name, std::string &host, std::string &user, std::string &password, std::string &database);
 		
+		void InitDatabases();
+		
 		bool RegisterTables(const std::string &name, std::map<std::string, std::string> &tables_def);
 		bool RegisterTablesInit(const std::string &name, std::map<std::string, std::string> &tables_query);
 		void InitTables();
