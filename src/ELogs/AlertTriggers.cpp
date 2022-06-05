@@ -25,6 +25,7 @@
 #include <API/QueryResponse.h>
 #include <API/QueryHandlers.h>
 #include <WS/Events.h>
+#include <User/User.h>
 
 namespace ELogs
 {
@@ -38,6 +39,9 @@ using namespace std;
 
 bool AlertTriggers::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	string action = query->GetRootAttribute("action");
 	
 	if(action=="list")

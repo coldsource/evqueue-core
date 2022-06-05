@@ -34,6 +34,7 @@
 #include <Crypto/Sha1String.h>
 #include <API/QueryHandlers.h>
 #include <Utils/Date.h>
+#include <User/User.h>
 
 #include <vector>
 
@@ -212,6 +213,9 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 
 bool ELogs::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	string action = query->GetRootAttribute("action");
 	
 	if(action=="list")

@@ -31,6 +31,7 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <API/QueryHandlers.h>
+#include <User/User.h>
 
 #include <vector>
 
@@ -46,6 +47,9 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 bool ELog::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
+	if(!user.IsAdmin())
+		User::InsufficientRights();
+	
 	string action = query->GetRootAttribute("action");
 	
 	if(action=="get")
