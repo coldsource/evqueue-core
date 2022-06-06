@@ -24,8 +24,14 @@
 #include <API/XMLQuery.h>
 #include <Crypto/base64.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <API/QueryHandlers.h>
 
 #include <zlib.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("datastore", Datastore::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -68,7 +74,7 @@ bool Datastore::HandleQuery(const User &user, XMLQuery *query, QueryResponse *re
 		unsigned int datastore_id = query->GetRootAttributeInt("id");
 		
 		DB db;
-		db.QueryPrintf("SELECT datastore_value FROM t_datastore WHERE datastore_id=%i",&datastore_id);
+		db.QueryPrintf("SELECT datastore_value FROM t_datastore WHERE datastore_id=%i",{&datastore_id});
 		if(!db.FetchRow())
 			throw Exception("Datastore","Unknown datastore entry");
 		

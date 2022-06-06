@@ -28,6 +28,8 @@
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <User/User.h>
+#include <API/QueryHandlers.h>
+#include <WS/Events.h>
 
 #include <pthread.h>
 #include <sys/socket.h>
@@ -37,6 +39,12 @@
 #include <vector>
 
 WorkflowInstances *WorkflowInstances::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("instances",WorkflowInstances::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"INSTANCE_STARTED","INSTANCE_TERMINATED","TASK_ENQUEUE","TASK_EXECUTE","TASK_TERMINATE","TASK_PROGRESS"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -50,6 +58,40 @@ WorkflowInstances::WorkflowInstances()
 		throw Exception("WorkflowInstances","DPD: Invalid poll interval, should be greater or equal than 0");
 	
 	is_shutting_down = false;
+}
+
+void WorkflowInstances::Resume()
+{
+	DB db;
+	
+	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	
+	db.QueryPrintf("SELECT workflow_instance_id, workflow_schedule_id FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING' AND node_name=%s",{&config->Get("cluster.node.name")});
+	while(db.FetchRow())
+	{
+		Logger::Log(LOG_NOTICE,"[WID %d] Resuming",db.GetFieldInt(0));
+		
+		WorkflowInstance *workflow_instance = 0;
+		bool workflow_terminated;
+		try
+		{
+			workflow_instance = new WorkflowInstance(db.GetFieldInt(0));
+			workflow_instance->Resume(&workflow_terminated);
+			if(workflow_terminated)
+				delete workflow_instance;
+		}
+		catch(Exception &e)
+		{
+			Logger::Log(LOG_NOTICE,"[WID %d] Unexpected exception trying to resume : [ %s ] %s\n",db.GetFieldInt(0),e.context.c_str(),e.error.c_str());
+			
+			if(workflow_instance)
+				delete workflow_instance;
+		}
+	}
+	
+	// On level 0 or 1, executing workflows are only stored during engine restart. Purge them since they are resumed
+	if(config->GetInt("workflowinstance.savepoint.level")<=1)
+		db.Query("DELETE FROM t_workflow_instance WHERE workflow_instance_status='EXECUTING'");
 }
 
 void WorkflowInstances::Add(unsigned int workflow_instance_id, WorkflowInstance *workflow_instance)
@@ -315,7 +357,7 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 		string query_from = "FROM t_workflow_instance wi, t_workflow w";
 		
 		string query_where = "WHERE wi.workflow_id=w.workflow_id";
-		vector<void *> query_where_values;
+		vector<const void *> query_where_values;
 		
 		if(filter_id!=0)
 		{
@@ -477,7 +519,7 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 		string query = query_select+" "+query_from+" "+query_where+" "+query_groupby+" "+query_order_by+" "+query_limit;
 		
 		DB db;
-		db.QueryVsPrintf(query,query_where_values);
+		db.QueryPrintf(query,query_where_values);
 		map<unsigned int,DOMNode> instance_id_tags_node;
 		while(db.FetchRow())
 		{
@@ -554,7 +596,7 @@ bool WorkflowInstances::HandleQuery(const User &user, XMLQuery *query, QueryResp
 		
 		if(i>0)
 		{
-			db.QueryPrintf("SELECT wit.workflow_instance_id, t.tag_id, t.tag_label FROM t_workflow_instance_tag wit, t_tag t WHERE t.tag_id=wit.tag_id AND wit.workflow_instance_id "+query_in);
+			db.Query("SELECT wit.workflow_instance_id, t.tag_id, t.tag_label FROM t_workflow_instance_tag wit, t_tag t WHERE t.tag_id=wit.tag_id AND wit.workflow_instance_id "+query_in);
 			while(db.FetchRow())
 			{
 				auto it = instance_id_tags_node.find(db.GetFieldInt(0));

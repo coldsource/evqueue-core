@@ -24,5 +24,6 @@
 #include <map>
 
 extern std::map<std::string,std::string> evqueue_tables;
+extern std::map<std::string,std::string> evqueue_elogs_tables;
 
 #endif

@@ -20,7 +20,10 @@
 #ifndef _TOOLS_PROC_H_
 #define _TOOLS_PROC_H_
 
+#include <vector>
+
 void sanitize_fds(int start);
 void setproctitle(const char *title);
+void set_sighandler(void (*sigh) (int), const std::vector<int> &sigs);
 
 #endif

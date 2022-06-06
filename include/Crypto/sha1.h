@@ -22,8 +22,8 @@
 #ifndef SHA1_H
 # define SHA1_H 1
 
-# include <stdio.h>
-# include <stdint.h>
+#include <stdio.h>
+#include <stdint.h>
 
 # ifdef __cplusplus
 extern "C" {

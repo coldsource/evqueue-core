@@ -40,7 +40,7 @@ class Cluster
 	int rcv_timeout;
 	
 	public:
-		void ParseConfiguration(const std::string &conf);
+		Cluster(const std::string &conf);
 		
 		static Cluster *GetInstance() { return instance; }
 		

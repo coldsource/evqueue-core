@@ -17,7 +17,7 @@ For documentation and binary download, [visit the official website!](http://www.
 First, you need to install build dependencies :
 
 ```
-sudo apt-get install git cmake build-essential libmariadbclient-dev libxerces-c-dev libpcre++-dev libgit2-dev libwebsockets-dev libzip-dev
+sudo apt-get install git cmake build-essential default-libmysqlclient-dev libxerces-c-dev libgit2-dev libwebsockets-dev libzip-dev
 ```
 
 You can then build core using CMake :

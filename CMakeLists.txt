@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(EVQUEUE_VERSION "3.2")
+set(EVQUEUE_VERSION "3.3")
 
 set(CMAKE_BUILD_TYPE Release)
 
@@ -8,21 +8,16 @@ project(evqueue)
 
 # Detect libgit2 library
 find_library(HAS_LIBGIT2 libgit2.so)
-find_library(HAS_STATICLIBGIT2 libgit2.a)
 
 # We prefer shared version
 if(HAS_LIBGIT2)
 	option(USELIBGIT2 "Enable libgit2 support" ON)
 else()
 	option(USELIBGIT2 "Enable libgit2 support" OFF)
-	
-	# Shared version is not available, try static one
-	if(HAS_STATICLIBGIT2)
-		option(USESTATICLIBGIT2 "Enable static libgit2 support" ON)
-	else()
-		option(USESTATICLIBGIT2 "Enable static libgit2 support" OFF)
-	endif(HAS_STATICLIBGIT2)
 endif(HAS_LIBGIT2)
+
+# ELogs support
+option(USEELOGS "Enable ELogs support" ON)
 
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
@@ -38,6 +33,7 @@ aux_source_directory(src/Exception srcException)
 aux_source_directory(src/Workflow srcWorkflow)
 aux_source_directory(src/XML srcXML)
 aux_source_directory(src/Logs srcLogs)
+aux_source_directory(src/ELogs srcELogs)
 aux_source_directory(src/API srcAPI)
 aux_source_directory(src/Logger srcLogger)
 aux_source_directory(src/Cluster srcCluster)
@@ -49,6 +45,8 @@ aux_source_directory(src/Queue srcQueue)
 aux_source_directory(src/Git srcGit)
 aux_source_directory(src/WS srcWS)
 aux_source_directory(src/Zip srcZip)
+aux_source_directory(src/Thread srcThread)
+aux_source_directory(src/Utils srcUtils)
 
 add_executable(evqueue
 	${srcWorkflowInstance}
@@ -71,32 +69,16 @@ add_executable(evqueue
 	${srcProcess}
 	${srcIO}
 	${srcQueue}
-	${srcGit}
 	${srcWS}
 	${srcZip}
+	${srcThread}
+	${srcUtils}
 	
 	src/evqueue.cpp
 	)
 
 target_compile_definitions(evqueue PRIVATE USE_DATA_PIPER)
-
-if(USELIBGIT2)
-	add_definitions(-DUSELIBGIT2)
-	target_link_libraries(evqueue git2)
-	Message("Git support is enabled")
-endif(USELIBGIT2)
-
-if(USESTATICLIBGIT2)
-	add_definitions(-DUSELIBGIT2)
-	target_link_libraries(evqueue libgit2.a)
-	target_link_libraries(evqueue ssh2)
-	target_link_libraries(evqueue http_parser)
-	target_link_libraries(evqueue curl)
-	target_link_libraries(evqueue ssl)
-	target_link_libraries(evqueue crypto)
-	target_link_libraries(evqueue rt)
-	Message("Git static support is enabled")
-endif(USESTATICLIBGIT2)
+target_compile_definitions(evqueue PRIVATE BUILD_MODULE_EVQUEUE_CORE)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -108,6 +90,17 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 else()
     message(FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER} has no C++11 support.")
 endif()
+
+if(USELIBGIT2)
+	target_sources(evqueue PRIVATE ${srcGit})
+	target_link_libraries(evqueue git2)
+	Message("Git support is enabled")
+endif(USELIBGIT2)
+
+if(USEELOGS)
+	target_sources(evqueue PRIVATE ${srcELogs})
+	Message("ELogs support is enabled")
+endif(USEELOGS)
 
 include_directories(include /usr/include)
 
@@ -137,13 +130,6 @@ else()
 	message(FATAL_ERROR "xerces-c development library is not installed")
 endif()
 
-find_path(PCREPP_INCLUDE pcrecpp.h /usr/include)
-if(PCREPP_INCLUDE)
-	message("pecre++ development library is installed")
-else()
-	message(FATAL_ERROR "pecre++ development library is not installed")
-endif()
-
 find_path(WEBSOCKETS_INCLUDE libwebsockets.h /usr/include)
 if(WEBSOCKETS_INCLUDE)
 	message("websockets development library is installed")
@@ -161,7 +147,6 @@ endif()
 target_link_libraries(evqueue z)
 target_link_libraries(evqueue pthread)
 target_link_libraries(evqueue xerces-c)
-target_link_libraries(evqueue pcrecpp)
 target_link_libraries(evqueue websockets)
 target_link_libraries(evqueue zip)
 
@@ -186,7 +171,6 @@ add_executable(evqueue_wfmanager
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_wfmanager xerces-c)
-target_link_libraries(evqueue_wfmanager pcrecpp)
 
 
 
@@ -208,7 +192,6 @@ add_executable(evqueue_api
 include_directories(src/include /usr/include)
 
 target_link_libraries(evqueue_api xerces-c)
-target_link_libraries(evqueue_api pcrecpp)
 
 
 

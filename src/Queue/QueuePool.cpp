@@ -29,6 +29,7 @@
 #include <Cluster/Cluster.h>
 #include <User/User.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -40,6 +41,13 @@
 #include <sys/socket.h>
 
 QueuePool *QueuePool::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("queuepool",QueuePool::HandleQuery);
+	qh->RegisterReloadHandler("queuepool", QueuePool::HandleReload);
+	Events::GetInstance()->RegisterEvents({"QUEUE_ENQUEUE","QUEUE_DEQUEUE","QUEUE_EXECUTE","QUEUE_TERMINATE"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -132,7 +140,7 @@ bool QueuePool::EnqueueTask(const string &queue_name,const string &queue_host,Wo
 	if(fork_locked && fork_possible)
 		fork_lock.notify_one();
 	
-	Events::GetInstance()->Create(Events::en_types::QUEUE_ENQUEUE,0);
+	Events::GetInstance()->Create("QUEUE_ENQUEUE",0);
 	
 	return true;
 }
@@ -173,7 +181,7 @@ bool QueuePool::DequeueTask(string &queue_name,WorkflowInstance **p_workflow_ins
 			
 			fork_possible = !IsLocked();
 			
-			Events::GetInstance()->Create(Events::en_types::QUEUE_DEQUEUE,0);
+			Events::GetInstance()->Create("QUEUE_DEQUEUE",0);
 		
 			return true;
 		}
@@ -217,7 +225,7 @@ pid_t QueuePool::ExecuteTask(WorkflowInstance *workflow_instance,DOMElement task
 	if(fork_locked && fork_possible)
 		fork_lock.notify_one();
 	
-	Events::GetInstance()->Create(Events::en_types::QUEUE_EXECUTE,0);
+	Events::GetInstance()->Create("QUEUE_EXECUTE",0);
 	
 	return task_id;
 }
@@ -255,7 +263,7 @@ bool QueuePool::TerminateTask(pid_t task_id,WorkflowInstance **p_workflow_instan
 	if(fork_locked && fork_possible)
 		fork_lock.notify_one();
 	
-	Events::GetInstance()->Create(Events::en_types::QUEUE_TERMINATE,0);
+	Events::GetInstance()->Create("QUEUE_TERMINATE",0);
 	
 	return true;
 }
@@ -455,6 +463,12 @@ bool QueuePool::HandleQuery(const User &user, XMLQuery *query, QueryResponse *re
 	}
 	
 	return false;
+}
+
+void QueuePool::HandleReload(bool notify)
+{
+	QueuePool *qp = QueuePool::GetInstance();
+	qp->Reload(notify);
 }
 
 Queue *QueuePool::get_queue(unsigned int id)

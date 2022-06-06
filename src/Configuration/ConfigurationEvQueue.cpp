@@ -27,11 +27,10 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <pcrecpp.h>
+
+static auto init = Configuration::GetInstance()->RegisterConfig(new ConfigurationEvQueue());
 
 using namespace std;
-
-ConfigurationEvQueue *ConfigurationEvQueue::instance=0;
 
 ConfigurationEvQueue::ConfigurationEvQueue(void)
 {
@@ -72,15 +71,6 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["network.listen.backlog"] = "64";
 	entries["network.rcv.timeout"] = "30";
 	entries["network.snd.timeout"] = "30";
-	entries["ws.bind.ip"] = "127.0.0.1";
-	entries["ws.bind.port"] = "5001";
-	entries["ws.connections.max"] = "128";
-	entries["ws.listen.backlog"] = "64";
-	entries["ws.rcv.timeout"] = "30";
-	entries["ws.snd.timeout"] = "30";
-	entries["ws.keepalive"] = "30";
-	entries["ws.workers"] = "8";
-	entries["ws.events.throttling"] = "yes";
 	entries["notifications.tasks.directory"] = "/tmp";
 	entries["notifications.tasks.timeout"] = "5";
 	entries["notifications.tasks.concurrency"] = "16";
@@ -114,44 +104,10 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["cluster.cnx.timeout"] = "10";
 	entries["cluster.rcv.timeout"] = "5";
 	entries["cluster.snd.timeout"] = "5";
-	entries["git.repository"] = "";
-	entries["git.user"] = "";
-	entries["git.password"] = "";
-	entries["git.public_key"] = "";
-	entries["git.private_key"] = "";
-	entries["git.signature.name"] = "evQueue";
-	entries["git.signature.email"] = "evqueue@local";
-	entries["git.workflows.subdirectory"] = "workflows";
-	
-	instance=this;
 }
 
 ConfigurationEvQueue::~ConfigurationEvQueue(void)
 {
-	instance = 0;
-}
-
-void ConfigurationEvQueue::Substitute(void)
-{
-	map<string,string>::iterator it;
-	for(it=entries.begin();it!=entries.end();it++)
-	{
-		pcrecpp::RE regex("(\\{[a-zA-Z_]+\\})");
-		pcrecpp::StringPiece str_to_match(it->second);
-		std::string match;
-		while(regex.FindAndConsume(&str_to_match,&match))
-		{
-			string var = match;
-			string var_name =  var.substr(1,var.length()-2);
-			
-			const char *value = getenv(var_name.c_str());
-			if(value)
-			{
-				size_t start_pos = it->second.find(var);
-				it->second.replace(start_pos,var.length(),string(value));
-			}
-		}
-	}
 }
 
 void ConfigurationEvQueue::Check(void)
@@ -173,7 +129,6 @@ void ConfigurationEvQueue::Check(void)
 	check_bool_entry("workflowinstance.saveparameters");
 	check_bool_entry("workflowinstance.savepoint.retry.enable");
 	check_bool_entry("cluster.notify");
-	check_bool_entry("ws.events.throttling");
 
 	check_int_entry("dpd.interval");
 	check_int_entry("gc.delay");
@@ -189,13 +144,6 @@ void ConfigurationEvQueue::Check(void)
 	check_int_entry("network.rcv.timeout");
 	check_int_entry("network.snd.timeout");
 	check_int_entry("network.bind.port");
-	check_int_entry("ws.connections.max");
-	check_int_entry("ws.listen.backlog");
-	check_int_entry("ws.rcv.timeout");
-	check_int_entry("ws.snd.timeout");
-	check_int_entry("ws.keepalive");
-	check_int_entry("ws.workers");
-	check_int_entry("ws.bind.port");
 	check_int_entry("notifications.tasks.timeout");
 	check_int_entry("notifications.tasks.concurrency");
 	check_int_entry("cluster.cnx.timeout");
@@ -213,24 +161,16 @@ void ConfigurationEvQueue::Check(void)
 
 	if(GetInt("datastore.gzip.level")<0 || GetInt("datastore.gzip.level")>9)
 		throw Exception("Configuration","datastore.gzip.level: invalid value '"+entries["datastore.gzip.level"]+"'. Value must be between 0 and 9");
-
+	
 	if(GetInt("workflowinstance.savepoint.level")<0 || GetInt("workflowinstance.savepoint.level")>3)
 		throw Exception("Configuration","workflowinstance.savepoint.level: invalid value '"+entries["workflowinstance.savepoint.level"]+"'. Value must be between O and 3");
 
 	if(Get("queuepool.scheduler")!="fifo" && Get("queuepool.scheduler")!="prio")
 		throw Exception("Configuration","queuepool.scheduler: invalid value '"+entries["queuepool.scheduler"]+"'. Value muse be 'fifo' or 'prio'");
-	
-	if(GetInt("ws.workers")<1)
-		throw Exception("Configuration","ws.workers must be greater than 0");
-	
-	if(GetInt("ws.workers")>LWS_MAX_SMP)
-		throw Exception("Configuration","ws.workers is limited by libwebsockets to "+to_string(LWS_MAX_SMP));
 }
 
 void ConfigurationEvQueue::SendConfiguration(QueryResponse *response)
 {
-	char buf[16];
-	
 	DOMDocument *xmldoc = response->GetDOM();
 	
 	DOMElement configuration_node = xmldoc->createElement("configuration");
@@ -242,7 +182,7 @@ void ConfigurationEvQueue::SendConfiguration(QueryResponse *response)
 	{
 		DOMElement entry_node = xmldoc->createElement("entry");
 		entry_node.setAttribute("name",it->first);
-		if(it->first=="mysql.password" || it->first=="cluster.notify.password" || it->first=="git.password")
+		if(it->first.size()>9 && it->first.substr(it->first.size()-9)==".password" )
 			entry_node.setAttribute("value","****"); // Do not send password
 		else
 			entry_node.setAttribute("value",it->second);

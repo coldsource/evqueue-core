@@ -20,11 +20,13 @@
 #ifndef _LOGGERAPI_H_
 #define _LOGGERAPI_H_
 
+#include <API/APIAutoInit.h>
+
 #include <string>
 
 class User;
 
-class LoggerAPI
+class LoggerAPI: public APIAutoInit
 {
 	static LoggerAPI *instance;
 	

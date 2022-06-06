@@ -22,13 +22,17 @@
 
 #include <unistd.h>
 
+#include <vector>
 #include <string>
+
+#include <nlohmann/json.hpp>
 
 class DB;
 class WorkflowInstance;
 class XMLQuery;
 class QueryResponse;
 class User;
+class NotificationType;
 
 class Notification
 {
@@ -38,8 +42,9 @@ class Notification
 	std::string notification_name;
 	int notification_subscribe_all;
 	std::string notification_configuration;
+	nlohmann::json j_notification_configuration;
 	std::string plugin_configuration;
-	std::string unix_socket_path;
+	nlohmann::json j_plugin_configuration;
 	std::string logs_directory;
 	std::string timeout;
 	
@@ -49,12 +54,13 @@ class Notification
 		
 		unsigned int &GetID() { return id; }
 		unsigned int &GetTypeID() { return type_id; }
+		const NotificationType GetType() const;
 		const std::string &GetName() { return notification_name; }
 		int GetSubscribeAll() { return notification_subscribe_all; }
 		const std::string &GetBinary() { return notification_binary; }
 		const std::string &GetConfiguration() { return notification_configuration; }
 		
-		pid_t Call(WorkflowInstance *workflow_instance);
+		pid_t Call(const std::string &notif_name, unsigned int uid, const std::vector<std::string> &params, const nlohmann::json &j_data);
 		
 		static void Get(unsigned int id,QueryResponse *response);
 		static void Create(unsigned int type_id,const std::string &name, int subscribe_all, const std::string parameters);
@@ -64,8 +70,6 @@ class Notification
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
 	private:
-		std::string json_escape(const std::string &str);
-		
 		static void create_edit_check(unsigned int type_id,const std::string &name, const std::string parameters);
 		
 		static void subscribe_all_workflows(unsigned int id);

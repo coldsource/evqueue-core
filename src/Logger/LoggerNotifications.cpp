@@ -22,6 +22,11 @@
 #include <User/User.h>
 #include <WS/Events.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <API/QueryHandlers.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	return (APIAutoInit *)new LoggerNotifications();
+});
 
 using namespace std;
 
@@ -35,13 +40,16 @@ LoggerNotifications::LoggerNotifications():
 
 void LoggerNotifications::Log(pid_t pid, const string &log)
 {
+	if(!instance)
+		return;
+	
 	DB db;
 	
-	db.QueryPrintf("INSERT INTO t_log_notifications(node_name,log_notifications_pid,log_notifications_message) VALUES(%s,%i,%s)",
+	db.QueryPrintf("INSERT INTO t_log_notifications(node_name,log_notifications_pid,log_notifications_message) VALUES(%s,%i,%s)", {
 		&instance->node_name,
 		&pid,
 		&log
-		);
+	});
 	
-	Events::GetInstance()->Create(Events::en_types::LOG_NOTIFICATION);
+	Events::GetInstance()->Create("LOG_NOTIFICATION");
 }

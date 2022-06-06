@@ -36,7 +36,10 @@
 #include <User/Users.h>
 #include <User/User.h>
 #include <Tag/Tags.h>
+#include <ELogs/Channels.h>
+#include <ELogs/ChannelGroups.h>
 #include <Exception/Exception.h>
+#include <API/QueryHandlers.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -48,62 +51,11 @@
 
 using namespace std;
 
-void tools_config_reload(const std::string &module,bool notify)
-{
-	bool module_is_valid = false;
-	
-	if(module=="all" || module=="scheduler")
-	{
-		WorkflowScheduler *scheduler = WorkflowScheduler::GetInstance();
-		scheduler->Reload(notify);
-		module_is_valid = true;
-	}
-	
-	if(module=="all" || module=="retry_schedules")
-	{
-		RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
-		retry_schedules->Reload(notify);
-		module_is_valid = true;
-	}
-	
-	if(module=="all" || module=="workflows")
-	{
-		Workflows *workflows = Workflows::GetInstance();
-		workflows->Reload(notify);
-		module_is_valid = true;
-	}
-	
-	if(module=="all" || module=="notifications")
-	{
-		NotificationTypes::GetInstance()->Reload(notify);
-		Notifications::GetInstance()->Reload(notify);
-		module_is_valid = true;
-	}
-	
-	if(module=="all" || module=="queuepool")
-	{
-		QueuePool *qp = QueuePool::GetInstance();
-		qp->Reload(notify);
-		module_is_valid = true;
-	}
-	
-	if(module=="all" || module=="users")
-	{
-		Users *users = Users::GetInstance();
-		users->Reload(notify);
-		module_is_valid = true;
-	}
-	
-	if(module=="all" || module=="tags")
-	{
-		Tags *tags = Tags::GetInstance();
-		tags->Reload(notify);
-		module_is_valid = true;
-	}
-	
-	if(!module_is_valid)
-		throw Exception("Control","Invalid module","INVALID_MODULE");
-}
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("control",tools_handle_query);
+	qh->RegisterHandler("status",tools_handle_query);
+	return (APIAutoInit *)0;
+});
 
 void tools_sync_notifications(bool notify)
 {
@@ -128,12 +80,11 @@ bool tools_handle_query(const User &user, XMLQuery *query, QueryResponse *respon
 		
 		if(action=="reload")
 		{
-			string module = query->GetRootAttribute("module","");
+			string module = query->GetRootAttribute("module","all");
 			bool notify = query->GetRootAttributeBool("notify",true);
-			if(module.length()==0)
-				tools_config_reload("all",notify);
-			else
-				tools_config_reload(module,notify);
+			
+			if(!QueryHandlers::GetInstance()->Reload(module, notify))
+				throw Exception("Control","Invalid module : "+module,"INVALID_MODULE");
 			
 			return true;
 		}

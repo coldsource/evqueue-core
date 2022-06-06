@@ -24,7 +24,7 @@
 #include <XML/XMLUtils.h>
 #include <Workflow/Workflow.h>
 #include <Workflow/Workflows.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Configuration/Configuration.h>
 #include <Exception/Exception.h>
 #include <IO/FileManager.h>
 #include <Logger/Logger.h>
@@ -34,45 +34,43 @@
 #include <XML/XMLFormatter.h>
 #include <Crypto/base64.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <git2.h>
 
 #include <string>
 #include <memory>
 
 using namespace std;
 
+namespace Git
+{
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("git",Git::HandleQuery);
+	qh->RegisterModule("git", EVQUEUE_VERSION);
+	Events::GetInstance()->RegisterEvents({"GIT_PULLED","GIT_SAVED","GIT_LOADED","GIT_REMOVED"});
+	return (APIAutoInit *)new Git();
+});
+
 Git *Git::instance = 0;
 
 Git::Git()
 {
-#ifdef USELIBGIT2
-	Configuration *config = ConfigurationEvQueue::GetInstance();
-	
-	repo_path = config->Get("git.repository");
-	
-	if(repo_path.length())
-		repo = new LibGit2(repo_path);
-	
-	workflows_subdirectory = config->Get("git.workflows.subdirectory");
-#endif
-	
 	instance = this;
 }
 
 Git::~Git()
 {
-#ifdef USELIBGIT2
 	if(repo)
 		delete repo;
-#endif
 }
 
-#ifdef USELIBGIT2
 void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
 {
 	unique_lock<mutex> llock(lock);
@@ -179,13 +177,27 @@ void Git::ListWorkflows(QueryResponse *response)
 	list_files(workflows_subdirectory,response);
 }
 
-#endif // USELIBGIT2
+void Git::APIReady()
+{
+	git_libgit2_init();
+	
+	Configuration *config = Configuration::GetInstance();
+	
+	repo_path = config->Get("git.repository");
+	
+	if(repo_path.length())
+		repo = new LibGit2(repo_path);
+	
+	workflows_subdirectory = config->Get("git.workflows.subdirectory");
+}
+
+void Git::APIShutdown()
+{
+	git_libgit2_shutdown();
+}
 
 bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-#ifndef USELIBGIT2
-	throw Exception("Git", "evQueue was not compiled with git support");
-#else
 	if(!user.IsAdmin())
 		User::InsufficientRights();
 	
@@ -198,7 +210,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 	{
 		Git::GetInstance()->repo->Pull();
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_PULLED);
+		Events::GetInstance()->Create("GIT_PULLED");
 		
 		return true;
 	}
@@ -210,7 +222,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Git::GetInstance()->SaveWorkflow(name,commit_log,force);
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_SAVED);
+		Events::GetInstance()->Create("GIT_SAVED");
 		
 		return true;
 	}
@@ -220,7 +232,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Git::GetInstance()->LoadWorkflow(name);
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_LOADED);
+		Events::GetInstance()->Create("GIT_LOADED");
 		
 		return true;
 	}
@@ -239,7 +251,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Git::GetInstance()->RemoveWorkflow(name,commit_log);
 		
-		Events::GetInstance()->Create(Events::en_types::GIT_REMOVED);
+		Events::GetInstance()->Create("GIT_REMOVED");
 		
 		return true;
 	}
@@ -250,10 +262,7 @@ bool Git::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 	}
 	
 	return false;
-#endif // USELIBGIT2
 }
-
-#ifdef USELIBGIT2
 
 string Git::save_file(const string &filename, const string &content, const string &db_lastcommit, const string &commit_log, bool force)
 {
@@ -393,4 +402,4 @@ string Git::get_file_hash(const string filename)
 	return hash;
 }
 
-#endif // USELIBGIT2
+}

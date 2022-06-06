@@ -29,10 +29,17 @@
 #include <DB/DB.h>
 #include <DOM/DOMDocument.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("queue",Queue::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"QUEUE_CREATED","QUEUE_MODIFIED","QUEUE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -241,7 +248,7 @@ unsigned int Queue::Create(const string &name, int concurrency, const string &sc
 	create_edit_check(name,concurrency,scheduler);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler,queue_dynamic) VALUES(%s,%i,%s,%i)",&name,&concurrency,&scheduler,&dynamic);
+	db.QueryPrintf("INSERT INTO t_queue(queue_name, queue_concurrency,queue_scheduler,queue_dynamic) VALUES(%s,%i,%s,%i)", {&name,&concurrency,&scheduler,&dynamic});
 	
 	return db.InsertID();
 }
@@ -254,13 +261,13 @@ void Queue::Edit(unsigned int id,const string &name, int concurrency, const stri
 	create_edit_check(name,concurrency,scheduler);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_queue SET queue_name=%s, queue_concurrency=%i, queue_scheduler=%s, queue_dynamic=%i WHERE queue_id=%i",&name,&concurrency,&scheduler,&dynamic,&id);
+	db.QueryPrintf("UPDATE t_queue SET queue_name=%s, queue_concurrency=%i, queue_scheduler=%s, queue_dynamic=%i WHERE queue_id=%i", {&name,&concurrency,&scheduler,&dynamic,&id});
 }
 
 void Queue::Delete(unsigned int id)
 {
 	DB db;
-	db.QueryPrintf("DELETE FROM t_queue WHERE queue_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_queue WHERE queue_id=%i", {&id});
 	if(!db.AffectedRows())
 		throw Exception("Queue","Unable to find queue","UNKNOWN_QUEUE");
 }
@@ -305,7 +312,7 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			
 			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::QUEUE_CREATED);
+			Events::GetInstance()->Create("QUEUE_CREATED");
 			
 			response->GetDOM()->getDocumentElement().setAttribute("queue-id",to_string(id));
 		}
@@ -315,7 +322,7 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 			
 			Edit(id,name, iconcurrency, scheduler, dynamic);
 			
-			Events::GetInstance()->Create(Events::en_types::QUEUE_MODIFIED);
+			Events::GetInstance()->Create("QUEUE_MODIFIED");
 			
 			LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 		}
@@ -332,7 +339,7 @@ bool Queue::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 		
 		LoggerAPI::LogAction(user,id,"Queue",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::QUEUE_REMOVED);
+		Events::GetInstance()->Create("QUEUE_REMOVED");
 		
 		QueuePool::GetInstance()->Reload();
 		

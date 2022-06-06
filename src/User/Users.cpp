@@ -25,8 +25,17 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Cluster/Cluster.h>
+#include <API/QueryHandlers.h>
 
 Users *Users::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("users", Users::HandleQuery);
+	qh->RegisterReloadHandler("users", Users::HandleReload);
+	APIAutoInit * users = new Users();
+	User::InitAnonymous();
+	return users;
+});
 
 using namespace std;
 
@@ -92,4 +101,10 @@ bool Users::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respon
 	}
 	
 	return false;
+}
+
+void Users::HandleReload(bool notify)
+{
+	Users *users = Users::GetInstance();
+	users->Reload(notify);
 }

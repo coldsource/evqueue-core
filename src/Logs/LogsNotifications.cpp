@@ -22,15 +22,15 @@
 #include <DB/DB.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
-#include <Workflow/Workflows.h>
-#include <Workflow/Workflow.h>
-#include <Schedule/WorkflowSchedules.h>
-#include <Schedule/WorkflowSchedule.h>
-#include <Schedule/RetrySchedules.h>
-#include <Schedule/RetrySchedule.h>
-#include <Tag/Tags.h>
-#include <Tag/Tag.h>
 #include <Queue/QueuePool.h>
+#include <API/QueryHandlers.h>
+#include <WS/Events.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("logsnotifications", LogsNotifications::HandleQuery);
+	Events::GetInstance()->RegisterEvent("LOG_NOTIFICATION");
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -50,7 +50,7 @@ bool LogsNotifications::HandleQuery(const User &user, XMLQuery *query, QueryResp
 			FROM t_log_notifications \
 			ORDER BY log_notifications_timestamp DESC,log_notifications_id DESC \
 			LIMIT %i,%i",
-			&offset,&limit);
+			{&offset,&limit});
 		
 		while(db.FetchRow())
 		{

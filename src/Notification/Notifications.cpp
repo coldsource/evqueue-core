@@ -19,6 +19,8 @@
 
 #include <Notification/Notifications.h>
 #include <Notification/Notification.h>
+#include <Notification/NotificationType.h>
+#include <Notification/NotificationTypes.h>
 #include <DB/DB.h>
 #include <Exception/Exception.h>
 #include <Logger/Logger.h>
@@ -29,12 +31,20 @@
 #include <Cluster/Cluster.h>
 #include <User/User.h>
 #include <Logger/LoggerNotifications.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 
 Notifications *Notifications::instance = 0;
 
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("notifications", Notifications::HandleQuery);
+	qh->RegisterReloadHandler("notifications", Notifications::HandleReload);
+	return (APIAutoInit *)new Notifications();
+});
+
 using namespace std;
+using nlohmann::json;
 
 Notifications::Notifications():APIObjectList()
 {
@@ -45,6 +55,8 @@ Notifications::Notifications():APIObjectList()
 	logs_directory = ConfigurationEvQueue::GetInstance()->Get("notifications.logs.directory");
 	logs_maxsize = ConfigurationEvQueue::GetInstance()->GetSize("notifications.logs.maxsize");
 	logs_delete = ConfigurationEvQueue::GetInstance()->GetBool("notifications.logs.delete");
+	
+	uid = 1;
 	
 	Reload(false);
 }
@@ -78,27 +90,29 @@ void Notifications::Reload(bool notify)
 	}
 }
 
-void Notifications::Call(unsigned int notification_id, WorkflowInstance *workflow_instance)
+void Notifications::Call(unsigned int notification_id, const std::string &notif_instance_name, const vector<string> &params, const json &j_data)
 {	
 	try
 	{
 		Notification notification = Get(notification_id);
 		
+		Logger::Log(LOG_INFO, "Calling notification «" + notification.GetName() + "»");
+		
 		unique_lock<mutex> llock(lock);
 		
 		if(notification_instances.size()<max_concurrency)
 		{
-			pid_t pid = notification.Call(workflow_instance);
+			pid_t pid = notification.Call(notif_instance_name, uid, params, j_data);
 			if(pid>0)
-				notification_instances.insert(pair<pid_t,st_notification_instance>(pid,{workflow_instance->GetInstanceID(),notification.GetID(),notification.GetName()}));
+				notification_instances.insert(pair<pid_t,st_notification_instance>(pid,{uid++, notif_instance_name, notification.GetID(),notification.GetName()}));
 		}
 		else
 		{
 			Logger::Log(
 				LOG_WARNING,
-				"Maximum concurrency reached for notifications calls, dropping call for notification '%s' of workflow instance %d",
+				"Maximum concurrency reached for notifications calls, dropping call for notification '%s' of %s",
 				notification.GetName().c_str(),
-				workflow_instance->GetInstanceID()
+				notif_instance_name.c_str()
 			);
 		}
 	}
@@ -128,27 +142,27 @@ void Notifications::Exit(pid_t pid, int status, char retcode)
 		{
 			if(retcode!=0)
 			{
-				Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d returned code %d",ni.notification_type.c_str(),pid,ni.workflow_instance_id,retcode);
+				Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for %s returned code %d",ni.notification_type.c_str(),pid,ni.notif_instance_name.c_str(),retcode);
 				
 				// Read and store log file
-				store_log(pid,ni.workflow_instance_id,ni.notification_id);
+				store_log(pid,ni.uid,ni.notification_id);
 			}
 			else
-				Logger::Log(LOG_NOTICE,"Notification task '%s' (pid %d) for workflow instance %d executed successuflly",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+				Logger::Log(LOG_NOTICE,"Notification task '%s' (pid %d) for %s executed successuflly",ni.notification_type.c_str(),pid,ni.notif_instance_name.c_str());
 			
 			if(logs_delete)
 			{
-				string filename = logs_directory+"/notif_"+to_string(ni.workflow_instance_id)+"_"+to_string(ni.notification_id)+".stderr";
+				string filename = logs_directory+"/notif_"+to_string(ni.uid)+"_"+to_string(ni.notification_id)+".stderr";
 				if(unlink(filename.c_str())!=0)
 					Logger::Log(LOG_WARNING,"Error removing log file "+filename);
 			}
 		}
 		else if(status==1)
-			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d was killed",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for %s was killed",ni.notification_type.c_str(),pid,ni.notif_instance_name.c_str());
 		else if(status==2)
-			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for workflow instance %d timed out",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+			Logger::Log(LOG_WARNING,"Notification task '%s' (pid %d) for %s timed out",ni.notification_type.c_str(),pid,ni.notif_instance_name.c_str());
 		else if(status==3)
-			Logger::Log(LOG_ALERT,"Notification task '%s' (pid %d) for workflow instance %d could not be forked",ni.notification_type.c_str(),pid,ni.workflow_instance_id);
+			Logger::Log(LOG_ALERT,"Notification task '%s' (pid %d) for %s could not be forked",ni.notification_type.c_str(),pid,ni.notif_instance_name.c_str());
 		
 		notification_instances.erase(pid);
 	}
@@ -168,12 +182,18 @@ bool Notifications::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 	{
 		unique_lock<mutex> llock(notifications->lock);
 		
+		const string scope = query->GetRootAttribute("scope", "*");
+		
 		for(auto it = notifications->objects_id.begin(); it!=notifications->objects_id.end(); it++)
 		{
+			if(scope!="*" && it->second->GetType().GetScope()!=scope)
+				continue;
+			
 			DOMElement node = (DOMElement)response->AppendXML("<notification />");
 			node.setAttribute("id",to_string(it->second->GetID()));
 			node.setAttribute("type_id",std::to_string(it->second->GetTypeID()));
 			node.setAttribute("name",it->second->GetName());
+			node.setAttribute("scope",it->second->GetType().GetScope());
 		}
 		
 		return true;
@@ -182,9 +202,15 @@ bool Notifications::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 	return false;
 }
 
-void Notifications::store_log(pid_t pid,unsigned int instance_id, unsigned int notification_id)
+void Notifications::HandleReload(bool notify)
 {
-	string filename = logs_directory+"/notif_"+to_string(instance_id)+"_"+to_string(notification_id)+".stderr";
+	NotificationTypes::GetInstance()->Reload(notify);
+	Notifications::GetInstance()->Reload(notify);
+}
+
+void Notifications::store_log(pid_t pid, unsigned int uid, unsigned int notification_id)
+{
+	string filename = logs_directory+"/notif_"+to_string(uid)+"_"+to_string(notification_id)+".stderr";
 	FILE *f = fopen(filename.c_str(),"r");
 	
 	if(!f)
@@ -205,12 +231,6 @@ void Notifications::store_log(pid_t pid,unsigned int instance_id, unsigned int n
 	fseek(f,0,SEEK_SET);
 	size_t read_size = fread(buf,1,log_size,f);
 	fclose(f);
-	
-	if(logs_delete)
-	{
-		if(unlink(filename.c_str())!=0)
-			Logger::Log(LOG_WARNING,"Error removing log file "+filename);
-	}
 	
 	if(read_size!=log_size)
 		Logger::Log(LOG_WARNING,"Error reading log file "+filename);

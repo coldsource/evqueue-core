@@ -22,22 +22,41 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 class Configuration
 {
+	private:
+		
+		std::vector<Configuration *> configs;
+	
 	protected:
+		static Configuration *instance;
 		std::map<std::string,std::string> entries;
 	
 	public:
 		Configuration(void);
 		Configuration(const std::map<std::string,std::string> &entries);
-		~Configuration(void);
+		virtual ~Configuration(void);
+		
+		static Configuration *GetInstance();
+		
+		bool RegisterConfig(Configuration *config);
+		void Merge();
+		void Split();
+		
+		void Substitute(void);
+		
+		virtual void Check(void) {}
+		void CheckAll(void);
 		
 		bool Set(const std::string &entry,const std::string &value);
 		const std::string &Get(const std::string &entry) const;
 		int GetInt(const std::string &entry) const;
 		int GetSize(const std::string &entry) const;
 		bool GetBool(const std::string &entry) const;
+		int GetUID(const std::string &entry) const;
+		int GetGID(const std::string &entry) const;
 
 	protected:
 		void check_f_is_exec(const std::string &filename);

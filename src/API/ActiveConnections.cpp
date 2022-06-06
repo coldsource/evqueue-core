@@ -33,6 +33,14 @@ ActiveConnections::ActiveConnections()
 	is_shutting_down = false;
 }
 
+ActiveConnections::~ActiveConnections()
+{
+	Logger::Log(LOG_NOTICE,"Waiting for active connections to end...");
+	
+	Shutdown();
+	WaitForShutdown();
+}
+
 void ActiveConnections::StartAPIConnection(int s)
 {
 	unique_lock<mutex> llock(lock);

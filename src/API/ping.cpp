@@ -22,8 +22,14 @@
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <API/QueryHandlers.h>
 
 #include <time.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("ping",ping_handle_query);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

@@ -21,7 +21,8 @@
 #include <Process/DataSerializer.h>
 #include <Process/tools_ipc.h>
 #include <Process/ProcessExec.h>
-#include <Configuration/ConfigurationEvQueue.h>
+#include <Process/DataPiper.h>
+#include <Configuration/Configuration.h>
 #include <global.h>
 
 #include <stdio.h>
@@ -65,7 +66,7 @@ static void signal_callback_handler(int signum)
 
 int NotificationMonitor::main()
 {
-	ConfigurationEvQueue *config = ConfigurationEvQueue::GetInstance();
+	Configuration *config = Configuration::GetInstance();
 	
 	// Create message queue
 	int msgqid = ipc_openq(config->Get("core.ipc.qid").c_str());
@@ -81,12 +82,12 @@ int NotificationMonitor::main()
 	DataSerializer::Unserialize(fd, plugin_conf);
 	
 	int nid = stoi(args[0]);
-	int timeout = stoi(args[2]);
-	int workflow_instance_id = stoi(args[3]);
+	string uid = args[1];
+	int timeout = stoi(args[3]);
 	
 	// Redirect to files
 	string logs_directory = config->Get("processmanager.logs.directory");
-	ProcessExec::SelfFileRedirect(STDERR_FILENO,logs_directory+"/notif_"+to_string(workflow_instance_id)+"_"+to_string(nid));
+	ProcessExec::SelfFileRedirect(STDERR_FILENO,logs_directory+"/notif_"+uid+"_"+to_string(nid));
 	
 	// Catch signals
 	signal(SIGTERM,signal_callback_handler);
@@ -98,10 +99,9 @@ int NotificationMonitor::main()
 	msgbuf.mtext.pid = getpid();
 	msgbuf.mtext.tid = 0; // Normal condition
 	
-	ProcessExec proc(args[1]);
-	proc.AddArgument(args[3]);
-	proc.AddArgument(args[4]);
-	proc.AddArgument(args[5]);
+	ProcessExec proc(args[2]);
+	for(int i=4;i<args.size();i++)
+		proc.AddArgument(args[i]);
 	proc.Pipe(plugin_conf);
 	proc.SetWorkingDirectory(config->Get("notifications.tasks.directory"));
 	
@@ -130,6 +130,10 @@ int NotificationMonitor::main()
 	}
 	
 	msgsnd(msgqid,&msgbuf,sizeof(st_msgbuf::mtext),0); // Notify evqueue
+	
+	delete config;
+	if(DataPiper::GetInstance())
+		delete DataPiper::GetInstance();
 	
 	return msgbuf.mtext.retcode;
 }

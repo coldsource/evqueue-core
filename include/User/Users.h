@@ -21,6 +21,7 @@
 #define _USERS_H_
 
 #include <API/APIObjectList.h>
+#include <API/APIAutoInit.h>
 
 #include <map>
 #include <string>
@@ -29,7 +30,7 @@ class User;
 class XMLQuery;
 class QueryResponse;
 
-class Users:public APIObjectList<User>
+class Users:public APIObjectList<User>, public APIAutoInit
 {
 	static Users *instance;
 	
@@ -43,6 +44,7 @@ class Users:public APIObjectList<User>
 		void Reload(bool notify = true);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		static void HandleReload(bool notify);
 };
 
 

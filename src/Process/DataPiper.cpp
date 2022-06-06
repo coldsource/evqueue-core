@@ -40,6 +40,12 @@ DataPiper::DataPiper()
 	dp_thread_handle = thread(DataPiper::dp_thread,this);
 }
 
+DataPiper::~DataPiper()
+{
+	Shutdown();
+	WaitForShutdown();
+}
+
 void DataPiper::PipeData(int fd, const string &data)
 {
 	unique_lock<mutex> llock(lock);
@@ -99,7 +105,7 @@ void DataPiper::dp_thread(DataPiper *dp)
 			if(dp->pipe_data.size()==0 && dp->is_shutting_down)
 			{
 				// Shutdown is requested and we are done piping data, we can exit now
-				syslog(LOG_NOTICE,"Shutdown requested, exiting data piper");
+				syslog(LOG_NOTICE,"Shutdown in progress exiting data piper");
 				return;
 			}
 		}
@@ -136,7 +142,7 @@ void DataPiper::dp_thread(DataPiper *dp)
 					if(dp->pipe_data.size()==0 && dp->is_shutting_down)
 					{
 						// Shutdown is requested and we are done piping data, we can exit now
-						syslog(LOG_NOTICE,"Shutdown requested, exiting data piper");
+						syslog(LOG_NOTICE,"Shutdown in progress exiting data piper");
 						return;
 					}
 				}

@@ -50,6 +50,7 @@ class DataPiper
 	
 	public:
 		DataPiper();
+		~DataPiper();
 		
 		static DataPiper *GetInstance() { return instance; }
 		

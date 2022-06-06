@@ -20,13 +20,20 @@
 #include <Configuration/Configuration.h>
 #include <Exception/Exception.h>
 
+#include <regex>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 
 using namespace std;
+
+Configuration *Configuration::instance=0;
 
 Configuration::Configuration(void)
 {
@@ -39,6 +46,77 @@ Configuration::Configuration(const map<string,string> &entries)
 
 Configuration::~Configuration(void)
 {
+	for(int i=0;i<configs.size();i++)
+		delete configs[i];
+	
+	instance = 0;
+}
+
+Configuration *Configuration::GetInstance()
+{
+	if(instance==0)
+		instance = new Configuration();
+	
+	return instance;
+}
+
+bool Configuration::RegisterConfig(Configuration *config)
+{
+	configs.push_back(config);
+	return true;
+}
+
+void Configuration::Merge()
+{
+	for(int i=0;i<configs.size();i++)
+	{
+		for(auto it = configs[i]->entries.begin(); it!=configs[i]->entries.end(); ++it)
+		{
+			if(entries.find(it->first)!=entries.end())
+				throw Exception("Configuration", "Duplicated configuration entry : "+it->first);
+			
+			entries[it->first] = it->second;
+		}
+	}
+}
+
+void Configuration::Split()
+{
+	for(int i=0;i<configs.size();i++)
+	{
+		for(auto it = configs[i]->entries.begin(); it!=configs[i]->entries.end(); ++it)
+			configs[i]->entries[it->first] = Get(it->first);
+	}
+}
+
+void Configuration::Substitute(void)
+{
+	for(auto it=entries.begin();it!=entries.end();it++)
+	{
+		regex var_regex ("(\\{[a-zA-Z_]+\\})");
+		
+		auto words_begin = sregex_iterator(it->second.begin(), it->second.end(), var_regex);
+		auto words_end = sregex_iterator();
+		
+		for(auto i=words_begin;i!=words_end;++i)
+		{
+			string var = i->str();
+			string var_name =  var.substr(1,var.length()-2);
+			
+			const char *value = getenv(var_name.c_str());
+			if(value)
+			{
+				size_t start_pos = it->second.find(var);
+				it->second.replace(start_pos,var.length(),string(value));
+			}
+		}
+	}
+}
+
+void Configuration::CheckAll()
+{
+	for(int i=0;i<configs.size();i++)
+		configs[i]->Check();
 }
 
 bool Configuration::Set(const string &entry,const string &value)
@@ -85,6 +163,46 @@ bool Configuration::GetBool(const string &entry) const
 	if(value=="yes" || value=="true" || value=="1")
 		return true;
 	return false;
+}
+
+int Configuration::GetUID(const string &entry) const
+{
+	try
+	{
+		return std::stoi(Get("core.uid"));
+	}
+	catch(const std::invalid_argument& excpt)
+	{
+		struct passwd *user_entry = getpwnam(Get("core.uid").c_str());
+		if(!user_entry)
+			throw Exception("core","Unable to find user");
+		
+		return user_entry->pw_uid;
+	}
+	catch(const std::out_of_range & excpt)
+	{
+		throw Exception("core","Invalid UID");
+	}
+}
+
+int Configuration::GetGID(const string &entry) const
+{
+	try
+	{
+		return std::stoi(Get("core.gid"));
+	}
+	catch(const std::invalid_argument& excpt)
+	{
+		struct group *group_entry = getgrnam(Get("core.gid").c_str());
+		if(!group_entry)
+			throw Exception("core","Unable to find group");
+		
+		return group_entry->gr_gid;
+	}
+	catch(const std::out_of_range & excpt)
+	{
+		throw Exception("core","Invalid GID");
+	}
 }
 
 void Configuration::check_f_is_exec(const string &filename)

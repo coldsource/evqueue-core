@@ -25,6 +25,7 @@
 #include <Queue/QueuePool.h>
 #include <User/User.h>
 #include <WorkflowInstance/Task.h>
+#include <API/QueryHandlers.h>
 
 #include <stdio.h>
 
@@ -32,6 +33,11 @@
 #include <sys/socket.h>
 
 Statistics *Statistics::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("statistics",Statistics::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

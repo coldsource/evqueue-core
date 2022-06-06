@@ -33,13 +33,13 @@ UniqueAction::UniqueAction(const string &name, int period)
 {
 	DB db;
 	
-	db.QueryPrintf("INSERT INTO t_uniqueaction(node_name,uniqueaction_name) VALUES(%s,%s)",&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&name);
+	db.QueryPrintf("INSERT INTO t_uniqueaction(node_name,uniqueaction_name) VALUES(%s,%s)",{&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&name});
 	unsigned int myid = db.InsertID();
 	
 	if(period>0)
-		db.QueryPrintf("SELECT uniqueaction_id FROM t_uniqueaction WHERE uniqueaction_name=%s AND DATE_ADD(uniqueaction_time,INTERVAL %i SECOND)>NOW()",&name,&period);
+		db.QueryPrintf("SELECT uniqueaction_id FROM t_uniqueaction WHERE uniqueaction_name=%s AND DATE_ADD(uniqueaction_time,INTERVAL %i SECOND)>NOW()",{&name,&period});
 	else
-		db.QueryPrintf("SELECT uniqueaction_id FROM t_uniqueaction WHERE uniqueaction_name=%s",&name);
+		db.QueryPrintf("SELECT uniqueaction_id FROM t_uniqueaction WHERE uniqueaction_name=%s",{&name});
 	
 	is_elected = true;
 	while(db.FetchRow())
@@ -53,7 +53,7 @@ UniqueAction::UniqueAction(const string &name, int period)
 	
 	if(!is_elected)
 	{
-		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_id=%i",&myid);
+		db.QueryPrintf("DELETE FROM t_uniqueaction WHERE uniqueaction_id=%i",{&myid});
 		
 		Logger::Log(LOG_INFO,"Not elected for cluster unique action '"+name+"'");
 	}

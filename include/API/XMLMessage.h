@@ -51,6 +51,8 @@ class XMLMessage
 		const std::string &GetRootAttribute(const std::string &name, const std::string &default_value);
 		int GetRootAttributeInt(const std::string &name);
 		int GetRootAttributeInt(const std::string &name, int default_value);
+		long long GetRootAttributeLong(const std::string &name);
+		long long GetRootAttributeLong(const std::string &name, int default_value);
 		unsigned long long GetRootAttributeLL(const std::string &name);
 		bool GetRootAttributeBool(const std::string &name);
 		bool GetRootAttributeBool(const std::string &name, bool default_value);

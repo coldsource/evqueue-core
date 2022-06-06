@@ -20,11 +20,19 @@
 #ifndef _GARBAGECOLLECTOR_H_
 #define _GARBAGECOLLECTOR_H_
 
+#include <Thread/WaiterThread.h>
+#include <API/APIAutoInit.h>
+
 #include <thread>
 #include <mutex>
+#include <condition_variable>
+#include <vector>
 
-class GarbageCollector
+class GarbageCollector: public WaiterThread, public APIAutoInit
 {
+	public:
+		typedef int (*t_purge) (time_t now);
+		
 	private:
 		bool enable;
 		int delay;
@@ -35,16 +43,23 @@ class GarbageCollector
 		int logsapi_retention;
 		int logsnotifications_retention;
 		int uniqueaction_retention;
-		
-		bool is_shutting_down;
+		std::string dbname;
 		
 		std::thread gc_thread_handle;
-		std::mutex lock;
+		
+		std::vector<t_purge> purge_handlers;
+		
+		static GarbageCollector *instance;
 		
 	public:
 		GarbageCollector();
+		~GarbageCollector();
 		
-		void Shutdown(void);
+		static GarbageCollector *GetInstance() { return instance; }
+		
+		void APIReady();
+		void RegisterPurgeHandler(t_purge handler);
+		
 		void WaitForShutdown(void);
 	
 	private:

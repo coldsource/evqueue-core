@@ -53,6 +53,9 @@ void Logger::Log(int level,const char *msg,...)
 	va_list ap;
 	int n;
 	
+	if(!instance)
+		return;
+	
 	if((!instance->log_syslog || level>instance->syslog_filter) && (!instance->log_db || level>instance->db_filter))
 		return;
 	
@@ -68,6 +71,9 @@ void Logger::Log(int level,const char *msg,...)
 
 void Logger::Log(int level,const string &msg)
 {
+	if(!instance)
+		return;
+	
 	if(instance->log_syslog && level<=instance->syslog_filter)
 		syslog(LOG_NOTICE,"%s",msg.c_str());
 	
@@ -76,10 +82,10 @@ void Logger::Log(int level,const string &msg)
 		try
 		{
 			DB db;
-			db.QueryPrintfC("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",instance->node_name.c_str(),&level,msg.c_str());
+			db.QueryPrintf("INSERT INTO t_log(node_name,log_level,log_message,log_timestamp) VALUES(%s,%i,%s,NOW())",{&instance->node_name,&level,&msg});
 			
 			if(Events::GetInstance())
-				Events::GetInstance()->Create(Events::en_types::LOG_ENGINE);
+				Events::GetInstance()->Create("LOG_ENGINE");
 		}
 		catch(Exception &e) { } // Logger should never send exceptions on database error to prevent exception storm
 	}

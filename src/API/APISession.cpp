@@ -131,6 +131,17 @@ void APISession::SendGreeting()
 	ready_response.SetAttribute("version",EVQUEUE_VERSION);
 	ready_response.SetAttribute("node",ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"));
 	ready_response.SetAttribute("time",time_str);
+	
+	// Send list of registered modules and their versions
+	auto node_modules = ready_response.AppendXML("<modules />");
+	auto modules = QueryHandlers::GetInstance()->GetModules();
+	for(auto it = modules.begin(); it!=modules.end();++it)
+	{
+		DOMElement node_module = (DOMElement)ready_response.AppendXML("<module />", node_modules);
+		node_module.setAttribute("name", it->first);
+		node_module.setAttribute("version", it->second);
+	}
+	
 	ready_response.SendResponse();
 	
 	status = READY;

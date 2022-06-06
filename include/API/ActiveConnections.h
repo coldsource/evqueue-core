@@ -39,6 +39,7 @@ class ActiveConnections
 	
 	public:
 		ActiveConnections();
+		~ActiveConnections();
 		
 		static ActiveConnections *GetInstance() { return  instance; }
 		
@@ -52,7 +53,6 @@ class ActiveConnections
 		unsigned int GetWSNumber();
 		
 		void Shutdown(void);
-		
 		void WaitForShutdown();
 };
 

@@ -28,9 +28,16 @@
 #include <User/User.h>
 #include <Crypto/base64.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 #include <global.h>
 
 #include <string.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("retry_schedule",RetrySchedule::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"RETRYSCHEDULE_CREATED","RETRYSCHEDULE_MODIFIED","RETRYSCHEDULE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -40,7 +47,7 @@ RetrySchedule::RetrySchedule(DB *db,const string &schedule_name)
 {
 	this->name = schedule_name;
 	
-	db->QueryPrintf("SELECT schedule_id, schedule_xml FROM t_schedule WHERE schedule_name=%s",&schedule_name);
+	db->QueryPrintf("SELECT schedule_id, schedule_xml FROM t_schedule WHERE schedule_name=%s",{&schedule_name});
 	
 	if(!db->FetchRow())
 		throw Exception("RetrySchedule","Unknown retry schedule");
@@ -78,7 +85,7 @@ unsigned int RetrySchedule::Create(const std::string &name, const std::string &b
 	string xml = create_edit_check(name,base64);
 	
 	DB db;
-	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",&name,&xml);
+	db.QueryPrintf("INSERT INTO t_schedule(schedule_name, schedule_xml) VALUES(%s,%s)",{&name,&xml});
 	
 	return db.InsertID();
 }
@@ -91,13 +98,13 @@ void RetrySchedule::Edit(unsigned int id,const std::string &name, const std::str
 	string xml = create_edit_check(name,base64);
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_schedule SET schedule_name=%s, schedule_xml=%s WHERE schedule_id=%i",&name,&xml,&id);
+	db.QueryPrintf("UPDATE t_schedule SET schedule_name=%s, schedule_xml=%s WHERE schedule_id=%i",{&name,&xml,&id});
 }
 
 void RetrySchedule::Delete(unsigned int id)
 {
 	DB db;
-	db.QueryPrintf("DELETE FROM t_schedule WHERE schedule_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_schedule WHERE schedule_id=%i",{&id});
 	
 	if(!db.AffectedRows())
 		throw Exception("RetrySchedule","Retry schedule not found","UNKNOWN_RETRY_SCHEDULE");
@@ -143,7 +150,7 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 			
 			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_CREATED);
+			Events::GetInstance()->Create("RETRYSCHEDULE_CREATED");
 			
 			response->GetDOM()->getDocumentElement().setAttribute("retry-schedule-id",to_string(id));
 		}
@@ -153,7 +160,7 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 			
 			LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_MODIFIED);
+			Events::GetInstance()->Create("RETRYSCHEDULE_MODIFIED");
 			
 			Edit(id,name, content);
 		}
@@ -170,7 +177,7 @@ bool RetrySchedule::HandleQuery(const User &user, XMLQuery *query, QueryResponse
 		
 		LoggerAPI::LogAction(user,id,"RetrySchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::RETRYSCHEDULE_REMOVED);
+		Events::GetInstance()->Create("RETRYSCHEDULE_REMOVED");
 		
 		RetrySchedules::GetInstance()->Reload();
 		

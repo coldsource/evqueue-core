@@ -27,7 +27,14 @@
 #include <API/QueryResponse.h>
 #include <DB/DB.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 #include <global.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("tag", Tag::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"TAG_CREATED","TAG_MODIFIED","TAG_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -37,7 +44,7 @@ Tag::Tag()
 
 Tag::Tag(DB *db,unsigned int id)
 {
-	db->QueryPrintf("SELECT tag_label FROM t_tag WHERE tag_id=%i",&id);
+	db->QueryPrintf("SELECT tag_label FROM t_tag WHERE tag_id=%i",{&id});
 	
 	if(!db->FetchRow())
 		throw Exception("Tag","Unknown Tag","UNKNOWN_TAG");
@@ -61,15 +68,15 @@ unsigned int Tag::Create(const string &label)
 	
 	DB db;
 	
-	db.QueryPrintf("SELECT tag_id FROM t_tag WHERE tag_label=%s",&label);
+	db.QueryPrintf("SELECT tag_id FROM t_tag WHERE tag_label=%s",{&label});
 	if(db.FetchRow())
 		return db.GetFieldInt(0);
 	
-	db.QueryPrintf("INSERT INTO t_tag(tag_label) VALUES(%s)",&label);
+	db.QueryPrintf("INSERT INTO t_tag(tag_label) VALUES(%s)",{&label});
 	
 	Tags::GetInstance()->Reload();
 		
-	Events::GetInstance()->Create(Events::en_types::TAG_CREATED);
+	Events::GetInstance()->Create("TAG_CREATED");
 	
 	return db.InsertID();
 }
@@ -80,7 +87,7 @@ void Tag::Edit(unsigned int id, const string &label)
 		throw Exception("Tag", "Invalid tag label","INVALID_PARAMETER");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_tag SET tag_label=%s WHERE tag_id=%i",&label,&id);
+	db.QueryPrintf("UPDATE t_tag SET tag_label=%s WHERE tag_id=%i",{&label,&id});
 	if(db.AffectedRows()==0)
 		throw Exception("Tag","Tag not found");
 }
@@ -91,12 +98,12 @@ void Tag::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_tag WHERE tag_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_tag WHERE tag_id=%i",{&id});
 	
 	if(db.AffectedRows()==0)
 		throw Exception("Tag","Tag not found","UNKNOWN_TAG");
 	
-	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE tag_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_instance_tag WHERE tag_id=%i",{&id});
 	
 	db.CommitTransaction();
 }
@@ -139,7 +146,7 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Tags::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::TAG_MODIFIED);
+		Events::GetInstance()->Create("TAG_MODIFIED");
 		
 		return true;
 	}
@@ -153,7 +160,7 @@ bool Tag::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response
 		
 		Tags::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::TAG_REMOVED);
+		Events::GetInstance()->Create("TAG_REMOVED");
 		
 		return true;
 	}

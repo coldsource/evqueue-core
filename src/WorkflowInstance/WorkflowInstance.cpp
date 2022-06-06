@@ -37,11 +37,13 @@
 #include <Notification/Notifications.h>
 #include <API/QueryResponse.h>
 #include <WS/Events.h>
+#include <nlohmann/json.hpp>
 #include <global.h>
 
 #include <memory>
 
 using namespace std;
+using nlohmann::json;
 
 WorkflowInstance::WorkflowInstance(void):
 	logs_directory(ConfigurationEvQueue::GetInstance()->Get("processmanager.logs.directory"))
@@ -189,7 +191,10 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 	if(savepoint_level>=2)
 	{
 		// Insert workflow instance in DB
-		db.QueryPrintf("INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment, workflow_instance_savepoint, workflow_instance_errors) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s,'',0)",&ConfigurationEvQueue::GetInstance()->Get("cluster.node.name"),&workflow_id,workflow_schedule_id?&workflow_schedule_id:0,&workflow_host,&workflow_comment);
+		string node_name = ConfigurationEvQueue::GetInstance()->Get("cluster.node.name");
+		db.QueryPrintf(
+			"INSERT INTO t_workflow_instance(node_name,workflow_id,workflow_schedule_id,workflow_instance_host,workflow_instance_status,workflow_instance_start,workflow_instance_comment, workflow_instance_savepoint, workflow_instance_errors) VALUES(%s,%i,%i,%s,'EXECUTING',NOW(),%s,'',0)",
+			{&node_name, &workflow_id, workflow_schedule_id?&workflow_schedule_id:0, &workflow_host, &workflow_comment});
 		this->workflow_instance_id = db.InsertID();
 
 		// Save workflow parameters
@@ -197,7 +202,7 @@ WorkflowInstance::WorkflowInstance(const string &workflow_name,WorkflowParameter
 		{
 			parameters->SeekStart();
 			while(parameters->Get(parameter_name,parameter_value))
-				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",&this->workflow_instance_id,&parameter_name,&parameter_value);
+				db.QueryPrintf("INSERT INTO t_workflow_instance_parameters VALUES(%i,%s,%s)",{&this->workflow_instance_id,&parameter_name,&parameter_value});
 		}
 	}
 	else
@@ -222,14 +227,14 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 	DB db;
 
 	// Check workflow exists
-	db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_schedule_id, workflow_id FROM t_workflow_instance WHERE workflow_instance_id='%i'",&workflow_instance_id);
+	db.QueryPrintf("SELECT workflow_instance_savepoint, workflow_schedule_id, workflow_id FROM t_workflow_instance WHERE workflow_instance_id='%i'",{&workflow_instance_id});
 
 	if(!db.FetchRow())
 		throw Exception("WorkflowInstance","Unknown workflow instance");
 
 	if(db.GetFieldIsNULL(0) || db.GetField(0).length()==0)
 	{
-		db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_status='TERMINATED' WHERE workflow_instance_id=%i",&workflow_instance_id);
+		db.QueryPrintf("UPDATE t_workflow_instance SET workflow_instance_status='TERMINATED' WHERE workflow_instance_id=%i",{&workflow_instance_id});
 
 		throw Exception("WorkflowInstance","Could not resume workflow : empty savepoint");
 	}
@@ -259,8 +264,18 @@ WorkflowInstance::~WorkflowInstance()
 	if(!is_shutting_down)
 	{
 		// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
+		json j;
+		j["instance"] = GetDOM()->Serialize(GetDOM()->getDocumentElement());
+		
 		for(int i = 0; i < notifications.size(); i++)
-			Notifications::GetInstance()->Call(notifications.at(i),this);
+		{
+			Notifications::GetInstance()->Call(
+				notifications.at(i),
+				"workflow instance "+to_string(workflow_instance_id),
+				{to_string(workflow_instance_id), to_string(error_tasks), ConfigurationEvQueue::GetInstance()->Get("network.bind.path")},
+				j
+			);
+		}
 
 		// Unregister new instance to ensure no one is still using it
 		WorkflowInstances::GetInstance()->Remove(workflow_instance_id);
@@ -284,7 +299,7 @@ WorkflowInstance::~WorkflowInstance()
 	else
 		Logger::Log(LOG_NOTICE,"[WID %d] Suspended during shutdown",workflow_instance_id);
 	
-	Events::GetInstance()->Create(Events::en_types::INSTANCE_TERMINATED,workflow_instance_id);
+	Events::GetInstance()->Create("INSTANCE_TERMINATED",workflow_instance_id);
 }
 
 void WorkflowInstance::SendStatus(QueryResponse *response, bool full_status)
@@ -307,6 +322,8 @@ void WorkflowInstance::SendStatus(QueryResponse *response, bool full_status)
 
 void WorkflowInstance::record_log(DOMElement node, const char *log)
 {
+	const string log_str(log);
+	
 	if(strlen(log)<log_dom_maxsize)
 	{
 		node.appendChild(xmldoc->createTextNode(log));
@@ -316,7 +333,7 @@ void WorkflowInstance::record_log(DOMElement node, const char *log)
 		DB db;
 		try
 		{
-			db.QueryPrintfC("INSERT INTO t_datastore(workflow_instance_id,datastore_value) VALUES(%i,%s)",&workflow_instance_id,log);
+			db.QueryPrintf("INSERT INTO t_datastore(workflow_instance_id,datastore_value) VALUES(%i,%s)",{&workflow_instance_id, &log_str});
 			
 			int datastore_id = db.InsertID();
 			node.setAttribute("datastore-id",to_string(datastore_id));

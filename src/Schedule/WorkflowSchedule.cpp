@@ -31,8 +31,15 @@
 #include <Logger/LoggerAPI.h>
 #include <User/User.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("workflow_schedule",WorkflowSchedule::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"WORKFLOWSCHEDULE_CREATED","WORKFLOWSCHEDULE_MODIFIED","WORKFLOWSCHEDULE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -43,7 +50,7 @@ WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 	DB db;
 	
 	// Fetch schedule parameters
-	db.QueryPrintf("SELECT workflow_id, workflow_schedule, workflow_schedule_onfailure,workflow_schedule_host,workflow_schedule_user,workflow_schedule_active, workflow_schedule_comment, node_name FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&workflow_schedule_id);
+	db.QueryPrintf("SELECT workflow_id, workflow_schedule, workflow_schedule_onfailure,workflow_schedule_host,workflow_schedule_user,workflow_schedule_active, workflow_schedule_comment, node_name FROM t_workflow_schedule WHERE workflow_schedule_id=%i",{&workflow_schedule_id});
 	
 	if(!db.FetchRow())
 		throw Exception("WorkflowSchedule","Unknown schedule ID");
@@ -71,7 +78,7 @@ WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 	node = db.GetField(7);
 	
 	// Fetch schedule parameters
-	db.QueryPrintf("SELECT workflow_schedule_parameter,workflow_schedule_parameter_value FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",&workflow_schedule_id);
+	db.QueryPrintf("SELECT workflow_schedule_parameter,workflow_schedule_parameter_value FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",{&workflow_schedule_id});
 	while(db.FetchRow())
 		parameters.Add(db.GetField(0),db.GetField(1));
 }
@@ -91,9 +98,9 @@ void WorkflowSchedule::SetStatus(bool active)
 	DB db;
 	
 	if(active)
-		db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=1 WHERE workflow_schedule_id=%i",&workflow_schedule_id);
+		db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=1 WHERE workflow_schedule_id=%i",{&workflow_schedule_id});
 	else
-		db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=0 WHERE workflow_schedule_id=%i",&workflow_schedule_id);
+		db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=0 WHERE workflow_schedule_id=%i",{&workflow_schedule_id});
 }
 
 void WorkflowSchedule::Get(unsigned int id, QueryResponse *response)
@@ -148,7 +155,7 @@ unsigned int WorkflowSchedule::Create(
 	string onfailure_continue_str = onfailure_continue?"CONTINUE":"SUSPEND";
 	
 	db.QueryPrintf(
-		"INSERT INTO t_workflow_schedule(node_name,workflow_id,workflow_schedule,workflow_schedule_onfailure,workflow_schedule_user,workflow_schedule_host,workflow_schedule_active,workflow_schedule_comment) VALUES(%s,%i,%s,%s,%s,%s,%i,%s)",
+		"INSERT INTO t_workflow_schedule(node_name,workflow_id,workflow_schedule,workflow_schedule_onfailure,workflow_schedule_user,workflow_schedule_host,workflow_schedule_active,workflow_schedule_comment) VALUES(%s,%i,%s,%s,%s,%s,%i,%s)", {
 		&node,
 		&workflow_id,
 		&schedule_description,
@@ -157,7 +164,7 @@ unsigned int WorkflowSchedule::Create(
 		host.length()?&host:0,
 		&iactive,
 		&comment
-		);
+	});
 	
 	unsigned int workflow_schedule_id = db.InsertID();
 	
@@ -167,11 +174,11 @@ unsigned int WorkflowSchedule::Create(
 	parameters->SeekStart();
 	while(parameters->Get(parameter_name,parameter_value))
 		db.QueryPrintf(
-			"INSERT INTO t_workflow_schedule_parameters(workflow_schedule_id,workflow_schedule_parameter,workflow_schedule_parameter_value) VALUES(%i,%s,%s)",
+			"INSERT INTO t_workflow_schedule_parameters(workflow_schedule_id,workflow_schedule_parameter,workflow_schedule_parameter_value) VALUES(%i,%s,%s)",  {
 			&workflow_schedule_id,
 			&parameter_name,
 			&parameter_value
-		);
+		});
 	
 	db.CommitTransaction();
 	
@@ -205,7 +212,7 @@ void WorkflowSchedule::Edit(
 		throw Exception("WorkflowSchedule","Workflow schedule not found","UNKNOWN_WORKFLOW_SCHEDULE");
 	
 	db.QueryPrintf(
-		"UPDATE t_workflow_schedule SET node_name=%s,workflow_id=%i,workflow_schedule=%s,workflow_schedule_onfailure=%s,workflow_schedule_user=%s,workflow_schedule_host=%s,workflow_schedule_active=%i,workflow_schedule_comment=%s WHERE workflow_schedule_id=%i",
+		"UPDATE t_workflow_schedule SET node_name=%s,workflow_id=%i,workflow_schedule=%s,workflow_schedule_onfailure=%s,workflow_schedule_user=%s,workflow_schedule_host=%s,workflow_schedule_active=%i,workflow_schedule_comment=%s WHERE workflow_schedule_id=%i",  {
 		&node,
 		&workflow_id,
 		&schedule_description,
@@ -215,21 +222,21 @@ void WorkflowSchedule::Edit(
 		&iactive,
 		&comment,
 		&id
-		);
+	});
 	
 	string parameter_name;
 	string parameter_value;
 	
-	db.QueryPrintf("DELETE FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",{&id});
 	
 	parameters->SeekStart();
 	while(parameters->Get(parameter_name,parameter_value))
 		db.QueryPrintf(
-			"INSERT INTO t_workflow_schedule_parameters(workflow_schedule_id,workflow_schedule_parameter,workflow_schedule_parameter_value) VALUES(%i,%s,%s)",
+			"INSERT INTO t_workflow_schedule_parameters(workflow_schedule_id,workflow_schedule_parameter,workflow_schedule_parameter_value) VALUES(%i,%s,%s)", {
 			&id,
 			&parameter_name,
 			&parameter_value
-		);
+		});
 	
 	db.CommitTransaction();
 }
@@ -244,7 +251,7 @@ void WorkflowSchedule::SetIsActive(unsigned int id,bool active)
 	if(!WorkflowSchedules::GetInstance()->Exists(id))
 		throw Exception("WorkflowSchedule","Workflow schedule not found","UNKNOWN_WORKFLOW_SCHEDULE");
 	
-	db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=%i WHERE workflow_schedule_id=%i",&iactive,&id);
+	db.QueryPrintf("UPDATE t_workflow_schedule SET workflow_schedule_active=%i WHERE workflow_schedule_id=%i",{&iactive,&id});
 }
 
 void WorkflowSchedule::Delete(unsigned int id)
@@ -253,12 +260,12 @@ void WorkflowSchedule::Delete(unsigned int id)
 	
 	db.StartTransaction();
 	
-	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_schedule_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_schedule WHERE workflow_schedule_id=%i",{&id});
 	
 	if(db.AffectedRows()==0)
 		throw Exception("WorkflowSchedule","Workflow schedule not found","UNKNOWN_WORKFLOW_SCHEDULE");
 	
-	db.QueryPrintf("DELETE FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_workflow_schedule_parameters WHERE workflow_schedule_id=%i", {&id});
 	
 	db.CommitTransaction();
 }
@@ -319,29 +326,34 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		string remote_host = query->GetRootAttribute("host","");
 		bool active = query->GetRootAttributeBool("active",true);
 		string comment =  query->GetRootAttribute("comment","");
+		unsigned int id;
+		
+		string ev;
 		
 		if(action=="create")
 		{
-			unsigned int id = Create(workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
+			id = Create(workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 			
-			Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_CREATED,id);
+			ev = "WORKFLOWSCHEDULE_CREATED";
 			
 			response->GetDOM()->getDocumentElement().setAttribute("schedule-id",to_string(id));
 		}
 		else
 		{
-			unsigned int id = query->GetRootAttributeInt("id");
+			id = query->GetRootAttributeInt("id");
 			
 			Edit(id, workflow_id,node,schedule,onfailure_continue,remote_user,remote_host,active,comment,query->GetWorkflowParameters());
 			
-			Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
+			ev = "WORKFLOWSCHEDULE_MODIFIED";
 			
 			LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		}
 		
 		WorkflowScheduler::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(ev,id);
 		
 		return true;
 	}
@@ -353,7 +365,7 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_REMOVED,id);
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_REMOVED",id);
 		
 		WorkflowScheduler::GetInstance()->Reload();
 		
@@ -367,9 +379,9 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
-		
 		WorkflowScheduler::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
 		
 		return true;
 	}
@@ -381,9 +393,9 @@ bool WorkflowSchedule::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		
 		LoggerAPI::LogAction(user,id,"WorkflowSchedule",query->GetQueryGroup(),action);
 		
-		Events::GetInstance()->Create(Events::en_types::WORKFLOWSCHEDULE_MODIFIED,id);
-		
 		WorkflowScheduler::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("WORKFLOWSCHEDULE_MODIFIED",id);
 		
 		return true;
 	}

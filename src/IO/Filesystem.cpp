@@ -23,10 +23,16 @@
 #include <API/XMLQuery.h>
 #include <User/User.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <API/QueryHandlers.h>
 
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("filesystem", Filesystem::HandleQuery);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 

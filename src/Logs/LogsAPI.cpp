@@ -22,6 +22,11 @@
 #include <DB/DB.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
+#include <User/Users.h>
+#include <User/User.h>
+#include <Queue/QueuePool.h>
+#include <API/QueryHandlers.h>
+#include <WS/Events.h>
 #include <Workflow/Workflows.h>
 #include <Workflow/Workflow.h>
 #include <Schedule/WorkflowSchedules.h>
@@ -30,9 +35,12 @@
 #include <Schedule/RetrySchedule.h>
 #include <Tag/Tags.h>
 #include <Tag/Tag.h>
-#include <User/Users.h>
-#include <User/User.h>
-#include <Queue/QueuePool.h>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("logsapi", LogsAPI::HandleQuery);
+	Events::GetInstance()->RegisterEvent("LOG_API");
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -47,7 +55,7 @@ bool LogsAPI::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		
 		DB db;
 		
-		db.QueryPrintf("SELECT log.node_name,user.user_login,log.log_api_object_id,log.log_api_object_type,log.log_api_group,log.log_api_action,log.log_api_timestamp FROM t_log_api log LEFT JOIN t_user user ON log.user_id=user.user_id ORDER BY log_api_timestamp DESC,log_api_id DESC LIMIT %i,%i",&offset,&limit);
+		db.QueryPrintf("SELECT log.node_name,user.user_login,log.log_api_object_id,log.log_api_object_type,log.log_api_group,log.log_api_action,log.log_api_timestamp FROM t_log_api log LEFT JOIN t_user user ON log.user_id=user.user_id ORDER BY log_api_timestamp DESC,log_api_id DESC LIMIT %i,%i",{&offset,&limit});
 		while(db.FetchRow())
 		{
 			DOMElement node = (DOMElement)response->AppendXML("<log />");

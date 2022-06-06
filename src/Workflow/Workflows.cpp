@@ -27,10 +27,18 @@
 #include <Cluster/Cluster.h>
 #include <Crypto/Sha1String.h>
 #include <User/User.h>
+#include <API/QueryHandlers.h>
+#include <WS/Events.h>
 
 #include <string.h>
 
 Workflows *Workflows::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("workflows",Workflows::HandleQuery);
+	qh->RegisterReloadHandler("workflows", Workflows::HandleReload);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -107,4 +115,29 @@ bool Workflows::HandleQuery(const User &user, XMLQuery *query, QueryResponse *re
 	}
 	
 	return false;
+}
+
+void Workflows::HandleReload(bool notify)
+{
+	Workflows *workflows = Workflows::GetInstance();
+	workflows->Reload(notify);
+}
+
+void Workflows::HandleNotificationTypeDelete(unsigned int id)
+{
+	DB db;
+	DB db2(&db);
+	
+	db.QueryPrintf("SELECT notification_id FROM t_notification WHERE notification_type_id=%i", {&id});
+	while(db.FetchRow())
+	{
+		int notification_id = db.GetFieldInt(0);
+		
+		// Ensure no workflows are bound to removed notifications
+		db2.QueryPrintf("DELETE FROM t_workflow_notification WHERE notification_id=%i", {&notification_id});
+	}
+	
+	 Workflows::GetInstance()->Reload();
+	 
+	 Events::GetInstance()->Create("WORKFLOW_MODIFIED");
 }

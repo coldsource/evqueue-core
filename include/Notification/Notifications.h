@@ -21,9 +21,13 @@
 #define _NOTIFICATIONS_H_
 
 #include <API/APIObjectList.h>
+#include <API/APIAutoInit.h>
+
+#include <nlohmann/json.hpp>
 
 #include <map>
 #include <string>
+#include <vector>
 
 class Notification;
 class WorkflowInstance;
@@ -31,12 +35,13 @@ class XMLQuery;
 class QueryResponse;
 class User;
 
-class Notifications:public APIObjectList<Notification>
+class Notifications:public APIObjectList<Notification>, public APIAutoInit
 {
 	private:
 		struct st_notification_instance
 		{
-			unsigned int workflow_instance_id;
+			unsigned int uid;
+			std::string notif_instance_name;
 			unsigned int notification_id;
 			std::string notification_type;
 		};
@@ -44,6 +49,8 @@ class Notifications:public APIObjectList<Notification>
 		static Notifications *instance;
 		
 		int max_concurrency;
+		
+		unsigned int uid;
 		
 		std::map<pid_t,st_notification_instance> notification_instances;
 		
@@ -60,13 +67,14 @@ class Notifications:public APIObjectList<Notification>
 		
 		void Reload(bool notify = true);
 		
-		void Call(unsigned int notification_id, WorkflowInstance *workflow_instance);
+		void Call(unsigned int notification_id, const std::string &notif_instance_name, const std::vector<std::string> &params, const nlohmann::json &j_data);
 		void Exit(pid_t pid, int status, char retcode);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
+		static void HandleReload(bool notify);
 	
 	private:
-		void store_log(pid_t pid,unsigned int instance_id, unsigned int notification_id);
+		void store_log(pid_t pid, unsigned int uid, unsigned int notification_id);
 };
 
 #endif

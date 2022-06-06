@@ -26,10 +26,17 @@
 #include <DB/DB.h>
 #include <Cluster/Cluster.h>
 #include <User/User.h>
+#include <API/QueryHandlers.h>
 
 #include <string.h>
 
 RetrySchedules *RetrySchedules::instance = 0;
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("retry_schedules",RetrySchedules::HandleQuery);
+	qh->RegisterReloadHandler("retry_schedules",RetrySchedules::HandleReload);
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
@@ -92,4 +99,10 @@ bool RetrySchedules::HandleQuery(const User &user, XMLQuery *query, QueryRespons
 	}
 	
 	return false;
+}
+
+void RetrySchedules::HandleReload(bool notify)
+{
+	RetrySchedules *retry_schedules = RetrySchedules::GetInstance();
+	retry_schedules->Reload(notify);
 }

@@ -21,6 +21,7 @@
 #include <API/Statistics.h>
 #include <Logger/Logger.h>
 #include <Configuration/ConfigurationEvQueue.h>
+#include <Exception/Exception.h>
 
 using namespace std;
 
@@ -43,111 +44,38 @@ void Events::SetContext(struct lws_context *ws_context)
 	this->ws_context = ws_context;
 }
 
+void Events::RegisterEvent(const std::string name)
+{
+	events_map[name] = ++events_map_id;
+}
+
+void Events::RegisterEvents(const std::vector<std::string> &names)
+{
+	for(int i=0;i<names.size();i++)
+		RegisterEvent(names[i]);
+}
+
 Events::en_types Events::get_type(const std::string &type_str)
 {
-	if(type_str=="INSTANCE_STARTED")
-		return INSTANCE_STARTED;
-	else if(type_str=="INSTANCE_TERMINATED")
-		return INSTANCE_TERMINATED;
-	else if(type_str=="INSTANCE_REMOVED")
-		return INSTANCE_REMOVED;
-	else if(type_str=="INSTANCE_TAGGED")
-		return INSTANCE_TAGGED;
-	else if(type_str=="INSTANCE_UNTAGGED")
-		return INSTANCE_UNTAGGED;
-	else if(type_str=="TASK_ENQUEUE")
-		return TASK_ENQUEUE;
-	else if(type_str=="TASK_EXECUTE")
-		return TASK_EXECUTE;
-	else if(type_str=="TASK_TERMINATE")
-		return TASK_TERMINATE;
-	else if(type_str=="TASK_PROGRESS")
-		return TASK_PROGRESS;
-	else if(type_str=="QUEUE_ENQUEUE")
-		return QUEUE_ENQUEUE;
-	else if(type_str=="QUEUE_DEQUEUE")
-		return QUEUE_DEQUEUE;
-	else if(type_str=="QUEUE_EXECUTE")
-		return QUEUE_EXECUTE;
-	else if(type_str=="QUEUE_TERMINATE")
-		return QUEUE_TERMINATE;
-	else if(type_str=="QUEUE_CREATED")
-		return QUEUE_CREATED;
-	else if(type_str=="QUEUE_MODIFIED")
-		return QUEUE_MODIFIED;
-	else if(type_str=="QUEUE_REMOVED")
-		return QUEUE_REMOVED;
-	else if(type_str=="TAG_CREATED")
-		return TAG_CREATED;
-	else if(type_str=="TAG_MODIFIED")
-		return TAG_MODIFIED;
-	else if(type_str=="TAG_REMOVED")
-		return TAG_REMOVED;
-	else if(type_str=="WORKFLOW_CREATED")
-		return WORKFLOW_CREATED;
-	else if(type_str=="WORKFLOW_MODIFIED")
-		return WORKFLOW_MODIFIED;
-	else if(type_str=="WORKFLOW_REMOVED")
-		return WORKFLOW_REMOVED;
-	else if(type_str=="WORKFLOW_SUBSCRIBED")
-		return WORKFLOW_SUBSCRIBED;
-	else if(type_str=="WORKFLOW_UNSUBSCRIBED")
-		return WORKFLOW_UNSUBSCRIBED;
-	else if(type_str=="GIT_PULLED")
-		return GIT_PULLED;
-	else if(type_str=="GIT_LOADED")
-		return GIT_LOADED;
-	else if(type_str=="GIT_SAVED")
-		return GIT_SAVED;
-	else if(type_str=="GIT_REMOVED")
-		return GIT_REMOVED;
-	else if(type_str=="LOG_ENGINE")
-		return LOG_ENGINE;
-	else if(type_str=="LOG_NOTIFICATION")
-		return LOG_NOTIFICATION;
-	else if(type_str=="LOG_API")
-		return LOG_API;
-	else if(type_str=="RETRYSCHEDULE_CREATED")
-		return RETRYSCHEDULE_CREATED;
-	else if(type_str=="RETRYSCHEDULE_MODIFIED")
-		return RETRYSCHEDULE_MODIFIED;
-	else if(type_str=="RETRYSCHEDULE_REMOVED")
-		return RETRYSCHEDULE_REMOVED;
-	else if(type_str=="WORKFLOWSCHEDULE_CREATED")
-		return WORKFLOWSCHEDULE_CREATED;
-	else if(type_str=="WORKFLOWSCHEDULE_MODIFIED")
-		return WORKFLOWSCHEDULE_MODIFIED;
-	else if(type_str=="WORKFLOWSCHEDULE_REMOVED")
-		return WORKFLOWSCHEDULE_REMOVED;
-	else if(type_str=="WORKFLOWSCHEDULE_STARTED")
-		return WORKFLOWSCHEDULE_STARTED;
-	else if(type_str=="WORKFLOWSCHEDULE_STOPPED")
-		return WORKFLOWSCHEDULE_STOPPED;
-	else if(type_str=="NOTIFICATION_TYPE_CREATED")
-		return NOTIFICATION_TYPE_CREATED;
-	else if(type_str=="NOTIFICATION_TYPE_REMOVED")
-		return NOTIFICATION_TYPE_REMOVED;
-	else if(type_str=="NOTIFICATION_CREATED")
-		return NOTIFICATION_CREATED;
-	else if(type_str=="NOTIFICATION_REMOVED")
-		return NOTIFICATION_REMOVED;
-	else if(type_str=="NOTIFICATION_MODIFIED")
-		return NOTIFICATION_MODIFIED;
-	else if(type_str=="USER_CREATED")
-		return USER_CREATED;
-	else if(type_str=="USER_MODIFIED")
-		return USER_MODIFIED;
-	else if(type_str=="USER_REMOVED")
-		return USER_REMOVED;
-	
-	return NONE;
+	auto it = events_map.find(type_str);
+	if(it!=events_map.end())
+		return it->second;
+	return 0;
 }
 
 void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int object_filter, int external_id, const string &api_cmd)
 {
-	unique_lock<mutex> llock(lock);
+		unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);
+	if(type==0)
+	{
+		// Unlock before call to prevent deadlock (logger will lock to send events)
+		llock.unlock();
+		
+		Logger::Log(LOG_WARNING, "Unknown subscribed event : "+type_str);
+		throw Exception("Websocket","Unknown event : "+type_str,"INVALID_PARAMETER");
+	}
 	
 	subscriptions[type].insert(pair<struct lws *, st_subscription>(wsi,{object_filter, api_cmd, external_id}));
 	
@@ -219,16 +147,17 @@ void Events::insert_event(struct lws *wsi, const st_event &event)
 
 void Events::Create(const string &type_str, unsigned int object_id)
 {
-	en_types type = get_type(type_str);
-	Create(type, object_id);
-}
-
-void Events::Create(en_types type, unsigned int object_id)
-{
 	if(!this->ws_context)
 		return; // Prevent events from being creating before server is ready
 	
 	unique_lock<mutex> llock(lock);
+	
+	en_types type = get_type(type_str);
+	if(type==0)
+	{
+		Logger::Log(LOG_ERR, "Unknown event : "+type_str);
+		return;
+	}
 	
 	// Find which client has subscribed to this event
 	auto it = subscriptions.find(type);

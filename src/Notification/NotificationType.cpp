@@ -32,23 +32,31 @@
 #include <Zip/Zip.h>
 #include <DOM/DOMDocument.h>
 #include <WS/Events.h>
+#include <API/QueryHandlers.h>
 
 #include <memory>
+
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("notification_type", NotificationType::HandleQuery);
+	Events::GetInstance()->RegisterEvents({"NOTIFICATION_TYPE_CREATED","NOTIFICATION_TYPE_REMOVED"});
+	return (APIAutoInit *)0;
+});
 
 using namespace std;
 
 NotificationType::NotificationType(DB *db,unsigned int notification_type_id)
 {
-	db->QueryPrintf("SELECT notification_type_id,notification_type_name,notification_type_description,notification_type_manifest,notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&notification_type_id);
+	db->QueryPrintf("SELECT notification_type_id,notification_type_scope,notification_type_name,notification_type_description,notification_type_manifest,notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",{&notification_type_id});
 	
 	if(!db->FetchRow())
 		throw Exception("NotificationType","Unknown notification type");
 	
 	id = db->GetFieldInt(0);
-	name = db->GetField(1);
-	description = db->GetField(2);
-	manifest = db->GetField(3);
-	configuration = db->GetField(4);
+	scope = db->GetField(1);
+	name = db->GetField(2);
+	description = db->GetField(3);
+	manifest = db->GetField(4);
+	configuration = db->GetField(5);
 }
 
 void NotificationType::PutFile(const string &filename,const string &data,bool base64_encoded)
@@ -81,6 +89,7 @@ void NotificationType::Get(unsigned int id, QueryResponse *response)
 	NotificationType type = NotificationTypes::GetInstance()->Get(id);
 	
 	DOMElement node = (DOMElement)response->AppendXML("<notification_type />");
+	node.setAttribute("scope",type.GetScope());
 	node.setAttribute("name",type.GetName());
 	node.setAttribute("description",type.GetDescription());
 	response->AppendXML(type.GetManifest());
@@ -94,6 +103,12 @@ unsigned int NotificationType::Register(const string &zip_data)
 	
 	// Load manifest file
 	unique_ptr<DOMDocument> xmldoc(DOMDocument::Parse(manifest));
+	
+	// Read scope
+	string scope = "WORKFLOW";
+	unique_ptr<DOMXPathResult> res_scope(xmldoc->evaluate("/plugin/scope",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
+	if(res_scope->isNode())
+		scope = res_scope->getNodeValue().getTextContent();
 	
 	// Read name
 	unique_ptr<DOMXPathResult> res_name(xmldoc->evaluate("/plugin/name",xmldoc->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
@@ -124,11 +139,18 @@ unsigned int NotificationType::Register(const string &zip_data)
 	
 	DB db;
 	db.QueryPrintf(
-		"INSERT INTO t_notification_type(notification_type_name,notification_type_description,notification_type_manifest,notification_type_binary_content) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE notification_type_description=VALUES(notification_type_description),notification_type_manifest=VALUES(notification_type_manifest),notification_type_binary_content=VALUES(notification_type_binary_content)",
+		"INSERT INTO t_notification_type(notification_type_scope,notification_type_name,notification_type_description,notification_type_manifest,notification_type_binary_content) \
+		VALUES(%s,%s,%s,%s,%s) \
+		ON DUPLICATE KEY UPDATE \
+			notification_type_description=VALUES(notification_type_description), \
+			notification_type_manifest=VALUES(notification_type_manifest), \
+			notification_type_binary_content=VALUES(notification_type_binary_content \
+		)",
+		{&scope,
 		&name,
 		&description,
 		&manifest,
-		binary_data
+		&binary_data}
 		);
 	
 	return db.InsertID();
@@ -142,8 +164,14 @@ void NotificationType::Unregister(unsigned int id)
 	
 	db.StartTransaction();
 	
+	// Call delegated delete handler
+	NotificationTypes::GetInstance()->HandleDelete(id);
+	
 	// Delete notification type
-	db.QueryPrintf("DELETE FROM t_notification_type WHERE notification_type_id=%i",&id);
+	db.QueryPrintf("DELETE FROM t_notification_type WHERE notification_type_id=%i",{&id});
+	
+	// Delete notification type
+	db.QueryPrintf("DELETE FROM t_notification WHERE notification_type_id=%i",{&id});
 	
 	// Remove binary
 	try
@@ -152,19 +180,13 @@ void NotificationType::Unregister(unsigned int id)
 	}
 	catch(Exception &e) {}
 	
-	// Delete associated notifications
-	db.QueryPrintf("DELETE FROM t_notification WHERE notification_type_id=%i",&id);
-	
-	// Ensure no workflows are bound to removed notifications
-	db.Query("DELETE FROM t_workflow_notification WHERE NOT EXISTS(SELECT * FROM t_notification n WHERE t_workflow_notification.notification_id=n.notification_id)");
-	
 	db.CommitTransaction();
 }
 
 void NotificationType::GetConf(unsigned int id, QueryResponse *response)
 {
 	DB db;
-	db.QueryPrintf("SELECT notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",&id);
+	db.QueryPrintf("SELECT notification_type_conf_content FROM t_notification_type WHERE notification_type_id=%i",{&id});
 	
 	if(!db.FetchRow())
 		throw Exception("NotificationType","Unable to find notification type","UNKNOWN_NOTIFICATION_TYPE");
@@ -183,7 +205,7 @@ void NotificationType::SetConf(unsigned int id, const string &data)
 		throw Exception("NotificationType","Unable to find notification type","UNKNOWN_NOTIFICATION_TYPE");
 	
 	DB db;
-	db.QueryPrintf("UPDATE t_notification_type SET notification_type_conf_content=%s WHERE notification_type_id=%i",&data,&id);
+	db.QueryPrintf("UPDATE t_notification_type SET notification_type_conf_content=%s WHERE notification_type_id=%i",{&data,&id});
 }
 
 bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
@@ -215,7 +237,7 @@ bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_TYPE_CREATED);
+		Events::GetInstance()->Create("NOTIFICATION_TYPE_CREATED");
 		
 		return true;
 	}
@@ -230,7 +252,7 @@ bool NotificationType::HandleQuery(const User &user, XMLQuery *query, QueryRespo
 		Notifications::GetInstance()->Reload();
 		Workflows::GetInstance()->Reload();
 		
-		Events::GetInstance()->Create(Events::en_types::NOTIFICATION_TYPE_REMOVED);
+		Events::GetInstance()->Create("NOTIFICATION_TYPE_REMOVED");
 		
 		return true;
 	}

@@ -139,7 +139,7 @@ bool WorkflowInstance::TaskStop(DOMElement task_node,int retval,const char *stdo
 		record_log(log_element,log_output);
 	}
 	
-	Events::GetInstance()->Create(Events::en_types::TASK_TERMINATE,workflow_instance_id);
+	Events::GetInstance()->Create("TASK_TERMINATE",workflow_instance_id);
 
 	int tasks_count,tasks_successful;
 
@@ -237,7 +237,7 @@ pid_t WorkflowInstance::TaskExecute(DOMElement task_node,pid_t tid,bool *workflo
 		task_node.setAttribute("tid",to_string(tid));
 		task_node.setAttribute("execution_time",format_datetime());
 		
-		Events::GetInstance()->Create(Events::en_types::TASK_EXECUTE,workflow_instance_id);
+		Events::GetInstance()->Create("TASK_EXECUTE",workflow_instance_id);
 		
 		*workflow_terminated = workflow_ended();
 
@@ -269,7 +269,7 @@ void WorkflowInstance::TaskUpdateProgression(DOMElement task, int prct)
 	
 	task.setAttribute("progression",to_string(prct));
 	
-	Events::GetInstance()->Create(Events::en_types::TASK_PROGRESS, workflow_instance_id);
+	Events::GetInstance()->Create("TASK_PROGRESS", workflow_instance_id);
 }
 
 void WorkflowInstance::register_job_functions(DOMElement node)
@@ -505,7 +505,7 @@ void WorkflowInstance::enqueue_task(DOMElement task)
 
 	Logger::Log(LOG_INFO,"[WID %d] Added task %s to queue %s\n",workflow_instance_id,task_name.c_str(),queue_name.c_str());
 	
-	Events::GetInstance()->Create(Events::en_types::TASK_ENQUEUE,workflow_instance_id);
+	Events::GetInstance()->Create("TASK_ENQUEUE",workflow_instance_id);
 	
 	return;
 }

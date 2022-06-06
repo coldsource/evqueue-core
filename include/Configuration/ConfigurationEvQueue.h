@@ -29,19 +29,15 @@ class QueryResponse;
 
 class ConfigurationEvQueue:public Configuration
 {
-	static ConfigurationEvQueue *instance;
-	
 	public:
 		ConfigurationEvQueue(void);
-		~ConfigurationEvQueue(void);
+		virtual ~ConfigurationEvQueue(void);
 		
-		void Substitute(void);
+		static ConfigurationEvQueue *GetInstance() { return (ConfigurationEvQueue *)instance; }
 		
 		void Check(void);
 		
 		void SendConfiguration(QueryResponse *response);
-		
-		static inline ConfigurationEvQueue *GetInstance(void) { return instance; }
 };
 
 #endif

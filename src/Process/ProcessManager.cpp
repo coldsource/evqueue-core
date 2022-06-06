@@ -34,6 +34,7 @@
 #include <Process/Forker.h>
 #include <Process/DataSerializer.h>
 #include <Process/tools_ipc.h>
+#include <API/QueryHandlers.h>
 #include <DB/DB.h>
 
 #include <stdio.h>
@@ -56,6 +57,12 @@
 
 #include <string>
 
+static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	qh->RegisterHandler("processmanager",ProcessManager::HandleQuery);
+	return (APIAutoInit *)0;
+});
+
+
 using namespace std;
 
 volatile bool ProcessManager::is_shutting_down=false;
@@ -66,7 +73,6 @@ int ProcessManager::log_maxsize;
 ProcessManager::ProcessManager()
 {
 	Configuration *config = ConfigurationEvQueue::GetInstance();
-	const char *logs_delete_str;
 	logs_directory = config->Get("processmanager.logs.directory");
 	
 	logs_delete = config->GetBool("processmanager.logs.delete");
@@ -87,6 +93,8 @@ ProcessManager::ProcessManager()
 
 ProcessManager::~ProcessManager()
 {
+	Shutdown();
+	WaitForShutdown();
 }
 
 void *ProcessManager::Fork(ProcessManager *pm)

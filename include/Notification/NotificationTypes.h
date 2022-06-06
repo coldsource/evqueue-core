@@ -21,6 +21,7 @@
 #define _NOTIFICATIONTYPES_H_
 
 #include <API/APIObjectList.h>
+#include <API/APIAutoInit.h>
 
 #include <map>
 #include <string>
@@ -30,11 +31,15 @@ class XMLQuery;
 class QueryResponse;
 class User;
 
-class NotificationTypes:public APIObjectList<NotificationType>
+class NotificationTypes:public APIObjectList<NotificationType>, public APIAutoInit
 {
+	public:
+		typedef void (*t_delete_handler)(unsigned int notification_type_id);
+
 	private:
 		static NotificationTypes *instance;
 		
+		std::map<std::string, t_delete_handler> delete_handlers;
 	
 	public:
 		
@@ -42,6 +47,9 @@ class NotificationTypes:public APIObjectList<NotificationType>
 		~NotificationTypes();
 		
 		static NotificationTypes *GetInstance() { return instance; }
+		
+		void RegisterDeleteHandler(const std::string &scope, t_delete_handler delete_handler);
+		void HandleDelete(unsigned int id);
 		
 		void Reload(bool notify = true);
 		void SyncBinaries(bool notify = true);
