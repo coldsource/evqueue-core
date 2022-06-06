@@ -471,16 +471,18 @@ void DB::Disconnect()
 int DB::TO_DAYS(const string &t)
 {
 	struct tm end_t = { 0 };
-	char *ptr = strptime(t.c_str(), "%Y-%m-%d %H:%M:%S" , &end_t);
+	char *ptr = strptime(t.c_str(), "%Y-%m-%d" , &end_t);
 	if(!ptr)
 		return -1;
 	
-	time_t end = mktime(&end_t);
+	end_t.tm_isdst = 0;
+	time_t end = mktime(&end_t) - timezone;
 	
 	struct tm start_t = {0,0,0,1,0,-1900}; // 1st Jan 0
+	start_t.tm_isdst = 0;
 	time_t start = mktime(&start_t);
 	
-	return (int)(difftime(end, start) / 86400);
+	return (long long)(difftime(end, start) / 86400);
 }
 
 void DB::connect(void)
