@@ -31,6 +31,7 @@
 #include <Notification/NotificationTypes.h>
 #include <WS/Events.h>
 #include <Utils/Date.h>
+#include <Cluster/UniqueAction.h>
 
 #include <regex>
 #include <map>
@@ -198,6 +199,10 @@ void *Alerts::alerts_thread(Alerts *alerts)
 			
 			if(timer%alert.GetPeriod()!=0)
 				continue; // Skip alert if period is not yet reached
+			
+			UniqueAction uaction("elogs_alerts_" + alert.GetName(),alert.GetPeriod() * 60);
+			if(!uaction.IsElected())
+				continue;
 			
 			Logger::Log(LOG_INFO, "Processing alert «" + alert.GetName() + "»");
 			
