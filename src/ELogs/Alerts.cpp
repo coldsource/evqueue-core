@@ -125,6 +125,7 @@ bool Alerts::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respo
 			node.setAttribute("occurrences", to_string(alert.GetOccurrences()));
 			node.setAttribute("period", to_string(alert.GetPeriod()));
 			node.setAttribute("active",alert.GetIsActive()?"1":"0");
+			node.setAttribute("groupby",alert.GetGroupby());
 		}
 		
 		return true;

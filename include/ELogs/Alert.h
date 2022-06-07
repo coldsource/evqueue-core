@@ -42,6 +42,7 @@ class Alert
 	unsigned int period;
 	std::string filters;
 	bool is_groupped = false;
+	std::string groupby;
 	int active;
 	
 	std::vector<unsigned int> notifications;
@@ -61,6 +62,7 @@ class Alert
 		const nlohmann::json &GetJsonFilters() const { return json_filters; }
 		std::vector<unsigned int> GetNotifications() const { return notifications; }
 		bool GetIsGroupped() const { return is_groupped; }
+		std::string GetGroupby() const { return groupby; }
 		bool GetIsActive() const { return active!=0; }
 		
 		
@@ -72,8 +74,6 @@ class Alert
 		static void SetIsActive(unsigned int id, bool active);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
-		
-		static bool test();
 	
 	private:
 		static void create_edit_check(const std::string &name, unsigned int occurencies, unsigned int period, const std::string &filters, const std::string &notifications);

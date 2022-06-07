@@ -80,7 +80,10 @@ Alert::Alert(DB *db,unsigned int alert_id)
 	}
 	
 	if(json_filters.contains("groupby") && json_filters["groupby"]!="")
+	{
 		is_groupped = true;
+		groupby = json_filters["groupby"];
+	}
 }
 
 bool Alert::CheckName(const string &alert_name)
