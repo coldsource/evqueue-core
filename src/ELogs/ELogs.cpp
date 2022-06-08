@@ -177,7 +177,7 @@ vector<map<string, string>> ELogs::QueryLogs(map<string, string> filters, unsign
 		if(groupby=="")
 		{
 			result["id"] = db.GetField(0);
-			result["channel"] = db.GetField(1);
+			result["channel"] = Channels::GetInstance()->Get(db.GetFieldInt(1)).GetName();
 			result["crit"] = Field::UnpackCrit(db.GetFieldInt(2));
 			result["date"] = db.GetField(3);
 			

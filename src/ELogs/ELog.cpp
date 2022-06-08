@@ -121,7 +121,7 @@ void ELog::query_fields(DB *db, unsigned long long id, const Fields &fields, DOM
 void ELog::BuildSelectFrom(string &query_select, string &query_from, const string &groupby)
 {
 	if(groupby=="")
-		query_select = "SELECT l.log_id, c.channel_name, l.log_crit, l.log_date";
+		query_select = "SELECT l.log_id, c.channel_id, l.log_crit, l.log_date";
 	else if(groupby=="crit")
 		query_select = "SELECT COUNT(*) AS n, l.log_crit AS crit";
 	else
