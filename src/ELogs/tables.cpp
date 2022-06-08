@@ -33,7 +33,6 @@ static map<string, string> elogs_tables = {
   `alert_description` text CHARACTER SET utf8 NOT NULL, \
   `alert_occurrences` int(10) unsigned NOT NULL, \
   `alert_period` int(10) unsigned NOT NULL, \
-  `alert_group` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
   `alert_filters` text CHARACTER SET utf8 NOT NULL, \
   `alert_active` tinyint(4) NOT NULL DEFAULT 1, \
   PRIMARY KEY (`alert_id`), \
