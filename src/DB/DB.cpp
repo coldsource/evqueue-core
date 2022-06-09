@@ -235,9 +235,12 @@ string DB::get_query_value(char type, int idx, const std::vector<const void *> &
 
 string DB::EscapeString(const string &str)
 {
-	char buf[2*str.size()+1];
+	char *buf = new char[2*str.size()+1];
 	long unsigned int size = mysql_real_escape_string(mysql, buf, str.c_str(), str.size());
-	return string(buf, size);
+	string escaped_str(buf, size);
+	delete []buf;
+	
+	return escaped_str;
 }
 
 int DB::InsertID(void)
