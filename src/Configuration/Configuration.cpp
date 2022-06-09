@@ -95,7 +95,8 @@ void Configuration::Substitute(void)
 	{
 		regex var_regex ("(\\{[a-zA-Z_]+\\})");
 		
-		auto words_begin = sregex_iterator(it->second.begin(), it->second.end(), var_regex);
+		string entry_value = it->second;
+		auto words_begin = sregex_iterator(entry_value.begin(), entry_value.end(), var_regex);
 		auto words_end = sregex_iterator();
 		
 		for(auto i=words_begin;i!=words_end;++i)
