@@ -51,7 +51,6 @@ public:
 	static DOMDocument *Parse(const std::string &xml_str);
 	static DOMDocument *ParseFile(const std::string &filename);
 	std::string Serialize(DOMNode node) const;
-	std::string SerializeContent(DOMNode node) const;
 	std::string ExpandXPathAttribute(const std::string &attribute,DOMNode context_node);
 	
 	DOMElement getDocumentElement() const;

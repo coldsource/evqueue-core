@@ -24,6 +24,7 @@
 #include <DOM/DOMText.h>
 #include <Exception/Exception.h>
 #include <XML/XMLString.h>
+#include <Logger/Logger.h>
 
 #include <regex>
 #include <memory>
@@ -134,31 +135,19 @@ string DOMDocument::Serialize(DOMNode node) const
 	XMLCh *xml_output = serializer->writeToString(node.node);
 	char *xml_output_c = xercesc::XMLString::transcode(xml_output);
 	
+	if(!xml_output || !xml_output_c)
+	{
+#ifdef BUILD_MODULE_EVQUEUE_CORE
+		Logger::Log(LOG_ERR, "Unable to serialize XML document, document might contain invalid UTF8 character");
+#endif
+		
+		throw Exception("DOMDocument", "Unable to serialize XML document");
+	}
+	
 	string s(xml_output_c);
 	
 	xercesc::XMLString::release(&xml_output);
 	xercesc::XMLString::release(&xml_output_c);
-	
-	return s;
-}
-
-string DOMDocument::SerializeContent(DOMNode node) const
-{
-	string s;
-	DOMNode cur = node.getFirstChild();
-	while(cur)
-	{
-		
-		XMLCh *xml_output = serializer->writeToString(cur.node);
-		char *xml_output_c = xercesc::XMLString::transcode(xml_output);
-		
-		s += xml_output_c;
-		
-		xercesc::XMLString::release(&xml_output);
-		xercesc::XMLString::release(&xml_output_c);
-		
-		cur = cur.getNextSibling();
-	}
 	
 	return s;
 }
