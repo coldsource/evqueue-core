@@ -94,7 +94,7 @@ ConfigurationEvQueue::ConfigurationEvQueue(void)
 	entries["workflowinstance.saveparameters"] = "yes";
 	entries["workflowinstance.savepoint.level"] = "2";
 	entries["workflowinstance.savepoint.retry.enable"] = "yes";
-	entries["workflowinstance.savepoint.retry.times"] = "0";
+	entries["workflowinstance.savepoint.retry.times"] = "2";
 	entries["workflowinstance.savepoint.retry.wait"] = "2";
 	entries["cluster.node.name"] = "localhost";
 	entries["cluster.notify"] = "yes";
