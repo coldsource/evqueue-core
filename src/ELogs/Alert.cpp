@@ -266,7 +266,7 @@ void Alert::create_edit_check(const string &name, unsigned int occurrences, unsi
 			if(!channel.GetFields().Exists(name.substr(15)))
 				throw Exception("Alert","Unknown channel filter : "+name,"INVALID_PARAMETER");
 		}
-		else if(name!="groupby" && name!="filter_group" && name!="filter_channel")
+		else if(name!="groupby" && name!="filter_group" && name!="filter_channel" && name!="filter_crit")
 			throw Exception("Alert","Unknown filter : "+name,"INVALID_PARAMETER");
 	}
 	
