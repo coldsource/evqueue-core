@@ -241,7 +241,8 @@ void Alert::create_edit_check(const string &name, unsigned int occurrences, unsi
 			throw Exception("Alert","filter_group must be an integer","INVALID_PARAMETER");
 		
 		unsigned int filter_group = j_filters["filter_group"];
-		group = ChannelGroups::GetInstance()->Get(filter_group);
+		if(filter_group!=0)
+			group = ChannelGroups::GetInstance()->Get(filter_group);
 	}
 	
 	if(j_filters.contains("filter_channel"))
@@ -250,7 +251,8 @@ void Alert::create_edit_check(const string &name, unsigned int occurrences, unsi
 			throw Exception("Alert","filter_channel must be an integer","INVALID_PARAMETER");
 		
 		unsigned int filter_channel = j_filters["filter_channel"];
-		channel = Channels::GetInstance()->Get(filter_channel);
+		if(filter_channel!=0)
+			channel = Channels::GetInstance()->Get(filter_channel);
 	}
 	
 	for(auto it = j_filters.begin(); it!=j_filters.end(); ++it)
