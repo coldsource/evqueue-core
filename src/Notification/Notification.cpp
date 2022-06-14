@@ -255,13 +255,15 @@ bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 		
 		bool subscribe_all = query->GetRootAttributeBool("subscribe_all",false);
 		
+		string event = "";
+		
 		if(action=="create")
 		{
 			unsigned int type_id = query->GetRootAttributeInt("type_id");
 			
 			Create(type_id, name, subscribe_all, parameters);
 			
-			Events::GetInstance()->Create("NOTIFICATION_CREATED");
+			event = "NOTIFICATION_CREATED";
 		}
 		else
 		{
@@ -270,12 +272,14 @@ bool Notification::HandleQuery(const User &user, XMLQuery *query, QueryResponse 
 			
 			Edit(id, type_id, name, subscribe_all, parameters);
 			
-			Events::GetInstance()->Create("NOTIFICATION_MODIFIED");
+			event = "NOTIFICATION_MODIFIED";
 		}
 		
 		Notifications::GetInstance()->Reload();
 		if(subscribe_all)
 			Workflows::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create(event);
 		
 		return true;
 	}
