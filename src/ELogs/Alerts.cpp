@@ -98,7 +98,7 @@ void Alerts::Reload(bool notify)
 	if(notify)
 	{
 		// Notify cluster
-		Cluster::GetInstance()->Notify("<control action='reload' module='channels' notify='no' />\n");
+		Cluster::GetInstance()->Notify("<control action='reload' module='alerts' notify='no' />\n");
 	}
 }
 
