@@ -71,6 +71,7 @@ class Git: public APIAutoInit
 		DOMDocument *load_file(const std::string &filename);
 		void list_files(const std::string directory, QueryResponse *response);
 		std::string get_file_hash(const std::string filename);
+		std::string get_workflow_hash(const std::string &rev,const std::string &name);
 };
 
 }

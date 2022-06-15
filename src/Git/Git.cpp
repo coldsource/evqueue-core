@@ -67,8 +67,6 @@ Git::Git()
 
 Git::~Git()
 {
-	if(repo)
-		delete repo;
 }
 
 void Git::SaveWorkflow(const string &name, const string &commit_log, bool force)
@@ -131,6 +129,11 @@ string Git::GetWorkflowHash(const string &rev, const string &name)
 {
 	unique_lock<mutex> llock(lock);
 	
+	return get_workflow_hash(rev, name);
+}
+
+string Git::get_workflow_hash(const string &rev, const string &name)
+{
 	if(!repo)
 		throw Exception("Git","Unable to access git repository");
 	
@@ -193,6 +196,9 @@ void Git::APIReady()
 
 void Git::APIShutdown()
 {
+	if(repo)
+		delete repo;
+	
 	git_libgit2_shutdown();
 }
 
@@ -383,6 +389,30 @@ void Git::list_files(const std::string directory, QueryResponse *response)
 		
 		string lastcommit = repo->GetFileLastCommit(directory+"/"+string(result->d_name));
 		node.setAttribute("lastcommit",lastcommit);
+		
+		
+		try
+		{
+			// Check if workflow has been modified
+			Workflow workflow = Workflows::GetInstance()->Get(entry_name_str);
+		
+			// Check workflow is bound to git, so we can compute this
+			if(workflow.GetLastCommit()!="")
+			{
+				// Check SHA1 between repo and current instance
+				string repo_hash = get_workflow_hash(workflow.GetLastCommit(), entry_name_str);
+				
+				// Ensure uniform format
+				XMLFormatter formatter(workflow.SaveToXML());
+				formatter.Format(false);
+				
+				string db_hash = Sha1String(formatter.GetOutput()).GetBinary();
+				
+				node.setAttribute("modified",repo_hash!=db_hash?"1":"0");
+			}
+		
+		}
+		catch(Exception &e) {}
 	}
 	
 	closedir(dh);

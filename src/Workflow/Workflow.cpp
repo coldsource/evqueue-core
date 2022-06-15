@@ -31,7 +31,6 @@
 #include <API/QueryResponse.h>
 #include <Schedule/WorkflowScheduler.h>
 #include <User/Users.h>
-#include <Git/Git.h>
 #include <User/User.h>
 #include <XML/XMLFormatter.h>
 #include <global.h>
@@ -107,35 +106,6 @@ void Workflow::CheckInputParameters(WorkflowParameters *parameters)
 		sprintf(e, "Invalid number of parameters. Workflow expects %d, but %d are given.",workflow_template_parameters,passed_parameters);
 		throw Exception("Workflow",e,"INVALID_WORKFLOW_PARAMETERS");
 	}
-}
-
-bool Workflow::GetIsModified()
-{
-#ifndef USELIBGIT2
-	return false;
-#else
-	// We are not bound to git, so we cannot compute this
-	if(lastcommit=="")
-		return false;
-	
-	// Check SHA1 between repo and current instance
-	Git *git = Git::GetInstance();
-	
-	string repo_hash;
-	try {
-		repo_hash = git->GetWorkflowHash(lastcommit,workflow_name);
-	} catch(Exception &e) {
-		return true; // Errors can happen on repo change, ignore them
-	}
-	
-	// Ensure uniform format
-	XMLFormatter formatter(SaveToXML());
-	formatter.Format(false);
-	
-	string db_hash = Sha1String(formatter.GetOutput()).GetBinary();
-	
-	return (repo_hash!=db_hash);
-#endif
 }
 
 void Workflow::SetLastCommit(const std::string &commit_id)

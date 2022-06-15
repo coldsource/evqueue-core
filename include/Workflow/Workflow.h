@@ -55,7 +55,6 @@ class Workflow
 		void CheckInputParameters(WorkflowParameters *parameters);
 		
 		std::string GetLastCommit() const { return lastcommit; }
-		bool GetIsModified();
 		void SetLastCommit(const std::string &commit_id);
 		
 		std::string SaveToXML();

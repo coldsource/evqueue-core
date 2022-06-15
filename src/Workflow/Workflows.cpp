@@ -108,7 +108,6 @@ bool Workflows::HandleQuery(const User &user, XMLQuery *query, QueryResponse *re
 			node.setAttribute("group",workflow.GetGroup());
 			node.setAttribute("comment",workflow.GetComment());
 			node.setAttribute("lastcommit",workflow.GetLastCommit());
-			node.setAttribute("modified",workflow.GetIsModified()?"1":"0");
 		}
 		
 		return true;
