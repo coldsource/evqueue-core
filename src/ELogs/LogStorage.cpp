@@ -81,10 +81,6 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 		pack_id_str[db.GetFieldInt(0)] = db.GetField(1);
 	}
 	
-	db.Query("SELECT MAX(log_id) FROM t_log");
-	db.FetchRow();
-	next_log_id = db.GetFieldLong(0) + 1;
-	
 	string dbname = config->Get("elog.mysql.database");
 	db.QueryPrintf(
 		"SELECT PARTITION_DESCRIPTION FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_log' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC LIMIT 1",
@@ -153,7 +149,14 @@ void *LogStorage::ls_thread(LogStorage *ls)
 		
 		llock.unlock();
 		
-		ls->log(logs);
+		try
+		{
+			ls->log(logs);
+		}
+		catch(Exception &e)
+		{
+			 Logger::Log(LOG_ERR,"Unexpected exception in log storage ("+e.context+") : "+e.error);
+		}
 		
 		llock.lock();
 	}
@@ -177,6 +180,11 @@ void LogStorage::Log(const std::string &str)
 void LogStorage::log(const vector<string> &logs)
 {
 	smatch matches;
+	
+	// Compute logs id range
+	int nlogs = logs.size();
+	storage_db->QueryPrintf("UPDATE t_seq SET seq_value=last_insert_id(seq_value + %i) where seq_name='log_id'",{&nlogs});
+	next_log_id = storage_db->InsertIDLong() - nlogs;
 	
 	storage_db->BulkStart(Field::en_type::NONE, "t_log", "log_id, channel_id, log_date, log_crit", 4);
 	storage_db->BulkStart(Field::en_type::CHAR, "t_value_char", "log_id, field_id, log_date, value", 4);

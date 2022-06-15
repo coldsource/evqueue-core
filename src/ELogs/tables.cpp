@@ -24,8 +24,19 @@
 
 using namespace std;
 
+static map<string, string> elogs_query = {
+	{"t_seq", "INSERT INTO t_seq(seq_name,seq_value) VALUES('log_id',1);"},
+};
+
 // evQueue elogs moodule
 static map<string, string> elogs_tables = {
+{"t_seq",
+"CREATE TABLE `t_seq` ( \
+  `seq_name` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+  `seq_value` bigint(20) unsigned NOT NULL, \
+  PRIMARY KEY (`seq_name`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \
+"},
 {"t_alert",
 "CREATE TABLE `t_alert` ( \
   `alert_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
@@ -186,3 +197,4 @@ static map<string, string> elogs_tables = {
 
 
 static auto init = DBConfig::GetInstance()->RegisterTables("elog", elogs_tables);
+static auto initq = DBConfig::GetInstance()->RegisterTablesInit("elog", elogs_query);
