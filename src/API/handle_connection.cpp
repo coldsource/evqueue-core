@@ -86,9 +86,6 @@ void handle_connection(int s)
 	tv.tv_usec = 0;
 	setsockopt(s, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&tv,sizeof(struct timeval));
 	
-	char buf[4096];
-	int read_size;
-	
 	Statistics *stats = Statistics::GetInstance();
 	stats->IncAPIAcceptedConnections();
 	
