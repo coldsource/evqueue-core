@@ -134,15 +134,6 @@ void handle_connection(int s)
 		else
 			response.SetErrorCode("UNEXPECTED_EXCEPTION");
 		response.SendResponse();
-		
-		DB::StopThread();
-		
-		// Notify that we exit
-		ActiveConnections::GetInstance()->EndAPIConnection(this_thread::get_id());
-		close(s);
-		
-		return;
-		
 	}
 	
 	DB::StopThread();
