@@ -145,7 +145,7 @@ void Events::insert_event(struct lws *wsi, const st_event &event)
 	lws_callback_on_writable(wsi);
 }
 
-void Events::Create(const string &type_str, unsigned int object_id)
+void Events::Create(const string &type_str, unsigned int object_id, struct lws *filter_wsi, int filter_external_id)
 {
 	if(!this->ws_context)
 		return; // Prevent events from being creating before server is ready
@@ -167,7 +167,13 @@ void Events::Create(const string &type_str, unsigned int object_id)
 	for(auto it2 = it->second.begin();it2!=it->second.end();++it2)
 	{
 		struct lws *wsi = it2->first;
+		if(wsi!=filter_wsi)
+			continue;
+		
 		const st_subscription &sub = it2->second;
+		
+		if(sub.external_id!=filter_external_id)
+			continue;
 		
 		// Check object filter
 		if(sub.object_filter!=0 && sub.object_filter!=object_id)

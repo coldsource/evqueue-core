@@ -96,7 +96,7 @@ class Events
 		void Unsubscribe(const std::string &type_str, struct lws *wsi, unsigned int object_filter, int external_id);
 		void UnsubscribeAll(struct lws *wsi);
 		
-		void Create(const std::string &type_str, unsigned int object_id = 0);
+		void Create(const std::string &type_str, unsigned int object_id = 0, struct lws *filter_wsi = 0, int filter_external_id = 0);
 		bool Get(struct lws *wsi, int *external_id, std::string &object_id, unsigned long long *event_id, std::string &api_cmd);
 		void Ack(struct lws *wsi, unsigned long long event_id);
 };
