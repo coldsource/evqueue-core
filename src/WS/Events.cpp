@@ -167,12 +167,12 @@ void Events::Create(const string &type_str, unsigned int object_id, struct lws *
 	for(auto it2 = it->second.begin();it2!=it->second.end();++it2)
 	{
 		struct lws *wsi = it2->first;
-		if(wsi!=filter_wsi)
+		if(filter_wsi && wsi!=filter_wsi)
 			continue;
 		
 		const st_subscription &sub = it2->second;
 		
-		if(sub.external_id!=filter_external_id)
+		if(filter_external_id && sub.external_id!=filter_external_id)
 			continue;
 		
 		// Check object filter
