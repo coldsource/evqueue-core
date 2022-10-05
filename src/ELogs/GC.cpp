@@ -65,7 +65,7 @@ int GC::purge(time_t now)
 	
 	while(db.FetchRow())
 	{
-		db2.Query("ALTER TABLE t_elog DROP PARTITION "+db.GetField(0));
+		db2.Query("ALTER TABLE t_log DROP PARTITION "+db.GetField(0));
 		db2.Query("ALTER TABLE t_value_char DROP PARTITION "+db.GetField(0));
 		db2.Query("ALTER TABLE t_value_text DROP PARTITION "+db.GetField(0));
 		db2.Query("ALTER TABLE t_value_itext DROP PARTITION "+db.GetField(0));
