@@ -71,7 +71,7 @@ int GC::purge(time_t now)
 		db2.Query("ALTER TABLE t_value_itext DROP PARTITION "+db.GetField(0));
 		db2.Query("ALTER TABLE t_value_ip DROP PARTITION "+db.GetField(0));
 		db2.Query("ALTER TABLE t_value_pack DROP PARTITION "+db.GetField(0));
-		db2.Query("ALTER TABLE t_int DROP PARTITION "+db.GetField(0));
+		db2.Query("ALTER TABLE t_value_int DROP PARTITION "+db.GetField(0));
 		deleted_rows++;
 	}
 	
