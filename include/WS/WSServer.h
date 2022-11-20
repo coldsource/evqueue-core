@@ -51,6 +51,7 @@ class WSServer
 		struct per_session_data
 		{
 			APISession *session;
+			std::string *cmd_buffer;
 		};
 		
 		enum en_protocols

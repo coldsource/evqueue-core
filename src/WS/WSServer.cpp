@@ -204,6 +204,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 				
 				// Init context data
 				context->session = new APISession("Websocket",wsi);
+				context->cmd_buffer = new string();
 				
 				// Tell we want to send challenge when connection is established
 				lws_callback_on_writable(wsi);
@@ -214,6 +215,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 			{
 				// Clean context data
 				delete context->session;
+				delete context->cmd_buffer;
 				Events::GetInstance()->UnsubscribeAll(wsi);
 				
 				// Notify that connection is over
@@ -226,6 +228,21 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 			{
 				// Message has been received
 				string input_xml((char *)in,len);
+				
+				// Handle multi packets messages
+				if(lws_remaining_packet_payload(wsi)>0)
+				{
+					// Message is not complete, wait next packet
+					*context->cmd_buffer += input_xml;
+					break;
+				}
+				else if(!context->cmd_buffer->empty())
+				{
+					// We are last part of a split message
+					input_xml = *context->cmd_buffer + input_xml;
+					context->cmd_buffer->clear();
+				}
+				
 				XMLQuery query("Websocket",input_xml);
 				
 				if(context->session->GetStatus()==APISession::en_status::WAITING_CHALLENGE_RESPONSE)
@@ -321,6 +338,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 	catch(Exception &e)
 	{
 		Statistics::GetInstance()->IncAPIExceptions();
+		Logger::Log(LOG_WARNING, "Exception in Websocekt client : " + e.error);
 		lws_close_reason(wsi,LWS_CLOSE_STATUS_UNEXPECTED_CONDITION,(unsigned char *)e.error.c_str(),e.error.length());
 		return -1;
 	}
