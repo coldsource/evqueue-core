@@ -74,25 +74,6 @@ bool ELog::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		return true;
 	}
-	else if(action=="statistics")
-	{
-		DB db;
-		
-		string dbname = ConfigurationEvQueue::GetInstance()->Get("mysql.database");
-		db.QueryPrintf("SELECT PARTITION_NAME, CREATE_TIME, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH FROM information_schema.partitions WHERE TABLE_SCHEMA=%s AND TABLE_NAME = 't_elog' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_DESCRIPTION DESC", {&dbname});
-		
-		while(db.FetchRow())
-		{
-			DOMElement node = (DOMElement)response->AppendXML("<partition />");
-			node.setAttribute("name",db.GetField(0));
-			node.setAttribute("creation",db.GetField(1));
-			node.setAttribute("rows",db.GetField(2));
-			node.setAttribute("datasize",db.GetField(3));
-			node.setAttribute("indexsize",db.GetField(4));
-		}
-		
-		return true;
-	}
 	
 	return false;
 }
