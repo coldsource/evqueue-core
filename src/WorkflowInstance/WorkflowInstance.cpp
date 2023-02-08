@@ -261,7 +261,7 @@ WorkflowInstance::WorkflowInstance(unsigned int workflow_instance_id):
 
 WorkflowInstance::~WorkflowInstance()
 {
-	if(!is_shutting_down)
+	if(!is_shutting_down && GetDOM())
 	{
 		// Call notification scripts before removing instance from active workflows so they can call the engine to get instance XML
 		json j;
