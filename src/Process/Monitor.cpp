@@ -164,14 +164,22 @@ int Monitor::main()
 			{
 				proc.AddArgument(config->Get("processmanager.agent.path"));
 				stdout_fd = proc.ParentRedirect(STDOUT_FILENO);
+				
+				if(monitor_config.Get("monitor.task.type")=="SCRIPT")
+				{
+					config_map["processmanager.scripts.delete"] = config->Get("processmanager.scripts.delete");
+					config_map["processmanager.scripts.directory"] = config->Get("processmanager.scripts.directory");
+				}
+				
+				proc.PipeMap(config_map);
+				proc.PipeMap(env_map);
+				
+				if(monitor_config.Get("monitor.task.type")=="SCRIPT")
+					proc.PipeString(script);
 			}
 			
 			proc.AddArgument(task_filename);
 			
-			proc.PipeMap(config_map);
-			proc.PipeMap(env_map);
-			if(monitor_config.Get("monitor.task.type")=="SCRIPT")
-				proc.PipeString(script);
 			proc.Pipe(stdin_data);
 		}
 		else
