@@ -167,6 +167,7 @@ bool NotificationTypes::HandleQuery(const User &user, XMLQuery *query, QueryResp
 			DOMElement node = (DOMElement)response->AppendXML("<notification_type />");
 			node.setAttribute("id",to_string(notification_type.GetID()));
 			node.setAttribute("name",notification_type.GetName());
+			node.setAttribute("scope",notification_type.GetScope());
 			node.setAttribute("description",notification_type.GetDescription());
 			node.setAttribute("binary",notification_type.GetBinary());
 		}
