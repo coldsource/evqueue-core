@@ -105,9 +105,13 @@ void DBConfig::InitDatabases()
 bool DBConfig::RegisterTables(const string &name, map<string, string> &tables_def)
 {
 	if(tables.find(name)!=tables.end())
-		throw Exception("DBConfig", "DB tables already exist for : "+name);
-	
-	tables[name] = tables_def;
+	{
+		// Merge new tables in existing scheme
+		for(auto it = tables_def.begin(); it!=tables_def.end(); ++it)
+			tables[name][it->first] = it->second;
+	}
+	else
+		tables[name] = tables_def;
 	
 	return true;
 }
@@ -115,9 +119,14 @@ bool DBConfig::RegisterTables(const string &name, map<string, string> &tables_de
 bool DBConfig::RegisterTablesInit(const string &name, map<string, string> &tables_query)
 {
 	if(tables_init.find(name)!=tables_init.end())
-		throw Exception("DBConfig", "DB tables already exist for : "+name);
-	
-	tables_init[name] = tables_query;
+	{
+		
+		// Merge new queries in existing scheme
+		for(auto it = tables_query.begin(); it!=tables_query.end(); ++it)
+			tables_init[name][it->first] = it->second;
+	}
+	else
+		tables_init[name] = tables_query;
 	
 	return true;
 }
