@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 set(EVQUEUE_VERSION "3.3")
 
@@ -19,6 +19,9 @@ endif(HAS_LIBGIT2)
 # ELogs support
 option(USEELOGS "Enable ELogs support" ON)
 
+# Storage support
+option(USESTORAGE "Enable Storage support" ON)
+
 add_definitions(-DEVQUEUE_VERSION="${EVQUEUE_VERSION}")
 
 aux_source_directory(src/WorkflowInstance srcWorkflowInstance)
@@ -34,6 +37,7 @@ aux_source_directory(src/Workflow srcWorkflow)
 aux_source_directory(src/XML srcXML)
 aux_source_directory(src/Logs srcLogs)
 aux_source_directory(src/ELogs srcELogs)
+aux_source_directory(src/Storage srcStorage)
 aux_source_directory(src/API srcAPI)
 aux_source_directory(src/Logger srcLogger)
 aux_source_directory(src/Cluster srcCluster)
@@ -101,6 +105,11 @@ if(USEELOGS)
 	target_sources(evqueue PRIVATE ${srcELogs})
 	Message("ELogs support is enabled")
 endif(USEELOGS)
+
+if(USESTORAGE)
+	target_sources(evqueue PRIVATE ${srcStorage})
+	Message("Storage support is enabled")
+endif(USESTORAGE)
 
 include_directories(include /usr/include)
 
