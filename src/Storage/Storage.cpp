@@ -260,13 +260,14 @@ bool Storage::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		if(id==0 && name=="")
 		{
 			// Only path was provided, try to extract name from it
-			regex split_regex ("([^/]+)/([^/]+)$");
+			regex split_regex ("/([^/]+)$");
 			smatch match;
 			
-			if(regex_match(path, match, split_regex) && match.size()==3)
+			regex_search(path, match, split_regex);
+			if(regex_search(path, match, split_regex) && match.size()==2)
 			{
-				path = match[1].str();
-				name = match[2].str();
+				name = match[1].str();
+				path = path.substr(0, path.size() - name.size() - 1);
 			}
 			else
 				throw Exception("Storage", "When name is empty, path must be a absolute variable name, including path and name", "INVALID_PARAMETER");
