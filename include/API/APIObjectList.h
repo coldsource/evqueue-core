@@ -117,7 +117,7 @@ class APIObjectList
 			
 			auto it = objects_name.find(name);
 			if(it==objects_name.end())
-				throw Exception("API","Unknown " + object_type + "name : " + name,"UKNOWN_OBJECT");
+				throw Exception("API","Unknown " + object_type +  " name : " + name,"UKNOWN_OBJECT");
 			
 			APIObjectType object = *it->second;
 			
