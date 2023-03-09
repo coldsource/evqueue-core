@@ -34,6 +34,7 @@ class APIObjectList
 		
 		std::map<unsigned int,APIObjectType *> objects_id;
 		std::map<std::string,APIObjectType *> objects_name;
+		std::string object_type;
 		
 		void add(unsigned int id, const std::string &name, APIObjectType *object)
 		{
@@ -65,9 +66,9 @@ class APIObjectList
 	
 	public:
 		
-		APIObjectList()
+		APIObjectList(const std::string &object_type = "object")
 		{
-			;
+			this->object_type = object_type;
 		}
 		
 		~APIObjectList()
@@ -103,7 +104,7 @@ class APIObjectList
 			
 			auto it = objects_id.find(id);
 			if(it==objects_id.end())
-				throw Exception("API","Unknown object ID : " + std::to_string(id),"UNKNOWN_OBJECT");
+				throw Exception("API","Unknown " + object_type + " ID : " + std::to_string(id),"UNKNOWN_OBJECT");
 			
 			APIObjectType object = *it->second;
 			
@@ -116,7 +117,7 @@ class APIObjectList
 			
 			auto it = objects_name.find(name);
 			if(it==objects_name.end())
-				throw Exception("API","Unknown object name : " + name,"UKNOWN_OBJECT");
+				throw Exception("API","Unknown " + object_type + "name : " + name,"UKNOWN_OBJECT");
 			
 			APIObjectType object = *it->second;
 			
