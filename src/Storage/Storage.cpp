@@ -217,13 +217,13 @@ void Storage::List(const std::string &path, bool recursive, QueryResponse *respo
 
 bool Storage::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	if(!user.IsAdmin())
-		User::InsufficientRights();
-	
 	string action = query->GetRootAttribute("action");
 	
 	if(action=="set")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		unsigned int id = query->GetRootAttributeInt("id", 0);
 		string path = query->GetRootAttribute("path", "");
 		string name = query->GetRootAttribute("name", "");
@@ -240,6 +240,9 @@ bool Storage::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 	}
 	else if(action=="unset")
 	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
 		unsigned int id = query->GetRootAttributeInt("id", 0);
 		string path = query->GetRootAttribute("path", "");
 		string name = query->GetRootAttribute("name", "");
