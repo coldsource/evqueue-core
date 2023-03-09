@@ -44,7 +44,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 ChannelGroups *ChannelGroups::instance = 0;
 
-ChannelGroups::ChannelGroups():APIObjectList()
+ChannelGroups::ChannelGroups():APIObjectList("ChannelGroup")
 {
 	instance = this;
 	

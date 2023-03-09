@@ -40,7 +40,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 using namespace std;
 
-RetrySchedules::RetrySchedules():APIObjectList()
+RetrySchedules::RetrySchedules():APIObjectList("RetrySchedule")
 {
 	instance = this;
 	

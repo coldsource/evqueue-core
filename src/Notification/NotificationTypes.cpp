@@ -41,7 +41,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 using namespace std;
 
-NotificationTypes::NotificationTypes():APIObjectList()
+NotificationTypes::NotificationTypes():APIObjectList("NotificationType")
 {
 	instance = this;
 	

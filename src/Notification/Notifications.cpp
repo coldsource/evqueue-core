@@ -46,7 +46,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 using namespace std;
 using nlohmann::json;
 
-Notifications::Notifications():APIObjectList()
+Notifications::Notifications():APIObjectList("Notification")
 {
 	instance = this;
 	

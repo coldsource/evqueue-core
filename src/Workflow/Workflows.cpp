@@ -42,7 +42,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 using namespace std;
 
-Workflows::Workflows():APIObjectList()
+Workflows::Workflows():APIObjectList("Workflow")
 {
 	instance = this;
 	

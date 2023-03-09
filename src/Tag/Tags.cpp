@@ -38,7 +38,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 using namespace std;
 
-Tags::Tags():APIObjectList()
+Tags::Tags():APIObjectList("Tag")
 {
 	instance = this;
 	

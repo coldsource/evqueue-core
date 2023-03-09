@@ -45,7 +45,7 @@ Channels *Channels::instance = 0;
 
 using namespace std;
 
-Channels::Channels():APIObjectList()
+Channels::Channels():APIObjectList("Channel")
 {
 	instance = this;
 	
