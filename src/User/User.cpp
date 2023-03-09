@@ -66,6 +66,14 @@ User::User(DB *db,unsigned int user_id)
 		user_right wf_rights = {db->GetFieldInt(1)!=0, db->GetFieldInt(2)!=0, db->GetFieldInt(3)!=0, db->GetFieldInt(4)!=0};
 		rights[workflow_id] = wf_rights;
 	}
+	
+	// Load module rights
+	db->QueryPrintf("SELECT module_name, user_module_type, user_module_object, user_module_access FROM t_user_module WHERE user_id=%i",{&user_id});
+	while(db->FetchRow())
+	{
+		user_module_object obj = {db->GetField(0), db->GetField(1), (unsigned int)db->GetFieldInt(2)};
+		module_rights[obj] = db->GetFieldInt(3);
+	}
 }
 
 void User::InitAnonymous()
@@ -93,6 +101,20 @@ bool User::HasAccessToWorkflow(unsigned int workflow_id, const string &access_ty
 		return true;
 	
 	return false;
+}
+
+bool User::HasAccessToModule(const string &module_name, const string &type, unsigned int object_id) const
+{
+	if(IsAdmin())
+		return true;
+	
+	user_module_object obj = {module_name, type, object_id};
+	
+	auto it = module_rights.find(obj);
+	if(it==module_rights.end())
+		return false;
+	
+	return (bool)it->second;
 }
 
 vector<int> User::GetReadAccessWorkflows() const
@@ -235,6 +257,7 @@ void User::Delete(unsigned int id)
 		throw Exception("User","User not found","UNKNOWN_USER");
 	
 	db.QueryPrintf("DELETE FROM t_user_right WHERE user_id=%i",{&id});
+	db.QueryPrintf("DELETE FROM t_user_module WHERE user_id=%i",{&id});
 	
 	db.CommitTransaction();
 }
@@ -263,6 +286,21 @@ void User::ListRights(unsigned int id, QueryResponse *response)
 	}
 }
 
+void User::ListModuleRights(unsigned int id, const string &module, const string &type, QueryResponse *response)
+{
+	User user = Users::GetInstance()->Get(id);
+	
+	for(auto it=user.module_rights.begin();it!=user.module_rights.end();++it)
+	{
+		if(it->first.module!=module || it->first.type!=type)
+			continue;
+		
+		DOMElement node = (DOMElement)response->AppendXML("<right />");
+		node.setAttribute("object-id", to_string(it->first.id));
+		node.setAttribute("right", it->second?"yes":"no");
+	}
+}
+
 void User::GrantRight(unsigned int id, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill)
 {
 	if(!Users::GetInstance()->Exists(id))
@@ -279,6 +317,18 @@ void User::GrantRight(unsigned int id, unsigned int workflow_id, bool edit, bool
 	);
 }
 
+void User::GrantModuleRight(unsigned int id, const string &module_name, const string &type, unsigned int object_id)
+{
+	if(!Users::GetInstance()->Exists(id))
+		throw Exception("User","User not found","UNKNOWN_USER");
+	
+	DB db;
+	db.QueryPrintf(
+		"REPLACE INTO t_user_module(user_id, module_name, user_module_type, user_module_object, user_module_access) VALUES(%i, %s, %s, %i, 1)",
+		{&id, &module_name, &type, &object_id}
+	);
+}
+
 void User::RevokeRight(unsigned int id, unsigned int workflow_id)
 {
 	if(!Users::GetInstance()->Exists(id))
@@ -289,6 +339,24 @@ void User::RevokeRight(unsigned int id, unsigned int workflow_id)
 	
 	if(db.AffectedRows()==0)
 		throw Exception("User","No right found on that workflow","ALREADY_NO_RIGHTS");
+}
+
+void User::RevokeModuleRight(unsigned int id, const string &module_name, const string &type, unsigned int object_id)
+{
+	if(!Users::GetInstance()->Exists(id))
+		throw Exception("User","User not found","UNKNOWN_USER");
+	
+	DB db;
+	db.QueryPrintf("DELETE FROM t_user_module WHERE user_id=%i AND module_name=%s AND user_module_type=%s AND user_module_object=%i", {&id, &module_name, &type, &object_id});
+	
+	if(db.AffectedRows()==0)
+		throw Exception("User","No right found on that workflow","ALREADY_NO_RIGHTS");
+}
+
+void User::RevokeModuleRight(const string &module_name, const string &type, unsigned int object_id)
+{
+	DB db;
+	db.QueryPrintf("DELETE FROM t_user_module WHERE module_name=%s AND user_module_type=%s AND user_module_object=%i", {&module_name, &type, &object_id});
 }
 
 void User::create_edit_check(const std::string &name, const std::string &password, const std::string &profile)
@@ -449,9 +517,18 @@ bool User::HandleQuery(const User &user, XMLQuery *query, QueryResponse *respons
 		
 		ListRights(id, response);
 		
-		LoggerAPI::LogAction(user,id,"User",query->GetQueryGroup(),action);
+		return true;
+	}
+	else if(action=="list_module_rights")
+	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
 		
-		Events::GetInstance()->Create("USER_MODIFIED", id);
+		unsigned int id = get_id_from_query(query);
+		string module = query->GetRootAttribute("module");
+		string type = query->GetRootAttribute("type");
+		
+		ListModuleRights(id, module, type, response);
 		
 		return true;
 	}

@@ -38,6 +38,26 @@ class User
 		bool kill;
 	};
 	
+	struct user_module_object
+	{
+		std::string module;
+		std::string type;
+		unsigned int id;
+		
+		bool operator<(const user_module_object &o)  const {
+			if(module<o.module)
+				return true;
+			
+			if(module==o.module &&  type<o.type)
+				return true;
+			
+			if(module==o.module && type==o.type && id<o.id)
+				return true;
+			
+			return false;
+		};
+	};
+	
 	unsigned int user_id;
 	std::string user_name;
 	std::string user_password;
@@ -45,6 +65,7 @@ class User
 	std::string user_preferences;
 	
 	std::map<unsigned int,user_right> rights;
+	std::map<user_module_object, int> module_rights;
 	
 	public:
 		static User anonymous;
@@ -62,6 +83,7 @@ class User
 		
 		bool IsAdmin() const { return user_profile=="ADMIN"; }
 		bool HasAccessToWorkflow(unsigned int workflow_id, const std::string &access_type) const;
+		bool HasAccessToModule(const std::string &module_name, const std::string &type, unsigned int object_id) const;
 		std::vector<int> GetReadAccessWorkflows() const;
 		static bool InsufficientRights();
 		
@@ -75,8 +97,12 @@ class User
 		
 		static void ClearRights(unsigned int id);
 		static void ListRights(unsigned int id, QueryResponse *response);
+		static void ListModuleRights(unsigned int id, const std::string &module, const std::string &type, QueryResponse *response);
 		static void GrantRight(unsigned int id, unsigned int workflow_id, bool edit, bool read, bool exec, bool kill);
+		static void GrantModuleRight(unsigned int id, const std::string &module_name, const std::string &type, unsigned int object_id);
 		static void RevokeRight(unsigned int id, unsigned int workflow_id);
+		static void RevokeModuleRight(unsigned int id, const std::string &module_name, const std::string &type, unsigned int object_id);
+		static void RevokeModuleRight(const std::string &module_name, const std::string &type, unsigned int object_id);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 	
