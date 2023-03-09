@@ -45,8 +45,8 @@ static map<string, string> storage_tables = {
   `launcher_group` varchar(64) NOT NULL, \
   `launcher_description` text NOT NULL, \
   `workflow_id` int(10) unsigned NOT NULL, \
-  `launcher_user` varchar(255) NOT NULL, \
-  `launcher_host` varchar(255) NOT NULL, \
+  `launcher_user` varchar(64) NOT NULL, \
+  `launcher_host` varchar(64) NOT NULL, \
   `launcher_parameters` text NOT NULL, \
   PRIMARY KEY (`launcher_id`), \
   UNIQUE KEY `launcher_name` (`launcher_name`) \
