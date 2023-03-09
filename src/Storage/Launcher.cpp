@@ -18,15 +18,18 @@
  */
 
 #include <Storage/Launcher.h>
+#include <Storage/Launchers.h>
 #include <API/QueryHandlers.h>
 #include <API/XMLQuery.h>
 #include <API/QueryResponse.h>
 #include <User/User.h>
+#include <User/Users.h>
 #include <DB/DB.h>
 #include <Exception/Exception.h>
 #include <WS/Events.h>
 #include <Workflow/Workflows.h>
 #include <Workflow/Workflow.h>
+#include <WorkflowInstance/WorkflowInstanceAPI.h>
 #include <Storage/Storage.h>
 
 using namespace std;
@@ -41,6 +44,33 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 	Events::GetInstance()->RegisterEvents({"LAUNCHER_CREATED", "LAUNCHER_MODIFIED", "LAUNCHER_REMOVED"});
 	return (APIAutoInit *)0;
 });
+
+Launcher::Launcher(DB *db,unsigned int launcher_id)
+{
+	db->QueryPrintf(" SELECT \
+			launcher_id, \
+			launcher_name, \
+			launcher_group, \
+			launcher_description, \
+			workflow_id, \
+			launcher_user, \
+			launcher_host, \
+			launcher_parameters \
+		FROM t_launcher \
+		WHERE launcher_id=%i",{&launcher_id});
+	
+	if(!db->FetchRow())
+		throw Exception("Launcher","Unknown Launcher");
+	
+	this->launcher_id = db->GetFieldInt(0);
+	name = db->GetField(1);
+	group = db->GetField(2);
+	description = db->GetField(3);
+	workflow_id = db->GetFieldInt(4);
+	user = db->GetField(5);
+	host = db->GetField(6);
+	parameters = db->GetField(7);
+}
 
 void Launcher::create_edit_check(
 	const string &name,
@@ -136,24 +166,15 @@ void Launcher::Edit(
 
 void Launcher::Get(unsigned int id, QueryResponse *response)
 {
-	DB db;
+	const Launcher launcher = Launchers::GetInstance()->Get(id);
 	
-	db.QueryPrintf(" \
-		SELECT launcher_name, launcher_group, launcher_description, workflow_id, launcher_user, launcher_host, launcher_parameters \
-		FROM t_launcher \
-		WHERE launcher_id=%i",
-		{&id});
-	
-	if(!db.FetchRow())
-		throw Exception("Launcher", "Unknown luancher ID : « " + to_string(id) + " »");
-	
-	response->SetAttribute("name", db.GetField(0));
-	response->SetAttribute("group", db.GetField(1));
-	response->SetAttribute("description", db.GetField(2));
-	response->SetAttribute("workflow_id", db.GetField(3));
-	response->SetAttribute("user", db.GetField(4));
-	response->SetAttribute("host", db.GetField(5));
-	response->SetAttribute("parameters", db.GetField(6));
+	response->SetAttribute("name", launcher.GetName());
+	response->SetAttribute("group", launcher.GetGroup());
+	response->SetAttribute("description", launcher.GetDescription());
+	response->SetAttribute("workflow_id", to_string(launcher.GetWorkflowID()));
+	response->SetAttribute("user", launcher.GetUser());
+	response->SetAttribute("host", launcher.GetHost());
+	response->SetAttribute("parameters", launcher.GetParameters());
 }
 
 void Launcher::Delete(unsigned int id)
@@ -161,33 +182,14 @@ void Launcher::Delete(unsigned int id)
 	DB db;
 	
 	db.QueryPrintf("DELETE FROM t_launcher WHERE launcher_id=%i", {&id});
+	User::RevokeModuleRight("storage", "launcher", id);
 	
 	if(db.AffectedRows()==0)
 		throw Exception("User","Launcher not found","UNKNOWN_LAUNCHER");
 }
 
-void Launcher::List(QueryResponse *response)
-{
-	DB db;
-	
-	db.Query("SELECT launcher_id, launcher_name, launcher_group, launcher_description FROM t_launcher");
-	
-	while(db.FetchRow())
-	{
-		DOMElement node_var = (DOMElement)response->AppendXML("<launcher />");
-		node_var.setAttribute("id", db.GetField(0));
-		node_var.setAttribute("name", db.GetField(1));
-		node_var.setAttribute("group", db.GetField(2));
-		node_var.setAttribute("description", db.GetField(3));
-			
-	}
-}
-
 bool Launcher::HandleQuery(const User &user, XMLQuery *query, QueryResponse *response)
 {
-	if(!user.IsAdmin())
-		User::InsufficientRights();
-	
 	string action = query->GetRootAttribute("action");
 	
 	if(action=="create" || action=="edit")
@@ -222,6 +224,8 @@ bool Launcher::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 			event = "LAUNCHER_MODIFIED";
 		}
 		
+		Launchers::GetInstance()->Reload();
+		
 		Events::GetInstance()->Create(event, id);
 		
 		return true;
@@ -229,6 +233,9 @@ bool Launcher::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 	else if(action=="get")
 	{
 		unsigned int id = query->GetRootAttributeInt("id");
+		
+		if(!user.HasAccessToModule("storage", "launcher", id))
+			User::InsufficientRights();
 		
 		Get(id, response);
 		
@@ -243,13 +250,63 @@ bool Launcher::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 		
 		Delete(id);
 		
+		Launchers::GetInstance()->Reload();
+		
 		Events::GetInstance()->Create("LAUNCHER_REMOVED", id);
 		
 		return true;
 	}
-	else if(action=="list")
+	else if(action=="launch")
 	{
-		List(response);
+		unsigned int id = query->GetRootAttributeInt("id");
+		
+		if(!user.HasAccessToModule("storage", "launcher", id))
+			User::InsufficientRights();
+		
+		auto launcher = Launchers::GetInstance()->Get(id);
+		Workflow workflow = Workflows::GetInstance()->Get(launcher.GetWorkflowID());
+		
+		WorkflowInstanceAPI::Launch(workflow.GetName(), user, query, response);
+		
+		return true;
+	}
+	else if(action=="grant")
+	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
+		unsigned int user_id = query->GetRootAttributeInt("user_id");
+		unsigned int launcher_id = query->GetRootAttributeInt("launcher_id");
+		
+		// Check objects exist
+		Users::GetInstance()->Get(user_id);
+		Launchers::GetInstance()->Get(launcher_id);
+		
+		User::GrantModuleRight(user_id, "storage", "launcher", launcher_id);
+		
+		Users::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("USER_MODIFIED", user_id);
+		
+		return true;
+	}
+	else if(action=="revoke")
+	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
+		unsigned int user_id = query->GetRootAttributeInt("user_id");
+		unsigned int launcher_id = query->GetRootAttributeInt("launcher_id");
+		
+		// Check objects exist
+		Users::GetInstance()->Get(user_id);
+		Launchers::GetInstance()->Get(launcher_id);
+		
+		User::RevokeModuleRight(user_id, "storage", "launcher", launcher_id);
+		
+		Users::GetInstance()->Reload();
+		
+		Events::GetInstance()->Create("USER_MODIFIED", user_id);
 		
 		return true;
 	}

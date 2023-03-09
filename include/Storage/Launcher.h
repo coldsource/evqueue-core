@@ -27,12 +27,22 @@
 class XMLQuery;
 class QueryResponse;
 class User;
+class DB;
 
 namespace Storage
 {
 
 class Launcher
 {
+	unsigned int launcher_id;
+	std::string name;
+	std::string group;
+	std::string description;
+	unsigned int workflow_id;
+	std::string user;
+	std::string host;
+	std::string parameters;
+	
 	static void create_edit_check(
 		const std::string &name,
 		const std::string group,
@@ -43,6 +53,17 @@ class Launcher
 		const std::string &parameters);
 	
 	public:
+		Launcher(DB *db,unsigned int launcher_id);
+		
+		unsigned int GetID() const { return launcher_id; }
+		const std::string &GetName() const { return name; }
+		const std::string &GetGroup() const { return group; }
+		const std::string &GetDescription() const { return description; }
+		unsigned int GetWorkflowID() const { return workflow_id; }
+		const std::string &GetUser() const { return user; }
+		const std::string &GetHost() const { return host; }
+		const std::string &GetParameters() const { return parameters; }
+		
 		static void Get(unsigned int id, QueryResponse *response);
 		static unsigned int Create(
 			const std::string &name,
@@ -64,7 +85,6 @@ class Launcher
 			const std::string &parameters);
 		
 		static void Delete(unsigned int id);
-		static void List(QueryResponse *response);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
 };
