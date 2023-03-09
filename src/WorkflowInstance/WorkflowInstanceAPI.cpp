@@ -48,6 +48,54 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 
 using namespace std;
 
+bool WorkflowInstanceAPI::Launch(const string &name, const User &user, XMLQuery *query, QueryResponse *response)
+{	
+	string username = query->GetRootAttribute("user","");
+	string host = query->GetRootAttribute("host","");
+	string mode = query->GetRootAttribute("mode","asynchronous");
+	string comment = query->GetRootAttribute("comment","");
+	
+	if(mode!="synchronous" && mode!="asynchronous")
+		throw Exception("WorkflowInstance","mode must be 'synchronous' or 'asynchronous'","INVALID_PARAMETER");
+	
+	int timeout = query->GetRootAttributeInt("timeout",0);
+	
+	WorkflowInstance *wi;
+	bool workflow_terminated;
+	
+	Statistics *stats = Statistics::GetInstance();
+	stats->IncWorkflowQueries();
+	
+	try
+	{
+		wi = new WorkflowInstance(name,query->GetWorkflowParameters(),0,host,username,comment);
+	}
+	catch(Exception &e)
+	{
+		stats->IncWorkflowExceptions();
+		throw e;
+	}
+	
+	unsigned int instance_id = wi->GetInstanceID();
+	
+	wi->Start(&workflow_terminated);
+	
+	Logger::Log(LOG_NOTICE,"[WID %d] Instantiated",wi->GetInstanceID());
+	
+	int wait_re = true;
+	if(!workflow_terminated && mode=="synchronous")
+		wait_re = WorkflowInstances::GetInstance()->Wait(user, response,instance_id,timeout);
+	
+	response->GetDOM()->getDocumentElement().setAttribute("workflow-instance-id",to_string(instance_id));
+	if(!wait_re)
+		response->GetDOM()->getDocumentElement().setAttribute("wait","timedout");
+	
+	if(workflow_terminated)
+		delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
+	
+	return true;
+}
+
 void WorkflowInstanceAPI::Delete(unsigned int id)
 {
 	DB db;
@@ -114,49 +162,7 @@ bool WorkflowInstanceAPI::HandleQuery(const User &user, XMLQuery *query, QueryRe
 		if(!user.HasAccessToWorkflow(workflow.GetID(), "exec"))
 			User::InsufficientRights();
 		
-		string username = query->GetRootAttribute("user","");
-		string host = query->GetRootAttribute("host","");
-		string mode = query->GetRootAttribute("mode","asynchronous");
-		string comment = query->GetRootAttribute("comment","");
-		
-		if(mode!="synchronous" && mode!="asynchronous")
-			throw Exception("WorkflowInstance","mode must be 'synchronous' or 'asynchronous'","INVALID_PARAMETER");
-		
-		int timeout = query->GetRootAttributeInt("timeout",0);
-		
-		WorkflowInstance *wi;
-		bool workflow_terminated;
-		
-		stats->IncWorkflowQueries();
-		
-		try
-		{
-			wi = new WorkflowInstance(name,query->GetWorkflowParameters(),0,host,username,comment);
-		}
-		catch(Exception &e)
-		{
-			stats->IncWorkflowExceptions();
-			throw e;
-		}
-		
-		unsigned int instance_id = wi->GetInstanceID();
-		
-		wi->Start(&workflow_terminated);
-		
-		Logger::Log(LOG_NOTICE,"[WID %d] Instantiated",wi->GetInstanceID());
-		
-		int wait_re = true;
-		if(!workflow_terminated && mode=="synchronous")
-			wait_re = WorkflowInstances::GetInstance()->Wait(user, response,instance_id,timeout);
-		
-		response->GetDOM()->getDocumentElement().setAttribute("workflow-instance-id",to_string(instance_id));
-		if(!wait_re)
-			response->GetDOM()->getDocumentElement().setAttribute("wait","timedout");
-		
-		if(workflow_terminated)
-			delete wi; // This can happen on empty workflows or when dynamic errors occur in workflow (eg unknown queue for a task)
-		
-		return true;
+		return Launch(name, user, query, response);
 	}
 	else
 	{

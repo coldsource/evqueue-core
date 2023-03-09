@@ -24,9 +24,13 @@ class XMLQuery;
 class QueryResponse;
 class User;
 
+#include <string>
+
 class WorkflowInstanceAPI
 {
 	public:
+		static bool Launch(const std::string &name, const User &user, XMLQuery *query, QueryResponse *response);
+		
 		static void Delete(unsigned int id);
 		
 		static void Tag(unsigned int id, unsigned int tag_id);
