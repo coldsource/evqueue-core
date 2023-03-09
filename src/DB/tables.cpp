@@ -108,6 +108,16 @@ map<string,string> evqueue_tables = {
   PRIMARY KEY (`user_id`,`workflow_id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='v3.3'; \
 "},
+{"t_user_module",
+"CREATE TABLE `t_user_module` ( \
+ `user_id` int(10) unsigned NOT NULL, \
+ `module_name` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+ `user_module_type` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+ `user_module_object` int(10) unsigned NOT NULL, \
+ `user_module_access` int(10) NOT NULL, \
+ UNIQUE KEY `user_id` (`user_id`,`module_name`,`user_module_type`,`user_module_object`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='v3.3'; \
+"},
 {"t_workflow",
 "CREATE TABLE `t_workflow` ( \
   `workflow_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
