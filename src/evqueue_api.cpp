@@ -33,6 +33,7 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <memory>
 
 using namespace std;
 
@@ -43,6 +44,7 @@ static void usage()
 	fprintf(stderr,"  --user <username>\n");
 	fprintf(stderr,"  --password <password>\n");
 	fprintf(stderr,"  --noformat\n");
+	fprintf(stderr,"  --xpath\n");
 	exit(-1);
 }
 
@@ -53,13 +55,13 @@ int main(int argc, char  **argv)
 	try
 	{
 		// Default config
-		Configuration config({{"api.connect","tcp://localhost:5000"}, {"api.user", ""}, {"api.password", ""}, {"api.noformat", "no"}});
+		Configuration config({{"api.connect","tcp://localhost:5000"}, {"api.user", ""}, {"api.password", ""}, {"api.noformat", "no"}, {"api.xpath", ""}});
 		
 		// Try to read from default paths
 		ConfigurationReader::ReadDefaultPaths("evqueue.api.conf", &config);
 		
 		// Override with command line
-		int cur = ConfigurationReader::ReadCommandLine(argc, argv, {"connect", "user", "password", "bool:noformat"}, "api", &config);
+		int cur = ConfigurationReader::ReadCommandLine(argc, argv, {"connect", "user", "password", "bool:noformat", "xpath"}, "api", &config);
 		if(cur==-1)
 			usage();
 
@@ -67,6 +69,7 @@ int main(int argc, char  **argv)
 		string user = config.Get("api.user");
 		string password = config.Get("api.password");
 		bool format = !config.GetBool("api.noformat");
+		string xpath = config.Get("api.xpath");
 
 		// If we received a password, compute sha1 of it as a real password
 		if(password.length())
@@ -128,15 +131,24 @@ int main(int argc, char  **argv)
 				
 				DOMDocument *xmldoc = client.GetResponseDOM();
 				
-				string response_xml = xmldoc->Serialize(xmldoc->getDocumentElement());
-				
-				if(format)
+				if(xpath!="")
 				{
-					XMLFormatter formatter(response_xml);
-					formatter.Format();
+					unique_ptr<DOMXPathResult> res(xmldoc->evaluate(xpath, xmldoc->getDocumentElement(), DOMXPathResult::FIRST_RESULT_TYPE));
+					if(res->length()>0)
+						printf("%s\n", res->getStringValue().c_str());
 				}
 				else
-					printf("%s\n",response_xml.c_str());
+				{
+					string response_xml = xmldoc->Serialize(xmldoc->getDocumentElement());
+					
+					if(format)
+					{
+						XMLFormatter formatter(response_xml);
+						formatter.Format();
+					}
+					else
+						printf("%s\n",response_xml.c_str());
+				}
 			}
 		}
 	}
