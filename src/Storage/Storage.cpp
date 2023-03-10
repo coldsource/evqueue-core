@@ -124,6 +124,38 @@ void Storage::check_value_type(const json &j, const string &type)
 		throw Exception("Storage", "Invalid type : « " + type + " »", "INVALID_PARAMETER");
 }
 
+void Storage::split_path(const std::string filename, std::string &path, std::string &name)
+{
+	regex split_regex ("/([^/]+)$");
+	smatch match;
+	
+	if(regex_search(filename, match, split_regex) && match.size()==2)
+	{
+		name = match[1].str();
+		path = path.substr(0, path.size() - name.size() - 1);
+	}
+	else
+		throw Exception("Storage", "When name is empty, path must be a absolute variable name, including path and name", "INVALID_PARAMETER");
+}
+
+Variable Storage::get_variable_from_query(XMLQuery *query)
+{
+	unsigned int id = query->GetRootAttributeInt("id", 0);
+	string path = query->GetRootAttribute("path", "");
+	string name = query->GetRootAttribute("name", "");
+	
+	if(id!=0)
+		return Variable(id);
+	
+	if(path!="" && name=="")
+		split_path(path, path, name);
+	
+	if(path!="" && name!="")
+		return Variable(path, name);
+	
+	throw Exception("Storage", "You must provied either « id », « path » and/or « name »", "MISSING_PARAMETER");
+}
+
 unsigned int Storage::Set(unsigned int id, const string &path, const string &name, const string &type, const string &structure, const string &value)
 {
 	check_path(path);
@@ -151,41 +183,95 @@ unsigned int Storage::Set(unsigned int id, const string &path, const string &nam
 	return 0;
 }
 
-unsigned int Storage::Unset(unsigned int id, const string &path, const string &name)
+void Storage::Append(const Variable &v, const string &value)
 {
+	json jval;
+	try
+	{
+		jval = json::parse(value);
+	}
+	catch(...)
+	{
+		throw Exception("Storage", "Invalid json", "INVALID_PARAMETER");
+	}
+	
+	if(v.GetStructure()!="ARRAY")
+		throw Exception("Storage", "Append can only be used on array", "TYPE_ERROR");
+	
+	check_value_type(jval, v.GetType());
+	
+	auto j = v.GetValue();
+	j.push_back(jval);
+	
+	Set(v.GetID(), v.GetPath(), v.GetName(), v.GetType(), v.GetStructure(), j.dump());
+}
+
+void Storage::Append(const Variable &v, const string &key, const string &value)
+{
+	json jval;
+	try
+	{
+		jval = json::parse(value);
+	}
+	catch(...)
+	{
+		throw Exception("Storage", "Invalid json", "INVALID_PARAMETER");
+	}
+	
+	if(v.GetStructure()!="MAP")
+		throw Exception("Storage", "Append can only be used on map", "TYPE_ERROR");
+	
+	check_value_type(jval, v.GetType());
+	
+	auto j = v.GetValue();
+	j[key] = jval;
+	
+	Set(v.GetID(), v.GetPath(), v.GetName(), v.GetType(), v.GetStructure(), j.dump());
+}
+
+unsigned int Storage::Unset(const Variable &v)
+{
+	unsigned int id = v.GetID();
+	
 	DB db;
-	if(id==0)
-		db.QueryPrintf("DELETE FROM t_storage WHERE storage_path=%s AND storage_name=%s", {&path, &name});
-	else
-		db.QueryPrintf("DELETE FROM t_storage WHERE storage_id=%i", {&id});
+	db.QueryPrintf("DELETE FROM t_storage WHERE storage_id=%i", {&id});
 	
 	Events::GetInstance()->Create("VARIABLE_UNSET");
 	
 	return 0;
 }
 
-void Storage::Get(unsigned int id, const string &path, const string &name, QueryResponse *response)
+void Storage::Get(const Variable &v, QueryResponse *response)
 {
-	DB db;
+	response->SetAttribute("path", v.GetPath());
+	response->SetAttribute("type", v.GetType());
+	response->SetAttribute("structure", v.GetStructure());
+	response->SetAttribute("name", v.GetName());
+	response->SetAttribute("value", v.GetValue().dump());
+}
+
+void Storage::Head(const Variable &v, QueryResponse *response)
+{
+	if(v.GetStructure()!="ARRAY")
+		throw Exception("Storage", "Tail can only be used on array", "TYPE_ERROR");
 	
-	if(id==0)
-		db.QueryPrintf("SELECT storage_path, storage_type, storage_structure, storage_name, storage_value FROM t_storage WHERE storage_path=%s AND storage_name=%s", {&path, &name});
-	else
-		db.QueryPrintf("SELECT storage_path, storage_type, storage_structure, storage_name, storage_value FROM t_storage WHERE storage_id=%i", {&id});
+	auto j = v.GetValue();
+	if(j.size()==0)
+		throw Exception("Storage", "Array is empty", "TYPE_ERROR");
 	
-	if(!db.FetchRow())
-	{
-		if(id!=0)
-			throw Exception("Storage", "Variable not found : « " + to_string(id) + " »");
-		else
-			throw Exception("Storage", "Variable not found : « " + path + "/" + name + " »");
-	}
+	response->SetAttribute("value", j[0]);
+}
+
+void Storage::Tail(const Variable &v, QueryResponse *response)
+{
+	if(v.GetStructure()!="ARRAY")
+		throw Exception("Storage", "Tail can only be used on array", "TYPE_ERROR");
 	
-	response->SetAttribute("path", db.GetField(0));
-	response->SetAttribute("type", db.GetField(1));
-	response->SetAttribute("structure", db.GetField(2));
-	response->SetAttribute("name", db.GetField(3));
-	response->SetAttribute("value", db.GetField(4));
+	auto j = v.GetValue();
+	if(j.size()==0)
+		throw Exception("Storage", "Array is empty", "TYPE_ERROR");
+	
+	response->SetAttribute("value", j[j.size()-1]);
 }
 
 void Storage::List(const std::string &path, bool recursive, QueryResponse *response)
@@ -238,49 +324,43 @@ bool Storage::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		
 		return true;
 	}
+	else if(action=="append")
+	{
+		if(!user.IsAdmin())
+			User::InsufficientRights();
+		
+		Variable v = get_variable_from_query(query);
+		string key = query->GetRootAttribute("key", "");
+		string value = query->GetRootAttribute("value");
+		
+		if(key!="")
+			Append(v, key, value);
+		else
+			Append(v, value);
+		
+		return true;
+	}
 	else if(action=="unset")
 	{
 		if(!user.IsAdmin())
 			User::InsufficientRights();
 		
-		unsigned int id = query->GetRootAttributeInt("id", 0);
-		string path = query->GetRootAttribute("path", "");
-		string name = query->GetRootAttribute("name", "");
-		
-		if(id==0 && path=="" && name=="")
-			throw Exception("Storage", "You must provied either « id » or « path » AND « name »", "MISSING_PARAMETER");
-		
-		Unset(id, path, name);
-		
+		Unset(get_variable_from_query(query));
 		return true;
 	}
 	else if(action=="get")
 	{
-		unsigned int id = query->GetRootAttributeInt("id", 0);
-		string path = query->GetRootAttribute("path", "");
-		string name = query->GetRootAttribute("name", "");
-		
-		if(id==0 && name=="")
-		{
-			// Only path was provided, try to extract name from it
-			regex split_regex ("/([^/]+)$");
-			smatch match;
-			
-			regex_search(path, match, split_regex);
-			if(regex_search(path, match, split_regex) && match.size()==2)
-			{
-				name = match[1].str();
-				path = path.substr(0, path.size() - name.size() - 1);
-			}
-			else
-				throw Exception("Storage", "When name is empty, path must be a absolute variable name, including path and name", "INVALID_PARAMETER");
-		}
-		
-		if(id==0 && path=="" && name=="")
-			throw Exception("Storage", "You must provied either « id », « path » and/or « name »", "MISSING_PARAMETER");
-		
-		Get(id, path, name, response);
-		
+		Get(get_variable_from_query(query), response);
+		return true;
+	}
+	else if(action=="head")
+	{
+		Head(get_variable_from_query(query), response);
+		return true;
+	}
+	else if(action=="tail")
+	{
+		Tail(get_variable_from_query(query), response);
 		return true;
 	}
 	else if(action=="list")
