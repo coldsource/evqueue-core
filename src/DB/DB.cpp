@@ -388,7 +388,7 @@ void DB::RollbackTransaction()
 	transaction_started = false;
 }
 
-bool DB::GetFieldIsNULL(int n)
+bool DB::GetFieldIsNULL(int n) const
 {
 	if(res==0 || row==0)
 		return true;
@@ -396,7 +396,7 @@ bool DB::GetFieldIsNULL(int n)
 	return row[n]==0;
 }
 
-string DB::GetField(int n)
+string DB::GetField(int n) const
 {
 	if(res==0 || row==0)
 		return "";
@@ -407,7 +407,7 @@ string DB::GetField(int n)
 	return string(row[n], row_field_length[n]);
 }
 
-int DB::GetFieldInt(int n)
+int DB::GetFieldInt(int n) const
 {
 	string v = GetField(n);
 	if(v=="")
@@ -425,7 +425,7 @@ int DB::GetFieldInt(int n)
 	return ival;
 }
 
-long long DB::GetFieldLong(int n)
+long long DB::GetFieldLong(int n) const
 {
 	string v = GetField(n);
 	if(v=="")
@@ -443,7 +443,7 @@ long long DB::GetFieldLong(int n)
 	return ival;
 }
 
-double DB::GetFieldDouble(int n)
+double DB::GetFieldDouble(int n) const
 {
 	string v = GetField(n);
 	if(v=="")
@@ -452,7 +452,7 @@ double DB::GetFieldDouble(int n)
 	return stof(v);
 }
 
-unsigned long DB::GetFieldLength(int n)
+unsigned long DB::GetFieldLength(int n) const
 {
 	if(res==0 || row==0)
 		return 0;

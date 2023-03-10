@@ -124,12 +124,12 @@ public:
 	void RollbackTransaction();
 	void SetAutoRollback(bool v) { auto_rollback = v; }
 	
-	bool GetFieldIsNULL(int n);
-	std::string GetField(int n);
-	int GetFieldInt(int n);
-	long long GetFieldLong(int n);
-	double GetFieldDouble(int n);
-	unsigned long GetFieldLength(int n);
+	bool GetFieldIsNULL(int n) const;
+	std::string GetField(int n) const;
+	int GetFieldInt(int n) const;
+	long long GetFieldLong(int n) const;
+	double GetFieldDouble(int n) const;
+	unsigned long GetFieldLength(int n) const;
 	
 	void Disconnect();
 	
