@@ -162,6 +162,12 @@ unsigned int Storage::Set(unsigned int id, const string &path, const string &nam
 	check_name(name);
 	check_value(value, type, structure);
 	
+	if(type!="INT" && type!="STRING" && type!="BOOLEAN")
+		throw Exception("Storage", "Invalid type : « " + type +" »", "INVALID_PARAMETER");
+	
+	if(structure!="NONE" && structure!="ARRAY" && structure!="MAP")
+		throw Exception("Storage", "Invalid structure : « " + structure +" »", "INVALID_PARAMETER");
+	
 	DB db;
 	if(id==0)
 	{
