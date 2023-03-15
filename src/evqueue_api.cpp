@@ -34,6 +34,8 @@
 #include <string>
 #include <algorithm>
 #include <memory>
+#include <iostream>
+#include <sstream>
 
 using namespace std;
 
@@ -97,10 +99,17 @@ int main(int argc, char  **argv)
 				usage();
 			
 			string name = argv[cur];
-			if(cur+1>=argc)
-				usage();
+			string value;
 			
-			string value = argv[cur+1];
+			if(cur+1>=argc)
+			{
+				// Try to read last argrument from stdin
+				ostringstream ss;
+				ss<<cin.rdbuf();
+				value = ss.str();
+			}
+			else
+				value = argv[cur+1];
 			
 			parameters[name] = value;
 		}
