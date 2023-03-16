@@ -45,7 +45,7 @@ class Launcher
 	
 	static void create_edit_check(
 		const std::string &name,
-		const std::string group,
+		const std::string &group,
 		const std::string &description,
 		unsigned int workflow_id,
 		const std::string &user,
@@ -67,7 +67,7 @@ class Launcher
 		static void Get(unsigned int id, QueryResponse *response);
 		static unsigned int Create(
 			const std::string &name,
-			const std::string group,
+			const std::string &group,
 			const std::string &description,
 			unsigned int workflow_id,
 			const std::string &user,
@@ -77,7 +77,7 @@ class Launcher
 		static void Edit(
 			unsigned int id,
 			const std::string &name,
-			const std::string group,
+			const std::string &group,
 			const std::string &description,
 			unsigned int workflow_id,
 			const std::string &user,

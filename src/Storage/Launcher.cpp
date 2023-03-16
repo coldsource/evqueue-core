@@ -74,7 +74,7 @@ Launcher::Launcher(DB *db,unsigned int launcher_id)
 
 void Launcher::create_edit_check(
 	const string &name,
-	const string group,
+	const string &group,
 	const string &description,
 	unsigned int workflow_id,
 	const string &user,
@@ -116,7 +116,7 @@ void Launcher::create_edit_check(
 
 unsigned int Launcher::Create(
 	const string &name,
-	const string group,
+	const string &group,
 	const string &description,
 	unsigned int workflow_id,
 	const string &user,
@@ -139,7 +139,7 @@ unsigned int Launcher::Create(
 void Launcher::Edit(
 	unsigned int id,
 	const string &name,
-	const string group,
+	const string &group,
 	const string &description,
 	unsigned int workflow_id,
 	const string &user,
