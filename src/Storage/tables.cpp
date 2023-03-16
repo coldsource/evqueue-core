@@ -51,6 +51,17 @@ static map<string, string> storage_tables = {
   PRIMARY KEY (`launcher_id`), \
   UNIQUE KEY `launcher_name` (`launcher_name`) \
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='v3.3';\
+"},
+{"t_display",
+"CREATE TABLE `t_display` ( \
+ `display_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
+ `display_name` varchar(64) NOT NULL, \
+ `storage_path` varchar(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+ `display_order` enum('ASC','DESC') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
+ `display_item_title` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL, \
+ `display_item_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL, \
+ PRIMARY KEY (`display_id`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci \
 "}
 };
 
