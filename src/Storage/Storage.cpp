@@ -65,6 +65,12 @@ void Storage::check_name(const std::string &name)
 	
 	if(name.size()>STORAGE_NAME_MAXLEN)
 		throw Exception("Storage", "Name is too long", "INVALID_PARAMETER");
+	
+	for(int i=0;i<name.size();i++)
+	{
+		if(name[i]=='/')
+			throw Exception("Storage", "Variable name cannot contain /", "INVALID_PARAMETER");
+	}
 }
 
 void Storage::check_value(const std::string &value, const std::string type, const std::string structure)
