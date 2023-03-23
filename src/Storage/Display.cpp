@@ -50,6 +50,7 @@ Display::Display(DB *db,unsigned int display_id)
 	db->QueryPrintf(" SELECT \
 			display_id, \
 			display_name, \
+			display_group, \
 			storage_path, \
 			display_order, \
 			display_item_title, \
@@ -62,14 +63,16 @@ Display::Display(DB *db,unsigned int display_id)
 	
 	this->display_id = db->GetFieldInt(0);
 	name = db->GetField(1);
-	path = db->GetField(2);
-	order = db->GetField(3);
-	item_title = db->GetField(4);
-	item_content = db->GetField(5);
+	group = db->GetField(2);
+	path = db->GetField(3);
+	order = db->GetField(4);
+	item_title = db->GetField(5);
+	item_content = db->GetField(6);
 }
 
 void Display::create_edit_check(
 	const string &name,
+	const string &group,
 	const string &path,
 	const string &order,
 	const string &item_title,
@@ -80,6 +83,9 @@ void Display::create_edit_check(
 	
 	if(name.size()>STORAGE_NAME_MAXLEN)
 		throw Exception("Display", "Name is too long", "INVALID_PARAMETER");
+	
+	if(group.size()>STORAGE_NAME_MAXLEN)
+		throw Exception("Display", "Name is group long", "INVALID_PARAMETER");
 	
 	if(order!="ASC" && order!="DESC")
 		throw Exception("Display", "Order must be ASC or DESC", "INVALID_PARAMETER");
@@ -99,19 +105,20 @@ void Display::create_edit_check(
 
 unsigned int Display::Create(
 	const string &name,
+	const string &group,
 	const string &path,
 	const string &order,
 	const string &item_title,
 	const string &item_description)
 {
-	create_edit_check(name, path, order, item_title, item_description);
+	create_edit_check(name, group, path, order, item_title, item_description);
 	
 	DB db;
 	
 	db.QueryPrintf(" \
-		INSERT INTO t_display(display_name, storage_path, display_order, display_item_title, display_item_content) \
-		VALUES(%s, %s, %s, %s, %s)",
-		{&name, &path, &order, &item_title, &item_description}
+		INSERT INTO t_display(display_name, display_group, storage_path, display_order, display_item_title, display_item_content) \
+		VALUES(%s, %s, %s, %s, %s, %s)",
+		{&name, &group, &path, &order, &item_title, &item_description}
 	);
 	
 	return db.InsertID();
@@ -120,24 +127,26 @@ unsigned int Display::Create(
 void Display::Edit(
 	unsigned int id,
 	const string &name,
+	const string &group,
 	const string &path,
 	const string &order,
 	const string &item_title,
 	const string &item_description)
 {
-	create_edit_check(name, path, order, item_title, item_description);
+	create_edit_check(name, group, path, order, item_title, item_description);
 	
 	DB db;
 	
 	db.QueryPrintf(" \
 		UPDATE t_display SET \
 			display_name = %s, \
+			display_group = %s, \
 			storage_path = %s, \
 			display_order = %s, \
 			display_item_title = %s, \
 			display_item_content = %s \
 		WHERE display_id = %i",
-		{&name, &path, &order, &item_title, &item_description, &id}
+		{&name, &group, &path, &order, &item_title, &item_description, &id}
 	);
 }
 
@@ -146,6 +155,7 @@ void Display::Get(unsigned int id, QueryResponse *response)
 	const Display display = Displays::GetInstance()->Get(id);
 	
 	response->SetAttribute("name", display.GetName());
+	response->SetAttribute("group", display.GetGroup());
 	response->SetAttribute("path", display.GetPath());
 	response->SetAttribute("order", display.GetOrder());
 	response->SetAttribute("item_title", display.GetItemTitle());
@@ -172,6 +182,7 @@ bool Display::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 			User::InsufficientRights();
 		
 		string name = query->GetRootAttribute("name");
+		string group = query->GetRootAttribute("group", "");
 		string path = query->GetRootAttribute("path");
 		string order = query->GetRootAttribute("order");
 		string item_title = query->GetRootAttribute("item_title");
@@ -182,7 +193,7 @@ bool Display::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		
 		if(action=="create")
 		{
-			id = Create(name, path, order, item_title, item_content);
+			id = Create(name, group, path, order, item_title, item_content);
 			response->GetDOM()->getDocumentElement().setAttribute("display-id",to_string(id));
 			
 			event = "DISPLAY_CREATED";
@@ -191,7 +202,7 @@ bool Display::HandleQuery(const User &user, XMLQuery *query, QueryResponse *resp
 		{
 			id = query->GetRootAttributeInt("id");
 			
-			Edit(id, name, path, order, item_title, item_content);
+			Edit(id, name, group, path, order, item_title, item_content);
 			
 			event = "DISPLAY_MODIFIED";
 		}

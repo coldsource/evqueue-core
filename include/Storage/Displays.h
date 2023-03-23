@@ -46,6 +46,7 @@ class Displays:public APIObjectList<Display>, public APIAutoInit
 		static Displays *GetInstance() { return instance; }
 		
 		static void List(QueryResponse *response, const User &user);
+		static void ListGroups(QueryResponse *response, const User &user);
 		
 		void Reload(bool notify = true);
 		

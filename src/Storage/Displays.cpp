@@ -28,6 +28,8 @@
 #include <Cluster/Cluster.h>
 #include <API/QueryHandlers.h>
 
+#include <set>
+
 using namespace std;
 
 namespace Storage
@@ -64,6 +66,23 @@ void Displays::List(QueryResponse *response, const User &user)
 		DOMElement node_var = (DOMElement)response->AppendXML("<display />");
 		node_var.setAttribute("id", to_string(display.GetID()));
 		node_var.setAttribute("name", display.GetName());
+		node_var.setAttribute("group", display.GetGroup());
+	}
+}
+
+void Displays::ListGroups(QueryResponse *response, const User &user)
+{
+	Displays *displays = Displays::GetInstance();
+	unique_lock<mutex> llock(displays->lock);
+	
+	set<string> groups;
+	for(auto it = displays->objects_name.begin(); it!=displays->objects_name.end(); it++)
+		groups.insert(it->second->GetGroup());
+	
+	for(auto it = groups.begin(); it!=groups.end(); it++)
+	{
+		DOMElement node_var = (DOMElement)response->AppendXML("<group />");
+		node_var.setAttribute("name", *it);
 	}
 }
 
@@ -99,6 +118,12 @@ bool Displays::HandleQuery(const User &user, XMLQuery *query, QueryResponse *res
 	if(action=="list")
 	{
 		List(response, user);
+		
+		return true;
+	}
+	else if(action=="listgroups")
+	{
+		ListGroups(response, user);
 		
 		return true;
 	}

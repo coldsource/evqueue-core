@@ -36,6 +36,7 @@ class Display
 {
 	unsigned int display_id;
 	std::string name;
+	std::string group;
 	std::string path;
 	std::string order;
 	std::string item_title;
@@ -43,6 +44,7 @@ class Display
 	
 	static void create_edit_check(
 		const std::string &name,
+		const std::string &group,
 		const std::string &path,
 		const std::string &order,
 		const std::string &item_title,
@@ -53,6 +55,7 @@ class Display
 		
 		unsigned int GetID() const { return display_id; }
 		const std::string &GetName() const { return name; }
+		const std::string &GetGroup() const { return group; }
 		const std::string &GetPath() const { return path; }
 		const std::string &GetOrder() const { return order; }
 		const std::string &GetItemTitle() const { return item_title; }
@@ -62,6 +65,7 @@ class Display
 		static void Get(unsigned int id, QueryResponse *response);
 		static unsigned int Create(
 			const std::string &name,
+			const std::string &group,
 			const std::string &path,
 			const std::string &order,
 			const std::string &item_title,
@@ -70,6 +74,7 @@ class Display
 		static void Edit(
 			unsigned int id,
 			const std::string &name,
+			const std::string &group,
 			const std::string &path,
 			const std::string &order,
 			const std::string &item_title,

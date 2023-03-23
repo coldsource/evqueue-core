@@ -56,6 +56,7 @@ static map<string, string> storage_tables = {
 "CREATE TABLE `t_display` ( \
  `display_id` int(10) unsigned NOT NULL AUTO_INCREMENT, \
  `display_name` varchar(64) NOT NULL, \
+ `display_group` varchar(64) NOT NULL DEFAULT '', \
  `storage_path` varchar(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
  `display_order` enum('ASC','DESC') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
  `display_item_title` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL, \
