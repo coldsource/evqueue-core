@@ -61,8 +61,9 @@ static map<string, string> storage_tables = {
  `display_order` enum('ASC','DESC') CHARACTER SET ascii COLLATE ascii_bin NOT NULL, \
  `display_item_title` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL, \
  `display_item_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL, \
- PRIMARY KEY (`display_id`) \
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='v3.3';\
+ PRIMARY KEY (`display_id`), \
+ UNIQUE KEY `display_name` (`display_name`) \
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='v3.3'; \
 "}
 };
 
