@@ -40,18 +40,13 @@ namespace Storage
 
 class Storage
 {
-	static void check_path(const std::string &path);
-	static void check_name(const std::string &name);
-	static void check_value(const std::string &value, const std::string type, const std::string structure);
-	static void check_value_type(const nlohmann::json &j, const std::string &type);
-	
 	static void split_path(const std::string filename, std::string &path, std::string &name);
-	static Variable get_variable_from_query(XMLQuery *query);
+	static Variable get_variable_from_query(XMLQuery *query, bool accept_create = false);
 	
 	public:
-		static unsigned int Set(unsigned int id, const std::string &path, const std::string &name, const std::string &type, const std::string &structure, const std::string &value);
-		static void Append(const Variable &v, const std::string &value);
-		static void Append(const Variable &v, const std::string &key, const std::string &value);
+		static unsigned int Set(Variable &v, const std::string &path, const std::string &name, const std::string &type, const std::string &structure, const std::string &value);
+		static void Append(Variable &v, const std::string &value);
+		static void Append(Variable &v, const std::string &key, const std::string &value);
 		static unsigned int Unset(const Variable &v);
 		static void Get(const Variable &v, QueryResponse *response);
 		static void Head(const Variable &v, QueryResponse *response);

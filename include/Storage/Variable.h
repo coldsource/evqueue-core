@@ -36,22 +36,44 @@ class Variable
 	std::string type;
 	std::string structure;
 	std::string name;
-	std::string value;
 	nlohmann::json jvalue;
 	
 	void init(const DB &db);
 	
+	void check_path(const std::string &path) const;
+	void check_name(const std::string &name) const;
+	void check_value(const std::string &value) const;
+	void check_value_type(const nlohmann::json &j) const;
+	
 	public:
-		Variable() {}
+		Variable();
 		Variable(unsigned int id);
 		Variable(const std::string &path, const std::string &name);
+		
+		void Update();
+		void Unset();
 		
 		unsigned int GetID() const { return id; }
 		const std::string &GetPath() const { return path; }
 		const std::string &GetType() const { return type; }
 		const std::string &GetStructure() const { return structure; }
 		const std::string &GetName() const { return name; }
-		nlohmann::json GetValue() const { return jvalue; }
+		std::string GetValue() const { return jvalue.dump(); }
+		nlohmann::json GetJsonValue() const { return jvalue; }
+		
+		nlohmann::json Head() const;
+		nlohmann::json Tail() const;
+		
+		void SetPath(const std::string &path);
+		void SetType(const std::string &type);
+		void SetStructure(const std::string &structure);
+		void SetName(const std::string &name);
+		void SetValue(const std::string &value);
+		void SetValue(const nlohmann::json &jvalue);
+		
+		void Append(const std::string &value);
+		void Append(const std::string &key, const std::string &value);
+		void Add(int n);
 };
 
 }
