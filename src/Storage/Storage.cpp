@@ -291,7 +291,7 @@ void Storage::List(const std::string &path, bool recursive, QueryResponse *respo
 	DB db;
 	
 	if(!recursive)
-		db.QueryPrintf("SELECT storage_name, storage_value FROM t_storage WHERE storage_path=%s", {&path});
+		db.QueryPrintf("SELECT storage_id, storage_name, storage_value, storage_path FROM t_storage WHERE storage_path=%s", {&path});
 	else
 	{
 		if(path=="")
