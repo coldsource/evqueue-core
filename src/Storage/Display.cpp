@@ -113,7 +113,7 @@ unsigned int Display::Create(
 {
 	create_edit_check(name, group, path, order, item_title, item_description);
 	
-	if(!Displays::GetInstance()->Exists(name))
+	if(Displays::GetInstance()->Exists(name))
 		throw Exception("Display","Display « " + name + " » already exists","INVALID_PARAMETER");
 	
 	DB db;
