@@ -60,7 +60,6 @@ GarbageCollector::GarbageCollector()
 GarbageCollector::~GarbageCollector()
 {
 	Shutdown();
-	WaitForShutdown();
 	
 	instance = 0;
 }
@@ -70,7 +69,7 @@ void GarbageCollector::APIReady()
 	if(enable)
 	{
 		// Create our thread
-		gc_thread_handle = thread(GarbageCollector::gc_thread,this);
+		start();
 	}
 }
 
@@ -79,15 +78,7 @@ void GarbageCollector::RegisterPurgeHandler(t_purge handler)
 	purge_handlers.push_back(handler);
 }
 
-void GarbageCollector::WaitForShutdown(void)
-{
-	if(!enable || gc_thread_handle.get_id()==thread::id())
-		return; // gc_thread not launched, nothing to wait on
-	
-	gc_thread_handle.join();
-}
-
-void *GarbageCollector::gc_thread(GarbageCollector *gc)
+void GarbageCollector::main()
 {
 	DB::StartThread();
 	
@@ -95,16 +86,16 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 	
 	while(true)
 	{
-		if(!gc->wait(gc->interval))
+		if(!wait(interval))
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 			
 			DB::StopThread();
 			
-			return 0;
+			return;
 		}
 		
-		UniqueAction uaction("gc",gc->interval);
+		UniqueAction uaction("gc",interval);
 		if(!uaction.IsElected())
 			continue;
 		
@@ -115,18 +106,18 @@ void *GarbageCollector::gc_thread(GarbageCollector *gc)
 		
 		do
 		{
-			deleted_rows = gc->purge(now);
+			deleted_rows = purge(now);
 			if(deleted_rows)
 			{
 				Logger::Log(LOG_NOTICE,"GarbageCollector: Removed %d expired entries",deleted_rows);
 				
-				if(!gc->wait(gc->delay))
+				if(!wait(delay))
 				{
 					Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Garbage Collector");
 					
 					DB::StopThread();
 					
-					return 0;
+					return;
 				}
 			}
 		} while(deleted_rows>0);

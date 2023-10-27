@@ -59,11 +59,9 @@ class GarbageCollector: public WaiterThread, public APIAutoInit
 		
 		void APIReady();
 		void RegisterPurgeHandler(t_purge handler);
-		
-		void WaitForShutdown(void);
 	
 	private:
-		static void *gc_thread(GarbageCollector *gc);
+		void main();
 		
 		int purge(time_t now);
 };

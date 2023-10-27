@@ -21,6 +21,11 @@
 
 using namespace std;
 
+void WaiterThread::start()
+{
+	thread_handle = thread(thread_main, this);
+}
+
 bool WaiterThread::wait(int seconds)
 {
 	while(true)
@@ -43,11 +48,20 @@ bool WaiterThread::wait(int seconds)
 	}
 }
 
+void WaiterThread::thread_main(WaiterThread *ptr)
+{
+	ptr->main();
+}
+
 void WaiterThread::Shutdown(void)
 {
-	unique_lock<mutex> llock(wait_lock);
+	if(thread_handle.get_id()==thread::id())
+		return; // Thread not yet started, nothing to do
 	
+	wait_lock.lock();
 	is_shutting_down = true;
-	
 	shutdown_requested.notify_one();
+	wait_lock.unlock();
+	
+	thread_handle.join();
 }

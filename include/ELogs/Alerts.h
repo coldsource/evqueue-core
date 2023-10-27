@@ -41,8 +41,6 @@ class Alerts:public APIObjectList<Alert>, public APIAutoInit, public WaiterThrea
 {
 	static Alerts *instance;
 	
-	std::thread alerts_thread_handle;
-	
 	public:
 		
 		Alerts();
@@ -52,8 +50,6 @@ class Alerts:public APIObjectList<Alert>, public APIAutoInit, public WaiterThrea
 		
 		static Alerts *GetInstance() { return instance; }
 		
-		void WaitForShutdown(void);
-		
 		void Reload(bool notify = true);
 		
 		static bool HandleQuery(const User &user, XMLQuery *query, QueryResponse *response);
@@ -62,7 +58,7 @@ class Alerts:public APIObjectList<Alert>, public APIAutoInit, public WaiterThrea
 		static void HandleNotificationTypeDelete(unsigned int id);
 	
 	private:
-		static void *alerts_thread(Alerts *alerts);
+		void main();
 };
 
 }

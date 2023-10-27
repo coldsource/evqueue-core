@@ -20,18 +20,25 @@
 #ifndef _WAITERTHREAD_H_
 #define _WAITERTHREAD_H_
 
+#include <thread>
 #include <mutex>
 #include <condition_variable>
 
 class WaiterThread
 {
+	std::thread thread_handle;
+	
 	std::mutex wait_lock;
 	std::condition_variable shutdown_requested;
 	
 	bool is_shutting_down = false;
 	
 	protected:
+		void start();
 		bool wait(int seconds);
+		
+		static void thread_main(WaiterThread *ptr);
+		virtual void main(void) = 0;
 	
 	public:
 		void Shutdown(void);

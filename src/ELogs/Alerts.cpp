@@ -61,20 +61,13 @@ Alerts::Alerts():APIObjectList("Alert")
 Alerts::~Alerts()
 {
 	Shutdown();
-	WaitForShutdown();
 }
 
 void Alerts::APIReady()
 {
 	NotificationTypes::GetInstance()->RegisterDeleteHandler("ELOGS", HandleNotificationTypeDelete);
 	
-	alerts_thread_handle = thread(Alerts::alerts_thread,this);
-}
-
-void Alerts::WaitForShutdown(void)
-{
-	if(alerts_thread_handle.get_id()!=thread::id())
-		alerts_thread_handle.join();
+	start();
 }
 
 void Alerts::Reload(bool notify)
@@ -159,7 +152,7 @@ void Alerts::HandleNotificationTypeDelete(unsigned int id)
 	Events::GetInstance()->Create("ALERT_MODIFIED");
 }
 
-void *Alerts::alerts_thread(Alerts *alerts)
+void Alerts::main()
 {
 	unsigned int timer = 0;
 	
@@ -168,13 +161,13 @@ void *Alerts::alerts_thread(Alerts *alerts)
 	while(1)
 	{
 		// Our time resolution is 1 minute, so wait 60 seconds
-		if(!alerts->wait(60))
+		if(!wait(60))
 		{
 			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Alerts Engine");
 			
 			DB::StopThread();
 			
-			return 0;
+			return;
 		}
 		
 		Logger::Log(LOG_INFO, "Processing alerts...");
@@ -184,9 +177,9 @@ void *Alerts::alerts_thread(Alerts *alerts)
 		// Fetch all alerts
 		vector<Alert> alert_objs;
 		{
-			unique_lock<mutex> llock(alerts->lock);
+			unique_lock<mutex> llock(lock);
 			
-			for(auto it = alerts->objects_name.begin(); it!=alerts->objects_name.end(); it++)
+			for(auto it = objects_name.begin(); it!=objects_name.end(); it++)
 				alert_objs.push_back(*it->second);
 		}
 		
@@ -290,7 +283,7 @@ void *Alerts::alerts_thread(Alerts *alerts)
 		}
 	}
 	
-	return 0;
+	return;
 }
 
 }
