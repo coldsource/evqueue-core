@@ -65,7 +65,7 @@ static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *
 	return (APIAutoInit *)new LogStorage();
 });
 
-LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
+LogStorage::LogStorage(): ConsumerThread(this), channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 {
 	DB db("elog");
 	storage_db = new DB("elog");
@@ -91,74 +91,58 @@ LogStorage::LogStorage(): channel_regex("([a-zA-Z0-9_-]+)[ ]+")
 		last_partition_days = db.GetFieldInt(0);
 	
 	instance = this;
-	
-	ls_thread_handle = thread(LogStorage::ls_thread,this);
 }
 
 LogStorage::~LogStorage()
 {
 	Shutdown();
-	WaitForShutdown();
 	
 	delete storage_db;
 }
 
-void LogStorage::Shutdown(void)
+bool LogStorage::data_available()
 {
-	is_shutting_down = true;
-	
-	Log("");
+	return logs.size()>0;
 }
 
-void LogStorage::WaitForShutdown(void)
-{
-	ls_thread_handle.join();
-}
-
-void *LogStorage::ls_thread(LogStorage *ls)
+void LogStorage::init_thread()
 {
 	DB::StartThread();
 	
 	Logger::Log(LOG_NOTICE,"Log storage started");
+}
+
+void LogStorage::release_thread()
+{
+	Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Log storage");
 	
-	unique_lock<mutex> llock(ls->lock);
+	DB::StopThread();
+}
+
+void LogStorage::get()
+{
+	LogStorage *ls = (LogStorage *)producer;
 	
-	vector<string> logs;
-	
-	while(true)
+	to_insert_logs.clear();
+		
+	for(int i=0;i<ls->bulk_size && !ls->logs.empty();i++)
 	{
-		if(ls->logs.empty())
-			ls->logs_queued.wait(llock);
-		
-		if(ls->is_shutting_down)
-		{
-			Logger::Log(LOG_NOTICE,"Shutdown in progress exiting Log storage");
-			
-			DB::StopThread();
-			
-			return 0;
-		}
-		
-		logs.clear();
-		
-		for(int i=0;i<ls->bulk_size && !ls->logs.empty();i++)
-		{
-			logs.push_back(ls->logs.front());
-			ls->logs.pop();
-		}
-		
-		llock.unlock();
-		
-		try
-		{
-			ls->log(logs);
-		}
-		catch(Exception &e)
-		{
-			 Logger::Log(LOG_ERR,"Unexpected exception in log storage ("+e.context+") : "+e.error);
-		}
-		
-		llock.lock();
+		to_insert_logs.push_back(ls->logs.front());
+		ls->logs.pop();
+	}
+}
+
+void LogStorage::process()
+{
+	LogStorage *ls = (LogStorage *)producer;
+	
+	try
+	{
+		ls->log(to_insert_logs);
+	}
+	catch(Exception &e)
+	{
+		Logger::Log(LOG_ERR,"Unexpected exception in log storage ("+e.context+") : "+e.error);
 	}
 }
 
@@ -174,7 +158,7 @@ void LogStorage::Log(const std::string &str)
 		
 	
 	logs.push(str);
-	logs_queued.notify_one();
+	produced();
 }
 
 void LogStorage::log(const vector<string> &logs)

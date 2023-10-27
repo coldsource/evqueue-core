@@ -21,15 +21,14 @@
 #define _LOGSTORAGE_H_
 
 #include <API/APIAutoInit.h>
+#include <Thread/ConsumerThread.h>
+#include <Thread/ProducerThread.h>
 
 #include <string>
 #include <map>
 #include <vector>
 #include <queue>
-#include <mutex>
 #include <regex>
-#include <condition_variable>
-#include <thread>
 
 class DB;
 
@@ -39,19 +38,15 @@ namespace ELogs
 class Channel;
 class Field;
 
-class LogStorage: public APIAutoInit
+class LogStorage: public APIAutoInit, public ConsumerThread, public ProducerThread
 {
-	std::mutex lock;
-	std::condition_variable logs_queued;
-	
-	std::thread ls_thread_handle;
-	
 	std::map<std::string, unsigned int> pack_str_id;
 	std::map<unsigned int, std::string> pack_id_str;
 	
 	int bulk_size;
 	std::regex channel_regex;
 	std::queue<std::string> logs;
+	std::vector<std::string> to_insert_logs;
 	size_t max_queue_size;
 	
 	static LogStorage *instance;
@@ -69,17 +64,19 @@ class LogStorage: public APIAutoInit
 		
 		static LogStorage *GetInstance() { return instance; }
 		
-		void Shutdown(void);
-		void WaitForShutdown(void);
-		
 		void Log(const std::string &str);
 		
 		unsigned int PackString(const std::string &str);
 		std::string UnpackString(int i);
 	
+	protected:
+		bool data_available();
+		void init_thread();
+		void release_thread();
+		void get();
+		void process();
+	
 	private:
-		static void *ls_thread(LogStorage *ls);
-		
 		void log(const std::vector<std::string> &logs);
 		void store_log(const Channel &channel, const std::map<std::string, std::string> &group_fields, const std::map<std::string, std::string> &channel_fields);
 		void log_value(unsigned long long log_id, const Field &field, const std::string &date, const std::string &value);
