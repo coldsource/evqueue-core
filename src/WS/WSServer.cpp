@@ -118,9 +118,10 @@ WSServer::WSServer()
 		throw Exception("Websocket","Unable to bind port "+to_string(info.port));
 	
 	events_pool = new ThreadPool<EventsWorker>(config->GetInt("ws.workers"), Events::GetInstance(), context);
-	api_worker = new APIWorker(context);
+	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(config->GetInt("ws.workers"))+" avents threads");
 	
-	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(config->GetInt("ws.workers"))+" threads");
+	api_pool = new ThreadPool<APIWorker>(config->GetInt("ws.workers"), &api_cmd_buffer, context);
+	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(config->GetInt("ws.workers"))+" API threads");
 	
 	instance = this;
 	
@@ -132,8 +133,8 @@ WSServer::~WSServer()
 	events_pool->Shutdown();
 	delete events_pool;
 	
-	api_worker->Shutdown();
-	delete api_worker;
+	api_pool->Shutdown();
+	delete api_pool;
 	
 	Shutdown();
 	WaitForShutdown();
@@ -266,7 +267,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 					if(protocol->id==API)
 					{
 						// We only receive queries in API protocol
-						ws->api_worker->Received({wsi, input_xml});
+						ws->api_cmd_buffer.Received({wsi, input_xml});
 					}
 					else if(protocol->id==EVENTS)
 					{

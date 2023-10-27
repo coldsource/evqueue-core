@@ -19,20 +19,17 @@
 
 #include <WS/APIWorker.h>
 #include <WS/WSServer.h>
+#include <WS/APICmdBuffer.h>
 #include <API/XMLQuery.h>
 #include <API/APISession.h>
 
 using namespace std;
 
-bool APIWorker::data_available()
-{
-	return cmds.size() > 0;
-}
-
 void APIWorker::get()
 {
-	st_cmd item = cmds.front();
-	cmds.pop();
+	APICmdBuffer *buffer = (APICmdBuffer *)producer;
+	st_cmd item = buffer->front();
+	buffer->pop();
 	
 	wsi = item.wsi;
 	cmd = item.cmd;
@@ -47,6 +44,7 @@ void APIWorker::process()
 	XMLQuery query("Websocket API worker", cmd);
 	session->QueryReceived(&query);
 	
+	
 	if(session->Release())
 	{
 		delete session;
@@ -55,12 +53,4 @@ void APIWorker::process()
 	
 	lws_callback_on_writable(wsi); // Response is ready to send
 	lws_cancel_service(ws_context); // Cancel LWS event loop to handle this event
-}
-
-void APIWorker::Received(const st_cmd &cmd)
-{
-	unique_lock<mutex> llock(lock);
-	
-	cmds.push(cmd);
-	produced();
 }

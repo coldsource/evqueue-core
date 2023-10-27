@@ -17,47 +17,27 @@
  * Author: Thibault Kummer <bob@coldsource.net>
  */
 
-#ifndef _APIWORKER_H_
-#define _APIWORKER_H_
+#ifndef _APICMDBUFFER_H_
+#define _APICMDBUFFER_H_
 
 #include <queue>
-#include <string>
+#include <mutex>
 
-#include <libwebsockets.h>
+#include <Thread/ProducerThread.h>
+#include <WS/APIWorker.h>
 
-#include <Thread/ConsumerThread.h>
-
-class APISession;
-class APICmdBuffer;
-
-class APIWorker: public ConsumerThread
+class APICmdBuffer: public std::queue<APIWorker::st_cmd>, public ProducerThread
 {
-	public:
-		struct st_cmd
-		{
-			struct lws *wsi;
-			std::string cmd;
-		};
-	
-	private:
-		std::string cmd;
-		
-		struct lws_context *ws_context;
-		struct lws *wsi;
-		APISession *session;
-	
 	protected:
-		void get();
-		void process();
+		bool data_available() { return size()>0; }
 	
 	public:
-		APIWorker(APICmdBuffer *buffer, struct lws_context *ws_context): ConsumerThread((ProducerThread *)buffer)
+		void Received(const APIWorker::st_cmd &cmd)
 		{
-			this->ws_context = ws_context;
-		}
-		
-		virtual ~APIWorker()
-		{
+			std::unique_lock<std::mutex> llock(lock);
+			
+			push(cmd);
+			produced();
 		}
 };
 

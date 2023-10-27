@@ -30,6 +30,7 @@
 #include <WS/EventsWorker.h>
 #include <WS/APIWorker.h>
 #include <Thread/ThreadPool.h>
+#include <WS/APICmdBuffer.h>
 
 class WSServer;
 class User;
@@ -50,8 +51,9 @@ class WSServer
 	std::thread ws_worker;
 	
 	Events *events;
+	APICmdBuffer api_cmd_buffer;
 	ThreadPool<EventsWorker> *events_pool;
-	APIWorker *api_worker;
+	ThreadPool<APIWorker> *api_pool;
 	
 	public:
 		struct per_session_data
