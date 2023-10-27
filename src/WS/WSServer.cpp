@@ -137,7 +137,6 @@ WSServer::~WSServer()
 	delete api_pool;
 	
 	Shutdown();
-	WaitForShutdown();
 }
  
 #if LWS_LIBRARY_VERSION_MAJOR >= 3
@@ -351,10 +350,7 @@ void WSServer::Shutdown(void)
 {
 	is_cancelling = true;
 	lws_cancel_service(context);
-}
-
-void WSServer::WaitForShutdown(void)
-{
+	
 	ws_worker.join();
 	
 	lws_context_destroy(context);
