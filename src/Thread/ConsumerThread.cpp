@@ -24,6 +24,8 @@ using namespace std;
 
 void ConsumerThread::main(ConsumerThread *consumer, ProducerThread *producer)
 {
+	consumer->init_thread();
+	
 	unique_lock<mutex> llock(producer->lock);
 	
 	while(true)
@@ -31,7 +33,10 @@ void ConsumerThread::main(ConsumerThread *consumer, ProducerThread *producer)
 		producer->cond.wait(llock, [consumer, producer] { return (producer->data_available() || consumer->is_shutting_down); });
 		
 		if(consumer->is_shutting_down)
+		{
+			consumer->release_thread();
 			return;
+		}
 		
 		consumer->get();
 		

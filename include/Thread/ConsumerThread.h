@@ -37,6 +37,8 @@ class ConsumerThread
 		
 		virtual void get() = 0;
 		virtual void process() = 0;
+		virtual void init_thread() {}
+		virtual void release_thread() {}
 		
 		static void main(ConsumerThread *consumer, ProducerThread *producer);
 	
