@@ -1,18 +1,18 @@
 #include <WS/WSServer.h>
+#include <WS/Events.h>
 #include <User/User.h>
 #include <API/APISession.h>
 #include <API/XMLQuery.h>
-#include <Exception/Exception.h>
-#include <API/QueryResponse.h>
-#include <Configuration/Configuration.h>
-#include <API/QueryHandlers.h>
-#include <WS/Events.h>
-#include <Crypto/base64.h>
-#include <DB/DB.h>
 #include <API/ActiveConnections.h>
-#include <Logger/Logger.h>
+#include <API/QueryResponse.h>
+#include <API/QueryHandlers.h>
 #include <API/Statistics.h>
 #include <API/QueryHandlers.h>
+#include <Exception/Exception.h>
+#include <Configuration/Configuration.h>
+#include <Crypto/base64.h>
+#include <DB/DB.h>
+#include <Logger/Logger.h>
 #include <IO/NetworkConnections.h>
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
@@ -97,7 +97,7 @@ WSServer::WSServer()
 	info.protocols = protocols;
 	info.gid = -1;
 	info.uid = -1;
-	info.count_threads = config->GetInt("ws.workers");
+	info.count_threads = 1;
 	info.server_string = "evQueue websockets server";
 	info.vhost_name = "default";
 
@@ -117,18 +117,24 @@ WSServer::WSServer()
 	if(!context)
 		throw Exception("Websocket","Unable to bind port "+to_string(info.port));
 	
-	Events::GetInstance()->SetContext(context);
+	events_pool = new ThreadPool<EventsWorker>(config->GetInt("ws.workers"), Events::GetInstance(), context);
+	api_worker = new APIWorker(context);
+	
+	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(config->GetInt("ws.workers"))+" threads");
 	
 	instance = this;
 	
-	for(int i=0;i<info.count_threads;i++)
-		threads.emplace_back(thread(event_loop, i));
-	
-	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(info.count_threads)+" threads");
+	ws_worker = thread(event_loop);
 }
 
 WSServer::~WSServer()
 {
+	events_pool->Shutdown();
+	delete events_pool;
+	
+	api_worker->Shutdown();
+	delete api_worker;
+	
 	Shutdown();
 	WaitForShutdown();
 }
@@ -183,6 +189,8 @@ int WSServer::callback_http(struct lws *wsi, enum lws_callback_reasons reason, v
  
 int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
+	WSServer *ws = WSServer::GetInstance();
+	
 	per_session_data *context = (per_session_data *)user;
 	const lws_protocols *protocol = lws_get_protocol(wsi);
 	
@@ -214,9 +222,10 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 			case LWS_CALLBACK_CLOSED:
 			{
 				// Clean context data
-				delete context->session;
-				delete context->cmd_buffer;
 				Events::GetInstance()->UnsubscribeAll(wsi);
+				if(!context->session->FlagDeleted())
+					delete context->session;
+				delete context->cmd_buffer;
 				
 				// Notify that connection is over
 				int s = lws_get_socket_fd(wsi);
@@ -243,7 +252,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 					context->cmd_buffer->clear();
 				}
 				
-				XMLQuery query("Websocket",input_xml);
+				XMLQuery query("Websocket", input_xml);
 				
 				if(context->session->GetStatus()==APISession::en_status::WAITING_CHALLENGE_RESPONSE)
 				{
@@ -257,9 +266,7 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 					if(protocol->id==API)
 					{
 						// We only receive queries in API protocol
-						context->session->QueryReceived(&query);
-						
-						lws_callback_on_writable(wsi); // We have to send response
+						ws->api_worker->Received({wsi, input_xml});
 					}
 					else if(protocol->id==EVENTS)
 					{
@@ -314,19 +321,12 @@ int WSServer::callback_evq(struct lws *wsi, enum lws_callback_reasons reason, vo
 				}
 				else if(context->session->GetStatus()==APISession::en_status::AUTHENTICATED)
 					context->session->SendGreeting();
-				else if(context->session->GetStatus()==APISession::en_status::QUERY_RECEIVED)
+				else if(context->session->GetStatus()==APISession::en_status::READY && protocol->id==API)
 					context->session->SendResponse(); // For API protocol
 				else if(context->session->GetStatus()==APISession::en_status::READY && protocol->id==EVENTS)
 				{
-					string api_cmd;
-					int external_id;
-					string object_id;
-					unsigned long long event_id;
-					if(Events::GetInstance()->Get(wsi, &external_id, object_id, &event_id, api_cmd))
-					{
-						context->session->Query(api_cmd, external_id, object_id, event_id);
+					if(context->session->SendResponse())
 						lws_callback_on_writable(wsi); // Set writable again in case we have more than one event
-					}
 				}
 				break;
 			}
@@ -354,9 +354,7 @@ void WSServer::Shutdown(void)
 
 void WSServer::WaitForShutdown(void)
 {
-	int nthreads = Configuration::GetInstance()->GetInt("ws.workers");
-	for(int i=0;i<nthreads;i++)
-		threads[i].join();
+	ws_worker.join();
 	
 	lws_context_destroy(context);
 }
@@ -391,17 +389,17 @@ void WSServer::Adopt(int fd)
 	lws_cancel_service(context);
 }
 
-void WSServer::event_loop(int tsi)
+void WSServer::event_loop()
 {
 	WSServer *ws = WSServer::GetInstance();
 	
 	DB::StartThread();
 	
-	Logger::Log(LOG_INFO, "WS thread #"+to_string(tsi)+" starting service");
+	Logger::Log(LOG_INFO, "WS thread starting service");
 	
 	while( 1 )
 	{
-		lws_service_tsi(ws->context,10000, tsi);
+		lws_service(ws->context,10000);
 		
 		if(ws->is_cancelling)
 			break;

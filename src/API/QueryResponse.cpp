@@ -65,9 +65,23 @@ QueryResponse::QueryResponse(struct lws *wsi, const string &root_node_name)
 	this->wsi = wsi;
 }
 
+QueryResponse::QueryResponse(QueryResponse &&qr)
+{
+	socket = qr.socket;
+	wsi = qr.wsi;
+	root_node_name = qr.root_node_name;
+	status_ok = qr.status_ok;
+	error = qr.error;
+	error_code = qr.error_code;
+	
+	xmldoc = qr.xmldoc;
+	qr.xmldoc = 0;
+}
+
 QueryResponse::~QueryResponse()
 {
-	delete xmldoc;
+	if(xmldoc)
+		delete xmldoc;
 }
 
 void QueryResponse::SetError(const string &error)

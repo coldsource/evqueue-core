@@ -30,18 +30,12 @@ Events *Events::instance = 0;
 Events::Events()
 {
 	throttling = ConfigurationEvQueue::GetInstance()->GetBool("ws.events.throttling");
-	this->ws_context = 0;
 	instance = this;
 }
 
 Events::~Events()
 {
 	instance = 0;
-}
-
-void Events::SetContext(struct lws_context *ws_context)
-{
-	this->ws_context = ws_context;
 }
 
 void Events::RegisterEvent(const std::string name)
@@ -128,11 +122,12 @@ void Events::UnsubscribeAll(struct lws *wsi)
 	
 	events.erase(wsi);
 	online_events.erase(wsi);
+	processing_events.erase(wsi);
 }
 
 void Events::insert_event(struct lws *wsi, const st_event &event)
 {
-	events[wsi].push_back(event);
+	events[wsi].push(event);
 	
 	st_online_event oev;
 	oev.event = event;
@@ -142,14 +137,11 @@ void Events::insert_event(struct lws *wsi, const st_event &event)
 	
 	Statistics::GetInstance()->IncWSEvents();
 	
-	lws_callback_on_writable(wsi);
+	produced();
 }
 
 void Events::Create(const string &type_str, unsigned int object_id, struct lws *filter_wsi, int filter_external_id)
 {
-	if(!this->ws_context)
-		return; // Prevent events from being creating before server is ready
-	
 	unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);
@@ -214,31 +206,54 @@ void Events::Create(const string &type_str, unsigned int object_id, struct lws *
 		// Push the event to the subscriber
 		insert_event(wsi, ev);
 	}
-	
-	// Cancel LWS event loop to handle this event
-	lws_cancel_service(ws_context);
 }
 
-bool Events::Get(struct lws *wsi, int *external_id, string &object_id, unsigned long long *event_id, string &api_cmd)
+bool Events::data_available()
 {
-	unique_lock<mutex> llock(lock);
+	for(auto it = events.begin(); it!=events.end(); ++it)
+	{
+		if(it->second.size()>0)
+		{
+			// We have events to handle, check it's not already processing
+			if(processing_events[it->first].count(it->second.front().api_cmd)==0)
+				return true;
+		}
+	}
 	
-	auto it = events.find(wsi);
-	if(it==events.end())
-		return false;
+	return false;
+}
+
+bool Events::Get(struct lws **wsi, int *external_id, string &object_id, unsigned long long *event_id, string &api_cmd)
+{
+	for(auto it = events.begin(); it!=events.end(); ++it)
+	{
+		if(it->second.size()>0)
+		{
+			// We have events to handle, check it's not already processing
+			if(processing_events[it->first].count(it->second.front().api_cmd)==0)
+			{
+				const st_event &ev = it->second.front();
+		
+				*wsi = it->first;
+				api_cmd = ev.api_cmd;
+				*external_id = ev.external_id;
+				object_id = ev.object_id;
+				*event_id = ev.event_id;
+				it->second.pop();
+				
+				processing_events[it->first].insert(api_cmd);
+				
+				return true;
+			}
+		}
+	}
 	
-	if(it->second.size()==0)
-		return false;
-	
-	const st_event &ev = it->second.front();
-	
-	api_cmd = ev.api_cmd;
-	*external_id = ev.external_id;
-	object_id = ev.object_id;
-	*event_id = ev.event_id;
-	it->second.erase(it->second.begin());
-	
-	return true;
+	return false;
+}
+
+void Events::Processed(struct lws *wsi, const string api_cmd)
+{
+	processing_events[wsi].erase(api_cmd);
 }
 
 void Events::Ack(struct lws *wsi, unsigned long long ack_event_id)
@@ -271,7 +286,6 @@ void Events::Ack(struct lws *wsi, unsigned long long ack_event_id)
 			
 			insert_event(wsi, ev);
 			
-			lws_cancel_service(ws_context);
 			return;
 		}
 	}

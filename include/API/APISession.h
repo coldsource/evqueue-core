@@ -27,6 +27,8 @@
 #include <libwebsockets.h>
 
 #include <string>
+#include <queue>
+#include <mutex>
 
 class XMLQuery;
 
@@ -39,10 +41,14 @@ class APISession
 			WAITING_CHALLENGE_RESPONSE,
 			AUTHENTICATED,
 			READY,
-			QUERY_RECEIVED,
 		};
 	
 	private:
+		std::mutex lock;
+		
+		bool deleted = false;
+		int acquired = 0;
+		
 		en_status status;
 		std::string context;
 		
@@ -52,9 +58,7 @@ class APISession
 		AuthHandler ah;
 		User user;
 		
-		bool is_xpath_response;
-		QueryResponse response;
-		QueryResponse xpath_response;
+		std::queue<QueryResponse> responses;
 		
 		int s;
 		struct lws *wsi;
@@ -65,6 +69,10 @@ class APISession
 		APISession(const std::string &context, int s);
 		APISession(const std::string &context, struct lws *wsi);
 		
+		void Acquire();
+		bool Release();
+		bool FlagDeleted();
+		
 		const User &GetUser() { return user; }
 		en_status GetStatus() { return status; }
 		
@@ -73,8 +81,8 @@ class APISession
 		
 		void SendGreeting();
 		
-		bool QueryReceived(XMLQuery *query);
-		void SendResponse(int external_id=0, const std::string &object_id="", unsigned long long event_id=0);
+		bool QueryReceived(XMLQuery *query, int external_id = 0, const std::string &object_id = "", unsigned long long event_id = 0);
+		bool SendResponse();
 		void Query(const std::string &xml, int external_id=0, const std::string &object_id="", unsigned long long event_id=0);
 };
 

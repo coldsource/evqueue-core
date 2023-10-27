@@ -35,9 +35,7 @@
 
 using namespace std;
 
-APISession::APISession(const string &context, int s):
-	response(s),
-	xpath_response(s)
+APISession::APISession(const string &context, int s)
 {
 	this->s = s;
 	this->wsi = 0;
@@ -45,9 +43,7 @@ APISession::APISession(const string &context, int s):
 	init(context);
 }
 
-APISession::APISession(const string &context, struct lws *wsi):
-	response(wsi),
-	xpath_response(wsi)
+APISession::APISession(const string &context, struct lws *wsi)
 {
 	this->s = lws_get_socket_fd(wsi);
 	this->wsi = wsi;
@@ -76,6 +72,37 @@ void APISession::init(const std::string& context)
 	ah.SetRemote(remote_host,remote_port);
 	
 	Logger::Log(LOG_INFO,"Accepted "+context+" connection from "+remote_host+":"+to_string(remote_port));
+}
+
+void APISession::Acquire()
+{
+	// Notify one thread is using this session
+	unique_lock<mutex> llock(lock);
+	
+	acquired++;
+}
+
+bool APISession::Release()
+{
+	unique_lock<mutex> llock(lock);
+	
+	acquired--;
+	
+	if(acquired==0 && deleted)
+		return true; // Flagged as deleted and thread was last one to use this session, it must delete it
+	
+	return false;
+}
+
+bool APISession::FlagDeleted()
+{
+	unique_lock<mutex> llock(lock);
+	
+	if(acquired==0)
+		return false; // Session is not currently used, no need to flag as deleted, it must be deleted now
+	
+	deleted = true; // Flagged for removing after last use
+	return true;
 }
 
 void APISession::SendChallenge()
@@ -147,18 +174,18 @@ void APISession::SendGreeting()
 	status = READY;
 }
 
-bool APISession::QueryReceived(XMLQuery *query)
+bool APISession::QueryReceived(XMLQuery *query, int external_id, const string &object_id, unsigned long long event_id)
 {
 	if(wsi)
 		Statistics::GetInstance()->IncWSQueries();
 	else
 		Statistics::GetInstance()->IncAPIQueries();
 	
-	status=QUERY_RECEIVED; // Query received, we will now need to send the response before receiving another query
-	
-	// Empty previous response
-	is_xpath_response = false;
-	response.Empty();
+	QueryResponse response;
+	if(wsi!=0)
+		response.SetWebsocket(wsi);
+	else if(s!=-1)
+		response.SetSocket(s);
 	
 	if(query->GetQueryGroup()=="quit")
 	{
@@ -181,52 +208,51 @@ bool APISession::QueryReceived(XMLQuery *query)
 	}
 	
 	Logger::Log(LOG_DEBUG,"API : Successfully called, sending response");
-				
-	// Apply XPath filter if requested
+	
+	// Apply XPath filter if requested and store response
+	unique_lock<mutex> llock(lock);
+	
 	string xpath = query->GetRootAttribute("xpathfilter","");
 	if(xpath!="")
 	{
 		unique_ptr<DOMXPathResult> res(response.GetDOM()->evaluate(xpath,response.GetDOM()->getDocumentElement(),DOMXPathResult::FIRST_RESULT_TYPE));
 		
-		is_xpath_response = true;
-		xpath_response.Empty();
+		QueryResponse xpath_response;
 		xpath_response.GetDOM()->ImportXPathResult(res.get(),xpath_response.GetDOM()->getDocumentElement());
+		
+		responses.push(move(xpath_response));
 	}
+	else
+		responses.push(move(response));
+	
+	if(external_id)
+		responses.back().SetAttribute("external-id",to_string(external_id));
+	if(object_id!="")
+		responses.back().SetAttribute("object-id",object_id);
+	if(event_id)
+		responses.back().SetAttribute("event-id",to_string(event_id));
 	
 	return false;
 }
 
-void APISession::SendResponse(int external_id, const string &object_id, unsigned long long event_id)
+bool APISession::SendResponse()
 {
-	status=READY; // Response send, ready to received another query
+	unique_lock<mutex> llock(lock);
 	
-	if(is_xpath_response)
-	{
-		if(external_id)
-			xpath_response.SetAttribute("external-id",to_string(external_id));
-		if(object_id!="")
-			xpath_response.SetAttribute("object-id",object_id);
-		if(event_id)
-			xpath_response.SetAttribute("event-id",to_string(event_id));
-		
-		xpath_response.SendResponse();
-	}
-	else
-	{
-		if(external_id)
-			response.SetAttribute("external-id",to_string(external_id));
-		if(object_id!="")
-			response.SetAttribute("object-id",object_id);
-		if(event_id)
-			response.SetAttribute("event-id",to_string(event_id));
-		
-		response.SendResponse();
-	}
+	if(responses.size()==0)
+		return false; // No queued responses
+	
+	QueryResponse &response = responses.front();
+	response.SendResponse();
+	
+	responses.pop();
+	
+	return true;
 }
 
 void APISession::Query(const string &xml,int external_id, const string &object_id, unsigned long long event_id)
 {
 	XMLQuery query(context,xml);
-	QueryReceived(&query);
-	SendResponse(external_id, object_id, event_id);
+	QueryReceived(&query, external_id, object_id, event_id);
+	SendResponse();
 }

@@ -46,6 +46,8 @@ class QueryResponse
 		QueryResponse(const std::string &root_node_name = "response");
 		QueryResponse(int socket, const std::string &root_node_name = "response");
 		QueryResponse(struct lws *wsi, const std::string &root_node_name = "response");
+		QueryResponse(const QueryResponse &qr) = delete; // Delete copy constructor as xmldoc can't be copied
+		QueryResponse(QueryResponse &&qr); // Move constructor instead
 		~QueryResponse();
 		
 		void SetSocket(int s) { this->socket = s; }

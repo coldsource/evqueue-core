@@ -60,9 +60,6 @@ void ConfigurationWS::Check(void)
 	if(GetInt("ws.workers")<1)
 		throw Exception("Configuration","ws.workers must be greater than 0");
 	
-	if(GetInt("ws.workers")>LWS_MAX_SMP)
-		throw Exception("Configuration","ws.workers is limited by libwebsockets to "+to_string(LWS_MAX_SMP));
-	
 	if((Get("ws.ssl.crt")!="" || Get("ws.ssl.key")!="") && (Get("ws.ssl.crt")=="" || Get("ws.ssl.key")==""))
 		throw Exception("Configuration","To enable SSL, both ws.ssl.crt and ws.ssl.key must be set");
 	

@@ -27,6 +27,10 @@
 
 #include <libwebsockets.h>
 
+#include <WS/EventsWorker.h>
+#include <WS/APIWorker.h>
+#include <Thread/ThreadPool.h>
+
 class WSServer;
 class User;
 class APISession;
@@ -43,9 +47,11 @@ class WSServer
 	struct lws_context_creation_info info;
 	struct lws_context *context;
 	
-	std::vector<std::thread> threads;
+	std::thread ws_worker;
 	
 	Events *events;
+	ThreadPool<EventsWorker> *events_pool;
+	APIWorker *api_worker;
 	
 	public:
 		struct per_session_data
@@ -75,7 +81,7 @@ class WSServer
 		static int callback_http( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
 		static int callback_evq(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
 		
-		static void event_loop(int tsi);
+		static void event_loop();
 };
 
 #endif
