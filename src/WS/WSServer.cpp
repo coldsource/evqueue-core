@@ -118,7 +118,7 @@ WSServer::WSServer()
 		throw Exception("Websocket","Unable to bind port "+to_string(info.port));
 	
 	events_pool = new ThreadPool<EventsWorker>(config->GetInt("ws.workers"), Events::GetInstance(), context);
-	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(config->GetInt("ws.workers"))+" avents threads");
+	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(config->GetInt("ws.workers"))+" events threads");
 	
 	api_pool = new ThreadPool<APIWorker>(config->GetInt("ws.workers"), &api_cmd_buffer, context);
 	Logger::Log(LOG_NOTICE, "WS server: started "+to_string(config->GetInt("ws.workers"))+" API threads");
