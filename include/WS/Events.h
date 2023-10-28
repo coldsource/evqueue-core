@@ -27,6 +27,7 @@
 #include <thread>
 #include <mutex>
 #include <vector>
+#include <list>
 #include <map>
 #include <set>
 #include <queue>
@@ -74,7 +75,7 @@ class Events: public ProducerThread
 		static Events *instance;
 		
 		std::map<struct lws *, std::queue<st_event>> events;
-		std::map<struct lws *, std::vector<st_online_event>> online_events;
+		std::map<struct lws *, std::list<st_online_event>> online_events;
 		std::map<struct lws *, std::set<std::string>> processing_events;
 		std::map<en_types, std::multimap<struct lws *, st_subscription>> subscriptions;
 		

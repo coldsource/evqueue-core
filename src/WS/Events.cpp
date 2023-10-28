@@ -180,16 +180,16 @@ void Events::Create(const string &type_str, unsigned int object_id, struct lws *
 			bool skip = false;
 			if(it_oe!=online_events.end())
 			{
-				for(int i=0;i<it_oe->second.size();i++)
+				for(auto it=it_oe->second.begin();it!=it_oe->second.end();++it)
 				{
-					if(it_oe->second[i].event==ev)
+					if(it->event==ev)
 					{
-						it_oe->second[i].need_resend = true; // Delay event, it will be sent uppon acknowlegement
+						it->need_resend = true; // Delay event, it will be sent uppon acknowlegement
 						if(object_id)
 						{
-							if(it_oe->second[i].object_ids!="")
-								it_oe->second[i].object_ids += ",";
-							it_oe->second[i].object_ids += to_string(object_id);
+							if(it->object_ids!="")
+								it->object_ids += ",";
+							it->object_ids += to_string(object_id);
 						}
 						
 						skip = true;
@@ -267,14 +267,14 @@ void Events::Ack(struct lws *wsi, unsigned long long ack_event_id)
 	if(it==online_events.end())
 		return;
 	
-	for(int i=0;i<it->second.size();i++)
+	for(auto it2=it->second.begin();it2!=it->second.end();++it2)
 	{
-		if(it->second[i].event.event_id==ack_event_id)
+		if(it2->event.event_id==ack_event_id)
 		{
-			st_online_event oev = it->second[i];
+			st_online_event oev = *it2;
 			
 			// Event is no more online
-			it->second.erase(it->second.begin()+i);
+			it->second.erase(it2);
 			
 			if(!oev.need_resend)
 				return;
