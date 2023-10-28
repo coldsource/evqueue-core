@@ -171,7 +171,7 @@ void Events::Create(const string &type_str, unsigned int object_id, struct lws *
 		if(sub.object_filter!=0 && sub.object_filter!=object_id)
 			continue;
 		
-		st_event ev = {sub.api_cmd, sub.external_id, to_string(object_id), ++event_id};
+		st_event ev = {sub.api_cmd, sub.external_id, (object_id==0?"":to_string(object_id)), ++event_id};
 		
 		if(throttling)
 		{
