@@ -22,6 +22,11 @@
 
 using namespace std;
 
+void ConsumerThread::start()
+{
+	th = thread(main, this, producer);
+}
+
 void ConsumerThread::main(ConsumerThread *consumer, ProducerThread *producer)
 {
 	consumer->init_thread();
@@ -51,8 +56,6 @@ void ConsumerThread::main(ConsumerThread *consumer, ProducerThread *producer)
 ConsumerThread::ConsumerThread(ProducerThread *producer)
 {
 	this->producer = producer;
-	
-	th = thread(main, this, producer);
 }
 
 void ConsumerThread::Shutdown()

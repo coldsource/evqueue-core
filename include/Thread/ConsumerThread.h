@@ -35,6 +35,7 @@ class ConsumerThread
 		
 		bool is_shutting_down = 0;
 		
+		void start();
 		virtual void get() = 0;
 		virtual void process() = 0;
 		virtual void init_thread() {}

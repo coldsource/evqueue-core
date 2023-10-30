@@ -54,6 +54,8 @@ class APIWorker: public ConsumerThread
 		APIWorker(APICmdBuffer *buffer, struct lws_context *ws_context): ConsumerThread((ProducerThread *)buffer)
 		{
 			this->ws_context = ws_context;
+			
+			start();
 		}
 		
 		virtual ~APIWorker()

@@ -91,6 +91,8 @@ LogStorage::LogStorage(): ConsumerThread(this), channel_regex("([a-zA-Z0-9_-]+)[
 		last_partition_days = db.GetFieldInt(0);
 	
 	instance = this;
+	
+	start(); // Start consumer thread
 }
 
 LogStorage::~LogStorage()

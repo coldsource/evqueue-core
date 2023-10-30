@@ -48,6 +48,8 @@ class EventsWorker: public ConsumerThread
 		EventsWorker(Events *events, struct lws_context *ws_context): ConsumerThread((ProducerThread *)events)
 		{
 			this->ws_context = ws_context;
+			
+			start();
 		}
 		
 		virtual ~EventsWorker()
