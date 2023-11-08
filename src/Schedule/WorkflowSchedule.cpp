@@ -55,7 +55,7 @@ WorkflowSchedule::WorkflowSchedule(unsigned int workflow_schedule_id)
 	if(!db.FetchRow())
 		throw Exception("WorkflowSchedule","Unknown schedule ID");
 	
-	Logger::Log(LOG_NOTICE,"[WSID "+to_string(workflow_schedule_id)+"] Loading workflow schedule for workflow '"+db.GetField(0)+"'");
+	Logger::Log(LOG_DEBUG,"[WSID "+to_string(workflow_schedule_id)+"] Loading workflow schedule for workflow '"+db.GetField(0)+"'");
 	
 	this->workflow_id = db.GetFieldInt(0);
 	
