@@ -204,6 +204,7 @@ bool APISession::QueryReceived(XMLQuery *query, int external_id, const string &o
 		
 		response.SetError(e.error);
 		response.SetErrorCode(e.code);
+		responses.push(move(response));
 		return false;
 	}
 	
