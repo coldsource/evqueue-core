@@ -59,7 +59,7 @@ Events::en_types Events::get_type(const std::string &type_str)
 
 void Events::Subscribe(const string &type_str, struct lws *wsi, unsigned int object_filter, int external_id, const string &api_cmd)
 {
-		unique_lock<mutex> llock(lock);
+	unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);
 	if(type==0)
@@ -142,6 +142,9 @@ void Events::insert_event(struct lws *wsi, const st_event &event)
 
 void Events::Create(const string &type_str, unsigned int object_id, struct lws *filter_wsi, int filter_external_id)
 {
+	if(!ready)
+		return;
+	
 	unique_lock<mutex> llock(lock);
 	
 	en_types type = get_type(type_str);

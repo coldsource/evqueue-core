@@ -126,6 +126,8 @@ WSServer::WSServer()
 	instance = this;
 	
 	ws_worker = thread(event_loop);
+	
+	Events::GetInstance()->Ready(); // Ready to receive events
 }
 
 WSServer::~WSServer()

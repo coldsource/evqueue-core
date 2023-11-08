@@ -38,6 +38,8 @@ class Events: public ProducerThread
 		typedef int en_types;
 		
 	private:
+		bool ready = false;
+		
 		bool throttling;
 		
 		unsigned long long event_id = 0;
@@ -91,6 +93,8 @@ class Events: public ProducerThread
 		~Events();
 		
 		static Events *GetInstance() { return instance; }
+		
+		void Ready() { ready = true; }
 		
 		void RegisterEvent(const std::string name);
 		void RegisterEvents(const std::vector<std::string> &names);
