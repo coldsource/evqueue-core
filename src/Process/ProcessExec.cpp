@@ -227,11 +227,11 @@ pid_t ProcessExec::Exec()
 		for(auto it = parent_rdr.begin();it!=parent_rdr.end();++it)
 			close(it->second.write_end);
 		
-		// Close stdin pipe (read end)
-		close(stdin_pipe[0]);
-		
 		if(stdin_pipe[0]!=-1)
 		{
+			// Close stdin pipe (read end)
+			close(stdin_pipe[0]);
+			
 			// Use of a threaded data piper is required for evqueue core engine as write can block and thus hold the whole engine
 			if(!DataPiper::GetInstance())
 				new DataPiper(); // Forked process have no data piper thread, we need to create one on the fly
