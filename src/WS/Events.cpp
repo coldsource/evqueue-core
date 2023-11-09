@@ -228,6 +228,8 @@ bool Events::data_available()
 
 bool Events::Get(struct lws **wsi, int *external_id, string &object_id, unsigned long long *event_id, string &api_cmd)
 {
+	// We do not need to lock as lock is already handled by ConsumerThread::main
+	
 	for(auto it = events.begin(); it!=events.end(); ++it)
 	{
 		if(it->second.size()>0)
@@ -256,6 +258,8 @@ bool Events::Get(struct lws **wsi, int *external_id, string &object_id, unsigned
 
 void Events::Processed(struct lws *wsi, const string api_cmd)
 {
+	unique_lock<mutex> llock(lock);
+	
 	processing_events[wsi].erase(api_cmd);
 }
 
