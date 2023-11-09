@@ -151,7 +151,7 @@ pid_t Forker::Start()
 							retcode = notif_monitor.main();
 						}
 						
-						return 0;
+						return retcode;
 					}
 					
 					close(fd);
