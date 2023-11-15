@@ -65,3 +65,7 @@ Be sure you have installed the build dependencies (see **Building** above).
 We also provide [docker images](https://hub.docker.com/u/coldsource).
 
 Or you can [build your own images](https://github.com/coldsource/evqueue-docker).
+
+### Monitoring
+
+You can find here a [Zabbix template](https://github.com/coldsource/evqueue-zabbix).
