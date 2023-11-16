@@ -102,6 +102,12 @@ void DBConfig::InitDatabases()
 	}
 }
 
+bool DBConfig::RegisterInit(t_db_handler_init init)
+{
+	this->init.push_back(init);
+	return true;
+}
+
 bool DBConfig::RegisterTables(const string &name, map<string, string> &tables_def)
 {
 	if(tables.find(name)!=tables.end())
@@ -133,6 +139,11 @@ bool DBConfig::RegisterTablesInit(const string &name, map<string, string> &table
 
 void DBConfig::InitTables()
 {
+	// Call all init handlers
+	for(int i=0;i<init.size();i++)
+		(init[i])(this);
+	
+	// Then init tables
 	for(auto it_db = tables.begin(); it_db!=tables.end(); ++it_db)
 	{
 		auto tables_def = it_db->second;

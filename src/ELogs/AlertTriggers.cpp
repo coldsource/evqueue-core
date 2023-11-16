@@ -18,6 +18,7 @@
  */
 
 #include <ELogs/AlertTriggers.h>
+#include <Configuration/Configuration.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
@@ -31,6 +32,9 @@ namespace ELogs
 {
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	if(!Configuration::GetInstance()->GetBool("elog.enable"))
+		return (APIAutoInit *)0;
+	
 	qh->RegisterHandler("alert_triggers", AlertTriggers::HandleQuery);
 	return (APIAutoInit *)0;
 });

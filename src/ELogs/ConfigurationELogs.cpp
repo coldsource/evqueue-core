@@ -31,6 +31,10 @@ namespace ELogs
 static auto init = Configuration::GetInstance()->RegisterConfig(new ConfigurationELogs());
 static auto initdb =  DBConfig::GetInstance()->RegisterConfigInit([](DBConfig *dbconf) {
 	Configuration *config = Configuration::GetInstance();
+	
+	if(!config->GetBool("elog.enable"))
+		return;
+	
 	string host = config->Get("elog.mysql.host");
 	string user = config->Get("elog.mysql.user");
 	string password = config->Get("elog.mysql.password");
@@ -40,6 +44,7 @@ static auto initdb =  DBConfig::GetInstance()->RegisterConfigInit([](DBConfig *d
 
 ConfigurationELogs::ConfigurationELogs()
 {
+	entries["elog.enable"] = "no";
 	entries["elog.mysql.database"] = "evqueue-elogs";
 	entries["elog.mysql.host"] = "localhost";
 	entries["elog.mysql.password"] = "";
@@ -60,6 +65,8 @@ ConfigurationELogs::~ConfigurationELogs()
 
 void ConfigurationELogs::Check(void)
 {
+	check_bool_entry("elog.enable");
+	
 	check_int_entry("elog.bind.port");
 	check_int_entry("elog.queue.size");
 	check_int_entry("elog.bulk.size");

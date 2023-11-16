@@ -20,6 +20,7 @@
 #include <ELogs/ChannelGroup.h>
 #include <ELogs/ChannelGroups.h>
 #include <ELogs/Channels.h>
+#include <Configuration/Configuration.h>
 #include <Exception/Exception.h>
 #include <DB/DB.h>
 #include <Logger/Logger.h>
@@ -42,6 +43,9 @@ namespace ELogs
 {
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	if(!Configuration::GetInstance()->GetBool("elog.enable"))
+		return (APIAutoInit *)0;
+	
 	qh->RegisterHandler("channel_group", ChannelGroup::HandleQuery);
 	Events::GetInstance()->RegisterEvents({"CHANNELGROUP_CREATED","CHANNELGROUP_MODIFIED","CHANNELGROUP_REMOVED"});
 	return (APIAutoInit *)0;

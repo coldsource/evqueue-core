@@ -41,6 +41,9 @@ namespace ELogs
 {
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	if(!Configuration::GetInstance()->GetBool("elog.enable"))
+		return (APIAutoInit *)0;
+	
 	qh->RegisterHandler("elog", ELog::HandleQuery);
 	return (APIAutoInit *)0;
 });

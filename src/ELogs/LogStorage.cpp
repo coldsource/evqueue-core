@@ -49,6 +49,9 @@ namespace ELogs
 LogStorage *LogStorage::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	if(!Configuration::GetInstance()->GetBool("elog.enable"))
+		return (APIAutoInit *)0;
+	
 	// Create UDP socket
 	Configuration *config = Configuration::GetInstance();
 	NetworkConnections *nc = NetworkConnections::GetInstance();

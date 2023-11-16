@@ -23,6 +23,7 @@
 #include <ELogs/ChannelGroup.h>
 #include <ELogs/Channels.h>
 #include <ELogs/Channel.h>
+#include <Configuration/Configuration.h>
 #include <Notification/Notifications.h>
 #include <Notification/Notification.h>
 #include <DB/DB.h>
@@ -42,6 +43,9 @@ namespace ELogs
 {
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	if(!Configuration::GetInstance()->GetBool("elog.enable"))
+		return (APIAutoInit *)0;
+	
 	qh->RegisterHandler("alert", Alert::HandleQuery);
 	Events::GetInstance()->RegisterEvents({"ALERT_CREATED", "ALERT_MODIFIED", "ALERT_REMOVED"});
 	return (APIAutoInit *)0;

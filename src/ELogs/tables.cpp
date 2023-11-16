@@ -18,6 +18,7 @@
  */
 
 #include <DB/DBConfig.h>
+#include <Configuration/Configuration.h>
 
 #include <string>
 #include <map>
@@ -195,6 +196,10 @@ static map<string, string> elogs_tables = {
 "}
 };
 
-
-static auto init = DBConfig::GetInstance()->RegisterTables("elog", elogs_tables);
-static auto initq = DBConfig::GetInstance()->RegisterTablesInit("elog", elogs_query);
+static auto init = DBConfig::GetInstance()->RegisterInit([](DBConfig *dbc) {
+  if(!Configuration::GetInstance()->GetBool("elog.enable"))
+    return;
+  
+  dbc->RegisterTables("elog", elogs_tables);
+  dbc->RegisterTablesInit("elog", elogs_query);
+});

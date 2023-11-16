@@ -24,6 +24,10 @@
 #include <vector>
 #include <map>
 
+class DBConfig;
+
+typedef void (*t_db_handler_init)(DBConfig *dbc);
+
 class DBConfig
 {
 	public:
@@ -40,6 +44,7 @@ class DBConfig
 		
 		std::vector<t_dbconfig_init> configs_init;
 		std::map<std::string, t_config> configs;
+		std::vector<t_db_handler_init> init;
 		std::map<std::string, std::map<std::string, std::string>> tables;
 		std::map<std::string, std::map<std::string, std::string>> tables_init;
 		
@@ -58,6 +63,7 @@ class DBConfig
 		
 		void InitDatabases();
 		
+		bool RegisterInit(t_db_handler_init init);
 		bool RegisterTables(const std::string &name, std::map<std::string, std::string> &tables_def);
 		bool RegisterTablesInit(const std::string &name, std::map<std::string, std::string> &tables_query);
 		void InitTables();

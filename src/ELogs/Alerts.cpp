@@ -18,6 +18,7 @@
  */
 
 #include <ELogs/Alerts.h>
+#include <Configuration/Configuration.h>
 #include <API/QueryHandlers.h>
 #include <User/User.h>
 #include <Exception/Exception.h>
@@ -42,6 +43,9 @@ namespace ELogs
 Alerts *Alerts::instance = 0;
 
 static auto init = QueryHandlers::GetInstance()->RegisterInit([](QueryHandlers *qh) {
+	if(!Configuration::GetInstance()->GetBool("elog.enable"))
+		return (APIAutoInit *)0;
+	
 	qh->RegisterHandler("alerts", Alerts::HandleQuery);
 	qh->RegisterReloadHandler("alerts", Alerts::HandleReload);
 	Events::GetInstance()->RegisterEvents({"ALERT_TRIGGER"});
