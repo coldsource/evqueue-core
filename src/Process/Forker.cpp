@@ -139,19 +139,18 @@ pid_t Forker::Start()
 						// Change display in ps
 						setproctitle(type.c_str());
 						
-						int retcode = -2;
 						if(type=="evq_monitor")
 						{
 							Monitor monitor(fd);
-							retcode = monitor.main();
+							monitor.main();
 						}
 						else if(type=="evq_nf_monitor")
 						{
 							NotificationMonitor notif_monitor(fd);
-							retcode = notif_monitor.main();
+							notif_monitor.main();
 						}
 						
-						return retcode;
+						return 0;
 					}
 					
 					close(fd);
