@@ -218,7 +218,7 @@ pid_t ProcessExec::Exec()
 		execv(path.c_str(),(char * const *)args);
 		
 		fprintf(stderr,"Could not execute process: '%s', execv() got error '%s'",path.c_str(),strerror(errno));
-		return pid;
+		exit(3); // Exit forked process with error code
 	}
 	
 	if(pid>0)
