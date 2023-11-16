@@ -63,6 +63,13 @@ UniqueAction::UniqueAction(const string &name, int period)
 
 UniqueAction::UniqueAction(const string &name)
 {
+	if(!Cluster::GetInstance())
+	{
+		// Cluster not yet started, could not elect now
+		is_elected = false;
+		return;
+	}
+	
 	vector<string> nodes = Cluster::GetInstance()->Ping();
 	
 	if(nodes.size()==0)
