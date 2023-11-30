@@ -532,6 +532,7 @@ XPathEval::XPathEval(DOMDocument *xmldoc)
 	funcs_desc.insert(pair<string,func_desc>("string-length",{XPathFunctions::string_length,0}));
 	funcs_desc.insert(pair<string,func_desc>("substring",{XPathFunctions::substring,0}));
 	funcs_desc.insert(pair<string,func_desc>("contains",{XPathFunctions::contains,0}));
+	funcs_desc.insert(pair<string,func_desc>("string-join",{XPathFunctions::string_join,0}));
 }
 
 void XPathEval::RegisterFunction(string name,func_desc f)
