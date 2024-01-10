@@ -378,9 +378,12 @@ Token *XPathEval::evaluate_expr(Token *token,const eval_context &context)
 		catch(Exception &e)
 		{
 			e.error += " while evaluating operator" + op->LogInitialPosition();
-			delete op;
-			delete left;
-			delete right;
+			if(left && right)
+			{
+				delete op;
+				delete left;
+				delete right;
+			}
 			throw e;
 		}
 		
