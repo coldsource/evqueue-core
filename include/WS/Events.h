@@ -31,6 +31,7 @@
 #include <map>
 #include <set>
 #include <queue>
+#include <string>
 
 class Events: public ProducerThread
 {
