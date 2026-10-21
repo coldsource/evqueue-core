@@ -81,6 +81,9 @@ pid_t Forker::Start()
 		
 		// Change display in ps
 		setproctitle("evq_forker");
+
+		close(pipe_evq_to_forker[1]);
+		close(pipe_forker_to_evq[0]);
 		
 		signal(SIGCHLD,signal_callback_handler); // Reap children
 		
@@ -98,14 +101,6 @@ pid_t Forker::Start()
 				{
 					syslog(LOG_NOTICE, "forker: daemon is gone, exiting...");
 					break; // Other end of the pipe has been close, daemon is terminating
-				}
-				
-				if(type=="init")
-				{
-					// Close other pipes ends
-					close(pipe_evq_to_forker[1]);
-					close(pipe_forker_to_evq[0]);
-					continue;
 				}
 				
 				string pipe_path;
@@ -174,14 +169,6 @@ pid_t Forker::Start()
 		throw Exception("core", "Could not start forker, fork() returned error");
 	
 	return forker_pid;
-}
-
-void Forker::Init()
-{
-	string pipe_data = DataSerializer::Serialize("init");
-	
-	if(write(pipe_evq_to_forker[1], pipe_data.c_str(), pipe_data.length())!=pipe_data.length())
-		throw Exception("core", "Could not init forker");
 }
 
 pid_t Forker::Execute(const string &type, const string &data)

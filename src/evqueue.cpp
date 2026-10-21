@@ -234,18 +234,15 @@ int main(int argc,char **argv)
 		
 		// Open pid file before fork to eventually print errors
 		PIDFile pidf("core", config->Get("core.pidfile"));
-		
+
 		if(args["--daemon"])
 		{
 			if(daemon(1,0)!=0)
 				throw Exception("core","Error trying to daemonize process");
-			
+
 			daemonized = true;
 		}
-		
-		// Init forker (close pipes) after eventual fork made by daemon()
-		forker.Init();
-		
+
 		// Init Xerces after locale and forker
 		xercesc::XMLPlatformUtils::Initialize();
 		
